@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">me-talk</string>
+    <string name="title_activity_main">me-talk</string>
+    <string name="package_name">com.metalk.app</string>
+    <string name="custom_url_scheme">com.metalk.app</string>
+</resources>
