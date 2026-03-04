@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Media Kit Pro — Influencer Media Kit Builder
 
-## Getting Started
+A professional pitch deck for creators. Turn your link-in-bio into a high-end agency portfolio with live engagement data, audience demographics, and growth charts.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Landing page** — Marketing site with high-end agency design
+- **Pricing** — $15/month subscription via Stripe
+- **Dashboard** — Creator control panel to manage media kit
+- **Public media kit** — Link-in-bio style page with live stats, growth charts, demographics
+
+## Stripe Setup
+
+1. Create a [Stripe account](https://dashboard.stripe.com) and get your API keys.
+
+2. Create a Product and Price in Stripe Dashboard:
+   - Products → Add product
+   - Name: "Media Kit Pro"
+   - Price: $15/month, recurring
+   - Copy the **Price ID** (starts with `price_`)
+
+3. Copy `.env.example` to `.env.local` and fill in:
+
+```env
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PRICE_ID=price_...
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. For webhooks (subscription events), use Stripe CLI:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+stripe listen --forward-to localhost:3000/api/webhook
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy the webhook signing secret to `.env.local`:
 
-## Learn More
+```env
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000).
 
-## Deploy on Vercel
+## Build (Web)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run build
+npm start
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Build (iOS / Android)
+
+```bash
+npm run build
+npm run ios:build    # then: npm run ios
+npm run android:build # then: npm run android
+```
+
+## Project Structure
+
+- `app/` — Next.js App Router pages
+- `app/api/` — Stripe API routes (checkout, webhook, subscription-status, portal)
+- `app/components/` — Shared UI (AppNav, SubscribeButton)
+- `app/kit/[username]/` — Public media kit (brand-facing)
+- `lib/platforms/` — Social platform abstraction (Instagram only for now; add TikTok/YouTube here)
+- `lib/` — Stripe client, subscription cookie, mock data
+- `docs/` — [SETUP.md](docs/SETUP.md) (developer onboarding), [MEDIAKIT_PLAN.md](docs/MEDIAKIT_PLAN.md) (product plan; product name inside is Media Kit Pro)
+
+**New developers:** See **[docs/SETUP.md](docs/SETUP.md)** for env setup, project layout, and how to add a new social platform.
