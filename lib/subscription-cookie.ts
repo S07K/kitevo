@@ -1,11 +1,18 @@
 import { createHmac, timingSafeEqual } from "crypto";
 
 const COOKIE_NAME = "media_kit_pro_customer";
-const SECRET = process.env.SUBSCRIPTION_COOKIE_SECRET || "dev-secret-change-in-production";
 const MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
+function getSecret(): string {
+  const s = process.env.SUBSCRIPTION_COOKIE_SECRET;
+  if (!s && process.env.NODE_ENV === "production") {
+    throw new Error("SUBSCRIPTION_COOKIE_SECRET is required in production");
+  }
+  return s || "dev-secret-change-in-production";
+}
+
 function sign(value: string): string {
-  const hmac = createHmac("sha256", SECRET);
+  const hmac = createHmac("sha256", getSecret());
   hmac.update(value);
   return `${value}.${hmac.digest("hex")}`;
 }

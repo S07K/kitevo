@@ -21,8 +21,11 @@ export async function GET() {
   }
 
   const state = randomBytes(24).toString("hex");
-  const secret = process.env.META_APP_SECRET || "dev-secret";
-  const sig = createHmac("sha256", secret).update(state).digest("hex");
+  const secret = process.env.META_APP_SECRET;
+  if (!secret && process.env.NODE_ENV === "production") {
+    return NextResponse.redirect(new URL("/dashboard?instagram_error=not_configured", BASE_URL));
+  }
+  const sig = createHmac("sha256", secret || "dev-secret").update(state).digest("hex");
   const stateCookie = `${state}.${sig}`;
 
   const redirectUri = `${BASE_URL}/api/instagram/callback`;

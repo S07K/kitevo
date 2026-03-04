@@ -20,7 +20,8 @@ function verifyState(cookieValue: string | null, queryState: string | null): boo
   if (dot === -1) return false;
   const state = cookieValue.slice(0, dot);
   const sig = cookieValue.slice(dot + 1);
-  const secret = META_APP_SECRET || "dev-secret";
+  const secret = META_APP_SECRET || (process.env.NODE_ENV === "production" ? "" : "dev-secret");
+  if (!secret) return false;
   const expected = createHmac("sha256", secret).update(state).digest("hex");
   try {
     return state === queryState && timingSafeEqual(Buffer.from(sig, "hex"), Buffer.from(expected, "hex"));
