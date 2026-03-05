@@ -1,12 +1,8 @@
-import { getPublicTiers } from "@/config/subscriptions";
 import { AppNav } from "../components/AppNav";
 import { CanceledMessage } from "./CanceledMessage";
-import { PricingTiers } from "./PricingTiers";
-import { MOCK_CREATOR } from "@/lib/mock-data";
+import { PricingContent } from "./PricingContent";
 
-export default async function PricingPage() {
-  const tiers = getPublicTiers();
-
+export default function PricingPage() {
   return (
     <div className="min-h-screen">
       <AppNav links={[{ href: "/dashboard", label: "Dashboard" }]} />
@@ -23,7 +19,7 @@ export default async function PricingPage() {
           Professional media kits, live stats, and shareable links. Cancel anytime.
         </p>
 
-        <PricingTiers tiers={tiers} email={MOCK_CREATOR.email} />
+        <PricingContent />
 
         <p className="mt-12 text-sm text-[#8C8C8C]">
           Secure payment via Stripe. Manage or upgrade your subscription anytime.

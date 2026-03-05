@@ -3,12 +3,23 @@ import { getServerSession } from "next-auth";
 import { stripe } from "@/lib/stripe";
 import { authOptions } from "@/lib/auth";
 import { getPriceIdForTier } from "@/config/subscriptions";
+import { getAllowedKitsForUser } from "@/lib/subscription-for-request";
 
 export async function POST(req: Request) {
   try {
     const authSession = await getServerSession(authOptions);
     const body = await req.json().catch(() => ({}));
     const { email, tierId } = body as { email?: string; tierId?: string };
+
+    if (authSession?.user?.id) {
+      const allowedKits = await getAllowedKitsForUser(authSession.user.id);
+      if (allowedKits > 0) {
+        return NextResponse.json(
+          { error: "You already have an active subscription. Manage it from your dashboard." },
+          { status: 409 }
+        );
+      }
+    }
 
     const tier = tierId && typeof tierId === "string" ? tierId : "starter";
     const priceId = getPriceIdForTier(tier);

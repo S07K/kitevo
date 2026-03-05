@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { SubscribeButton } from "../components/SubscribeButton";
 import {
@@ -20,7 +20,7 @@ function ProfileForm({
   onSave,
   saving,
 }: {
-  profile: ProfilePayload & { email?: string };
+  profile: ProfilePayload & { email?: string; onboardingCompletedAt?: string | null };
   onSave: (data: ProfilePayload) => Promise<void>;
   saving: boolean;
 }) {
@@ -143,8 +143,9 @@ function DashboardContent() {
   const [tierId, setTierId] = useState<string | null>(null);
   const [tierName, setTierName] = useState<string | null>(null);
   const [kits, setKits] = useState<KitRecord[]>([]);
-  const [profile, setProfile] = useState<ProfilePayload & { email?: string } | null>(null);
+  const [profile, setProfile] = useState<(ProfilePayload & { email?: string; onboardingCompletedAt?: string | null }) | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);
+  const router = useRouter();
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [platformStats, setPlatformStats] = useState<Record<string, PlatformStatsWithCharts> | null>(null);
   const [enabledPlatformIds] = useState<PlatformId[]>(() => getEnabledPlatformIds());
@@ -203,6 +204,14 @@ function DashboardContent() {
       .catch(() => { if (!cancelled) setProfile(null); });
     return () => { cancelled = true; };
   }, []);
+
+  // Redirect to onboarding if user has not completed it
+  useEffect(() => {
+    if (profile === null) return;
+    if (profile.onboardingCompletedAt == null || profile.onboardingCompletedAt === "") {
+      router.replace("/onboarding");
+    }
+  }, [profile, router]);
 
   // Load platform stats from API (Instagram; uses token or mock) when subscribed
   useEffect(() => {
@@ -459,6 +468,63 @@ function DashboardContent() {
               <p className="mt-2 text-sm text-[#5C5C5C]">
                 You can create up to {allowedKits} kit{allowedKits !== 1 ? "s" : ""}. Each has its own shareable link.
               </p>
+              {kits.length === 0 && allowedKits > 0 ? (
+                <div className="mt-6 p-6 rounded-lg bg-[#FAFAFA] border border-[#E8E6E3] border-dashed">
+                  <h4 className="font-display text-base font-semibold text-[#1A1A1A]">
+                    Create your first kit
+                  </h4>
+                  <p className="mt-1 text-sm text-[#5C5C5C]">
+                    Add a name and URL slug to get started. You can add work samples, rates and brands in the editor.
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Kit name"
+                      value={newKitName}
+                      onChange={(e) => setNewKitName(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                    />
+                    <input
+                      type="text"
+                      placeholder="URL slug (e.g. my-fashion-kit)"
+                      value={newKitSlug}
+                      onChange={(e) => setNewKitSlug(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                    />
+                    {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!newKitSlug.trim()) return;
+                          setAddKitError("");
+                          const res = await fetch("/api/kits", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ slug: newKitSlug.trim(), name: newKitName.trim() }),
+                            credentials: "include",
+                          });
+                          const data = await res.json().catch(() => ({}));
+                          if (res.ok && data.id) {
+                            setShowAddKit(false);
+                            setNewKitName("");
+                            setNewKitSlug("");
+                            fetch("/api/kits", { credentials: "include" })
+                              .then((r) => r.ok ? r.json() : [])
+                              .then((list) => setKits(Array.isArray(list) ? list : []));
+                            window.location.href = `/kit/edit?id=${encodeURIComponent(data.id)}`;
+                          } else {
+                            setAddKitError(data.error ?? "Failed to create kit");
+                          }
+                        }}
+                        className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-sm hover:bg-[#2D2D2D]"
+                      >
+                        Create & edit
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
               <ul className="mt-4 space-y-3">
                 {kits.map((kit) => (
                   <li
@@ -496,7 +562,8 @@ function DashboardContent() {
                   </li>
                 ))}
               </ul>
-              {showAddKit ? (
+              )}
+              {(kits.length > 0 || allowedKits === 0) && (showAddKit && kits.length > 0 ? (
                 <div className="mt-4 p-4 rounded-lg bg-[#FAFAFA] border border-[#E8E6E3] space-y-3">
                   <input
                     type="text"
@@ -571,7 +638,7 @@ function DashboardContent() {
                 <p className="mt-4 text-sm text-[#8C8C8C]">
                   At kit limit ({allowedKits}). Upgrade your plan for more.
                 </p>
-              )}
+              ))}
             </div>
 
             <div className="p-6 border border-[#E8E6E3] rounded-sm bg-white">

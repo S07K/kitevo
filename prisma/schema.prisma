@@ -31,6 +31,9 @@ model User {
   instagramUserId      String?  // IG Business/Creator account id
   instagramAccessToken String?  // Long-lived token for API calls
 
+  // Phase 11: Onboarding (redirect new users to /onboarding until they finish)
+  onboardingCompletedAt DateTime?
+
   // Relations for Phase 8 (kits)
   kits      Kit[]
 }

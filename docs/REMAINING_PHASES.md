@@ -1,6 +1,6 @@
 # Media Kit Pro — Remaining phases (end-to-end completion)
 
-This doc lists what’s left so the app is **fully developed** and deployable: auth, persistence, real APIs, and onboarding. Phases 1–5 (and multi-kit + subscription tiers) are done. **Phase 6 (Auth), Phase 7 (Profile), Phase 8 (Kits in DB), and Phase 9 (Subscription tied to user) are done;** Phases 10–12 remain.
+This doc lists what’s left so the app is **fully developed** and deployable: auth, persistence, real APIs, and onboarding. Phases 1–5 (and multi-kit + subscription tiers) are done. **Phase 6 (Auth), Phase 7 (Profile), Phase 8 (Kits in DB), Phase 9 (Subscription tied to user), Phase 10 (Instagram), and Phase 11 (Onboarding) are done;** Phase 12 (polish & ship) remains.
 
 ---
 
@@ -95,9 +95,9 @@ This doc lists what’s left so the app is **fully developed** and deployable: a
 
 ---
 
-## Phase 11 — Onboarding
+## Phase 11 — Onboarding ✅
 
-**Goal:** New users get a clear path to first kit and (optionally) first connection.
+**Goal:** New users get a clear path to first kit and (optionally) first connection. Implemented: redirect to `/onboarding` when `onboardingCompletedAt` is null; onboarding steps with links; dashboard empty state “Create your first kit”; username uniqueness in profile API.
 
 | Step | What to do |
 |------|------------|
