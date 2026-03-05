@@ -1,0 +1,56 @@
+// Prisma schema — Phase 6 (auth) and beyond (profile, kits, subscription)
+// Use SQLite for dev; switch to postgres for production if needed.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  passwordHash String?  // null if OAuth-only
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Phase 9: link Stripe customer
+  stripeCustomerId String? @unique
+
+  // Phase 7: creator profile (can move to separate table later)
+  username  String?  @unique // for /kit/[username] and profile URL
+  bio       String?
+  avatarUrl String?
+  links     String?  // JSON array of { label, url }
+
+  // Phase 10: Instagram (Meta Graph API)
+  instagramUserId      String?  // IG Business/Creator account id
+  instagramAccessToken String?  // Long-lived token for API calls
+
+  // Phase 11: Onboarding (redirect new users to /onboarding until they finish)
+  onboardingCompletedAt DateTime?
+
+  // Relations for Phase 8 (kits)
+  kits      Kit[]
+}
+
+model Kit {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug              String   // unique per user (userId_slug); use findFirst for global slug lookup
+  name              String
+  workSamples       String   // JSON
+  rates             String   // JSON
+  brands            String   // JSON
+  sectionVisibility String   // JSON
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, slug])
+  @@index([userId])
+}
