@@ -334,8 +334,8 @@ export function MediaKitClient({
           </section>
         )}
 
-        {/* 8. Links — clear CTAs */}
-        {sectionVisibility.links && (
+        {/* 8. Links — clear CTAs (only when there are links) */}
+        {sectionVisibility.links && links.length > 0 && (
         <section className="mt-20 sm:mt-24 space-y-3">
           <h2 className="text-xs uppercase tracking-widest text-[#8C8C8C] font-medium">
             Get in touch

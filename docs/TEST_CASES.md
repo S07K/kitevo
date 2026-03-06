@@ -43,9 +43,10 @@ npm run test:e2e
 | `app/api/kits/by-slug/[slug]/route.test.ts` | GET public kit by slug | 2 |
 | `app/api/auth/signup/route.test.ts` | POST signup | 4 |
 | `app/api/instagram/status/route.test.ts` | GET Instagram status | 3 |
+| `app/api/instagram/disconnect/route.test.ts` | POST Instagram disconnect | 2 |
 | `app/api/create-checkout-session/route.test.ts` | POST create-checkout (already subscribed guard) | 3 |
 
-**Total: 43 tests** across 9 files.
+**Total: 45 tests** across 10 files.
 
 ---
 
@@ -173,7 +174,16 @@ npm run test:e2e
 
 ---
 
-## 13. `POST /api/create-checkout-session` (API)
+## 13. `POST /api/instagram/disconnect` (API)
+
+| # | Test | Description |
+|---|------|--------------|
+| 1 | Returns 401 when there is no session | Unauthorized; update not called |
+| 2 | Returns 200 and clears Instagram fields for current user when session exists | Sets instagramUserId and instagramAccessToken to null |
+
+---
+
+## 14. `POST /api/create-checkout-session` (API)
 
 | # | Test | Description |
 |---|------|--------------|
@@ -201,8 +211,9 @@ npm run test:e2e
 | `e2e/happy-path.spec.ts` | Happy path | 1 |
 | `e2e/public-kit.spec.ts` | Public kit page | 2 |
 | `e2e/help.spec.ts` | Help (Instagram) | 1 |
+| `e2e/dashboard-instagram.spec.ts` | Dashboard Instagram connect/disconnect | 2 |
 
-**Total: 15 E2E tests.** Run with **browser visible**: `npm run test:e2e:headed` or `npm run test:e2e:ui`.
+**Total: 17 E2E tests.** Run with **browser visible**: `npm run test:e2e:headed` or `npm run test:e2e:ui`.
 
 ### E2E test list
 
@@ -211,6 +222,7 @@ npm run test:e2e
 - **Pricing:** Page loads and shows plans (Starter/Pro); when subscription-status returns already subscribed, shows “You’re already subscribed” and “Manage subscription” (E2E with mocked API).
 - **Signup:** Signup page loads with form; Log in link → login.
 - **Happy path:** New user signs up (unique email) → logs in → sees onboarding → clicks “Go to Dashboard” → lands on dashboard.
+- **Dashboard Instagram:** When not connected, dashboard shows “Connect Instagram”; when status is mocked as connected, shows “Connected” and “Disconnect”, and clicking Disconnect (with disconnect API mocked) shows “Connect Instagram” again.
 
 ---
 

@@ -12,6 +12,7 @@ import {
   type PlatformStatsWithCharts,
 } from "@/lib/platforms";
 import { AppNav } from "../components/AppNav";
+import { DashboardSkeleton } from "../components/Skeleton";
 import type { KitRecord } from "@/lib/kit-storage";
 import type { ProfilePayload, ProfileLink } from "@/app/api/me/profile/route";
 
@@ -145,6 +146,7 @@ function DashboardContent() {
   const [kits, setKits] = useState<KitRecord[]>([]);
   const [profile, setProfile] = useState<(ProfilePayload & { email?: string; onboardingCompletedAt?: string | null }) | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
   const router = useRouter();
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [platformStats, setPlatformStats] = useState<Record<string, PlatformStatsWithCharts> | null>(null);
@@ -157,6 +159,7 @@ function DashboardContent() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [instagramConnected, setInstagramConnected] = useState(false);
+  const [disconnectingInstagram, setDisconnectingInstagram] = useState(false);
   const searchParams = useSearchParams();
   const success = searchParams.get("success") === "true";
   const sessionId = searchParams.get("session_id") ?? null;
@@ -237,6 +240,16 @@ function DashboardContent() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [instagramConnectedParam]);
+
+  const handleDisconnectInstagram = async () => {
+    setDisconnectingInstagram(true);
+    try {
+      const res = await fetch("/api/instagram/disconnect", { method: "POST", credentials: "include" });
+      if (res.ok) setInstagramConnected(false);
+    } finally {
+      setDisconnectingInstagram(false);
+    }
+  };
 
   const instagramErrorMessages: Record<string, string> = {
     not_configured: "Instagram connect is not configured. Add META_APP_ID and META_APP_SECRET.",
@@ -357,7 +370,7 @@ function DashboardContent() {
         </p>
 
         {loading ? (
-          <p className="mt-8 text-[#5C5C5C] text-sm">Checking subscription…</p>
+          <DashboardSkeleton />
         ) : !isSubscribed ? (
           <div className="mt-12 p-8 border border-[#E8E6E3] rounded-sm bg-white">
             <h2 className="font-display text-xl font-semibold text-[#1A1A1A]">
@@ -382,10 +395,23 @@ function DashboardContent() {
                 <p className="mt-1 text-sm text-[#5C5C5C]">
                   Shown on your public media kit. Set a username for a clean link.
                 </p>
+                {profileSaveError && (
+                  <div className="mb-4 rounded-sm bg-red-50 border border-red-200 p-3 text-sm text-red-800">
+                    {profileSaveError}
+                    <button
+                      type="button"
+                      onClick={() => setProfileSaveError(null)}
+                      className="ml-2 text-red-600 hover:underline"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                )}
                 <ProfileForm
                   profile={profile}
                   onSave={async (data) => {
                     setProfileSaving(true);
+                    setProfileSaveError(null);
                     try {
                       const res = await fetch("/api/me/profile", {
                         method: "PUT",
@@ -398,7 +424,7 @@ function DashboardContent() {
                         setProfile((p) => (p ? { ...p, ...updated } : null));
                       } else {
                         const err = await res.json().catch(() => ({}));
-                        alert(err.error ?? "Failed to save");
+                        setProfileSaveError(err.error ?? "Failed to save profile");
                       }
                     } finally {
                       setProfileSaving(false);
@@ -419,7 +445,17 @@ function DashboardContent() {
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 {instagramConnected ? (
-                  <p className="text-sm text-green-600 font-medium">Connected</p>
+                  <>
+                    <p className="text-sm text-green-600 font-medium">Connected</p>
+                    <button
+                      type="button"
+                      onClick={handleDisconnectInstagram}
+                      disabled={disconnectingInstagram}
+                      className="inline-block px-4 py-2 border border-[#E8E6E3] text-[#5C5C5C] text-sm font-medium rounded-sm hover:bg-[#FAFAFA] hover:border-[#8C8C8C] disabled:opacity-50"
+                    >
+                      {disconnectingInstagram ? "Disconnecting…" : "Disconnect"}
+                    </button>
+                  </>
                 ) : (
                   <a
                     href="/api/instagram/connect"
@@ -529,34 +565,40 @@ function DashboardContent() {
                 {kits.map((kit) => (
                   <li
                     key={kit.id}
-                    className="flex flex-wrap items-center gap-3 py-3 border-b border-[#E8E6E3] last:border-0"
+                    className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-lg border border-[#E8E6E3] bg-white"
                   >
                     <span className="font-medium text-[#1A1A1A]">{kit.name}</span>
                     <span className="text-xs text-[#8C8C8C]">/kit/{kit.slug}</span>
-                    <div className="flex gap-2 ml-auto">
+                    <div className="flex gap-1 ml-auto">
                       <Link
                         href={`/kit/edit?id=${encodeURIComponent(kit.id)}`}
-                        className="text-sm font-medium text-[#1A1A1A] underline"
+                        title="Edit"
+                        className="p-2 rounded-sm text-[#1A1A1A] hover:bg-[#F0F0F0] transition-colors"
+                        aria-label="Edit kit"
                       >
-                        Edit
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                       </Link>
                       <a
                         href={`/kit/${kit.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm font-medium text-[#1A1A1A] underline"
+                        title="View"
+                        className="p-2 rounded-sm text-[#1A1A1A] hover:bg-[#F0F0F0] transition-colors"
+                        aria-label="View kit"
                       >
-                        View
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
                       </a>
                       <button
                         type="button"
+                        title="Delete"
                         onClick={() => {
                           setDeleteError(null);
                           setKitToDelete({ id: kit.id, name: kit.name });
                         }}
-                        className="text-sm text-red-600 hover:underline"
+                        className="p-2 rounded-sm text-red-600 hover:bg-red-50 transition-colors"
+                        aria-label="Delete kit"
                       >
-                        Delete
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                       </button>
                     </div>
                   </li>

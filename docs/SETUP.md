@@ -65,7 +65,20 @@ Use the printed `whsec_...` as `STRIPE_WEBHOOK_SECRET`.
 
 ---
 
-## 3. Run the app
+## 3. Database migrations
+
+After cloning or before first run (and after any schema change):
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+For a **new** SQLite DB, the first migration creates tables. For production, use a Postgres `DATABASE_URL` (e.g. Vercel Postgres, Neon) and run the same commands in your deploy step or CI.
+
+---
+
+## 4. Run the app
 
 ```bash
 npm run dev
@@ -78,7 +91,35 @@ Open [http://localhost:3000](http://localhost:3000). Key routes:
 - `/pricing` — Pricing and subscribe
 - `/kit/demo` or `/kit/alexchen` — Public media kit (brand view)
 
-**Production build (web):**
+---
+
+## 5. Deploy to Vercel (production)
+
+1. **Connect repo** — [vercel.com](https://vercel.com) → New Project → Import your Git repo (e.g. GitHub). Framework: Next.js (auto-detected).
+
+2. **Database** — SQLite (`file:./dev.db`) is for local only. For production:
+   - **Vercel Postgres** or **Neon** (or any Postgres). Create a database and copy the connection string.
+   - In Vercel → Project → Settings → Environment Variables, add `DATABASE_URL` with the Postgres URL (e.g. `postgresql://...`).
+
+3. **Run migrations** — After first deploy, run migrations against the production DB:
+   - Either in Vercel Build Command add `prisma generate && prisma migrate deploy` before `next build`, or
+   - Run locally once: `DATABASE_URL="your-production-postgres-url" npx prisma migrate deploy`
+
+4. **Environment variables** — In Vercel → Settings → Environment Variables, set all required vars (see table in §2):
+   - `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL` (use your production URL, e.g. `https://yourapp.vercel.app`)
+   - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_STARTER`, `STRIPE_PRICE_ID_PRO`
+   - `SUBSCRIPTION_COOKIE_SECRET`, `META_APP_ID`, `META_APP_SECRET` (if using Instagram)
+
+5. **Stripe webhook** — In Stripe Dashboard → Developers → Webhooks → Add endpoint:
+   - URL: `https://yourapp.vercel.app/api/webhook`
+   - Events: `checkout.session.completed` (and optionally `customer.subscription.updated`, `customer.subscription.deleted`)
+   - Copy the signing secret into `STRIPE_WEBHOOK_SECRET` in Vercel env.
+
+6. **Redeploy** — Trigger a new deployment so env vars and DB are used. Your app will be live at `yourapp.vercel.app`. Add a custom domain later in Vercel → Settings → Domains if needed.
+
+---
+
+## 6. Production build (local or other hosts)
 
 The app is configured for **web deployment only** (no `output: "export"`), so API routes (Stripe, subscription status, etc.) run in production. Deploy to Vercel, Railway, or any Node host:
 
@@ -89,11 +130,31 @@ npm start
 
 Set env vars on your host (see table above). For Stripe webhooks, use your production URL: `https://your-domain.com/api/webhook`.
 
+**Deploy where? (Vercel vs AWS, etc.)**
+
+- **Vercel** — Easiest for Next.js: connect the repo, set env vars, deploy. You get a URL like `your-app.vercel.app`. No server to manage; good free tier. Recommended to start.
+- **AWS** (e.g. **Lightsail**, Amplify, or EC2 + Node) — Works too; more setup (build, process manager, env, optional load balancer). Use if you prefer AWS or have other infra there.
+
+**Domain for monetization**
+
+You do **not** need a custom domain to launch. Deploy first → you get a default URL (e.g. `yourapp.vercel.app` or an Amplify URL). When you’re ready to monetize or brand, add your own domain:
+
+- **Vercel:** Project → Settings → Domains → Add (e.g. `mediakitpro.com`). Point your registrar’s DNS to Vercel (they show the records). No code change.
+- **AWS:** Point your domain to the load balancer or Amplify app via Route 53 or your DNS provider.
+
+So: **deploy now with the default URL, add a custom domain later** when you want a “real” brand and to monetize.
+
+**Traffic (page views)**
+
+The app includes **Vercel Analytics** (`@vercel/analytics`). When deployed on **Vercel**, page views are recorded automatically; you’ll see traffic (visits, top pages) in the Vercel dashboard under your project → Analytics. No env vars or config needed. If you deploy elsewhere (e.g. AWS), that script does nothing; you can add Google Analytics or Plausible in `app/layout.tsx` instead.
+
+---
+
 **iOS / Android (Capacitor):** Not configured for current release. To add mobile later, you’d need a separate backend or serverless APIs for the app to call, plus a static or hybrid build for the native wrapper.
 
 ---
 
-## 4. Project structure (where to look)
+## 7. Project structure (where to look)
 
 ```
 me-talk/
@@ -127,7 +188,7 @@ me-talk/
 
 ---
 
-## 5. Social platforms (Instagram only; add TikTok/YouTube later)
+## 8. Social platforms (Instagram only; add TikTok/YouTube later)
 
 Stats and charts are driven by **`lib/platforms`**. Only **Instagram** is enabled right now; the code is structured so TikTok and YouTube can be added without changing the rest of the app.
 
@@ -153,7 +214,7 @@ No changes are needed in the dashboard or media kit page; they already iterate o
 
 ---
 
-## 6. Stripe flow (reference)
+## 9. Stripe flow (reference)
 
 - **Subscribe:** User hits Pricing or Dashboard → `POST /api/create-checkout-session` → redirect to Stripe Checkout → success redirect to `/dashboard?success=true&session_id=cs_xxx`.
 - **Session → cookie:** Dashboard calls `POST /api/subscription-status` with `session_id` → backend sets signed httpOnly cookie (customer id) and returns `hasSubscription: true`.
@@ -162,7 +223,7 @@ No changes are needed in the dashboard or media kit page; they already iterate o
 
 ---
 
-## 7. Comments in code
+## 10. Comments in code
 
 - **`lib/platforms/`** — File-level comments explain types, adapters, and how to add a new platform.
 - **`app/api/`** — Routes are short; Stripe usage is standard (checkout, portal, webhook).

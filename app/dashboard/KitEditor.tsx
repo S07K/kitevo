@@ -17,6 +17,7 @@ import {
   type SectionVisibility,
 } from "@/lib/kit-storage";
 import type { FetchedPost } from "@/lib/platforms";
+import { KitEditorSkeleton } from "@/app/components/Skeleton";
 
 const PLATFORMS: { value: WorkSample["platform"]; label: string }[] = [
   { value: "instagram", label: "Instagram" },
@@ -40,6 +41,7 @@ export function KitEditor({ kitId }: KitEditorProps) {
   const [brands, setBrands] = useState<BrandPartner[]>(MOCK_BRANDS);
   const [saved, setSaved] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadingKit, setLoadingKit] = useState(false);
   const [fetchedPosts, setFetchedPosts] = useState<FetchedPost[] | null>(null);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>(
@@ -59,9 +61,10 @@ export function KitEditor({ kitId }: KitEditorProps) {
 
     const isDbId = effectiveKitId.length >= 20 && !effectiveKitId.startsWith("kit_");
     if (isDbId) {
+      setLoadingKit(true);
       fetch(`/api/kits/${effectiveKitId}`, { credentials: "include" })
         .then((r) => {
-          if (!r.ok) throw new Error(r.status === 404 ? "Kit not found" : "Failed to load");
+          if (!r.ok) throw new Error(r.status === 404 ? "Kit not found" : "Failed to load kit");
           return r.json();
         })
         .then((data) => {
@@ -74,7 +77,8 @@ export function KitEditor({ kitId }: KitEditorProps) {
               : DEFAULT_SECTION_VISIBILITY
           );
         })
-        .catch((e) => setLoadError(e.message ?? "Failed to load kit"));
+        .catch((e) => setLoadError(e.message ?? "Failed to load kit"))
+        .finally(() => setLoadingKit(false));
       return;
     }
 
@@ -195,6 +199,10 @@ export function KitEditor({ kitId }: KitEditorProps) {
     );
   }
 
+  if (loadingKit) {
+    return <KitEditorSkeleton />;
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -210,7 +218,17 @@ export function KitEditor({ kitId }: KitEditorProps) {
         </button>
       </div>
       {loadError && (
-        <p className="text-sm text-red-600 bg-red-50 p-3 rounded-sm">{loadError}</p>
+        <div className="rounded-sm bg-red-50 border border-red-200 p-4 text-sm text-red-800">
+          <p className="font-medium">Something went wrong</p>
+          <p className="mt-1">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => setLoadError(null)}
+            className="mt-2 text-red-600 hover:underline"
+          >
+            Dismiss
+          </button>
+        </div>
       )}
 
       {/* Section visibility — what appears on the public kit */}

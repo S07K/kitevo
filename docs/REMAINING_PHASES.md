@@ -110,17 +110,17 @@ This doc lists what’s left so the app is **fully developed** and deployable: a
 
 ---
 
-## Phase 12 — Polish & ship
+## Phase 12 — Polish & ship ✅
 
 **Goal:** Production-ready behavior and small wins before launch.
 
 | Step | What to do |
 |------|------------|
 | 12.1 | **Public kit 404:** When slug not found in DB, return 404 (or “Kit not found”) instead of mock data. |
-| 12.2 | **Loading & errors:** Skeleton or spinner on dashboard, kit editor, public kit; error messages for failed API calls. |
+| 12.2 | **Loading & errors:** Skeleton on dashboard, kit editor, public kit; inline errors for profile and kit load/save. **Done.** |
 | 12.3 | **Kit analytics (optional):** Store view events (e.g. `kit_id`, `viewed_at`, referrer); show “Views” or “Recent views” in dashboard. |
-| 12.4 | **Env & docs:** Ensure SETUP/README list all env vars (DB, auth, Stripe, Meta). Document how to run migrations and deploy. |
-| 12.5 | **Deploy:** Deploy to Vercel (or chosen host) with DB (e.g. Vercel Postgres), env set, Stripe webhook URL pointing to production. |
+| 12.4 | **Env & docs:** SETUP has full env table, migrations (§3), deploy to Vercel (§5). README links to SETUP. **Done.** |
+| 12.5 | **Deploy:** Documented in SETUP §5 (Vercel, Postgres, env, webhook). Run those steps to go live. |
 
 **Outcome:** App is shippable for web; you can iterate on analytics and design after launch.
 
