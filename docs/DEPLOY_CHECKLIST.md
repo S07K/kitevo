@@ -91,3 +91,11 @@ In **Settings → Environment Variables**, add these for **Production**:
 ---
 
 You’re live when steps 1–6 are done and the smoke test passes.
+
+---
+
+## If the deployment fails
+
+- **Failure after “Running TypeScript” or “Generating static pages”** — Usually the build is hitting the database without `DATABASE_URL` set. Fix: add a Postgres database and set `DATABASE_URL` in Vercel (step 2) **before** deploying (or before your first redeploy). The app is now resilient for demo kit slugs when the DB is missing, but `prisma migrate deploy` in the build still needs `DATABASE_URL`.
+- **Failure at “prisma migrate deploy”** — Set `DATABASE_URL` in Vercel to a valid Postgres URL and redeploy.
+- **Full error** — In Vercel, open the failed deployment → scroll to the **bottom** of the Build Logs to see the exact error line.
