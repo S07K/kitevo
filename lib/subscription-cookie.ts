@@ -47,5 +47,6 @@ export function getSubscriptionCustomerId(cookieHeader: string | null): string |
 }
 
 export function clearSubscriptionCookie(): string {
-  return `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  const base = `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  return process.env.NODE_ENV === "production" ? `${base}; Secure` : base;
 }

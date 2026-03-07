@@ -5,7 +5,7 @@ import { useState } from "react";
 
 type NavLink = { href: string; label: string; primary?: boolean; external?: boolean };
 
-export function AppNav({ links }: { links: NavLink[] }) {
+export function AppNav({ links, onLogout }: { links: NavLink[]; onLogout?: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -44,6 +44,15 @@ export function AppNav({ links }: { links: NavLink[] }) {
             </Link>
           );
         })}
+        {onLogout && (
+          <button
+            type="button"
+            onClick={onLogout}
+            className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-sm hover:bg-[#2D2D2D] transition-colors whitespace-nowrap"
+          >
+            Log out
+          </button>
+        )}
       </div>
 
       {/* Mobile: menu button */}
@@ -98,6 +107,18 @@ export function AppNav({ links }: { links: NavLink[] }) {
                 </Link>
               );
             })}
+            {onLogout && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onLogout();
+                }}
+                className="block w-full py-3 px-4 rounded-sm text-center text-sm font-medium bg-[#1A1A1A] text-white hover:bg-[#2D2D2D] transition-colors"
+              >
+                Log out
+              </button>
+            )}
           </div>
         </>
       )}

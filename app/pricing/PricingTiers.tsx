@@ -3,25 +3,26 @@
 import { useState } from "react";
 import type { SubscriptionTier } from "@/config/subscriptions";
 
-function SubscribeButton({ tier, email }: { tier: SubscriptionTier; email?: string }) {
+function SubscribeButton({ tier }: { tier: SubscriptionTier }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubscribe = async () => {
     setLoading(true);
     setError(null);
-    const userEmail = email || (typeof window !== "undefined" ? prompt("Enter your email to subscribe:") : null);
-    if (!userEmail) {
-      setLoading(false);
-      return;
-    }
     try {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userEmail, tierId: tier.id }),
+        body: JSON.stringify({ tierId: tier.id }),
+        credentials: "include",
       });
       const data = await res.json();
+      if (res.status === 401) {
+        const callbackUrl = encodeURIComponent("/pricing");
+        window.location.href = `/login?callbackUrl=${callbackUrl}`;
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Failed to create checkout");
       if (data.url) window.location.href = data.url;
     } catch (err) {
@@ -50,13 +51,7 @@ function SubscribeButton({ tier, email }: { tier: SubscriptionTier; email?: stri
   );
 }
 
-export function PricingTiers({
-  tiers,
-  email,
-}: {
-  tiers: SubscriptionTier[];
-  email?: string;
-}) {
+export function PricingTiers({ tiers }: { tiers: SubscriptionTier[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 max-w-3xl mx-auto">
       {tiers.map((tier) => (
@@ -88,7 +83,7 @@ export function PricingTiers({
             ))}
           </ul>
           <div className="mt-8">
-            <SubscribeButton tier={tier} email={email} />
+            <SubscribeButton tier={tier} />
           </div>
         </div>
       ))}

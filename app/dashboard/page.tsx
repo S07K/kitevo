@@ -12,139 +12,22 @@ import {
   type PlatformStatsWithCharts,
 } from "@/lib/platforms";
 import { AppNav } from "../components/AppNav";
+import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm";
 import { DashboardSkeleton } from "../components/Skeleton";
 import type { KitRecord } from "@/lib/kit-storage";
-import type { ProfilePayload, ProfileLink } from "@/app/api/me/profile/route";
-
-function ProfileForm({
-  profile,
-  onSave,
-  saving,
-}: {
-  profile: ProfilePayload & { email?: string; onboardingCompletedAt?: string | null };
-  onSave: (data: ProfilePayload) => Promise<void>;
-  saving: boolean;
-}) {
-  const [name, setName] = useState(profile.name ?? "");
-  const [username, setUsername] = useState(profile.username ?? "");
-  const [bio, setBio] = useState(profile.bio ?? "");
-  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? "");
-  const [links, setLinks] = useState<ProfileLink[]>(profile.links?.length ? [...profile.links] : [{ label: "", url: "" }]);
-
-  useEffect(() => {
-    setName(profile.name ?? "");
-    setUsername(profile.username ?? "");
-    setBio(profile.bio ?? "");
-    setAvatarUrl(profile.avatarUrl ?? "");
-    setLinks(profile.links?.length ? [...profile.links] : [{ label: "", url: "" }]);
-  }, [profile]);
-
-  const addLink = () => setLinks((prev) => [...prev, { label: "", url: "" }]);
-  const removeLink = (i: number) => setLinks((prev) => prev.filter((_, idx) => idx !== i));
-  const updateLink = (i: number, field: "label" | "url", value: string) =>
-    setLinks((prev) => prev.map((l, idx) => (idx === i ? { ...l, [field]: value } : l)));
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload: ProfilePayload = {
-      name: name.trim() || null,
-      username: username.trim().toLowerCase().replace(/\s+/g, "-") || null,
-      bio: bio.trim() || null,
-      avatarUrl: avatarUrl.trim() || null,
-      links: links.filter((l) => l.label.trim() || l.url.trim()).map((l) => ({ label: l.label.trim(), url: l.url.trim() })),
-    };
-    onSave(payload);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="mt-4 space-y-4 max-w-md">
-      <div>
-        <label className="block text-sm font-medium text-[#1A1A1A]">Display name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full px-3 py-2 border border-[#D4D4D4] rounded-sm text-[#1A1A1A]"
-          placeholder="Your name"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-[#1A1A1A]">Username (for /kit/username link)</label>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="mt-1 w-full px-3 py-2 border border-[#D4D4D4] rounded-sm text-[#1A1A1A]"
-          placeholder="username"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-[#1A1A1A]">Bio</label>
-        <textarea
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          rows={3}
-          className="mt-1 w-full px-3 py-2 border border-[#D4D4D4] rounded-sm text-[#1A1A1A]"
-          placeholder="Short bio"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-[#1A1A1A]">Avatar URL</label>
-        <input
-          type="url"
-          value={avatarUrl}
-          onChange={(e) => setAvatarUrl(e.target.value)}
-          className="mt-1 w-full px-3 py-2 border border-[#D4D4D4] rounded-sm text-[#1A1A1A]"
-          placeholder="https://..."
-        />
-      </div>
-      <div>
-        <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium text-[#1A1A1A]">Links</label>
-          <button type="button" onClick={addLink} className="text-sm text-[#5C5C5C] hover:underline">+ Add</button>
-        </div>
-        <div className="mt-2 space-y-2">
-          {links.map((l, i) => (
-            <div key={i} className="flex gap-2 items-center">
-              <input
-                type="text"
-                value={l.label}
-                onChange={(e) => updateLink(i, "label", e.target.value)}
-                placeholder="Label"
-                className="flex-1 px-3 py-2 border border-[#D4D4D4] rounded-sm text-sm"
-              />
-              <input
-                type="url"
-                value={l.url}
-                onChange={(e) => updateLink(i, "url", e.target.value)}
-                placeholder="URL"
-                className="flex-1 px-3 py-2 border border-[#D4D4D4] rounded-sm text-sm"
-              />
-              <button type="button" onClick={() => removeLink(i)} className="text-red-600 text-sm">×</button>
-            </div>
-          ))}
-        </div>
-      </div>
-      <button
-        type="submit"
-        disabled={saving}
-        className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-sm hover:bg-[#2D2D2D] disabled:opacity-70"
-      >
-        {saving ? "Saving…" : "Save profile"}
-      </button>
-    </form>
-  );
-}
+import type { ProfilePayload } from "@/app/api/me/profile/route";
 
 function DashboardContent() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [allowedKits, setAllowedKits] = useState(1);
   const [tierId, setTierId] = useState<string | null>(null);
   const [tierName, setTierName] = useState<string | null>(null);
   const [kits, setKits] = useState<KitRecord[]>([]);
-  const [profile, setProfile] = useState<(ProfilePayload & { email?: string; onboardingCompletedAt?: string | null }) | null>(null);
+  const [profile, setProfile] = useState<ProfileFormProfile | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
   const router = useRouter();
@@ -182,7 +65,7 @@ function DashboardContent() {
       setAllowedKits(typeof data.allowedKits === "number" ? data.allowedKits : 1);
       setTierId(data.tierId ?? null);
       setTierName(data.tierName ?? null);
-      setLoading(false);
+      setSubscriptionLoaded(true);
     }
     check();
     return () => {
@@ -203,18 +86,35 @@ function DashboardContent() {
     let cancelled = false;
     fetch("/api/me/profile", { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (!cancelled) setProfile(data); })
-      .catch(() => { if (!cancelled) setProfile(null); });
+      .then((data) => {
+        if (!cancelled) {
+          setProfile(data);
+          setProfileLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProfile(null);
+          setProfileLoaded(true);
+        }
+      });
     return () => { cancelled = true; };
   }, []);
 
-  // Redirect to onboarding if user has not completed it
+  // Redirect to onboarding if user has not completed it (before showing dashboard)
   useEffect(() => {
-    if (profile === null) return;
+    if (!profileLoaded || profile === null) return;
     if (profile.onboardingCompletedAt == null || profile.onboardingCompletedAt === "") {
       router.replace("/onboarding");
     }
-  }, [profile, router]);
+  }, [profileLoaded, profile, router]);
+
+  // Once subscription is loaded and we're not redirecting, allow dashboard to show
+  useEffect(() => {
+    if (!subscriptionLoaded || !profileLoaded) return;
+    if (profile !== null && (profile.onboardingCompletedAt == null || profile.onboardingCompletedAt === "")) return;
+    setLoading(false);
+  }, [subscriptionLoaded, profileLoaded, profile]);
 
   // Load platform stats from API (Instagram; uses token or mock) when subscribed
   useEffect(() => {
@@ -331,18 +231,13 @@ function DashboardContent() {
           { href: "/pricing", label: "Pricing" },
           { href: kits[0] ? `/kit/${kits[0].slug}` : "/kit/demo", label: "View Kit", external: true },
         ]}
+        onLogout={async () => {
+          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
+          signOut({ callbackUrl: "/" });
+        }}
       />
 
       <main className="pt-[calc(7rem+env(safe-area-inset-top))] px-6 pb-24 max-w-4xl mx-auto">
-        <div className="flex items-center justify-end gap-4 mb-4">
-          <button
-            type="button"
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="text-sm text-[#5C5C5C] hover:text-[#1A1A1A]"
-          >
-            Log out
-          </button>
-        </div>
         {success && (
           <div className="mb-8 p-4 rounded-sm bg-green-50 border border-green-200 text-green-800 text-sm">
             Payment successful! Your media kit is now live.

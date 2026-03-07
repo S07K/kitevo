@@ -8,10 +8,21 @@ const META_APP_ID = process.env.META_APP_ID;
 const META_APP_SECRET = process.env.META_APP_SECRET;
 const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
 const COOKIE_NAME = "instagram_connect_state";
+const RETURN_COOKIE_NAME = "instagram_connect_return";
 const GRAPH = "https://graph.facebook.com/v18.0";
 
 function clearStateCookie() {
   return `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+}
+
+function clearReturnCookie() {
+  return `${RETURN_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+}
+
+function getReturnPath(cookieHeader: string): string {
+  const match = cookieHeader.match(new RegExp(`${RETURN_COOKIE_NAME}=([^;]+)`));
+  const value = match ? decodeURIComponent(match[1].trim()) : "";
+  return value === "onboarding" ? "/onboarding" : "/dashboard";
 }
 
 function verifyState(cookieValue: string | null, queryState: string | null): boolean {
@@ -41,22 +52,24 @@ export async function GET(req: Request) {
   const cookieHeader = req.headers.get("cookie") || "";
   const match = cookieHeader.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
   const stateCookie = match ? decodeURIComponent(match[1].trim()) : null;
+  const returnPath = getReturnPath(cookieHeader);
 
-  const res = NextResponse.redirect(new URL("/dashboard", BASE_URL));
+  const res = NextResponse.redirect(new URL(returnPath, BASE_URL));
   res.headers.set("Set-Cookie", clearStateCookie());
+  res.headers.append("Set-Cookie", clearReturnCookie());
 
   if (error) {
-    res.headers.set("Location", `${BASE_URL}/dashboard?instagram_error=${encodeURIComponent(error)}`);
+    res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_error=${encodeURIComponent(error)}`);
     return res;
   }
 
   if (!session?.user?.id || !code || !verifyState(stateCookie, state)) {
-    res.headers.set("Location", `${BASE_URL}/dashboard?instagram_error=invalid`);
+    res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_error=invalid`);
     return res;
   }
 
   if (!META_APP_ID || !META_APP_SECRET) {
-    res.headers.set("Location", `${BASE_URL}/dashboard?instagram_error=not_configured`);
+    res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_error=not_configured`);
     return res;
   }
 
@@ -69,7 +82,7 @@ export async function GET(req: Request) {
     const tokenData = (await tokenRes.json()) as { access_token?: string; error?: { message: string } };
     if (!tokenData.access_token) {
       const msg = tokenData.error?.message || "token_exchange_failed";
-      res.headers.set("Location", `${BASE_URL}/dashboard?instagram_error=${encodeURIComponent(msg)}`);
+      res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_error=${encodeURIComponent(msg)}`);
       return res;
     }
 
@@ -94,16 +107,16 @@ export async function GET(req: Request) {
       const code = accountsData.error.code;
       // 190 = token issue; 10 = permission; 4 = rate limit; 17 = permission
       if (code === 190 || code === 10 || code === 17) {
-        res.headers.set("Location", `${BASE_URL}/dashboard?instagram_error=permission_denied`);
+        res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_error=permission_denied`);
       } else {
-        res.headers.set("Location", `${BASE_URL}/dashboard?instagram_error=no_pages`);
+        res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_error=no_pages`);
       }
       return res;
     }
 
     const pages = accountsData.data ?? [];
     if (pages.length === 0) {
-      res.headers.set("Location", `${BASE_URL}/dashboard?instagram_error=no_pages`);
+      res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_error=no_pages`);
       return res;
     }
 
@@ -111,7 +124,7 @@ export async function GET(req: Request) {
     const igUserId = pageWithIg?.instagram_business_account?.id;
 
     if (!igUserId) {
-      res.headers.set("Location", `${BASE_URL}/dashboard?instagram_error=no_instagram_account`);
+      res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_error=no_instagram_account`);
       return res;
     }
 
@@ -121,10 +134,10 @@ export async function GET(req: Request) {
       data: { instagramUserId: igUserId, instagramAccessToken: accessToken },
     });
 
-    res.headers.set("Location", `${BASE_URL}/dashboard?instagram_connected=1`);
+    res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_connected=1`);
   } catch (e) {
     console.error("Instagram callback error:", e);
-    res.headers.set("Location", `${BASE_URL}/dashboard?instagram_error=server`);
+    res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_error=server`);
   }
 
   return res;

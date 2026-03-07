@@ -89,13 +89,13 @@ export async function POST(req: Request) {
       return res;
     }
 
-    // Logged-in user: use stripeCustomerId from DB first
+    // Logged-in user: use only this user's stripeCustomerId from DB (do not use cookie — cookie may be from another account)
     if (authSession?.user?.id) {
       const user = await prisma.user.findUnique({
         where: { id: authSession.user.id },
         select: { stripeCustomerId: true },
       });
-      const customerId = user?.stripeCustomerId ?? getSubscriptionCustomerId(cookieHeader);
+      const customerId = user?.stripeCustomerId ?? null;
       if (customerId) {
         const payload = await getSubscriptionPayload(customerId);
         const res = NextResponse.json(payload);
@@ -106,7 +106,9 @@ export async function POST(req: Request) {
         }
         return res;
       }
-      return NextResponse.json({ hasSubscription: false });
+      const res = NextResponse.json({ hasSubscription: false });
+      res.headers.set("Set-Cookie", clearSubscriptionCookie());
+      return res;
     }
 
     // No session: fall back to cookie (legacy / pre-auth)
