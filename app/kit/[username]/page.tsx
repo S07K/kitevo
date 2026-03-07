@@ -30,7 +30,13 @@ export default async function MediaKitPage({ params }: { params: Promise<{ usern
   const { username } = await params;
   const slug = username ?? "demo";
 
-  const result = await getKitBySlug(slug);
+  let result: Awaited<ReturnType<typeof getKitBySlug>> = null;
+  try {
+    result = await getKitBySlug(slug);
+  } catch (e) {
+    // Build or runtime without DB (e.g. DATABASE_URL not set): use mock for demo slugs
+    if (!DEMO_SLUGS.includes(slug)) throw e;
+  }
 
   if (result) {
     const [instagramStats, enabledPlatformIds] = await Promise.all([
