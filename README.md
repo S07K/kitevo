@@ -43,10 +43,14 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 
 ```bash
 npm install
+cp .env.example .env.local   # then fill in values
+npx prisma generate && npx prisma migrate deploy
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+**Full setup:** See **[docs/SETUP.md](docs/SETUP.md)** for all env vars, migrations, and **deploy to Vercel**.
 
 ## Build (Web)
 

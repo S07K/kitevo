@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { Providers } from "./components/Providers";
 
@@ -41,6 +42,7 @@ export default function RootLayout({
         className={`${cormorant.variable} ${dmSans.variable} font-sans antialiased pt-[env(safe-area-inset-top)] bg-[#FAF9F7] text-[#1A1A1A]`}
       >
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
