@@ -1,12 +1,12 @@
 // Prisma schema — Phase 6 (auth) and beyond (profile, kits, subscription)
-// Use SQLite for dev; switch to postgres for production if needed.
+// PostgreSQL (Neon, Vercel Postgres, or local Postgres). For local dev use a Postgres URL or Neon branch.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

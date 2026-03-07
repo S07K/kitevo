@@ -10,20 +10,21 @@ export function SubscribeButton({ email }: { email?: string }) {
     setLoading(true);
     setError(null);
 
-    const userEmail = email || prompt("Enter your email to subscribe:");
-    if (!userEmail) {
-      setLoading(false);
-      return;
-    }
-
     try {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userEmail }),
+        body: JSON.stringify({ tierId: "starter" }),
+        credentials: "include",
       });
 
       const data = await res.json();
+
+      if (res.status === 401) {
+        const callbackUrl = encodeURIComponent(typeof window !== "undefined" ? window.location.pathname || "/pricing" : "/pricing");
+        window.location.href = `/login?callbackUrl=${callbackUrl}`;
+        return;
+      }
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to create checkout session");

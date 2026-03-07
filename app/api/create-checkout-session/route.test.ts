@@ -62,7 +62,7 @@ describe("POST /api/create-checkout-session", () => {
     const res = await POST(
       new Request("http://x", {
         method: "POST",
-        body: JSON.stringify({ tierId: "starter", email: "user@example.com" }),
+        body: JSON.stringify({ tierId: "starter" }),
       })
     );
     expect(res.status).toBe(200);
@@ -70,14 +70,15 @@ describe("POST /api/create-checkout-session", () => {
     expect(json.url).toBe("https://checkout.stripe.com/fake");
   });
 
-  it("allows checkout when not logged in", async () => {
+  it("returns 401 when not logged in", async () => {
     const res = await POST(
       new Request("http://x", {
         method: "POST",
-        body: JSON.stringify({ email: "guest@example.com", tierId: "pro" }),
+        body: JSON.stringify({ tierId: "pro" }),
       })
     );
-    expect(res.status).toBe(200);
-    expect(await res.json()).toHaveProperty("url");
+    expect(res.status).toBe(401);
+    const json = await res.json();
+    expect(json.error).toBe("Sign in to subscribe");
   });
 });

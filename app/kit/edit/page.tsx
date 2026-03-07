@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { signOut } from "next-auth/react";
 import { AppNav } from "@/app/components/AppNav";
 import { KitEditor } from "@/app/dashboard/KitEditor";
 import { MOCK_CREATOR } from "@/lib/mock-data";
@@ -35,6 +36,10 @@ export default function KitEditPage() {
           { href: "/pricing", label: "Pricing" },
           { href: `/kit/${MOCK_CREATOR.username}`, label: "View Kit", external: true },
         ]}
+        onLogout={async () => {
+          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
+          signOut({ callbackUrl: "/" });
+        }}
       />
 
       <main className="pt-[calc(7rem+env(safe-area-inset-top))] px-6 pb-24 max-w-4xl mx-auto">
