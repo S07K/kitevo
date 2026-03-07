@@ -38,7 +38,7 @@ cp .env.example .env.local
 | `STRIPE_PRICE_ID_PRO` | Stripe Price ID for Pro ($15/mo, 3 kits) | Checkout — Pro, upgrade |
 | `SUBSCRIPTION_COOKIE_SECRET` | Random 32+ char string to sign cookies | Subscription session |
 | `NEXT_PUBLIC_APP_URL` | App origin (e.g. `http://localhost:3000`) | Redirect URLs |
-| `DATABASE_URL` | Prisma DB URL (e.g. `file:./dev.db` for SQLite) | Auth, Phase 7–8 |
+| `DATABASE_URL` | PostgreSQL URL (e.g. Neon, Vercel Postgres; `postgresql://...`) | Auth, Phase 7–8 |
 | `NEXTAUTH_SECRET` | Random 32+ char string for JWT signing | Auth |
 | `NEXTAUTH_URL` | Same as `NEXT_PUBLIC_APP_URL` | Auth callbacks |
 | `META_APP_ID` | Facebook App ID (for Connect Instagram) | Instagram OAuth |
@@ -74,7 +74,7 @@ npx prisma generate
 npx prisma migrate deploy
 ```
 
-For a **new** SQLite DB, the first migration creates tables. For production, use a Postgres `DATABASE_URL` (e.g. Vercel Postgres, Neon) and run the same commands in your deploy step or CI.
+For a **new** Postgres DB, the first migration creates tables. Use the same `DATABASE_URL` format locally (e.g. Neon branch or local Postgres) and in production (Vercel env).
 
 ---
 
@@ -97,7 +97,7 @@ Open [http://localhost:3000](http://localhost:3000). Key routes:
 
 1. **Connect repo** — [vercel.com](https://vercel.com) → New Project → Import your Git repo (e.g. GitHub). Framework: Next.js (auto-detected).
 
-2. **Database** — SQLite (`file:./dev.db`) is for local only. For production:
+2. **Database** — The app uses PostgreSQL. For production:
    - **Vercel Postgres** or **Neon** (or any Postgres). Create a database and copy the connection string.
    - In Vercel → Project → Settings → Environment Variables, add `DATABASE_URL` with the Postgres URL (e.g. `postgresql://...`).
 

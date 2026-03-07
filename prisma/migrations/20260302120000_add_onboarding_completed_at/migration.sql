@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "User" ADD COLUMN "onboardingCompletedAt" DATETIME;
+ALTER TABLE "User" ADD COLUMN "onboardingCompletedAt" TIMESTAMP(3);
