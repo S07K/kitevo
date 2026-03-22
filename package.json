@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build",
+    "build:vercel": "node scripts/vercel-build.cjs",
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",

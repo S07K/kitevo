@@ -57,7 +57,7 @@ In **Settings → Environment Variables**, add these for **Production**:
 ## 4. Redeploy (run migrations)
 
 - [ ] **Redeploy** the project (Deployments → ⋮ → Redeploy, or push a commit).
-- [ ] The build runs `prisma generate` and `prisma migrate deploy`, so tables are created on first deploy.
+- [ ] The build runs `npm run build:vercel` (`prisma generate`, then `migrate deploy` **only if** `DATABASE_URL` is set, then `next build`). Production must have `DATABASE_URL` so migrations apply.
 - [ ] Check the build log for success; open your app URL and confirm the site loads.
 
 ---
@@ -96,6 +96,7 @@ You’re live when steps 1–6 are done and the smoke test passes.
 
 ## If the deployment fails
 
-- **Failure after “Running TypeScript” or “Generating static pages”** — Usually the build is hitting the database without `DATABASE_URL` set. Fix: add a Postgres database and set `DATABASE_URL` in Vercel (step 2) **before** deploying (or before your first redeploy). The app is now resilient for demo kit slugs when the DB is missing, but `prisma migrate deploy` in the build still needs `DATABASE_URL`.
-- **Failure at “prisma migrate deploy”** — Set `DATABASE_URL` in Vercel to a valid Postgres URL and redeploy.
+- **Preview build failed at `prisma migrate deploy`** — **Preview** often has no `DATABASE_URL` (only Production does). The project’s `npm run build:vercel` **skips** `migrate deploy` when `DATABASE_URL` is unset, so Preview can still build. If you want Preview to use a real DB (recommended for full QA), add `DATABASE_URL` for the **Preview** environment in Vercel (e.g. a Neon *branch* URL) — then migrations run on each preview deploy too.
+- **Production build failed at `prisma migrate deploy`** — Set `DATABASE_URL` in Vercel for **Production** to a valid Postgres URL and redeploy. Open the build log for the exact Prisma error (drift, failed migration SQL, etc.).
+- **Failure after “Running TypeScript” or “Generating static pages”** — Often `next build` is calling the DB (e.g. static generation). Ensure `DATABASE_URL` exists for that environment or adjust pages to not require DB at build time.
 - **Full error** — In Vercel, open the failed deployment → scroll to the **bottom** of the Build Logs to see the exact error line.

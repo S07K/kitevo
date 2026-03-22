@@ -134,9 +134,8 @@ Open [http://localhost:3000](http://localhost:3000). Key routes:
    - **Vercel Postgres** or **Neon** (or any Postgres). Create a database and copy the connection string.
    - In Vercel → Project → Settings → Environment Variables, add `DATABASE_URL` with the Postgres URL (e.g. `postgresql://...`).
 
-3. **Run migrations** — After first deploy, run migrations against the production DB:
-   - Either in Vercel Build Command add `prisma generate && prisma migrate deploy` before `next build`, or
-   - Run locally once: `DATABASE_URL="your-production-postgres-url" npx prisma migrate deploy`
+3. **Run migrations** — `vercel.json` runs `npm run build:vercel`, which runs `prisma migrate deploy` **when `DATABASE_URL` is set** (always true for Production if you added it in step 2). Preview builds without `DATABASE_URL` skip migrate so the build can succeed.
+   - If you ever need to apply migrations manually: `DATABASE_URL="your-production-postgres-url" npx prisma migrate deploy`
 
 4. **Environment variables** — In Vercel → Settings → Environment Variables, set all required vars (see table in §2):
    - `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL` (use your production URL, e.g. `https://yourapp.vercel.app`)
