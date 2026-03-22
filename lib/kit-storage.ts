@@ -46,6 +46,8 @@ export interface KitRecord {
   rates: KitRates;
   brands: BrandPartner[];
   sectionVisibility: SectionVisibility;
+  /** View count from analytics (when loaded from API). */
+  viewCount?: number;
 }
 
 function isBrowser(): boolean {

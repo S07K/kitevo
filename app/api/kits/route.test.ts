@@ -20,6 +20,10 @@ vi.mock("@/lib/subscription-for-request", () => ({
   getAllowedKitsForUser: vi.fn(),
 }));
 
+vi.mock("@/lib/kit-views", () => ({
+  getViewCountsForKits: vi.fn((ids: string[]) => Promise.resolve(Object.fromEntries(ids.map((id: string) => [id, 0])))),
+}));
+
 const { getServerSession } = await import("next-auth");
 const { prisma } = await import("@/lib/prisma");
 const { getAllowedKitsForUser } = await import("@/lib/subscription-for-request");
@@ -74,6 +78,7 @@ describe("GET /api/kits", () => {
     expect(json[0].id).toBe("kit-1");
     expect(json[0].slug).toBe("my-kit");
     expect(json[0].name).toBe("My Kit");
+    expect(json[0].viewCount).toBe(0);
   });
 });
 
@@ -157,6 +162,7 @@ describe("POST /api/kits", () => {
       rates: "{}",
       brands: "[]",
       sectionVisibility: "{}",
+      appearance: "{}",
     } as never);
 
     const res = await POST(

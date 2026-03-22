@@ -46,6 +46,16 @@ cp .env.example .env.local
 
 **Instagram (Meta):** To enable “Connect Instagram” you need a [Facebook App](https://developers.facebook.com/apps/) with Instagram Graph API. Add the product “Instagram” and use Facebook Login. In Facebook Login settings, add **Valid OAuth Redirect URIs**: `https://your-domain.com/api/instagram/callback` (and for local: `http://localhost:3000/api/instagram/callback`). The app uses scopes `business_management`, `instagram_basic`, `pages_show_list`, `instagram_manage_insights` (business_management is required for /me/accounts to return Pages). The user’s Instagram must be a Business or Creator account linked to a Facebook Page.
 
+**Audience age chart:** The media kit loads age breakdown from Instagram insights (`follower_demographics`, then `engaged_audience_demographics`). Meta only returns this when the account meets their thresholds (typically **100+ followers** for follower demographics; engaged demographics needs enough engagements). If the API returns empty data, the demographics section shows an explanatory message—not mock numbers.
+
+**Profile photo:** Upload a JPEG/PNG/WebP in **Dashboard → Profile** (stored as a compressed data URL, ~320px max, under ~200KB string size), or use **Use Instagram** after connecting. Optional advanced field: paste an image URL. If Prisma returns **P1017** (“Server has closed the connection”) on upload, the payload was too large or the DB pooler timed out — retry with a smaller image; for production at scale, prefer storing avatars in object storage (S3/Blob) and saving only the URL in `User.avatarUrl`.
+
+**Kit look & feel:** Each kit has an `appearance` preset (warm / cool / paper / noir) saved in the database. Run migrations after pulling so the `Kit.appearance` column exists; then edit the kit in **Kit editor → Look & feel**.
+
+**Kit analytics (`KitView`):** View tracking needs the `KitView` table from migration `20260308120000_add_instagram_expires_and_kit_views`. If logs say the table is missing, run `npx prisma migrate deploy` on the same database as `DATABASE_URL`.
+
+**Dev: `__webpack_modules__[moduleId] is not a function`:** Usually a stale Next cache. Stop the dev server, run `rm -rf .next`, then `npm run dev` again. After `npx prisma generate`, restart dev or rely on the auto-refresh in `lib/prisma.ts`.
+
 **Subscription tiers:** The number of kits a creator can create is determined by their Stripe subscription price. If `SUBSCRIPTION_TIER_KITS` is set, that map is used; otherwise the default price (`STRIPE_PRICE_ID`) gets `SUBSCRIPTION_KITS_DEFAULT` (default 1). Example for a “Pro” plan with 3 kits: add a second Price in Stripe and set `SUBSCRIPTION_TIER_KITS={"price_abc":1,"price_pro123":3}`.
 
 **Stripe:** Create a Product with two recurring Prices ($9/mo and $15/mo) in the Dashboard and set the IDs in env. For local webhooks, run:
@@ -65,7 +75,28 @@ Use the printed `whsec_...` as `STRIPE_WEBHOOK_SECRET`.
 
 ---
 
-## 3. Database migrations
+## 3. Database: local vs production
+
+**You do not have to use the production database on your machine.** In fact it’s safer not to:
+
+| Where you work | `DATABASE_URL` should point to |
+|----------------|--------------------------------|
+| **Local `npm run dev`** | A **dev** database: Neon *development branch*, a second Neon project, or Postgres in Docker / localhost. |
+| **Vercel / production** | The production Postgres URL (set only in the host’s env vars). |
+
+**Why your schema errors happened:** Prisma Client is generated from `schema.prisma` (it expects columns like `instagramTokenExpiresAt`). If `DATABASE_URL` points at a DB where migrations were never applied (or a *different* Neon endpoint than the one you migrated), Postgres won’t have those columns and the app crashes.
+
+**Workflow that avoids this:**
+
+1. Put **local** `DATABASE_URL` in **`.env.local`** (it overrides `.env`). Keep `.env` for non-secret defaults or leave production URLs out of the repo entirely.
+2. On your dev DB: `npx prisma migrate dev` (creates/applies migrations while you change the schema).
+3. When you deploy: run **`npx prisma migrate deploy`** against production (Vercel build step, or one-off with production `DATABASE_URL`). That applies the same migration files to prod so columns exist there too.
+
+If production is still missing columns after a code deploy, production never got `migrate deploy` on **that** database — fix by running deploy against the exact URL Vercel uses, or run the SQL from `prisma/migrations/.../migration.sql` in the Neon SQL editor for that project.
+
+---
+
+## 4. Database migrations
 
 After cloning or before first run (and after any schema change):
 
@@ -74,11 +105,13 @@ npx prisma generate
 npx prisma migrate deploy
 ```
 
-For a **new** Postgres DB, the first migration creates tables. Use the same `DATABASE_URL` format locally (e.g. Neon branch or local Postgres) and in production (Vercel env).
+Use **`migrate dev`** against your **local/dev** database while iterating. Use **`migrate deploy`** against **production** in CI or release (idempotent, no prompts).
+
+For a **new** Postgres DB, the first migration creates tables. Use the same migration *files* everywhere; use **different** `DATABASE_URL` values for dev vs prod.
 
 ---
 
-## 4. Run the app
+## 5. Run the app
 
 ```bash
 npm run dev
@@ -93,7 +126,7 @@ Open [http://localhost:3000](http://localhost:3000). Key routes:
 
 ---
 
-## 5. Deploy to Vercel (production)
+## 6. Deploy to Vercel (production)
 
 1. **Connect repo** — [vercel.com](https://vercel.com) → New Project → Import your Git repo (e.g. GitHub). Framework: Next.js (auto-detected).
 
@@ -119,7 +152,7 @@ Open [http://localhost:3000](http://localhost:3000). Key routes:
 
 ---
 
-## 6. Production build (local or other hosts)
+## 7. Production build (local or other hosts)
 
 The app is configured for **web deployment only** (no `output: "export"`), so API routes (Stripe, subscription status, etc.) run in production. Deploy to Vercel, Railway, or any Node host:
 
@@ -154,7 +187,7 @@ The app includes **Vercel Analytics** (`@vercel/analytics`). When deployed on **
 
 ---
 
-## 7. Project structure (where to look)
+## 8. Project structure (where to look)
 
 ```
 me-talk/
@@ -188,7 +221,7 @@ me-talk/
 
 ---
 
-## 8. Social platforms (Instagram only; add TikTok/YouTube later)
+## 9. Social platforms (Instagram only; add TikTok/YouTube later)
 
 Stats and charts are driven by **`lib/platforms`**. Only **Instagram** is enabled right now; the code is structured so TikTok and YouTube can be added without changing the rest of the app.
 
@@ -214,7 +247,7 @@ No changes are needed in the dashboard or media kit page; they already iterate o
 
 ---
 
-## 9. Stripe flow (reference)
+## 10. Stripe flow (reference)
 
 - **Subscribe:** User hits Pricing or Dashboard → `POST /api/create-checkout-session` → redirect to Stripe Checkout → success redirect to `/dashboard?success=true&session_id=cs_xxx`.
 - **Session → cookie:** Dashboard calls `POST /api/subscription-status` with `session_id` → backend sets signed httpOnly cookie (customer id) and returns `hasSubscription: true`.
@@ -223,7 +256,7 @@ No changes are needed in the dashboard or media kit page; they already iterate o
 
 ---
 
-## 10. Comments in code
+## 11. Comments in code
 
 - **`lib/platforms/`** — File-level comments explain types, adapters, and how to add a new platform.
 - **`app/api/`** — Routes are short; Stripe usage is standard (checkout, portal, webhook).

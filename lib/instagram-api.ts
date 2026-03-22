@@ -1,26 +1,160 @@
 /**
  * Server-side Instagram data for a user.
  * Uses stored token when present (Meta Graph API); otherwise returns mock data.
- * Used by GET /api/instagram/stats, GET /api/instagram/recent-posts, and public kit page.
+ * Handles token refresh when near expiry and clears token on 190 (expired/invalid).
  */
 
 import { prisma } from "@/lib/prisma";
 import { getInstagramStats } from "@/lib/platforms/instagram";
-import type { PlatformStatsWithCharts } from "@/lib/platforms/types";
+import type { AudienceBucket, PlatformStatsWithCharts } from "@/lib/platforms/types";
 import type { FetchedPost } from "@/lib/platforms/instagram";
+import {
+  insightPayloadToAudienceBuckets,
+  type InsightDemographicsPayload,
+} from "@/lib/instagram-demographics";
 
 const GRAPH = "https://graph.facebook.com/v18.0";
+/** Demographic insights — use a recent Graph version; param name is often `breakdown` (singular), not `breakdowns`. */
+const GRAPH_INSIGHTS_DEMOGRAPHICS = "https://graph.facebook.com/v22.0";
+const META_APP_ID = process.env.META_APP_ID;
+const META_APP_SECRET = process.env.META_APP_SECRET;
 
-async function metaGet<T>(path: string, accessToken: string): Promise<T> {
-  const url = path.includes("?") ? `${GRAPH}${path}&access_token=${encodeURIComponent(accessToken)}` : `${GRAPH}${path}?access_token=${encodeURIComponent(accessToken)}`;
+/** Thrown when Meta returns an error; code 190 = token expired/invalid. */
+export class MetaApiError extends Error {
+  code?: number;
+  constructor(message: string, code?: number) {
+    super(message);
+    this.name = "MetaApiError";
+    this.code = code;
+  }
+}
+
+async function metaGet<T>(
+  path: string,
+  accessToken: string,
+  options?: { baseUrl?: string }
+): Promise<T> {
+  const base = options?.baseUrl ?? GRAPH;
+  const url = path.includes("?")
+    ? `${base}${path}&access_token=${encodeURIComponent(accessToken)}`
+    : `${base}${path}?access_token=${encodeURIComponent(accessToken)}`;
   const res = await fetch(url);
   const data = (await res.json()) as T & { error?: { message: string; code?: number } };
-  if (data.error) throw new Error(data.error.message || "Meta API error");
+  if (data.error) throw new MetaApiError(data.error.message || "Meta API error", data.error.code);
   return data;
 }
 
-/** Fetch Instagram stats for a user. Uses token from DB if set; else mock. */
+/**
+ * Follower / engaged audience age breakdown (requires instagram_manage_insights + professional account).
+ * Tries follower_demographics first, then engaged_audience_demographics; multiple timeframes and query shapes for API compatibility.
+ */
+async function fetchInstagramAudienceDemographics(
+  igUserId: string,
+  accessToken: string
+): Promise<AudienceBucket[] | undefined> {
+  const metrics = ["follower_demographics", "engaged_audience_demographics"] as const;
+  const timeframes = ["last_90_days", "this_month"] as const;
+
+  // Meta returns (#100) "A breakdown parameter must be inputted..." if `breakdown` / `breakdowns` is missing or wrong.
+  // IG User insights expect `breakdown=age` (singular) for demographic metrics in many Graph versions.
+  const breakdownParams = [
+    "breakdown=age",
+    "breakdowns=age",
+    "breakdown=age,gender",
+    "breakdowns=age,gender",
+  ];
+
+  for (const metric of metrics) {
+    for (const timeframe of timeframes) {
+      const queryPaths = breakdownParams.map(
+        (bd) =>
+          `/${igUserId}/insights?metric=${metric}&period=lifetime&timeframe=${timeframe}&metric_type=total_value&${bd}`
+      );
+      for (const path of queryPaths) {
+        try {
+          const res = await metaGet<InsightDemographicsPayload>(path, accessToken, {
+            baseUrl: GRAPH_INSIGHTS_DEMOGRAPHICS,
+          });
+          const buckets = insightPayloadToAudienceBuckets(res);
+          if (buckets?.length) return buckets;
+        } catch (e) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              `[instagram demographics] skip ${metric} ${timeframe}:`,
+              e instanceof Error ? e.message : e
+            );
+          }
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/** Refresh long-lived token if it expires within 14 days. New token gets a new 60-day window. */
+async function refreshInstagramTokenIfNeeded(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { instagramAccessToken: true, instagramTokenExpiresAt: true },
+  });
+  if (!user?.instagramAccessToken || !META_APP_ID || !META_APP_SECRET) return;
+  const expiresAt = user.instagramTokenExpiresAt;
+  const daysLeft = expiresAt ? (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24) : 0;
+  if (daysLeft > 14) return;
+
+  try {
+    const url = `${GRAPH}/oauth/access_token?grant_type=fb_exchange_token&client_id=${META_APP_ID}&client_secret=${META_APP_SECRET}&fb_exchange_token=${encodeURIComponent(user.instagramAccessToken)}`;
+    const res = await fetch(url);
+    const data = (await res.json()) as { access_token?: string; expires_in?: number; error?: { code?: number } };
+    if (data.error?.code === 190 || !data.access_token) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { instagramAccessToken: null, instagramTokenExpiresAt: null },
+      });
+      return;
+    }
+    const tokenExpiresAt =
+      typeof data.expires_in === "number" && data.expires_in > 0
+        ? new Date(Date.now() + data.expires_in * 1000)
+        : null;
+    await prisma.user.update({
+      where: { id: userId },
+      data: { instagramAccessToken: data.access_token, instagramTokenExpiresAt: tokenExpiresAt },
+    });
+  } catch {
+    // On any error leave token as-is; next API call may get 190 and we'll clear then
+  }
+}
+
+async function clearUserInstagramToken(userId: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { instagramAccessToken: null, instagramTokenExpiresAt: null },
+  });
+}
+
+/** Profile image URL from Instagram Graph (requires valid token + instagramUserId). */
+export async function getInstagramProfilePictureForUser(userId: string): Promise<string | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { instagramUserId: true, instagramAccessToken: true },
+  });
+  if (!user?.instagramUserId || !user?.instagramAccessToken) return null;
+  try {
+    const data = await metaGet<{ profile_picture_url?: string }>(
+      `/${user.instagramUserId}?fields=profile_picture_url`,
+      user.instagramAccessToken
+    );
+    return typeof data.profile_picture_url === "string" ? data.profile_picture_url : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch Instagram stats for a user. Uses token from DB if set; else mock. Refreshes token when near expiry; on 190 falls back to mock. */
 export async function getStatsForUser(userId: string): Promise<PlatformStatsWithCharts> {
+  await refreshInstagramTokenIfNeeded(userId);
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { instagramUserId: true, instagramAccessToken: true },
@@ -93,23 +227,39 @@ export async function getStatsForUser(userId: string): Promise<PlatformStatsWith
         // Media insights not available or rate limited; keep 0
       }
 
+      let audienceDemographics: AudienceBucket[] | undefined;
+      try {
+        audienceDemographics = await fetchInstagramAudienceDemographics(
+          user.instagramUserId,
+          user.instagramAccessToken
+        );
+      } catch {
+        // Demographics require 100+ followers / engagements for many accounts; ignore
+      }
+
       return {
         followers,
         avgEngagement,
         growthThisMonth,
         extra: { posts: mediaCount },
         growthDataPoints: growthDataPoints.length ? growthDataPoints : undefined,
+        audienceDemographics,
       };
     } catch (e) {
-      console.error("Meta Instagram stats error:", e);
+      if (e instanceof MetaApiError && e.code === 190) {
+        await clearUserInstagramToken(userId);
+      } else {
+        console.error("Meta Instagram stats error:", e);
+      }
       return getInstagramStats();
     }
   }
   return getInstagramStats();
 }
 
-/** Fetch recent Instagram posts for a user. Uses token from DB if set; else mock. */
+/** Fetch recent Instagram posts for a user. Uses token from DB if set; else mock. Refreshes token when near expiry; on 190 falls back to mock. */
 export async function getRecentPostsForUser(userId: string): Promise<FetchedPost[]> {
+  await refreshInstagramTokenIfNeeded(userId);
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { instagramUserId: true, instagramAccessToken: true },
@@ -130,7 +280,11 @@ export async function getRecentPostsForUser(userId: string): Promise<FetchedPost
         mediaType: (m.media_type === "IMAGE" || m.media_type === "VIDEO" || m.media_type === "CAROUSEL_ALBUM" ? m.media_type : undefined) as FetchedPost["mediaType"],
       }));
     } catch (e) {
-      console.error("Meta Instagram media error:", e);
+      if (e instanceof MetaApiError && e.code === 190) {
+        await clearUserInstagramToken(userId);
+      } else {
+        console.error("Meta Instagram media error:", e);
+      }
       const { getInstagramRecentPosts } = await import("@/lib/platforms/instagram");
       return getInstagramRecentPosts();
     }

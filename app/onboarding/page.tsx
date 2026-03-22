@@ -118,11 +118,11 @@ function OnboardingContent() {
   useEffect(() => {
     if (currentStep !== 2 && currentStep !== 3) return;
     Promise.all([
-      fetch("/api/kits", { credentials: "include" }).then((r) => (r.ok ? r.json() : [])),
+      fetch("/api/kits", { credentials: "include" }).then(async (r) => (r.ok ? r.json() : null)),
       fetch("/api/subscription-status", { method: "POST", credentials: "include" }).then((r) => (r.ok ? r.json() : {})),
     ]).then(([list, sub]) => {
       const status = sub as { allowedKits?: number; tierName?: string } | undefined;
-      setKits(Array.isArray(list) ? list : []);
+      if (Array.isArray(list)) setKits(list);
       setAllowedKits(status?.allowedKits ?? 1);
       setHasSubscription((status?.allowedKits ?? 0) > 0);
       setTierName(status?.tierName ?? null);
@@ -208,6 +208,9 @@ function OnboardingContent() {
               ) : (
                 <ProfileForm
                   profile={profile ?? emptyProfile}
+                  onAvatarUrlChange={(url) =>
+                    setProfile((p) => (p ? { ...p, avatarUrl: url } : { ...emptyProfile, avatarUrl: url }))
+                  }
                   onSave={async (data) => {
                     setProfileSaveError(null);
                     setProfileSaving(true);

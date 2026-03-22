@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { getStatsForCreator, getEnabledPlatformIds } from "@/lib/platforms";
 import { getStatsForUser } from "@/lib/instagram-api";
 import {
@@ -8,8 +9,11 @@ import {
   MOCK_RATES,
   MOCK_BRANDS,
 } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 import { getKitBySlug } from "@/lib/get-kit-by-slug";
+import { recordKitView } from "@/lib/kit-views";
 import { MediaKitClient } from "./MediaKitClient";
+import { DEFAULT_KIT_APPEARANCE } from "@/lib/kit-appearance";
 
 const DEMO_SLUGS = ["demo", "alexchen", "my-kit"];
 
@@ -39,15 +43,31 @@ export default async function MediaKitPage({ params }: { params: Promise<{ usern
   }
 
   if (result) {
-    const [instagramStats, enabledPlatformIds] = await Promise.all([
+    const referrer = (await headers()).get("referer") ?? undefined;
+    try {
+      await recordKitView(result.kit.id, referrer);
+    } catch {
+      /* KitView migration not applied yet — page must still render */
+    }
+    const [instagramStats, enabledPlatformIds, user] = await Promise.all([
       getStatsForUser(result.kit.userId),
       Promise.resolve(getEnabledPlatformIds()),
+      prisma.user.findUnique({
+        where: { id: result.kit.userId },
+        select: { instagramUserId: true },
+      }),
     ]);
     const platformStats = { instagram: instagramStats };
+    const instagramConnected = !!user?.instagramUserId;
     return (
       <MediaKitClient
         username={result.creator.username}
-        creator={{ name: result.creator.name, username: result.creator.username, bio: result.creator.bio }}
+        creator={{
+          name: result.creator.name,
+          username: result.creator.username,
+          bio: result.creator.bio,
+          avatarUrl: result.creator.avatarUrl,
+        }}
         links={result.creator.links}
         platformStats={platformStats}
         enabledPlatformIds={enabledPlatformIds}
@@ -55,6 +75,8 @@ export default async function MediaKitPage({ params }: { params: Promise<{ usern
         rates={result.kit.rates}
         brands={result.kit.brands}
         sectionVisibility={result.kit.sectionVisibility}
+        appearance={result.kit.appearance}
+        instagramConnected={instagramConnected}
       />
     );
   }
@@ -75,6 +97,8 @@ export default async function MediaKitPage({ params }: { params: Promise<{ usern
         workSamples={MOCK_WORK_SAMPLES}
         rates={MOCK_RATES}
         brands={MOCK_BRANDS}
+        appearance={DEFAULT_KIT_APPEARANCE}
+        isDemoKit
       />
     );
   }

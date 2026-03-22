@@ -58,11 +58,13 @@ describe("GET /api/me/profile", () => {
       links: JSON.stringify([{ label: "Site", url: "https://jane.com" }]),
       email: "u@example.com",
       onboardingCompletedAt: completedAt,
+      instagramUserId: "178414000",
     } as never);
 
     const res = await GET();
     expect(res.status).toBe(200);
     const json = await res.json();
+    expect(json.instagramConnected).toBe(true);
     expect(json.name).toBe("Jane");
     expect(json.username).toBe("jane");
     expect(json.bio).toBe("Creator");

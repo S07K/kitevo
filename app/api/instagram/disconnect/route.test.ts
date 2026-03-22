@@ -40,7 +40,7 @@ describe("POST /api/instagram/disconnect", () => {
     expect(json.ok).toBe(true);
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
-      data: { instagramUserId: null, instagramAccessToken: null },
+      data: { instagramUserId: null, instagramAccessToken: null, instagramTokenExpiresAt: null },
     });
   });
 });

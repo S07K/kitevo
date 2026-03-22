@@ -91,8 +91,14 @@ export async function GET(req: Request) {
     // 2. Exchange for long-lived token (optional but recommended)
     const longLivedUrl = `${GRAPH}/oauth/access_token?grant_type=fb_exchange_token&client_id=${META_APP_ID}&client_secret=${META_APP_SECRET}&fb_exchange_token=${encodeURIComponent(accessToken)}`;
     const longRes = await fetch(longLivedUrl);
-    const longData = (await longRes.json()) as { access_token?: string };
-    if (longData.access_token) accessToken = longData.access_token;
+    const longData = (await longRes.json()) as { access_token?: string; expires_in?: number };
+    let tokenExpiresAt: Date | null = null;
+    if (longData.access_token) {
+      accessToken = longData.access_token;
+      if (typeof longData.expires_in === "number" && longData.expires_in > 0) {
+        tokenExpiresAt = new Date(Date.now() + longData.expires_in * 1000);
+      }
+    }
 
     // 3. Get pages with Instagram Business Account (requires pages_show_list permission)
     const accountsUrl = `${GRAPH}/me/accounts?fields=id,name,instagram_business_account&access_token=${encodeURIComponent(accessToken)}`;
@@ -128,10 +134,14 @@ export async function GET(req: Request) {
       return res;
     }
 
-    // 4. Save to user
+    // 4. Save to user (token + expiry for refresh handling)
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { instagramUserId: igUserId, instagramAccessToken: accessToken },
+      data: {
+        instagramUserId: igUserId,
+        instagramAccessToken: accessToken,
+        instagramTokenExpiresAt: tokenExpiresAt,
+      },
     });
 
     res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_connected=1`);

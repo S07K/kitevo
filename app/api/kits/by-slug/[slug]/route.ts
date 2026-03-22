@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import type { SectionVisibility } from "@/lib/kit-storage";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
+import { parseKitAppearance } from "@/lib/kit-appearance";
 
 function parseJson<T>(raw: string, fallback: T): T {
   try {
@@ -61,6 +62,7 @@ export async function GET(
       rates: parseJson<KitRates>(kit.rates, { show: false }),
       brands: parseJson<BrandPartner[]>(kit.brands, []),
       sectionVisibility,
+      appearance: parseKitAppearance(kit.appearance),
     },
     creator,
   });

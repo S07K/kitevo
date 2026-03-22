@@ -11,7 +11,7 @@ export async function POST() {
   }
   await prisma.user.update({
     where: { id: session.user.id },
-    data: { instagramUserId: null, instagramAccessToken: null },
+    data: { instagramUserId: null, instagramAccessToken: null, instagramTokenExpiresAt: null },
   });
   return NextResponse.json({ ok: true });
 }

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Kit" ADD COLUMN IF NOT EXISTS "appearance" TEXT NOT NULL DEFAULT '{}';

@@ -28,8 +28,9 @@ model User {
   links     String?  // JSON array of { label, url }
 
   // Phase 10: Instagram (Meta Graph API)
-  instagramUserId      String?  // IG Business/Creator account id
-  instagramAccessToken String?  // Long-lived token for API calls
+  instagramUserId           String?   // IG Business/Creator account id
+  instagramAccessToken      String?   // Long-lived token for API calls
+  instagramTokenExpiresAt   DateTime? // When token expires (for refresh prompt)
 
   // Phase 11: Onboarding (redirect new users to /onboarding until they finish)
   onboardingCompletedAt DateTime?
@@ -48,9 +49,24 @@ model Kit {
   rates             String   // JSON
   brands            String   // JSON
   sectionVisibility String   // JSON
+  appearance        String   @default("{}") // kit theme JSON: { preset: warm|cool|paper|noir }
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   @@unique([userId, slug])
   @@index([userId])
+
+  // Phase 12.3: Kit analytics (views)
+  views KitView[]
+}
+
+model KitView {
+  id       String   @id @default(cuid())
+  kitId    String
+  kit      Kit      @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  viewedAt DateTime @default(now())
+  referrer String?
+
+  @@index([kitId])
+  @@index([viewedAt])
 }

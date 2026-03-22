@@ -34,6 +34,7 @@ describe("GET /api/kits/by-slug/[slug]", () => {
       rates: "{}",
       brands: "[]",
       sectionVisibility: "{}",
+      appearance: "{}",
       user: {
         name: "Jane",
         username: "jane",

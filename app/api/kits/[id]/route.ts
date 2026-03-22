@@ -5,6 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import type { SectionVisibility } from "@/lib/kit-storage";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
+import {
+  parseKitAppearance,
+  serializeKitAppearance,
+  type KitAppearance,
+} from "@/lib/kit-appearance";
 
 function parseJson<T>(raw: string, fallback: T): T {
   try {
@@ -15,7 +20,16 @@ function parseJson<T>(raw: string, fallback: T): T {
   }
 }
 
-function toKitResponse(k: { id: string; slug: string; name: string; workSamples: string; rates: string; brands: string; sectionVisibility: string }) {
+function toKitResponse(k: {
+  id: string;
+  slug: string;
+  name: string;
+  workSamples: string;
+  rates: string;
+  brands: string;
+  sectionVisibility: string;
+  appearance: string;
+}) {
   return {
     id: k.id,
     slug: k.slug,
@@ -24,6 +38,7 @@ function toKitResponse(k: { id: string; slug: string; name: string; workSamples:
     rates: parseJson<KitRates>(k.rates, { show: false }),
     brands: parseJson<BrandPartner[]>(k.brands, []),
     sectionVisibility: parseJson<SectionVisibility>(k.sectionVisibility, { ...DEFAULT_SECTION_VISIBILITY }),
+    appearance: parseKitAppearance(k.appearance),
   };
 }
 
@@ -64,13 +79,23 @@ export async function PUT(
   }
 
   const body = await req.json().catch(() => ({}));
-  const updates: Partial<{ name: string; workSamples: string; rates: string; brands: string; sectionVisibility: string }> = {};
+  const updates: Partial<{
+    name: string;
+    workSamples: string;
+    rates: string;
+    brands: string;
+    sectionVisibility: string;
+    appearance: string;
+  }> = {};
   if (typeof body.name === "string") updates.name = body.name.trim() || kit.name;
   if (Array.isArray(body.workSamples)) updates.workSamples = JSON.stringify(body.workSamples);
   if (body.rates !== undefined && body.rates !== null) updates.rates = JSON.stringify(body.rates);
   if (Array.isArray(body.brands)) updates.brands = JSON.stringify(body.brands);
   if (body.sectionVisibility !== undefined && body.sectionVisibility !== null) {
     updates.sectionVisibility = JSON.stringify(body.sectionVisibility);
+  }
+  if (body.appearance !== undefined && body.appearance !== null && typeof body.appearance === "object") {
+    updates.appearance = serializeKitAppearance(body.appearance as KitAppearance);
   }
 
   const updated = await prisma.kit.update({

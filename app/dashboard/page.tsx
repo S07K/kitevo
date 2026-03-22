@@ -76,9 +76,21 @@ function DashboardContent() {
   useEffect(() => {
     let cancelled = false;
     fetch("/api/kits", { credentials: "include" })
-      .then((r) => r.ok ? r.json() : [])
-      .then((data) => { if (!cancelled) setKits(Array.isArray(data) ? data : []); })
-      .catch(() => { if (!cancelled) setKits([]); });
+      .then(async (r) => {
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          console.error("GET /api/kits failed:", r.status, err);
+          return null;
+        }
+        return r.json();
+      })
+      .then((data) => {
+        if (cancelled || data === null) return;
+        setKits(Array.isArray(data) ? data : []);
+      })
+      .catch((e) => {
+        console.error("GET /api/kits error:", e);
+      });
     return () => { cancelled = true; };
   }, [isSubscribed]);
 
@@ -304,6 +316,9 @@ function DashboardContent() {
                 )}
                 <ProfileForm
                   profile={profile}
+                  onAvatarUrlChange={(url) =>
+                    setProfile((p) => (p ? { ...p, avatarUrl: url } : null))
+                  }
                   onSave={async (data) => {
                     setProfileSaving(true);
                     setProfileSaveError(null);
@@ -464,6 +479,11 @@ function DashboardContent() {
                   >
                     <span className="font-medium text-[#1A1A1A]">{kit.name}</span>
                     <span className="text-xs text-[#8C8C8C]">/kit/{kit.slug}</span>
+                    {typeof kit.viewCount === "number" && (
+                      <span className="text-xs text-[#5C5C5C]">
+                        {kit.viewCount === 0 ? "No views yet" : `${kit.viewCount} view${kit.viewCount !== 1 ? "s" : ""}`}
+                      </span>
+                    )}
                     <div className="flex gap-1 ml-auto">
                       <Link
                         href={`/kit/edit?id=${encodeURIComponent(kit.id)}`}

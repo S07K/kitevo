@@ -56,6 +56,7 @@ describe("GET /api/kits/[id]", () => {
       rates: "{}",
       brands: "[]",
       sectionVisibility: "{}",
+      appearance: "{}",
     } as never);
 
     const res = await GET(new Request("http://x"), { params: params("kit-1") });
@@ -107,6 +108,7 @@ describe("PUT /api/kits/[id]", () => {
       rates: "{}",
       brands: "[]",
       sectionVisibility: "{}",
+      appearance: "{}",
     };
     vi.mocked(prisma.kit.findFirst).mockResolvedValue(existing as never);
     vi.mocked(prisma.kit.update).mockResolvedValue({

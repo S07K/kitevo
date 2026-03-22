@@ -16,6 +16,8 @@ import {
   DEFAULT_SECTION_VISIBILITY,
   type SectionVisibility,
 } from "@/lib/kit-storage";
+import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
+import { DEFAULT_KIT_APPEARANCE, KIT_APPEARANCE_PRESET_LABELS } from "@/lib/kit-appearance";
 import type { FetchedPost } from "@/lib/platforms";
 import { KitEditorSkeleton } from "@/app/components/Skeleton";
 
@@ -47,6 +49,7 @@ export function KitEditor({ kitId }: KitEditorProps) {
   const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>(
     DEFAULT_SECTION_VISIBILITY
   );
+  const [appearance, setAppearance] = useState<KitAppearance>(DEFAULT_KIT_APPEARANCE);
 
   // Resolve effective kit id (first kit if none specified)
   useEffect(() => {
@@ -76,6 +79,11 @@ export function KitEditor({ kitId }: KitEditorProps) {
               ? { ...DEFAULT_SECTION_VISIBILITY, ...data.sectionVisibility }
               : DEFAULT_SECTION_VISIBILITY
           );
+          if (data.appearance && typeof data.appearance === "object" && data.appearance.preset) {
+            setAppearance({ preset: data.appearance.preset as KitAppearancePreset });
+          } else {
+            setAppearance(DEFAULT_KIT_APPEARANCE);
+          }
         })
         .catch((e) => setLoadError(e.message ?? "Failed to load kit"))
         .finally(() => setLoadingKit(false));
@@ -99,7 +107,7 @@ export function KitEditor({ kitId }: KitEditorProps) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ workSamples, rates, brands, sectionVisibility }),
+        body: JSON.stringify({ workSamples, rates, brands, sectionVisibility, appearance }),
       })
         .then((r) => {
           if (!r.ok) throw new Error("Failed to save");
@@ -203,6 +211,9 @@ export function KitEditor({ kitId }: KitEditorProps) {
     return <KitEditorSkeleton />;
   }
 
+  const isDbKit =
+    effectiveKitId != null && effectiveKitId.length >= 20 && !effectiveKitId.startsWith("kit_");
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -253,6 +264,36 @@ export function KitEditor({ kitId }: KitEditorProps) {
           ))}
         </div>
       </div>
+
+      {isDbKit && (
+        <div className="p-6 border border-[#E8E6E3] rounded-lg bg-white">
+          <h3 className="text-sm uppercase tracking-wider text-[#8C8C8C] font-medium">
+            Look &amp; feel
+          </h3>
+          <p className="mt-1 text-sm text-[#5C5C5C]">
+            Minimal presets for your public kit—background, type, and cards. Saves with <strong>Save changes</strong>.
+          </p>
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {(Object.keys(KIT_APPEARANCE_PRESET_LABELS) as KitAppearancePreset[]).map((preset) => {
+              const active = appearance.preset === preset;
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setAppearance({ preset })}
+                  className={`rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                    active
+                      ? "border-[#1A1A1A] bg-[#1A1A1A] text-white"
+                      : "border-[#E8E6E3] text-[#1A1A1A] hover:bg-[#FAFAFA]"
+                  }`}
+                >
+                  {KIT_APPEARANCE_PRESET_LABELS[preset]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Work samples */}
       <div className="p-6 border border-[#E8E6E3] rounded-lg bg-white">
