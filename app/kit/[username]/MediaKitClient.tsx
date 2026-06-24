@@ -10,6 +10,7 @@ import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
 import {
   DEFAULT_KIT_APPEARANCE,
   kitAppearanceToCssVars,
+  kitAppearanceToCssVarsWithOverrides,
   kitChartColors,
 } from "@/lib/kit-appearance";
 
@@ -154,14 +155,22 @@ export function MediaKitClient({
   return (
     <div
       className="min-h-screen bg-[var(--mk-bg)] text-[var(--mk-text)] antialiased"
-      style={kitAppearanceToCssVars(appearance)}
+      style={kitAppearanceToCssVarsWithOverrides(appearance)}
       data-kit-preset={preset}
     >
       {/* Header — minimal, editorial */}
       <header className="fixed top-0 left-0 right-0 z-50 px-5 sm:px-8 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 flex items-center justify-between bg-[var(--mk-header-bg)] backdrop-blur-md border-b border-[var(--mk-border-hairline)]">
-        <span className="font-display text-sm tracking-wide text-[var(--mk-text-muted)] font-medium">
-          Media Kit Pro
-        </span>
+        {appearance.logoUrl ? (
+          <img
+            src={appearance.logoUrl}
+            alt="Brand logo"
+            className="h-7 w-auto object-contain"
+          />
+        ) : (
+          <span className="font-display text-sm tracking-wide text-[var(--mk-text-muted)] font-medium">
+            Media Kit Pro
+          </span>
+        )}
         <Link
           href="/"
           className="text-sm text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors font-medium"

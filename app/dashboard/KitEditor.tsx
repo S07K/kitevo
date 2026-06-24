@@ -17,7 +17,14 @@ import {
   type SectionVisibility,
 } from "@/lib/kit-storage";
 import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
-import { DEFAULT_KIT_APPEARANCE, KIT_APPEARANCE_PRESET_LABELS } from "@/lib/kit-appearance";
+import {
+  DEFAULT_KIT_APPEARANCE,
+  KIT_APPEARANCE_PRESET_LABELS,
+  BASIC_PRESETS,
+  BRAND_KIT_VIBES,
+  BRAND_KIT_VIBE_META,
+  parseKitAppearance,
+} from "@/lib/kit-appearance";
 import type { FetchedPost } from "@/lib/platforms";
 import { KitEditorSkeleton } from "@/app/components/Skeleton";
 
@@ -34,9 +41,12 @@ function newId(): string {
 interface KitEditorProps {
   /** Kit to edit. If null, uses first kit from storage (backward compat). */
   kitId: string | null;
+  /** Subscription tier id — controls Pro feature gating. */
+  tierId?: string | null;
 }
 
-export function KitEditor({ kitId }: KitEditorProps) {
+export function KitEditor({ kitId, tierId }: KitEditorProps) {
+  const isPro = tierId === "pro";
   const [effectiveKitId, setEffectiveKitId] = useState<string | null>(kitId);
   const [workSamples, setWorkSamples] = useState<WorkSample[]>(MOCK_WORK_SAMPLES);
   const [rates, setRates] = useState<KitRates>(MOCK_RATES);
@@ -79,11 +89,11 @@ export function KitEditor({ kitId }: KitEditorProps) {
               ? { ...DEFAULT_SECTION_VISIBILITY, ...data.sectionVisibility }
               : DEFAULT_SECTION_VISIBILITY
           );
-          if (data.appearance && typeof data.appearance === "object" && data.appearance.preset) {
-            setAppearance({ preset: data.appearance.preset as KitAppearancePreset });
-          } else {
-            setAppearance(DEFAULT_KIT_APPEARANCE);
-          }
+          setAppearance(
+            data.appearance && typeof data.appearance === "object"
+              ? parseKitAppearance(typeof data.appearance === "string" ? data.appearance : JSON.stringify(data.appearance))
+              : DEFAULT_KIT_APPEARANCE
+          );
         })
         .catch((e) => setLoadError(e.message ?? "Failed to load kit"))
         .finally(() => setLoadingKit(false));
@@ -266,32 +276,172 @@ export function KitEditor({ kitId }: KitEditorProps) {
       </div>
 
       {isDbKit && (
-        <div className="p-6 border border-[#E8E6E3] rounded-lg bg-white">
-          <h3 className="text-sm uppercase tracking-wider text-[#8C8C8C] font-medium">
-            Look &amp; feel
-          </h3>
-          <p className="mt-1 text-sm text-[#5C5C5C]">
-            Minimal presets for your public kit—background, type, and cards. Saves with <strong>Save changes</strong>.
-          </p>
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {(Object.keys(KIT_APPEARANCE_PRESET_LABELS) as KitAppearancePreset[]).map((preset) => {
-              const active = appearance.preset === preset;
-              return (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setAppearance({ preset })}
-                  className={`rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-                    active
-                      ? "border-[#1A1A1A] bg-[#1A1A1A] text-white"
-                      : "border-[#E8E6E3] text-[#1A1A1A] hover:bg-[#FAFAFA]"
-                  }`}
-                >
-                  {KIT_APPEARANCE_PRESET_LABELS[preset]}
-                </button>
-              );
-            })}
+        <div className="border-border bg-background space-y-8 rounded-2xl border p-6">
+          <div>
+            <h3 className="text-foreground text-base font-semibold tracking-tight">
+              Brand Kit
+            </h3>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Choose a visual style for your public kit. Saves with <strong>Save changes</strong>.
+            </p>
           </div>
+
+          {/* ── Basic presets (all plans) ── */}
+          <div>
+            <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
+              Basic styles
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {BASIC_PRESETS.map((preset) => {
+                const active = appearance.preset === preset;
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setAppearance((a) => ({ ...a, preset }))}
+                    className={`rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                      active
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {KIT_APPEARANCE_PRESET_LABELS[preset]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Brand Kit Vibes (Pro) ── */}
+          <div>
+            <div className="mb-3 flex items-center gap-2">
+              <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
+                Brand Kit Vibes
+              </p>
+              {!isPro && (
+                <span className="bg-foreground text-background rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide">
+                  Pro
+                </span>
+              )}
+            </div>
+
+            {!isPro ? (
+              <div className="border-border rounded-2xl border border-dashed p-6 text-center">
+                <p className="text-foreground text-sm font-semibold">5 signature design styles</p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Editorial, Studio, Bloom, Electric, Noir Pro — each with custom accent colors and font pairings.
+                </p>
+                <a
+                  href="/pricing"
+                  className="bg-foreground text-background mt-4 inline-flex h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
+                >
+                  Upgrade to Pro
+                </a>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {BRAND_KIT_VIBES.map((vibe) => {
+                  const meta = BRAND_KIT_VIBE_META[vibe];
+                  const active = appearance.preset === vibe;
+                  return (
+                    <button
+                      key={vibe}
+                      type="button"
+                      onClick={() => setAppearance((a) => ({ ...a, preset: vibe }))}
+                      className={`relative overflow-hidden rounded-2xl border text-left transition-all ${
+                        active ? "ring-2 ring-foreground ring-offset-2" : "border-border hover:border-foreground/30"
+                      }`}
+                    >
+                      {/* Color preview strip */}
+                      <div
+                        className="h-14 w-full"
+                        style={{ backgroundColor: meta.bg }}
+                      >
+                        <div className="flex h-full items-end px-4 pb-3">
+                          <span
+                            className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                            style={{ backgroundColor: meta.fg, color: meta.bg }}
+                          >
+                            {meta.label}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="bg-background border-border border-t p-3">
+                        <p className="text-foreground text-xs font-semibold">{meta.label}</p>
+                        <p className="text-muted-foreground mt-0.5 text-[11px]">{meta.for}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ── Accent color (Pro) ── */}
+          {isPro && (
+            <div>
+              <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
+                Accent color override
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "#111110", "#f5f0e8", "#c9a84c", "#6366f1",
+                  "#c97b4b", "#2d9b8a", "#e14d6e", "#3b82f6",
+                ].map((color) => {
+                  const active = appearance.accentColor === color;
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      title={color}
+                      onClick={() =>
+                        setAppearance((a) => ({
+                          ...a,
+                          accentColor: active ? undefined : color,
+                        }))
+                      }
+                      className={`h-8 w-8 rounded-full border-2 transition-transform hover:scale-110 ${
+                        active ? "border-foreground scale-110" : "border-transparent"
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  );
+                })}
+                <button
+                  type="button"
+                  title="Clear accent override"
+                  onClick={() => setAppearance((a) => ({ ...a, accentColor: undefined }))}
+                  className="border-border text-muted-foreground hover:text-foreground h-8 rounded-full border px-3 text-[11px] font-medium transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Logo URL (Pro) ── */}
+          {isPro && (
+            <div>
+              <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
+                Brand logo URL
+              </p>
+              <input
+                type="url"
+                placeholder="https://example.com/logo.png"
+                value={appearance.logoUrl ?? ""}
+                onChange={(e) =>
+                  setAppearance((a) => ({
+                    ...a,
+                    logoUrl: e.target.value || undefined,
+                  }))
+                }
+                className="border-border bg-background text-foreground placeholder:text-muted-foreground w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <p className="text-muted-foreground mt-1.5 text-xs">
+                Displayed in your kit header instead of the Media Kit Pro wordmark.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
