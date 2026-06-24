@@ -64,7 +64,8 @@ function OnboardingContent() {
   const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [kits, setKits] = useState<{ id: string; name: string; slug: string }[]>([]);
-  const [allowedKits, setAllowedKits] = useState(1);
+  const [allowedKits, setAllowedKits] = useState(0);
+  const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
   const [newKitName, setNewKitName] = useState("");
   const [newKitSlug, setNewKitSlug] = useState("");
   const [addKitError, setAddKitError] = useState("");
@@ -122,19 +123,24 @@ function OnboardingContent() {
       .then((data) => data && setInstagramConnected(data.connected === true));
   }, [currentStep]);
 
+  // Always fetch subscription + kits on mount so step 4 has accurate data
+  // regardless of which step the user lands on.
   useEffect(() => {
-    if (currentStep !== 2 && currentStep !== 3) return;
+    let cancelled = false;
     Promise.all([
       fetch("/api/kits", { credentials: "include" }).then((r) => (r.ok ? r.json() : null)),
       fetch("/api/subscription-status", { method: "POST", credentials: "include" }).then((r) => (r.ok ? r.json() : {})),
     ]).then(([list, sub]) => {
+      if (cancelled) return;
       const status = sub as { allowedKits?: number; tierName?: string } | undefined;
       if (Array.isArray(list)) setKits(list);
-      setAllowedKits(status?.allowedKits ?? 1);
+      setAllowedKits(status?.allowedKits ?? 0);
       setHasSubscription((status?.allowedKits ?? 0) > 0);
       setTierName(status?.tierName ?? null);
-    });
-  }, [currentStep]);
+      setSubscriptionLoaded(true);
+    }).catch(() => { if (!cancelled) setSubscriptionLoaded(true); });
+    return () => { cancelled = true; };
+  }, []);
 
   const isFirst = currentStep === 0;
   const isLast = currentStep === totalSteps - 1;
@@ -405,10 +411,21 @@ function OnboardingContent() {
           {/* ── Step 4: Create kit ── */}
           {currentStep === 3 && (
             <div className="mt-5">
-              {allowedKits === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  Subscribe first — click Back to choose a plan.
-                </p>
+              {!subscriptionLoaded ? (
+                <p className="text-muted-foreground text-sm">Checking your plan…</p>
+              ) : allowedKits === 0 ? (
+                <div className="space-y-3">
+                  <p className="text-muted-foreground text-sm">
+                    You need an active plan to create a kit.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(2)}
+                    className="bg-foreground text-background inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
+                  >
+                    ← Choose a plan
+                  </button>
+                </div>
               ) : kits.length > 0 || kitCreated ? (
                 <div className="rounded-xl border border-green-200 bg-green-50 p-4">
                   <p className="text-sm font-medium text-green-800">
