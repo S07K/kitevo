@@ -1,101 +1,155 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-const COLUMNS = [
-  {
-    title: "Product",
-    links: [
-      { label: "How it works", href: "#how-it-works" },
-      { label: "Vibes", href: "#vibes" },
-      { label: "Pricing", href: "#pricing" },
-      { label: "FAQ", href: "#faq" },
-    ],
-  },
-  {
-    title: "Account",
-    links: [
-      { label: "Sign up", href: "/signup" },
-      { label: "Log in", href: "/login" },
-      { label: "Dashboard", href: "/dashboard" },
-    ],
-  },
-  {
-    title: "Legal",
-    links: [
-      { label: "Privacy Policy", href: "/privacy" },
-      { label: "Terms of Service", href: "/terms" },
-    ],
-  },
+const VIBE_STRIP = [
+  { name: "Editorial", bg: "#111110", label: "#fff" },
+  { name: "Studio", bg: "#e8e6e1", label: "#2d2d2b" },
+  { name: "Noir", bg: "#1a1a18", label: "#c9a84c" },
+  { name: "Bloom", bg: "#f5ede4", label: "#c97b4b" },
+  { name: "Electric", bg: "#0d0d1a", label: "#6366f1" },
+];
+
+const NAV = [
+  { label: "How it works", href: "#how-it-works" },
+  { label: "Vibes", href: "#vibes" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "FAQ", href: "#faq" },
+];
+
+const ACCOUNT = [
+  { label: "Sign up", href: "/signup" },
+  { label: "Log in", href: "/login" },
+  { label: "Dashboard", href: "/dashboard" },
+];
+
+const LEGAL = [
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms of Service", href: "/terms" },
 ];
 
 export function MarketingFooter(): ReactNode {
   return (
-    <footer className="border-border border-t">
-      <div className="mx-auto max-w-[1440px] px-5 pt-16 sm:px-8 sm:pt-20 lg:px-10">
-        <div className="flex flex-col gap-14 lg:flex-row lg:justify-between">
-          <div className="max-w-xs">
-            <Link href="/" className="focus-ring inline-block rounded-sm">
-              <span className="font-display text-foreground text-xl font-semibold tracking-tight">
-                Media Kit Pro
-              </span>
-            </Link>
-            <p className="text-muted-foreground mt-5 text-sm leading-relaxed">
-              The professional media kit platform for creators who want to close
-              brand deals — not just send emails.
+    <footer>
+      {/* Vibe color strip */}
+      <div className="flex h-2 w-full overflow-hidden">
+        {VIBE_STRIP.map((v) => (
+          <div key={v.name} className="flex-1" style={{ backgroundColor: v.bg }} title={v.name} />
+        ))}
+      </div>
+
+      {/* Statement bar */}
+      <div className="bg-foreground text-background px-5 py-12 sm:px-8 lg:px-10">
+        <div className="mx-auto max-w-[1440px] flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-background/50 text-xs font-semibold tracking-[0.2em] uppercase mb-3">
+              Media Kit Pro
             </p>
-            <Link
-              href="/signup"
-              className="focus-ring bg-foreground text-background mt-7 inline-flex h-11 items-center rounded-full px-6 text-sm font-medium transition-opacity hover:opacity-80"
-            >
-              Start for free
-            </Link>
+            <h2 className="text-[clamp(28px,4vw,48px)] font-medium tracking-tight leading-tight max-w-lg text-balance">
+              One link. Every stat.<br />Every deal.
+            </h2>
+          </div>
+          <Link
+            href="/signup"
+            className="focus-ring bg-background text-foreground inline-flex h-12 shrink-0 items-center rounded-full px-7 text-sm font-medium transition-opacity hover:opacity-80"
+          >
+            Start building free →
+          </Link>
+        </div>
+      </div>
+
+      {/* Links grid */}
+      <div className="border-border border-t">
+        <div className="mx-auto max-w-[1440px] px-5 py-12 sm:px-8 lg:px-10">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-4">
+            {/* Product */}
+            <div>
+              <h3 className="text-foreground mb-4 text-xs font-semibold tracking-[0.15em] uppercase">
+                Product
+              </h3>
+              <ul className="space-y-2.5">
+                {NAV.map((l) => (
+                  <li key={l.href}>
+                    <a
+                      href={l.href}
+                      className="focus-ring text-muted-foreground hover:text-foreground text-sm transition-colors"
+                    >
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Account */}
+            <div>
+              <h3 className="text-foreground mb-4 text-xs font-semibold tracking-[0.15em] uppercase">
+                Account
+              </h3>
+              <ul className="space-y-2.5">
+                {ACCOUNT.map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className="focus-ring text-muted-foreground hover:text-foreground text-sm transition-colors"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Kit Vibes */}
+            <div>
+              <h3 className="text-foreground mb-4 text-xs font-semibold tracking-[0.15em] uppercase">
+                Kit Vibes
+              </h3>
+              <ul className="space-y-2.5">
+                {VIBE_STRIP.map((v) => (
+                  <li key={v.name}>
+                    <a
+                      href="#vibes"
+                      className="focus-ring text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm transition-colors"
+                    >
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full border border-black/10"
+                        style={{ backgroundColor: v.bg }}
+                      />
+                      {v.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h3 className="text-foreground mb-4 text-xs font-semibold tracking-[0.15em] uppercase">
+                Legal
+              </h3>
+              <ul className="space-y-2.5">
+                {LEGAL.map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className="focus-ring text-muted-foreground hover:text-foreground text-sm transition-colors"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:gap-x-16">
-            {COLUMNS.map((col) => (
-              <div key={col.title}>
-                <h3 className="text-foreground text-sm font-medium tracking-tight">
-                  {col.title}
-                </h3>
-                <ul className="mt-4 space-y-3">
-                  {col.links.map((link) => (
-                    <li key={link.href}>
-                      {link.href.startsWith("#") ? (
-                        <a
-                          href={link.href}
-                          className="focus-ring text-muted-foreground hover:text-foreground text-sm transition-colors"
-                        >
-                          {link.label}
-                        </a>
-                      ) : (
-                        <Link
-                          href={link.href}
-                          className="focus-ring text-muted-foreground hover:text-foreground text-sm transition-colors"
-                        >
-                          {link.label}
-                        </Link>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+          <div className="border-border mt-10 flex flex-col items-start justify-between gap-3 border-t pt-6 text-xs sm:flex-row sm:items-center">
+            <p className="text-muted-foreground">
+              © {new Date().getFullYear()} Media Kit Pro. All rights reserved.
+            </p>
+            <p className="text-muted-foreground">
+              For creators who are serious about brand deals.
+            </p>
           </div>
-        </div>
-
-        <div className="mt-16 flex flex-col-reverse items-start justify-between gap-4 border-t border-border pt-6 pb-8 sm:flex-row sm:items-center">
-          <p className="text-muted-foreground text-xs">
-            © {new Date().getFullYear()} Media Kit Pro. All rights reserved.
-          </p>
-          <p className="text-muted-foreground text-xs">
-            Built for creators who are serious about brand deals.
-          </p>
-        </div>
-
-        <div aria-hidden className="pointer-events-none overflow-hidden select-none">
-          <p className="text-muted-foreground/10 translate-y-[30%] text-center text-[clamp(60px,16vw,220px)] leading-[0.85] font-semibold tracking-tighter">
-            Media Kit Pro
-          </p>
         </div>
       </div>
     </footer>

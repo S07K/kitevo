@@ -1,6 +1,5 @@
 "use client";
 
-import { SectionHeading } from "@/components/section-heading";
 import { InView } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { useState, type ReactNode } from "react";
@@ -9,226 +8,218 @@ type Vibe = {
   id: string;
   name: string;
   tagline: string;
+  for: string;
   bg: string;
   fg: string;
   accent: string;
   accentFg: string;
-  font: string;
-  for: string;
+  secondaryBg: string;
 };
 
 const VIBES: Vibe[] = [
   {
     id: "editorial",
     name: "Editorial",
-    tagline: "Magazine-luxe, Vogue energy",
+    tagline: "Magazine-luxe. Vogue energy.",
+    for: "Fashion · Beauty · Lifestyle",
     bg: "#111110",
     fg: "#f5f0e8",
     accent: "#f5f0e8",
     accentFg: "#111110",
-    font: "Georgia, serif",
-    for: "Fashion · Beauty · Lifestyle",
+    secondaryBg: "#1e1e1c",
   },
   {
     id: "studio",
     name: "Studio",
-    tagline: "Creative agency portfolio",
+    tagline: "Creative agency portfolio.",
+    for: "Design · Tech · Thought leaders",
     bg: "#f0eeeb",
     fg: "#2d2d2b",
     accent: "#2d2d2b",
     accentFg: "#f0eeeb",
-    font: "system-ui, sans-serif",
-    for: "Design · Tech · Thought leaders",
+    secondaryBg: "#e4e2de",
   },
   {
     id: "noir",
     name: "Noir",
-    tagline: "Dark, cinematic, premium",
+    tagline: "Dark, cinematic, premium.",
+    for: "Music · Streetwear · High-end",
     bg: "#1a1a18",
     fg: "#e8e6e0",
     accent: "#c9a84c",
     accentFg: "#1a1a18",
-    font: "Georgia, serif",
-    for: "Music · Streetwear · High-end",
+    secondaryBg: "#252523",
   },
   {
     id: "bloom",
     name: "Bloom",
-    tagline: "Warm, organic, approachable",
+    tagline: "Warm, organic, approachable.",
+    for: "Food · Wellness · Travel",
     bg: "#fdf6ef",
     fg: "#4a2c1a",
     accent: "#c97b4b",
     accentFg: "#fdf6ef",
-    font: "Georgia, serif",
-    for: "Food · Wellness · Travel",
+    secondaryBg: "#f5ece0",
   },
   {
     id: "electric",
     name: "Electric",
-    tagline: "High energy, Gen-Z native",
+    tagline: "High energy, Gen-Z native.",
+    for: "Gaming · Sports · Youth culture",
     bg: "#0a0a14",
     fg: "#eeeeff",
     accent: "#6366f1",
     accentFg: "#eeeeff",
-    font: "system-ui, sans-serif",
-    for: "Gaming · Sports · Youth culture",
+    secondaryBg: "#12121f",
   },
 ];
 
-function VibeCard({ vibe, isActive, onClick }: { vibe: Vibe; isActive: boolean; onClick: () => void }): ReactNode {
+function KitPreview({ vibe }: { vibe: Vibe }): ReactNode {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "group relative flex-shrink-0 cursor-pointer rounded-2xl transition-all duration-300 focus-ring",
-        isActive ? "w-72 md:w-80" : "w-48 md:w-56"
-      )}
-      style={{
-        backgroundColor: vibe.bg,
-        height: 420,
-      }}
-      aria-label={`View ${vibe.name} vibe`}
+    <div
+      className="flex h-full flex-col overflow-hidden rounded-2xl"
+      style={{ backgroundColor: vibe.bg }}
     >
-      {/* Mock kit content */}
-      <div className="flex h-full flex-col justify-between p-6">
-        {/* Top: avatar + name */}
-        <div className="flex items-start gap-3">
-          <div
-            className="h-10 w-10 rounded-full opacity-80"
-            style={{ backgroundColor: vibe.accent }}
-          />
-          <div className="flex flex-col gap-1.5 pt-0.5">
-            <div
-              className="h-2 w-20 rounded-full opacity-60"
-              style={{ backgroundColor: vibe.fg }}
-            />
-            <div
-              className="h-1.5 w-14 rounded-full opacity-35"
-              style={{ backgroundColor: vibe.fg }}
-            />
+      {/* Header strip */}
+      <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: vibe.secondaryBg }}>
+        <div className="flex items-center gap-2.5">
+          <div className="h-7 w-7 rounded-full" style={{ backgroundColor: vibe.accent, opacity: 0.9 }} />
+          <div>
+            <div className="h-1.5 w-16 rounded-full mb-1" style={{ backgroundColor: vibe.fg, opacity: 0.7 }} />
+            <div className="h-1 w-10 rounded-full" style={{ backgroundColor: vibe.fg, opacity: 0.3 }} />
           </div>
         </div>
-
-        {/* Middle: stats */}
-        {isActive && (
-          <div className="grid grid-cols-3 gap-2">
-            {["245K", "4.8%", "12M"].map((stat, i) => (
-              <div
-                key={i}
-                className="rounded-xl p-3 text-center"
-                style={{ backgroundColor: `${vibe.fg}10` }}
-              >
-                <p
-                  className="text-base font-semibold"
-                  style={{ color: vibe.accent, fontFamily: vibe.font }}
-                >
-                  {stat}
-                </p>
-                <p
-                  className="mt-0.5 text-[9px] opacity-50"
-                  style={{ color: vibe.fg }}
-                >
-                  {["followers", "engagement", "reach"][i]}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Bottom: vibe name + CTA */}
-        <div>
-          <div
-            className="mb-3 h-px w-full opacity-15"
-            style={{ backgroundColor: vibe.fg }}
-          />
-          <div className="flex items-end justify-between">
-            <div>
-              <p
-                className="text-lg font-semibold tracking-tight"
-                style={{ color: vibe.fg, fontFamily: vibe.font }}
-              >
-                {vibe.name}
-              </p>
-              {isActive && (
-                <p
-                  className="mt-0.5 text-xs opacity-55"
-                  style={{ color: vibe.fg }}
-                >
-                  {vibe.for}
-                </p>
-              )}
-            </div>
-            <span
-              className="rounded-lg px-3 py-1.5 text-xs font-semibold"
-              style={{ backgroundColor: vibe.accent, color: vibe.accentFg }}
-            >
-              Pro
-            </span>
-          </div>
+        <div
+          className="rounded-full px-3 py-1 text-[9px] font-bold tracking-wider uppercase"
+          style={{ backgroundColor: vibe.accent, color: vibe.accentFg }}
+        >
+          {vibe.name}
         </div>
       </div>
-    </button>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-px px-4 py-4" style={{ backgroundColor: `${vibe.fg}08` }}>
+        {[["245K", "followers"], ["4.8%", "engagement"], ["12M", "reach"]].map(([val, lbl]) => (
+          <div key={lbl} className="flex flex-col items-center py-2.5 rounded-lg" style={{ backgroundColor: `${vibe.fg}06` }}>
+            <span className="text-sm font-semibold" style={{ color: vibe.accent }}>{val}</span>
+            <span className="text-[8px] mt-0.5 font-medium uppercase tracking-wider" style={{ color: vibe.fg, opacity: 0.45 }}>{lbl}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Content strips */}
+      <div className="flex-1 space-y-2.5 px-4 pb-4 pt-2">
+        {[0.5, 0.35, 0.25].map((opacity, i) => (
+          <div
+            key={i}
+            className="h-1.5 rounded-full"
+            style={{ backgroundColor: vibe.fg, opacity, width: `${80 - i * 15}%` }}
+          />
+        ))}
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {[0, 1].map((i) => (
+            <div key={i} className="aspect-video rounded-lg" style={{ backgroundColor: `${vibe.fg}12` }} />
+          ))}
+        </div>
+      </div>
+
+      {/* CTA strip */}
+      <div className="px-4 pb-4">
+        <div
+          className="flex h-8 items-center justify-center rounded-lg text-[10px] font-semibold tracking-wide"
+          style={{ backgroundColor: vibe.accent, color: vibe.accentFg }}
+        >
+          Collab with me →
+        </div>
+      </div>
+    </div>
   );
 }
 
 export function VibesShowcase(): ReactNode {
-  const [activeVibe, setActiveVibe] = useState("editorial");
+  const [active, setActive] = useState(0);
+  const vibe = VIBES[active]!;
 
   return (
     <section
       id="vibes"
       className="mx-auto max-w-[1440px] scroll-mt-24 px-5 pb-24 sm:px-8 sm:pb-32 lg:px-10"
     >
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-        <SectionHeading
-          label="Brand Kit Vibes"
-          title="Five signature styles. One that's yours."
-          description="Pro subscribers can fully customize their kit's vibe — palette, typography, and layout — to match their brand identity."
-        />
-        <InView>
-          <p className="text-muted-foreground text-sm">
-            Tap a card to preview
+      {/* Header */}
+      <InView className="mb-12 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-[0.18em] uppercase">
+            Pro · Brand Kit Vibes
           </p>
-        </InView>
-      </div>
+          <h2 className="text-foreground text-[clamp(28px,4vw,48px)] font-medium leading-[1.08] tracking-tight text-balance">
+            Five signatures. One that&apos;s yours.
+          </h2>
+          <p className="text-muted-foreground mt-4 max-w-lg text-base leading-relaxed">
+            Every Pro kit comes with full visual identity control — pick a vibe, customize the palette, and make it unmistakably you.
+          </p>
+        </div>
+      </InView>
 
-      <div className="mt-12 flex gap-3 overflow-x-auto pb-4 [-webkit-overflow-scrolling:touch]">
-        {VIBES.map((vibe) => (
-          <VibeCard
-            key={vibe.id}
-            vibe={vibe}
-            isActive={activeVibe === vibe.id}
-            onClick={() => setActiveVibe(vibe.id)}
-          />
-        ))}
-      </div>
-
-      <div className="mt-6 grid gap-3 sm:grid-cols-5">
-        {VIBES.map((vibe) => (
-          <button
-            key={vibe.id}
-            type="button"
-            onClick={() => setActiveVibe(vibe.id)}
-            className={cn(
-              "focus-ring rounded-xl px-3 py-2 text-left transition-all",
-              activeVibe === vibe.id
-                ? "bg-foreground text-background"
-                : "border-border border hover:border-foreground/30"
-            )}
-          >
-            <p className="text-sm font-medium">{vibe.name}</p>
-            <p
+      <div className="grid gap-6 lg:grid-cols-[1fr_1.6fr] lg:gap-10">
+        {/* Vibe selector — left column */}
+        <div className="flex flex-row gap-3 overflow-x-auto pb-1 lg:flex-col lg:overflow-x-visible lg:pb-0">
+          {VIBES.map((v, i) => (
+            <button
+              key={v.id}
+              type="button"
+              onClick={() => setActive(i)}
               className={cn(
-                "mt-0.5 text-xs",
-                activeVibe === vibe.id ? "text-background/60" : "text-muted-foreground"
+                "focus-ring group shrink-0 rounded-2xl px-5 py-4 text-left transition-all duration-200",
+                active === i
+                  ? "ring-foreground bg-background shadow-sm ring-2"
+                  : "bg-background/50 border-border border hover:border-foreground/20"
               )}
             >
-              {vibe.tagline}
-            </p>
-          </button>
-        ))}
+              <div className="flex items-center gap-3">
+                <div
+                  className="h-3 w-3 rounded-full border border-black/10 shrink-0"
+                  style={{ backgroundColor: v.bg === "#f0eeeb" || v.bg === "#fdf6ef" ? v.bg : v.bg }}
+                />
+                <span className={cn(
+                  "text-sm font-semibold",
+                  active === i ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                )}>
+                  {v.name}
+                </span>
+              </div>
+              <p className={cn(
+                "mt-1.5 text-xs leading-relaxed",
+                active === i ? "text-muted-foreground" : "text-muted-foreground/60"
+              )}>
+                {v.tagline}
+              </p>
+              {active === i && (
+                <p className="text-muted-foreground mt-1 text-[10px] font-medium uppercase tracking-wider">
+                  {v.for}
+                </p>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Kit preview — right column */}
+        <div className="aspect-4/3 overflow-hidden rounded-3xl shadow-xl lg:aspect-auto lg:min-h-[420px]">
+          <div className="h-full">
+            <KitPreview vibe={vibe} />
+          </div>
+        </div>
       </div>
+
+      {/* Pro badge */}
+      <InView className="mt-8 flex items-center gap-3">
+        <div className="bg-foreground text-background inline-flex items-center rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide">
+          Pro feature
+        </div>
+        <p className="text-muted-foreground text-sm">
+          Vibe customization is available on the Pro plan — plus color palette, fonts, logo upload, and inquiry form.
+        </p>
+      </InView>
     </section>
   );
 }
