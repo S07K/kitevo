@@ -9,37 +9,31 @@ export function AppNav({ links, onLogout }: { links: NavLink[]; onLogout?: () =>
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-6 flex items-center justify-between bg-[#FAF9F7]/95 backdrop-blur-md border-b border-[#E8E6E3]">
+    <nav className="bg-background/95 border-border fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b px-5 py-4 backdrop-blur-md sm:px-8">
       <Link
         href="/"
-        className="font-display text-xl font-semibold tracking-tight text-[#1A1A1A] shrink-0"
+        className="font-display text-foreground shrink-0 text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
         onClick={() => setMenuOpen(false)}
       >
         Media Kit Pro
       </Link>
 
-      {/* Desktop: horizontal links with comfortable spacing */}
-      <div className="hidden md:flex items-center gap-6">
+      {/* Desktop links */}
+      <div className="hidden items-center gap-2 md:flex">
         {links.map((link) => {
           const key = `${link.href}-${link.label}`;
-          const className = link.primary
-            ? "px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-sm hover:bg-[#2D2D2D] transition-colors whitespace-nowrap"
-            : "text-sm text-[#5C5C5C] hover:text-[#1A1A1A] transition-colors whitespace-nowrap";
+          const base = link.primary
+            ? "bg-foreground text-background inline-flex h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
+            : "text-muted-foreground hover:text-foreground inline-flex h-9 items-center px-3 text-sm transition-colors";
           if (link.external) {
             return (
-              <a
-                key={key}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={className}
-              >
+              <a key={key} href={link.href} target="_blank" rel="noopener noreferrer" className={base}>
                 {link.label}
               </a>
             );
           }
           return (
-            <Link key={key} href={link.href} className={className}>
+            <Link key={key} href={link.href} className={base}>
               {link.label}
             </Link>
           );
@@ -48,61 +42,55 @@ export function AppNav({ links, onLogout }: { links: NavLink[]; onLogout?: () =>
           <button
             type="button"
             onClick={onLogout}
-            className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-sm hover:bg-[#2D2D2D] transition-colors whitespace-nowrap"
+            className="text-muted-foreground hover:text-foreground inline-flex h-9 items-center px-3 text-sm transition-colors"
           >
             Log out
           </button>
         )}
       </div>
 
-      {/* Mobile: menu button */}
+      {/* Mobile menu button */}
       <button
         type="button"
         aria-label="Toggle menu"
+        aria-expanded={menuOpen}
         onClick={() => setMenuOpen((o) => !o)}
-        className="md:hidden p-2 -mr-2 rounded-sm text-[#1A1A1A] hover:bg-[#E8E6E3] transition-colors"
+        className="text-foreground hover:bg-muted -mr-2 rounded-lg p-2 transition-colors md:hidden"
       >
         {menuOpen ? (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M6 18L18 6M6 6l12 12" />
           </svg>
         ) : (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         )}
       </button>
 
-      {/* Mobile: dropdown menu */}
+      {/* Mobile dropdown */}
       {menuOpen && (
         <>
           <div
-            className="fixed inset-0 top-[calc(4rem+env(safe-area-inset-top))] z-40 bg-black/20 md:hidden"
+            className="fixed inset-0 top-[57px] z-40 bg-black/10 md:hidden"
             aria-hidden
             onClick={() => setMenuOpen(false)}
           />
-          <div className="fixed right-4 left-4 top-[calc(4.5rem+env(safe-area-inset-top))] z-50 md:hidden py-4 px-4 rounded-lg bg-white border border-[#E8E6E3] shadow-lg flex flex-col gap-1">
+          <div className="bg-background border-border fixed left-4 right-4 top-[65px] z-50 flex flex-col gap-1 rounded-2xl border p-3 shadow-xl md:hidden">
             {links.map((link) => {
               const key = `${link.href}-${link.label}`;
-              const className = `block py-3 px-4 rounded-sm text-center text-sm font-medium transition-colors ${
-                link.primary ? "bg-[#1A1A1A] text-white hover:bg-[#2D2D2D]" : "text-[#1A1A1A] hover:bg-[#F5F5F5]"
-              }`;
+              const cls = link.primary
+                ? "bg-foreground text-background flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium"
+                : "text-foreground hover:bg-muted flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors";
               if (link.external) {
                 return (
-                  <a
-                    key={key}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setMenuOpen(false)}
-                    className={className}
-                  >
+                  <a key={key} href={link.href} target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)} className={cls}>
                     {link.label}
                   </a>
                 );
               }
               return (
-                <Link key={key} href={link.href} onClick={() => setMenuOpen(false)} className={className}>
+                <Link key={key} href={link.href} onClick={() => setMenuOpen(false)} className={cls}>
                   {link.label}
                 </Link>
               );
@@ -110,11 +98,8 @@ export function AppNav({ links, onLogout }: { links: NavLink[]; onLogout?: () =>
             {onLogout && (
               <button
                 type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onLogout();
-                }}
-                className="block w-full py-3 px-4 rounded-sm text-center text-sm font-medium bg-[#1A1A1A] text-white hover:bg-[#2D2D2D] transition-colors"
+                onClick={() => { setMenuOpen(false); onLogout(); }}
+                className="text-muted-foreground hover:text-foreground flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors"
               >
                 Log out
               </button>

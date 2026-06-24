@@ -17,6 +17,82 @@ import { DashboardSkeleton } from "../components/Skeleton";
 import type { KitRecord } from "@/lib/kit-storage";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
 
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`bg-background border-border rounded-2xl border p-6 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function CardTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="font-display text-foreground text-lg font-semibold tracking-tight">
+      {children}
+    </h3>
+  );
+}
+
+function CardDesc({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-muted-foreground mt-1 text-sm leading-relaxed">{children}</p>
+  );
+}
+
+function PrimaryBtn({ children, onClick, disabled, type = "button", className = "" }: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  type?: "button" | "submit";
+  className?: string;
+}) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={`bg-foreground text-background inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SecondaryBtn({ children, onClick, disabled, className = "" }: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-10 items-center rounded-full border px-5 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function TextInput({ value, onChange, placeholder, type = "text" }: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="border-border bg-background text-foreground placeholder:text-muted-foreground w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+    />
+  );
+}
+
 function DashboardContent() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -68,9 +144,7 @@ function DashboardContent() {
       setSubscriptionLoaded(true);
     }
     check();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [sessionId]);
 
   useEffect(() => {
@@ -88,9 +162,7 @@ function DashboardContent() {
         if (cancelled || data === null) return;
         setKits(Array.isArray(data) ? data : []);
       })
-      .catch((e) => {
-        console.error("GET /api/kits error:", e);
-      });
+      .catch((e) => { console.error("GET /api/kits error:", e); });
     return () => { cancelled = true; };
   }, [isSubscribed]);
 
@@ -99,21 +171,14 @@ function DashboardContent() {
     fetch("/api/me/profile", { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
-        if (!cancelled) {
-          setProfile(data);
-          setProfileLoaded(true);
-        }
+        if (!cancelled) { setProfile(data); setProfileLoaded(true); }
       })
       .catch(() => {
-        if (!cancelled) {
-          setProfile(null);
-          setProfileLoaded(true);
-        }
+        if (!cancelled) { setProfile(null); setProfileLoaded(true); }
       });
     return () => { cancelled = true; };
   }, []);
 
-  // Redirect to onboarding if user has not completed it (before showing dashboard)
   useEffect(() => {
     if (!profileLoaded || profile === null) return;
     if (profile.onboardingCompletedAt == null || profile.onboardingCompletedAt === "") {
@@ -121,14 +186,12 @@ function DashboardContent() {
     }
   }, [profileLoaded, profile, router]);
 
-  // Once subscription is loaded and we're not redirecting, allow dashboard to show
   useEffect(() => {
     if (!subscriptionLoaded || !profileLoaded) return;
     if (profile !== null && (profile.onboardingCompletedAt == null || profile.onboardingCompletedAt === "")) return;
     setLoading(false);
   }, [subscriptionLoaded, profileLoaded, profile]);
 
-  // Load platform stats from API (Instagram; uses token or mock) when subscribed
   useEffect(() => {
     if (!isSubscribed) return;
     let cancelled = false;
@@ -138,12 +201,9 @@ function DashboardContent() {
         if (!cancelled && stats) setPlatformStats({ instagram: stats });
       })
       .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [isSubscribed]);
 
-  // Instagram connection status
   useEffect(() => {
     let cancelled = false;
     fetch("/api/instagram/status", { credentials: "include" })
@@ -173,39 +233,53 @@ function DashboardContent() {
     access_denied: "You declined access. Connect again to grant permissions.",
   };
 
+  const createKit = async () => {
+    if (!newKitSlug.trim()) return;
+    setAddKitError("");
+    const res = await fetch("/api/kits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug: newKitSlug.trim(), name: newKitName.trim() }),
+      credentials: "include",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.id) {
+      setShowAddKit(false);
+      setNewKitName("");
+      setNewKitSlug("");
+      fetch("/api/kits", { credentials: "include" })
+        .then((r) => r.ok ? r.json() : [])
+        .then((list) => setKits(Array.isArray(list) ? list : []));
+      window.location.href = `/kit/edit?id=${encodeURIComponent(data.id)}`;
+    } else {
+      setAddKitError(data.error ?? "Failed to create kit");
+    }
+  };
+
   return (
-    <div className="min-h-screen">
-      {/* Delete kit confirmation modal */}
+    <div className="min-h-screen bg-muted/30">
+      {/* Delete kit modal */}
       {kitToDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           onClick={() => !deleteLoading && (setKitToDelete(null), setDeleteError(null))}
         >
           <div
-            className="bg-white border border-[#E8E6E3] rounded-lg shadow-xl max-w-sm w-full p-6"
+            className="bg-background border-border w-full max-w-sm rounded-2xl border p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-display text-lg font-semibold text-[#1A1A1A]">
-              Delete kit?
-            </h3>
-            <p className="mt-2 text-sm text-[#5C5C5C]">
+            <h3 className="font-display text-foreground text-lg font-semibold">Delete kit?</h3>
+            <p className="text-muted-foreground mt-2 text-sm">
               &ldquo;{kitToDelete.name}&rdquo; will be permanently removed. This cannot be undone.
             </p>
-            {deleteError && (
-              <p className="mt-3 text-sm text-red-600">{deleteError}</p>
-            )}
-            <div className="mt-6 flex gap-3 justify-end">
-              <button
-                type="button"
+            {deleteError && <p className="mt-3 text-sm text-red-600">{deleteError}</p>}
+            <div className="mt-6 flex justify-end gap-3">
+              <SecondaryBtn
                 disabled={deleteLoading}
-                onClick={() => {
-                  setKitToDelete(null);
-                  setDeleteError(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-[#5C5C5C] hover:text-[#1A1A1A] disabled:opacity-70"
+                onClick={() => { setKitToDelete(null); setDeleteError(null); }}
               >
                 Cancel
-              </button>
+              </SecondaryBtn>
               <button
                 type="button"
                 disabled={deleteLoading}
@@ -229,7 +303,7 @@ function DashboardContent() {
                     setDeleteLoading(false);
                   }
                 }}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-sm disabled:opacity-70"
+                className="inline-flex h-10 items-center rounded-full bg-red-600 px-5 text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
               >
                 {deleteLoading ? "Deleting…" : "Delete"}
               </button>
@@ -249,435 +323,355 @@ function DashboardContent() {
         }}
       />
 
-      <main className="pt-[calc(7rem+env(safe-area-inset-top))] px-6 pb-24 max-w-4xl mx-auto">
+      <main className="mx-auto max-w-4xl px-5 pb-24 pt-24 sm:px-8">
+        {/* Banners */}
         {success && (
-          <div className="mb-8 p-4 rounded-sm bg-green-50 border border-green-200 text-green-800 text-sm">
+          <div className="mb-6 rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800">
             Payment successful! Your media kit is now live.
           </div>
         )}
         {instagramConnectedParam === "1" && (
-          <div className="mb-8 p-4 rounded-sm bg-green-50 border border-green-200 text-green-800 text-sm">
+          <div className="mb-6 rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800">
             Instagram connected. Your stats and posts will now load from your account.
           </div>
         )}
         {instagramErrorParam && (
-          <div className="mb-8 p-4 rounded-sm bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          <div className="mb-6 rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
             <p>{instagramErrorMessages[instagramErrorParam] ?? `Instagram: ${instagramErrorParam}`}</p>
-            <Link href="/help/instagram" className="mt-2 inline-block text-sm font-medium underline hover:no-underline">
+            <Link href="/help/instagram" className="mt-2 inline-block text-sm font-medium underline underline-offset-4 hover:no-underline">
               See connection help →
             </Link>
           </div>
         )}
 
-        <h1 className="font-display text-3xl font-semibold text-[#1A1A1A]">
-          Dashboard
-        </h1>
-        <p className="mt-2 text-[#5C5C5C]">
-          Manage your media kit and subscription.
-        </p>
+        <div className="mb-8">
+          <h1 className="font-display text-foreground text-3xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-1.5 text-sm">Manage your media kit and subscription.</p>
+        </div>
 
         {loading ? (
           <DashboardSkeleton />
         ) : !isSubscribed ? (
-          <div className="mt-12 p-8 border border-[#E8E6E3] rounded-sm bg-white">
-            <h2 className="font-display text-xl font-semibold text-[#1A1A1A]">
-              Unlock your media kit
-            </h2>
-            <p className="mt-2 text-[#5C5C5C] text-sm">
-              Subscribe to publish your professional pitch deck and connect live
-              social stats.
-            </p>
+          <Card>
+            <CardTitle>Unlock your media kit</CardTitle>
+            <CardDesc>
+              Subscribe to publish your professional pitch deck and connect live social stats.
+            </CardDesc>
             <div className="mt-6 max-w-sm">
               <SubscribeButton email={profile?.email} />
             </div>
-          </div>
+          </Card>
         ) : (
-          <div className="mt-12 space-y-8">
+          <div className="space-y-5">
             {/* Profile */}
             {profile && (
-              <div className="p-6 border border-[#E8E6E3] rounded-sm bg-white">
-                <h3 className="font-display text-lg font-semibold text-[#1A1A1A]">
-                  Profile
-                </h3>
-                <p className="mt-1 text-sm text-[#5C5C5C]">
+              <Card>
+                <CardTitle>Profile</CardTitle>
+                <CardDesc>
                   Shown on your public media kit. Set a username for a clean link.
-                </p>
+                </CardDesc>
                 {profileSaveError && (
-                  <div className="mb-4 rounded-sm bg-red-50 border border-red-200 p-3 text-sm text-red-800">
-                    {profileSaveError}
+                  <div className="mb-4 mt-3 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-800 flex items-center justify-between">
+                    <span>{profileSaveError}</span>
                     <button
                       type="button"
                       onClick={() => setProfileSaveError(null)}
-                      className="ml-2 text-red-600 hover:underline"
+                      className="ml-3 text-red-600 hover:underline text-xs"
                     >
                       Dismiss
                     </button>
                   </div>
                 )}
-                <ProfileForm
-                  profile={profile}
-                  onAvatarUrlChange={(url) =>
-                    setProfile((p) => (p ? { ...p, avatarUrl: url } : null))
-                  }
-                  onSave={async (data) => {
-                    setProfileSaving(true);
-                    setProfileSaveError(null);
-                    try {
-                      const res = await fetch("/api/me/profile", {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(data),
-                        credentials: "include",
-                      });
-                      if (res.ok) {
-                        const updated = await res.json();
-                        setProfile((p) => (p ? { ...p, ...updated } : null));
-                      } else {
-                        const err = await res.json().catch(() => ({}));
-                        setProfileSaveError(err.error ?? "Failed to save profile");
-                      }
-                    } finally {
-                      setProfileSaving(false);
+                <div className="mt-5">
+                  <ProfileForm
+                    profile={profile}
+                    onAvatarUrlChange={(url) =>
+                      setProfile((p) => (p ? { ...p, avatarUrl: url } : null))
                     }
-                  }}
-                  saving={profileSaving}
-                />
-              </div>
+                    onSave={async (data) => {
+                      setProfileSaving(true);
+                      setProfileSaveError(null);
+                      try {
+                        const res = await fetch("/api/me/profile", {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(data),
+                          credentials: "include",
+                        });
+                        if (res.ok) {
+                          const updated = await res.json();
+                          setProfile((p) => (p ? { ...p, ...updated } : null));
+                        } else {
+                          const err = await res.json().catch(() => ({}));
+                          setProfileSaveError(err.error ?? "Failed to save profile");
+                        }
+                      } finally {
+                        setProfileSaving(false);
+                      }
+                    }}
+                    saving={profileSaving}
+                  />
+                </div>
+              </Card>
             )}
 
-            {/* Instagram connection */}
-            <div className="p-6 border border-[#E8E6E3] rounded-sm bg-white">
-              <h3 className="font-display text-lg font-semibold text-[#1A1A1A]">
-                Instagram
-              </h3>
-              <p className="mt-1 text-sm text-[#5C5C5C]">
+            {/* Instagram */}
+            <Card>
+              <CardTitle>Instagram</CardTitle>
+              <CardDesc>
                 Connect your Instagram Business or Creator account to show live follower stats and pick posts for your kit.
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
+              </CardDesc>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
                 {instagramConnected ? (
                   <>
-                    <p className="text-sm text-green-600 font-medium">Connected</p>
-                    <button
-                      type="button"
-                      onClick={handleDisconnectInstagram}
-                      disabled={disconnectingInstagram}
-                      className="inline-block px-4 py-2 border border-[#E8E6E3] text-[#5C5C5C] text-sm font-medium rounded-sm hover:bg-[#FAFAFA] hover:border-[#8C8C8C] disabled:opacity-50"
-                    >
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-600">
+                      <span className="h-2 w-2 rounded-full bg-green-500" aria-hidden />
+                      Connected
+                    </span>
+                    <SecondaryBtn onClick={handleDisconnectInstagram} disabled={disconnectingInstagram}>
                       {disconnectingInstagram ? "Disconnecting…" : "Disconnect"}
-                    </button>
+                    </SecondaryBtn>
                   </>
                 ) : (
                   <a
                     href="/api/instagram/connect"
-                    className="inline-block px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-sm hover:bg-[#2D2D2D]"
+                    className="bg-foreground text-background inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
                   >
                     Connect Instagram
                   </a>
                 )}
                 <Link
                   href="/help/instagram"
-                  className="text-sm text-[#5C5C5C] hover:text-[#1A1A1A] hover:underline"
+                  className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                 >
-                  Connection help
+                  Connection help →
                 </Link>
               </div>
-            </div>
+            </Card>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              {enabledPlatformIds.map((platformId) => {
-                const meta = getPlatformMeta(platformId);
-                const stats = platformStats?.[platformId];
-                if (!stats) return null;
-                return (
-                  <div
-                    key={platformId}
-                    className="p-6 border border-[#E8E6E3] rounded-sm bg-white"
+            {/* Platform stats */}
+            {enabledPlatformIds.length > 0 && platformStats && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {enabledPlatformIds.map((platformId) => {
+                  const meta = getPlatformMeta(platformId);
+                  const stats = platformStats[platformId];
+                  if (!stats) return null;
+                  return (
+                    <Card key={platformId}>
+                      <p className="text-muted-foreground text-xs font-semibold tracking-[0.15em] uppercase">
+                        {meta.displayName}
+                      </p>
+                      <p className="font-display text-foreground mt-2 text-2xl font-semibold">
+                        {stats.followers.toLocaleString()} followers
+                      </p>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        +{stats.growthThisMonth}% this month · {stats.avgEngagement}% engagement
+                      </p>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Kits */}
+            <Card>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <CardTitle>Your kits</CardTitle>
+                  <CardDesc>
+                    Up to {allowedKits} kit{allowedKits !== 1 ? "s" : ""}. Each has its own shareable link.
+                  </CardDesc>
+                </div>
+                {kits.length > 0 && kits.length < allowedKits && !showAddKit && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddKit(true)}
+                    className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 shrink-0 inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors"
                   >
-                    <h3 className="text-sm uppercase tracking-wider text-[#8C8C8C]">
-                      {meta.displayName}
-                    </h3>
-                    <p className="mt-2 font-display text-2xl font-semibold text-[#1A1A1A]">
-                      {stats.followers.toLocaleString()} followers
-                    </p>
-                    <p className="mt-1 text-sm text-[#5C5C5C]">
-                      +{stats.growthThisMonth}% this month • {stats.avgEngagement}% engagement
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+                    + Add kit
+                  </button>
+                )}
+              </div>
 
-            <div className="p-6 border border-[#E8E6E3] rounded-sm bg-white">
-              <h3 className="font-display text-lg font-semibold text-[#1A1A1A]">
-                Your kits
-              </h3>
-              <p className="mt-2 text-sm text-[#5C5C5C]">
-                You can create up to {allowedKits} kit{allowedKits !== 1 ? "s" : ""}. Each has its own shareable link.
-              </p>
-              {kits.length === 0 && allowedKits > 0 ? (
-                <div className="mt-6 p-6 rounded-lg bg-[#FAFAFA] border border-[#E8E6E3] border-dashed">
-                  <h4 className="font-display text-base font-semibold text-[#1A1A1A]">
-                    Create your first kit
-                  </h4>
-                  <p className="mt-1 text-sm text-[#5C5C5C]">
+              {/* No kits yet */}
+              {kits.length === 0 && allowedKits > 0 && (
+                <div className="border-border mt-5 rounded-2xl border border-dashed p-6">
+                  <h4 className="font-display text-foreground text-base font-semibold">Create your first kit</h4>
+                  <p className="text-muted-foreground mt-1 text-sm">
                     Add a name and URL slug to get started. You can add work samples, rates and brands in the editor.
                   </p>
-                  <div className="mt-4 space-y-3">
-                    <input
-                      type="text"
-                      placeholder="Kit name"
+                  <div className="mt-5 space-y-3">
+                    <TextInput
                       value={newKitName}
-                      onChange={(e) => setNewKitName(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                      onChange={setNewKitName}
+                      placeholder="Kit name"
                     />
-                    <input
-                      type="text"
-                      placeholder="URL slug (e.g. my-fashion-kit)"
+                    <TextInput
                       value={newKitSlug}
-                      onChange={(e) => setNewKitSlug(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                      onChange={setNewKitSlug}
+                      placeholder="URL slug (e.g. my-fashion-kit)"
                     />
                     {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!newKitSlug.trim()) return;
-                          setAddKitError("");
-                          const res = await fetch("/api/kits", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ slug: newKitSlug.trim(), name: newKitName.trim() }),
-                            credentials: "include",
-                          });
-                          const data = await res.json().catch(() => ({}));
-                          if (res.ok && data.id) {
-                            setShowAddKit(false);
-                            setNewKitName("");
-                            setNewKitSlug("");
-                            fetch("/api/kits", { credentials: "include" })
-                              .then((r) => r.ok ? r.json() : [])
-                              .then((list) => setKits(Array.isArray(list) ? list : []));
-                            window.location.href = `/kit/edit?id=${encodeURIComponent(data.id)}`;
-                          } else {
-                            setAddKitError(data.error ?? "Failed to create kit");
-                          }
-                        }}
-                        className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-sm hover:bg-[#2D2D2D]"
-                      >
-                        Create & edit
-                      </button>
-                    </div>
+                    <PrimaryBtn onClick={createKit}>Create & edit</PrimaryBtn>
                   </div>
                 </div>
-              ) : (
-              <ul className="mt-4 space-y-3">
-                {kits.map((kit) => (
-                  <li
-                    key={kit.id}
-                    className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-lg border border-[#E8E6E3] bg-white"
-                  >
-                    <span className="font-medium text-[#1A1A1A]">{kit.name}</span>
-                    <span className="text-xs text-[#8C8C8C]">/kit/{kit.slug}</span>
-                    {typeof kit.viewCount === "number" && (
-                      <span className="text-xs text-[#5C5C5C]">
-                        {kit.viewCount === 0 ? "No views yet" : `${kit.viewCount} view${kit.viewCount !== 1 ? "s" : ""}`}
-                      </span>
-                    )}
-                    <div className="flex gap-1 ml-auto">
-                      <Link
-                        href={`/kit/edit?id=${encodeURIComponent(kit.id)}`}
-                        title="Edit"
-                        className="p-2 rounded-sm text-[#1A1A1A] hover:bg-[#F0F0F0] transition-colors"
-                        aria-label="Edit kit"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                      </Link>
-                      <a
-                        href={`/kit/${kit.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="View"
-                        className="p-2 rounded-sm text-[#1A1A1A] hover:bg-[#F0F0F0] transition-colors"
-                        aria-label="View kit"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
-                      </a>
-                      <button
-                        type="button"
-                        title="Delete"
-                        onClick={() => {
-                          setDeleteError(null);
-                          setKitToDelete({ id: kit.id, name: kit.name });
-                        }}
-                        className="p-2 rounded-sm text-red-600 hover:bg-red-50 transition-colors"
-                        aria-label="Delete kit"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
               )}
-              {(kits.length > 0 || allowedKits === 0) && (showAddKit && kits.length > 0 ? (
-                <div className="mt-4 p-4 rounded-lg bg-[#FAFAFA] border border-[#E8E6E3] space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Kit name"
-                    value={newKitName}
-                    onChange={(e) => setNewKitName(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
-                  />
-                  <input
-                    type="text"
-                    placeholder="URL slug (e.g. my-fashion-kit)"
-                    value={newKitSlug}
-                    onChange={(e) => setNewKitSlug(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
-                  />
+
+              {/* Kit list */}
+              {kits.length > 0 && (
+                <ul className="mt-5 space-y-2">
+                  {kits.map((kit) => (
+                    <li
+                      key={kit.id}
+                      className="border-border flex flex-wrap items-center gap-3 rounded-xl border bg-muted/30 px-4 py-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-foreground text-sm font-medium truncate">{kit.name}</p>
+                        <p className="text-muted-foreground text-xs">/kit/{kit.slug}</p>
+                      </div>
+                      {typeof kit.viewCount === "number" && (
+                        <span className="text-muted-foreground shrink-0 text-xs">
+                          {kit.viewCount === 0 ? "No views yet" : `${kit.viewCount} view${kit.viewCount !== 1 ? "s" : ""}`}
+                        </span>
+                      )}
+                      <div className="flex shrink-0 gap-1">
+                        <Link
+                          href={`/kit/edit?id=${encodeURIComponent(kit.id)}`}
+                          title="Edit"
+                          aria-label="Edit kit"
+                          className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg p-2 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                        </Link>
+                        <a
+                          href={`/kit/${kit.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="View"
+                          aria-label="View kit"
+                          className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg p-2 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+                        </a>
+                        <button
+                          type="button"
+                          title="Delete"
+                          aria-label="Delete kit"
+                          onClick={() => { setDeleteError(null); setKitToDelete({ id: kit.id, name: kit.name }); }}
+                          className="rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Add kit form (secondary) */}
+              {showAddKit && kits.length > 0 && (
+                <div className="border-border mt-4 space-y-3 rounded-2xl border p-5">
+                  <TextInput value={newKitName} onChange={setNewKitName} placeholder="Kit name" />
+                  <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
                   {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!newKitSlug.trim()) return;
-                        setAddKitError("");
-                        const res = await fetch("/api/kits", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ slug: newKitSlug.trim(), name: newKitName.trim() }),
-                          credentials: "include",
-                        });
-                        const data = await res.json().catch(() => ({}));
-                        if (res.ok && data.id) {
-                          setShowAddKit(false);
-                          setNewKitName("");
-                          setNewKitSlug("");
-                          fetch("/api/kits", { credentials: "include" })
-                            .then((r) => r.ok ? r.json() : [])
-                            .then((list) => setKits(Array.isArray(list) ? list : []));
-                          window.location.href = `/kit/edit?id=${encodeURIComponent(data.id)}`;
-                        } else {
-                          setAddKitError(data.error ?? "Failed to create kit");
-                        }
-                      }}
-                      className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-sm hover:bg-[#2D2D2D]"
-                    >
-                      Create & edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAddKit(false);
-                        setNewKitName("");
-                        setNewKitSlug("");
-                      }}
-                      className="px-4 py-2 border border-[#E8E6E3] text-sm rounded-sm"
-                    >
+                    <PrimaryBtn onClick={createKit}>Create & edit</PrimaryBtn>
+                    <SecondaryBtn onClick={() => { setShowAddKit(false); setNewKitName(""); setNewKitSlug(""); }}>
                       Cancel
-                    </button>
+                    </SecondaryBtn>
                   </div>
                 </div>
-              ) : allowedKits === 0 ? (
-                <p className="mt-4 text-sm text-[#8C8C8C]">
-                  Subscribe to create your first kit.
-                </p>
-              ) : kits.length < allowedKits ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAddKit(true)}
-                  className="mt-4 px-4 py-2 border border-dashed border-[#D4D4D4] text-sm text-[#5C5C5C] rounded-sm hover:border-[#1A1A1A] hover:text-[#1A1A1A]"
-                >
-                  + Add kit
-                </button>
-              ) : (
-                <p className="mt-4 text-sm text-[#8C8C8C]">
-                  At kit limit ({allowedKits}). Upgrade your plan for more.
-                </p>
-              ))}
-            </div>
+              )}
 
-            <div className="p-6 border border-[#E8E6E3] rounded-sm bg-white">
-              <h3 className="font-display text-lg font-semibold text-[#1A1A1A]">
-                Subscription
-              </h3>
-              {tierName && (
-                <p className="mt-2 text-sm text-[#5C5C5C]">
-                  Current plan: <span className="font-medium text-[#1A1A1A]">{tierName}</span>
+              {allowedKits === 0 && (
+                <p className="text-muted-foreground mt-4 text-sm">Subscribe to create your first kit.</p>
+              )}
+              {kits.length >= allowedKits && kits.length > 0 && !showAddKit && (
+                <p className="text-muted-foreground mt-4 text-sm">
+                  At kit limit ({allowedKits}).{" "}
+                  <Link href="/pricing" className="text-foreground underline underline-offset-4 hover:no-underline">
+                    Upgrade for more
+                  </Link>
+                  .
                 </p>
               )}
-              {tierId === "starter" && (
-                <button
-                  type="button"
+            </Card>
+
+            {/* Subscription */}
+            <Card>
+              <CardTitle>Subscription</CardTitle>
+              {tierName && (
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Current plan:{" "}
+                  <span className="text-foreground font-medium">{tierName}</span>
+                </p>
+              )}
+              <div className="mt-5 flex flex-wrap gap-3">
+                {tierId === "starter" && (
+                  <PrimaryBtn
+                    onClick={async () => {
+                      setUpgradeLoading(true);
+                      try {
+                        const res = await fetch("/api/upgrade-subscription", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ tierId: "pro" }),
+                          credentials: "include",
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                          const statusRes = await fetch("/api/subscription-status", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({}),
+                            credentials: "include",
+                          });
+                          const statusData = await statusRes.json();
+                          setTierId(statusData.tierId ?? null);
+                          setTierName(statusData.tierName ?? null);
+                          setAllowedKits(statusData.allowedKits ?? 1);
+                        } else {
+                          alert(data.error || "Upgrade failed");
+                        }
+                      } catch {
+                        alert("Something went wrong");
+                      } finally {
+                        setUpgradeLoading(false);
+                      }
+                    }}
+                    disabled={upgradeLoading}
+                  >
+                    {upgradeLoading ? "Upgrading…" : "Upgrade to Pro"}
+                  </PrimaryBtn>
+                )}
+                <SecondaryBtn
                   onClick={async () => {
-                    setUpgradeLoading(true);
+                    setPortalLoading(true);
                     try {
-                      const res = await fetch("/api/upgrade-subscription", {
+                      const res = await fetch("/api/create-portal-session", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ tierId: "pro" }),
+                        body: JSON.stringify({}),
                         credentials: "include",
                       });
                       const data = await res.json();
-                      if (res.ok && data.success) {
-                        const statusRes = await fetch("/api/subscription-status", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({}),
-                          credentials: "include",
-                        });
-                        const statusData = await statusRes.json();
-                        setTierId(statusData.tierId ?? null);
-                        setTierName(statusData.tierName ?? null);
-                        setAllowedKits(statusData.allowedKits ?? 1);
-                      } else {
-                        alert(data.error || "Upgrade failed");
-                      }
+                      if (data.url) { window.location.href = data.url; return; }
+                      alert(data.error || "Could not open billing portal.");
                     } catch {
-                      alert("Something went wrong");
+                      alert("Something went wrong.");
                     } finally {
-                      setUpgradeLoading(false);
+                      setPortalLoading(false);
                     }
                   }}
-                  disabled={upgradeLoading}
-                  className="mt-3 px-4 py-2 border border-[#1A1A1A] text-[#1A1A1A] text-sm font-medium rounded-sm hover:bg-[#FAFAFA] disabled:opacity-70"
+                  disabled={portalLoading}
                 >
-                  {upgradeLoading ? "Upgrading…" : "Upgrade to Pro"}
-                </button>
-              )}
-              <p className="mt-2 text-sm text-[#5C5C5C]">
+                  {portalLoading ? "Opening…" : "Manage subscription"}
+                </SecondaryBtn>
+              </div>
+              <p className="text-muted-foreground mt-3 text-sm">
                 Update payment method, view invoices, or cancel from the Stripe portal.
               </p>
-              <button
-                type="button"
-                onClick={async () => {
-                  setPortalLoading(true);
-                  try {
-                    const res = await fetch("/api/create-portal-session", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({}),
-                      credentials: "include",
-                    });
-                    const data = await res.json();
-                    if (data.url) {
-                      window.location.href = data.url;
-                      return;
-                    }
-                    alert(data.error || "Could not open billing portal.");
-                  } catch {
-                    alert("Something went wrong.");
-                  } finally {
-                    setPortalLoading(false);
-                  }
-                }}
-                disabled={portalLoading}
-                className="mt-4 px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-sm hover:bg-[#2D2D2D] disabled:opacity-70"
-              >
-                {portalLoading ? "Opening…" : "Manage subscription"}
-              </button>
-            </div>
+            </Card>
           </div>
         )}
       </main>
@@ -687,7 +681,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><span className="text-muted-foreground text-sm">Loading…</span></div>}>
       <DashboardContent />
     </Suspense>
   );

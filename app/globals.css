@@ -1,22 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FAF9F7;
-  --foreground: #1A1A1A;
-  --accent: #2D2D2D;
+  --background: #fafaf9;
+  --foreground: #111110;
+  --muted: #f5f4f2;
+  --muted-foreground: #6b6b68;
+  --border: #e4e3e0;
+  --ring: #111110;
+  --surface: #111110;
+  --surface-foreground: #fafaf9;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-body), system-ui, sans-serif;
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-body), system-ui, -apple-system, sans-serif;
   --font-display: var(--font-display), Georgia, serif;
 }
 
+html {
+  color-scheme: light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .font-display {

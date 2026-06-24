@@ -39,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${cormorant.variable} ${dmSans.variable} font-sans antialiased pt-[env(safe-area-inset-top)] bg-[#FAF9F7] text-[#1A1A1A]`}
+        className={`${cormorant.variable} ${dmSans.variable} font-sans antialiased`}
       >
         <Providers>{children}</Providers>
         <Analytics />
