@@ -1,0 +1,103 @@
+# Launch checklist — Media Kit Pro
+
+Use this when deploying to production. Full details: [SETUP.md](./SETUP.md) §2 (env) and §5 (Vercel).
+
+---
+
+## Before you start
+
+- [ ] Code is pushed to GitHub (or your Git host).
+- [ ] You have a **Stripe** account and a **production** Stripe key (or use test keys first).
+- [ ] (Optional) **Meta app** for Instagram: create at [developers.facebook.com](https://developers.facebook.com/apps/).
+
+---
+
+## 1. Vercel — create project
+
+- [ ] Go to [vercel.com](https://vercel.com) → **Add New** → **Project**.
+- [ ] **Import** your Git repository (e.g. `me-talk`).
+- [ ] Framework: **Next.js** (auto-detected). Leave Build Command as is (project uses `vercel.json` to run Prisma + build).
+- [ ] Click **Deploy** once to get a URL (e.g. `me-talk-xxx.vercel.app`). You’ll add env and DB next.
+
+---
+
+## 2. Production database
+
+- [ ] Create a **Postgres** database:
+  - **Vercel Postgres:** Project → Storage → Create Database → Postgres.
+  - Or **Neon** / **Supabase** / any Postgres — copy the connection string.
+- [ ] In Vercel → **Project → Settings → Environment Variables**, add:
+  - `DATABASE_URL` = your Postgres URL (e.g. `postgresql://...`).
+  - Apply to **Production** (and Preview if you want).
+
+---
+
+## 3. Environment variables (Vercel)
+
+In **Settings → Environment Variables**, add these for **Production**:
+
+| Variable | Example / note |
+|----------|----------------|
+| `DATABASE_URL` | Postgres URL (from step 2) |
+| `NEXTAUTH_SECRET` | Random 32+ chars (e.g. `openssl rand -base64 32`) |
+| `NEXTAUTH_URL` | Your app URL, e.g. `https://me-talk-xxx.vercel.app` |
+| `NEXT_PUBLIC_APP_URL` | Same as `NEXTAUTH_URL` |
+| `STRIPE_SECRET_KEY` | `sk_live_...` (or `sk_test_...` for testing) |
+| `STRIPE_WEBHOOK_SECRET` | Set after step 5 (webhook) |
+| `STRIPE_PRICE_ID_STARTER` | Stripe Price ID for Starter plan |
+| `STRIPE_PRICE_ID_PRO` | Stripe Price ID for Pro plan |
+| `SUBSCRIPTION_COOKIE_SECRET` | Random 32+ chars |
+| `META_APP_ID` | (Optional) Facebook App ID for Instagram |
+| `META_APP_SECRET` | (Optional) Facebook App secret |
+
+- [ ] All variables above are set.
+
+---
+
+## 4. Redeploy (run migrations)
+
+- [ ] **Redeploy** the project (Deployments → ⋮ → Redeploy, or push a commit).
+- [ ] The build runs `npm run build:vercel` (`prisma generate`, then `migrate deploy` **only if** `DATABASE_URL` is set, then `next build`). Production must have `DATABASE_URL` so migrations apply.
+- [ ] Check the build log for success; open your app URL and confirm the site loads.
+
+---
+
+## 5. Stripe webhook
+
+- [ ] **Stripe Dashboard** → [Developers → Webhooks](https://dashboard.stripe.com/webhooks) → **Add endpoint**.
+- [ ] **Endpoint URL:** `https://<your-vercel-url>/api/webhook` (e.g. `https://me-talk-xxx.vercel.app/api/webhook`).
+- [ ] **Events:** select `checkout.session.completed` (and optionally `customer.subscription.updated`, `customer.subscription.deleted`).
+- [ ] Copy the **Signing secret** (`whsec_...`).
+- [ ] In Vercel → **Environment Variables**, set `STRIPE_WEBHOOK_SECRET` to that value.
+- [ ] **Redeploy** again so the new secret is used.
+
+---
+
+## 6. Smoke test
+
+- [ ] Open your app URL → landing page loads.
+- [ ] **Sign up** with a new email → onboarding → dashboard.
+- [ ] **Pricing** → subscribe (use Stripe test card `4242 4242 4242 4242` if in test mode).
+- [ ] Create a **kit** → edit → publish; open the public **kit URL** and confirm it loads.
+- [ ] (If Instagram is configured) **Connect Instagram** from dashboard.
+
+---
+
+## 7. Optional after launch
+
+- [ ] **Custom domain:** Vercel → Settings → Domains → Add.
+- [ ] **Instagram redirect:** In Meta App → Facebook Login settings, add `https://<your-domain>/api/instagram/callback` to Valid OAuth Redirect URIs.
+
+---
+
+You’re live when steps 1–6 are done and the smoke test passes.
+
+---
+
+## If the deployment fails
+
+- **Preview build failed at `prisma migrate deploy`** — **Preview** often has no `DATABASE_URL` (only Production does). The project’s `npm run build:vercel` **skips** `migrate deploy` when `DATABASE_URL` is unset, so Preview can still build. If you want Preview to use a real DB (recommended for full QA), add `DATABASE_URL` for the **Preview** environment in Vercel (e.g. a Neon *branch* URL) — then migrations run on each preview deploy too.
+- **Production build failed at `prisma migrate deploy`** — Set `DATABASE_URL` in Vercel for **Production** to a valid Postgres URL and redeploy. Open the build log for the exact Prisma error (drift, failed migration SQL, etc.).
+- **`P3009` / `P3018` / “migration failed to apply”** — Production is stuck until you resolve the failed migration. Follow [PRISMA_P3009_REPAIR.md](./PRISMA_P3009_REPAIR.md) (usually `migrate resolve --applied` for `20260304150000_add_onboarding_completed_at` if `onboardingCompletedAt` already exists on `"User"`, then `migrate deploy`). Use the **exact** migration name printed in the build log.
+- **Failure after “Running TypeScript” or “Generating static pages”** — Often `next build` is calling the DB (e.g. static generation). Ensure `DATABASE_URL` exists for that environment or adjust pages to not require DB at build time.
+- **Full error** — In Vercel, open the failed deployment → scroll to the **bottom** of the Build Logs to see the exact error line.
