@@ -19,7 +19,7 @@
   --color-border: var(--border);
   --color-ring: var(--ring);
   --font-sans: var(--font-body), system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-display), Georgia, serif;
+  --font-display: var(--font-cormorant), Georgia, serif;
 }
 
 html {
@@ -49,5 +49,5 @@ body {
 }
 
 .font-display {
-  font-family: var(--font-display), Georgia, serif;
+  font-family: var(--font-cormorant), Georgia, serif;
 }

@@ -5,7 +5,7 @@ import "./globals.css";
 import { Providers } from "./components/Providers";
 
 const cormorant = Cormorant_Garamond({
-  variable: "--font-display",
+  variable: "--font-cormorant",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
