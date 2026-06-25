@@ -19,6 +19,13 @@ import type { ProfilePayload } from "@/app/api/me/profile/route";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+interface KitViewRecord {
+  id: string;
+  viewedAt: string;
+  referrer: string | null;
+  kit: { id: string; name: string; slug: string };
+}
+
 interface InquiryRecord {
   id: string;
   name: string;
@@ -28,6 +35,28 @@ interface InquiryRecord {
   createdAt: string;
   read: boolean;
   kit: { id: string; name: string; slug: string };
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+function referrerDomain(referrer: string | null): string | null {
+  if (!referrer) return null;
+  try {
+    return new URL(referrer).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
 }
 
 // ─── Design system primitives ────────────────────────────────────────────────
@@ -238,6 +267,9 @@ function DashboardContent() {
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [inquiries, setInquiries] = useState<InquiryRecord[]>([]);
   const [inquiriesLoaded, setInquiriesLoaded] = useState(false);
+  const [kitViews, setKitViews] = useState<KitViewRecord[]>([]);
+  const [kitViewsThisWeek, setKitViewsThisWeek] = useState(0);
+  const [kitViewsLoaded, setKitViewsLoaded] = useState(false);
   const [disconnectingInstagram, setDisconnectingInstagram] = useState(false);
   const searchParams = useSearchParams();
   const success = searchParams.get("success") === "true";
@@ -279,6 +311,21 @@ function DashboardContent() {
         setKits(Array.isArray(data) ? data : []);
       })
       .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isSubscribed]);
+
+  useEffect(() => {
+    if (!isSubscribed) return;
+    let cancelled = false;
+    fetch("/api/kit-views", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setKitViews(Array.isArray(data.views) ? data.views : []);
+        setKitViewsThisWeek(typeof data.thisWeek === "number" ? data.thisWeek : 0);
+        setKitViewsLoaded(true);
+      })
+      .catch(() => { if (!cancelled) setKitViewsLoaded(true); });
     return () => { cancelled = true; };
   }, [isSubscribed]);
 
@@ -695,9 +742,10 @@ function DashboardContent() {
             {/* ── Main content ── */}
             <div className="space-y-6">
               {/* Stats */}
-              {enabledPlatformIds.length > 0 && platformStats && (
+              {(enabledPlatformIds.length > 0 && platformStats) || kitViewsLoaded ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {enabledPlatformIds.map((platformId) => {
+                    if (!platformStats) return null;
                     const meta = getPlatformMeta(platformId);
                     const stats = platformStats[platformId];
                     if (!stats) return null;
@@ -723,8 +771,25 @@ function DashboardContent() {
                       </Card>
                     );
                   })}
+                  {kitViewsLoaded && kits.length > 0 && (
+                    <Card className="py-5">
+                      <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
+                        Kit views
+                      </p>
+                      <p className="font-display text-foreground mt-2 text-3xl font-semibold tabular-nums">
+                        {kitViewsThisWeek}
+                      </p>
+                      <p className="text-muted-foreground mt-0.5 text-sm">this week</p>
+                      <div className="mt-4">
+                        <p className="text-foreground text-sm font-semibold">
+                          {kits.reduce((sum, k) => sum + (k.viewCount ?? 0), 0).toLocaleString()}
+                        </p>
+                        <p className="text-muted-foreground text-xs">all time</p>
+                      </div>
+                    </Card>
+                  )}
                 </div>
-              )}
+              ) : null}
 
               {/* Kits */}
               <div>
@@ -890,6 +955,39 @@ function DashboardContent() {
                           </a>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Recent activity — kit view feed */}
+              {kitViewsLoaded && kits.length > 0 && (
+                <div>
+                  <SectionLabel>Recent activity</SectionLabel>
+                  {kitViews.length === 0 ? (
+                    <div className="border-border rounded-2xl border border-dashed p-8 text-center">
+                      <p className="text-foreground text-sm font-semibold">No views yet</p>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        Share your kit link and views will appear here in real time.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="border-border rounded-2xl border divide-y divide-border overflow-hidden">
+                      {kitViews.slice(0, 20).map((view) => {
+                        const ago = timeAgo(view.viewedAt);
+                        const domain = referrerDomain(view.referrer);
+                        return (
+                          <div key={view.id} className="flex items-center justify-between gap-4 px-5 py-3.5 bg-background hover:bg-muted/40 transition-colors">
+                            <div className="min-w-0">
+                              <p className="text-foreground text-sm font-medium truncate">{view.kit.name}</p>
+                              {domain && (
+                                <p className="text-muted-foreground text-xs mt-0.5 truncate">via {domain}</p>
+                              )}
+                            </div>
+                            <p className="text-muted-foreground text-xs shrink-0">{ago}</p>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
