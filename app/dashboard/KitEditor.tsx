@@ -277,19 +277,26 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
 
       {isDbKit && (
         <div className="border-border bg-background space-y-8 rounded-2xl border p-6">
-          <div>
-            <h3 className="text-foreground text-base font-semibold tracking-tight">
-              Brand Kit
-            </h3>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Choose a visual style for your public kit. Saves with <strong>Save changes</strong>.
-            </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-foreground text-base font-semibold tracking-tight">
+                Brand Kit
+              </h3>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Choose a visual identity for your public kit.
+              </p>
+            </div>
+            {appearance.preset && (
+              <span className="text-muted-foreground bg-muted shrink-0 rounded-full px-3 py-1 text-xs font-medium">
+                {KIT_APPEARANCE_PRESET_LABELS[appearance.preset]}
+              </span>
+            )}
           </div>
 
           {/* ── Basic presets (all plans) ── */}
           <div>
             <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
-              Basic styles
+              Starter styles
             </p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {BASIC_PRESETS.map((preset) => {
@@ -299,10 +306,10 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                     key={preset}
                     type="button"
                     onClick={() => setAppearance((a) => ({ ...a, preset }))}
-                    className={`rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                    className={`rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-all duration-150 ${
                       active
-                        ? "border-foreground bg-foreground text-background"
-                        : "border-border text-foreground hover:bg-muted"
+                        ? "border-foreground bg-foreground text-background shadow-sm"
+                        : "border-border text-foreground hover:bg-muted hover:border-foreground/20"
                     }`}
                   >
                     {KIT_APPEARANCE_PRESET_LABELS[preset]}
@@ -314,7 +321,7 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
 
           {/* ── Brand Kit Vibes (Pro) ── */}
           <div>
-            <div className="mb-3 flex items-center gap-2">
+            <div className="mb-4 flex items-center gap-2">
               <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
                 Brand Kit Vibes
               </p>
@@ -326,17 +333,33 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
             </div>
 
             {!isPro ? (
-              <div className="border-border rounded-2xl border border-dashed p-6 text-center">
-                <p className="text-foreground text-sm font-semibold">5 signature design styles</p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Editorial, Studio, Bloom, Electric, Noir Pro — each with custom accent colors and font pairings.
-                </p>
-                <a
-                  href="/pricing"
-                  className="bg-foreground text-background mt-4 inline-flex h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
-                >
-                  Upgrade to Pro
-                </a>
+              /* Teaser tiles — non-interactive previews */
+              <div className="relative">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 opacity-50 pointer-events-none select-none">
+                  {BRAND_KIT_VIBES.slice(0, 3).map((vibe) => {
+                    const meta = BRAND_KIT_VIBE_META[vibe];
+                    return (
+                      <div key={vibe} className="relative overflow-hidden rounded-2xl border border-border">
+                        <div className="h-24 w-full flex flex-col justify-end p-4" style={{ backgroundColor: meta.bg }}>
+                          <p className="font-display text-base font-semibold leading-tight" style={{ color: meta.fg }}>{meta.label}</p>
+                          <p className="text-[11px] mt-0.5 opacity-60" style={{ color: meta.fg }}>{meta.tagline}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-background/80 backdrop-blur-sm text-center p-6">
+                  <p className="text-foreground text-sm font-semibold">5 signature design styles</p>
+                  <p className="text-muted-foreground mt-1 text-xs max-w-xs">
+                    Editorial, Studio, Bloom, Electric, Noir Pro — each with custom accent and font pairings.
+                  </p>
+                  <a
+                    href="/pricing"
+                    className="bg-foreground text-background mt-4 inline-flex h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
+                  >
+                    Upgrade to Pro →
+                  </a>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -348,27 +371,35 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                       key={vibe}
                       type="button"
                       onClick={() => setAppearance((a) => ({ ...a, preset: vibe }))}
-                      className={`relative overflow-hidden rounded-2xl border text-left transition-all ${
-                        active ? "ring-2 ring-foreground ring-offset-2" : "border-border hover:border-foreground/30"
+                      className={`relative overflow-hidden rounded-2xl border text-left transition-all duration-200 ${
+                        active
+                          ? "ring-2 ring-foreground ring-offset-2 border-transparent scale-[1.02]"
+                          : "border-border hover:border-foreground/30 hover:scale-[1.01]"
                       }`}
                     >
-                      {/* Color preview strip */}
+                      {/* Full-height color preview with content inside */}
                       <div
-                        className="h-14 w-full"
+                        className="h-24 w-full flex flex-col justify-end p-4"
                         style={{ backgroundColor: meta.bg }}
                       >
-                        <div className="flex h-full items-end px-4 pb-3">
-                          <span
-                            className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                            style={{ backgroundColor: meta.fg, color: meta.bg }}
-                          >
-                            {meta.label}
-                          </span>
-                        </div>
+                        {active && (
+                          <div className="absolute top-3 right-3">
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ color: meta.fg }}>
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </span>
+                          </div>
+                        )}
+                        <p className="font-display text-base font-semibold leading-tight" style={{ color: meta.fg }}>
+                          {meta.label}
+                        </p>
+                        <p className="text-[11px] mt-0.5 opacity-60" style={{ color: meta.fg }}>
+                          {meta.tagline}
+                        </p>
                       </div>
-                      <div className="bg-background border-border border-t p-3">
-                        <p className="text-foreground text-xs font-semibold">{meta.label}</p>
-                        <p className="text-muted-foreground mt-0.5 text-[11px]">{meta.for}</p>
+                      <div className="bg-background border-t border-border px-4 py-2.5">
+                        <p className="text-muted-foreground text-[11px]">{meta.for}</p>
                       </div>
                     </button>
                   );
@@ -381,9 +412,9 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
           {isPro && (
             <div>
               <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
-                Accent color override
+                Accent color
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {[
                   "#111110", "#f5f0e8", "#c9a84c", "#6366f1",
                   "#c97b4b", "#2d9b8a", "#e14d6e", "#3b82f6",
@@ -400,21 +431,22 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                           accentColor: active ? undefined : color,
                         }))
                       }
-                      className={`h-8 w-8 rounded-full border-2 transition-transform hover:scale-110 ${
-                        active ? "border-foreground scale-110" : "border-transparent"
+                      className={`h-8 w-8 rounded-full transition-all duration-150 hover:scale-110 ${
+                        active ? "ring-2 ring-foreground ring-offset-2 scale-110" : "ring-1 ring-border"
                       }`}
                       style={{ backgroundColor: color }}
                     />
                   );
                 })}
-                <button
-                  type="button"
-                  title="Clear accent override"
-                  onClick={() => setAppearance((a) => ({ ...a, accentColor: undefined }))}
-                  className="border-border text-muted-foreground hover:text-foreground h-8 rounded-full border px-3 text-[11px] font-medium transition-colors"
-                >
-                  Clear
-                </button>
+                {appearance.accentColor && (
+                  <button
+                    type="button"
+                    onClick={() => setAppearance((a) => ({ ...a, accentColor: undefined }))}
+                    className="border-border text-muted-foreground hover:text-foreground h-8 rounded-full border px-3 text-[11px] font-medium transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -422,8 +454,8 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
           {/* ── Logo URL (Pro) ── */}
           {isPro && (
             <div>
-              <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
-                Brand logo URL
+              <p className="text-muted-foreground mb-2 text-[11px] font-semibold tracking-[0.16em] uppercase">
+                Brand logo
               </p>
               <input
                 type="url"
@@ -438,7 +470,7 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                 className="border-border bg-background text-foreground placeholder:text-muted-foreground w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <p className="text-muted-foreground mt-1.5 text-xs">
-                Displayed in your kit header instead of the Media Kit Pro wordmark.
+                Shown in your kit header instead of the Media Kit Pro wordmark.
               </p>
             </div>
           )}
