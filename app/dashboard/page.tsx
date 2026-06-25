@@ -13,7 +13,7 @@ import {
 } from "@/lib/platforms";
 import { AppNav } from "../components/AppNav";
 import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm";
-import { DashboardSkeleton } from "../components/Skeleton";
+import { DashboardSkeleton, StatCardSkeleton, KitCardSkeleton, CountUp } from "../components/Skeleton";
 import type { KitRecord } from "@/lib/kit-storage";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
 
@@ -742,11 +742,11 @@ function DashboardContent() {
             {/* ── Main content ── */}
             <div className="space-y-6">
               {/* Stats */}
-              {(enabledPlatformIds.length > 0 && platformStats) || kitViewsLoaded ? (
+              {isSubscribed && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {enabledPlatformIds.map((platformId) => {
-                    if (!platformStats) return null;
                     const meta = getPlatformMeta(platformId);
+                    if (!platformStats) return <StatCardSkeleton key={platformId} />;
                     const stats = platformStats[platformId];
                     if (!stats) return null;
                     return (
@@ -755,41 +755,47 @@ function DashboardContent() {
                           {meta.displayName}
                         </p>
                         <p className="font-display text-foreground mt-2 text-3xl font-semibold tabular-nums">
-                          {stats.followers.toLocaleString()}
+                          <CountUp value={stats.followers} duration={1400} />
                         </p>
                         <p className="text-muted-foreground mt-0.5 text-sm">followers</p>
                         <div className="mt-4 flex gap-4">
                           <div>
-                            <p className="text-foreground text-sm font-semibold">{stats.avgEngagement}%</p>
+                            <p className="text-foreground text-sm font-semibold">
+                              <CountUp value={stats.avgEngagement} decimals={1} suffix="%" duration={1000} />
+                            </p>
                             <p className="text-muted-foreground text-xs">engagement</p>
                           </div>
                           <div>
-                            <p className="text-foreground text-sm font-semibold">+{stats.growthThisMonth}%</p>
+                            <p className="text-foreground text-sm font-semibold">
+                              +<CountUp value={stats.growthThisMonth} decimals={1} suffix="%" duration={1000} />
+                            </p>
                             <p className="text-muted-foreground text-xs">this month</p>
                           </div>
                         </div>
                       </Card>
                     );
                   })}
-                  {kitViewsLoaded && kits.length > 0 && (
+                  {!kitViewsLoaded ? (
+                    <StatCardSkeleton />
+                  ) : kits.length > 0 ? (
                     <Card className="py-5">
                       <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
                         Kit views
                       </p>
                       <p className="font-display text-foreground mt-2 text-3xl font-semibold tabular-nums">
-                        {kitViewsThisWeek}
+                        <CountUp value={kitViewsThisWeek} duration={1000} />
                       </p>
                       <p className="text-muted-foreground mt-0.5 text-sm">this week</p>
                       <div className="mt-4">
                         <p className="text-foreground text-sm font-semibold">
-                          {kits.reduce((sum, k) => sum + (k.viewCount ?? 0), 0).toLocaleString()}
+                          <CountUp value={kits.reduce((sum, k) => sum + (k.viewCount ?? 0), 0)} duration={1200} />
                         </p>
                         <p className="text-muted-foreground text-xs">all time</p>
                       </div>
                     </Card>
-                  )}
+                  ) : null}
                 </div>
-              ) : null}
+              )}
 
               {/* Kits */}
               <div>
@@ -824,8 +830,13 @@ function DashboardContent() {
                   </div>
                 )}
 
-                {/* Kit cards */}
-                {kits.length > 0 && (
+                {/* Kit cards — shimmer until kits loaded */}
+                {!subscriptionLoaded ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <KitCardSkeleton />
+                    <KitCardSkeleton />
+                  </div>
+                ) : kits.length > 0 && (
                   <div className="grid gap-4 sm:grid-cols-2">
                     {kits.map((kit) => (
                       <KitCard

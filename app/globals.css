@@ -51,3 +51,7 @@ body {
 .font-display {
   font-family: var(--font-cormorant), Georgia, serif;
 }
+
+@keyframes shimmer {
+  100% { transform: translateX(200%); }
+}

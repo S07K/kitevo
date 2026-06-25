@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
+import { CountUp } from "@/app/components/Skeleton";
 import type { PlatformId, PlatformStatsWithCharts } from "@/lib/platforms";
 import { getPlatformMeta } from "@/lib/platforms";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
@@ -361,12 +362,12 @@ export function MediaKitClient({
                     {PLATFORM_LABELS[platformId] ?? platformId}
                   </p>
                   <p className="mt-2 font-display text-2xl font-semibold text-[var(--mk-text)] tracking-tight">
-                    {stats.followers.toLocaleString()}
+                    <CountUp value={stats.followers} duration={1400} />
                   </p>
                   <p className="text-xs text-[var(--mk-text-muted)] font-sans">followers</p>
                   {posts != null && (
                     <p className="mt-1.5 text-xs text-[var(--mk-text-soft)] font-sans tabular-nums">
-                      {posts.toLocaleString()} posts
+                      <CountUp value={posts} duration={1200} /> posts
                     </p>
                   )}
                 </div>
@@ -396,13 +397,13 @@ export function MediaKitClient({
                       {meta.displayName}
                     </p>
                     <p className="mt-4 font-display text-3xl sm:text-4xl font-semibold text-[var(--mk-text)] tracking-tight">
-                      {stats.followers.toLocaleString()}
+                      <CountUp value={stats.followers} duration={1600} />
                     </p>
                     <p className="mt-2 text-sm font-medium text-emerald-700/90">
-                      +{stats.growthThisMonth}% this month
+                      +<CountUp value={stats.growthThisMonth} decimals={1} suffix="%" duration={1000} /> this month
                     </p>
                     <p className="mt-1 text-sm text-[var(--mk-text-muted)]">
-                      {stats.avgEngagement}% avg. engagement
+                      <CountUp value={stats.avgEngagement} decimals={1} suffix="%" duration={1000} /> avg. engagement
                     </p>
                   </div>
                 );
