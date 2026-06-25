@@ -172,6 +172,26 @@ function KitCard({
 }) {
   const preset = (kit as { appearance?: { preset?: string } }).appearance?.preset ?? "warm";
   const vibe = VIBE_COLORS[preset] ?? VIBE_COLORS.warm;
+  const [exporting, setExporting] = useState(false);
+
+  async function downloadPdf() {
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/kits/${kit.id}/export`, { credentials: "include" });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${kit.slug}-media-kit.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silent — could show a toast here
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="border-border bg-background group relative overflow-hidden rounded-2xl border transition-shadow hover:shadow-md">
@@ -223,6 +243,19 @@ function KitCard({
           </svg>
           View
         </a>
+        <button
+          type="button"
+          onClick={downloadPdf}
+          disabled={exporting}
+          className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" x2="12" y1="15" y2="3" />
+          </svg>
+          {exporting ? "…" : "PDF"}
+        </button>
         <button
           type="button"
           onClick={onDelete}
