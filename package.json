@@ -16,7 +16,10 @@
     "ios": "npx cap open ios",
     "android:build": "npm run build && npx cap sync android",
     "android": "npx cap open android",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "DATABASE_URL=\"postgresql://shubham@localhost:5432/media_kit_pro\" prisma migrate deploy",
+    "db:studio": "DATABASE_URL=\"postgresql://shubham@localhost:5432/media_kit_pro\" prisma studio",
+    "db:push": "DATABASE_URL=\"postgresql://shubham@localhost:5432/media_kit_pro\" prisma db push"
   },
   "dependencies": {
     "@capacitor/android": "^8.1.0",

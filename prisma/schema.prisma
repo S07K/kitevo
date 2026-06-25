@@ -39,6 +39,7 @@ model User {
   kits      Kit[]
 }
 
+
 model Kit {
   id                String   @id @default(cuid())
   userId            String
@@ -57,7 +58,8 @@ model Kit {
   @@index([userId])
 
   // Phase 12.3: Kit analytics (views)
-  views KitView[]
+  views     KitView[]
+  inquiries Inquiry[]
 }
 
 model KitView {
@@ -69,4 +71,19 @@ model KitView {
 
   @@index([kitId])
   @@index([viewedAt])
+}
+
+model Inquiry {
+  id        String   @id @default(cuid())
+  kitId     String
+  kit       Kit      @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  company   String?
+  message   String
+  createdAt DateTime @default(now())
+  read      Boolean  @default(false)
+
+  @@index([kitId])
+  @@index([createdAt])
 }

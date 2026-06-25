@@ -10,6 +10,8 @@ import {
   MOCK_BRANDS,
 } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
+import { stripe } from "@/lib/stripe";
+import { getTierByPriceId } from "@/config/subscriptions";
 import { getKitBySlug } from "@/lib/get-kit-by-slug";
 import { recordKitView } from "@/lib/kit-views";
 import { MediaKitClient } from "./MediaKitClient";
@@ -54,9 +56,26 @@ export default async function MediaKitPage({ params }: { params: Promise<{ usern
       Promise.resolve(getEnabledPlatformIds()),
       prisma.user.findUnique({
         where: { id: result.kit.userId },
-        select: { instagramUserId: true },
+        select: { instagramUserId: true, stripeCustomerId: true },
       }),
     ]);
+
+    let inquiryEnabled = false;
+    if (user?.stripeCustomerId) {
+      try {
+        const subs = await stripe.subscriptions.list({
+          customer: user.stripeCustomerId,
+          status: "active",
+          limit: 1,
+        });
+        const priceId = subs.data[0]?.items?.data?.[0]?.price?.id ?? null;
+        const tier = getTierByPriceId(priceId);
+        inquiryEnabled = tier?.id === "pro";
+      } catch {
+        // Stripe unavailable — degrade gracefully
+      }
+    }
+
     const platformStats = { instagram: instagramStats };
     const instagramConnected = !!user?.instagramUserId;
     return (
@@ -77,6 +96,8 @@ export default async function MediaKitPage({ params }: { params: Promise<{ usern
         sectionVisibility={result.kit.sectionVisibility}
         appearance={result.kit.appearance}
         instagramConnected={instagramConnected}
+        kitId={result.kit.id}
+        inquiryEnabled={inquiryEnabled}
       />
     );
   }

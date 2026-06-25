@@ -17,6 +17,19 @@ import { DashboardSkeleton } from "../components/Skeleton";
 import type { KitRecord } from "@/lib/kit-storage";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface InquiryRecord {
+  id: string;
+  name: string;
+  email: string;
+  company: string | null;
+  message: string;
+  createdAt: string;
+  read: boolean;
+  kit: { id: string; name: string; slug: string };
+}
+
 // ─── Design system primitives ────────────────────────────────────────────────
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -223,6 +236,8 @@ function DashboardContent() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [instagramConnected, setInstagramConnected] = useState(false);
+  const [inquiries, setInquiries] = useState<InquiryRecord[]>([]);
+  const [inquiriesLoaded, setInquiriesLoaded] = useState(false);
   const [disconnectingInstagram, setDisconnectingInstagram] = useState(false);
   const searchParams = useSearchParams();
   const success = searchParams.get("success") === "true";
@@ -266,6 +281,18 @@ function DashboardContent() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [isSubscribed]);
+
+  useEffect(() => {
+    if (tierId !== "pro") return;
+    let cancelled = false;
+    fetch("/api/inquiries", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        if (!cancelled) { setInquiries(Array.isArray(data) ? data : []); setInquiriesLoaded(true); }
+      })
+      .catch(() => { if (!cancelled) setInquiriesLoaded(true); });
+    return () => { cancelled = true; };
+  }, [tierId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -792,6 +819,81 @@ function DashboardContent() {
                   </div>
                 )}
               </div>
+
+              {/* Brand Inbox — Pro only */}
+              {tierId === "pro" && (
+                <div>
+                  <div className="mb-4 flex items-center gap-2">
+                    <SectionLabel>Brand inbox</SectionLabel>
+                    {inquiries.filter((i) => !i.read).length > 0 && (
+                      <span className="bg-foreground text-background mb-4 rounded-full px-2 py-0.5 text-[10px] font-semibold">
+                        {inquiries.filter((i) => !i.read).length} new
+                      </span>
+                    )}
+                  </div>
+
+                  {!inquiriesLoaded ? (
+                    <p className="text-muted-foreground text-sm">Loading…</p>
+                  ) : inquiries.length === 0 ? (
+                    <div className="border-border rounded-2xl border border-dashed p-8 text-center">
+                      <p className="text-foreground text-sm font-semibold">No inquiries yet</p>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        When brands fill out your inquiry form, messages will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {inquiries.map((inq) => (
+                        <div
+                          key={inq.id}
+                          className={`border-border rounded-2xl border p-5 transition-colors ${
+                            !inq.read ? "bg-muted/60" : "bg-background"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-foreground text-sm font-semibold truncate">{inq.name}</p>
+                                {!inq.read && (
+                                  <span className="bg-foreground text-background shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide">
+                                    New
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-muted-foreground text-xs mt-0.5">
+                                {inq.email}{inq.company ? ` · ${inq.company}` : ""}
+                              </p>
+                              <p className="text-muted-foreground text-[10px] mt-0.5">
+                                {inq.kit.name} · {new Date(inq.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            {!inq.read && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  fetch(`/api/inquiries/${inq.id}`, { method: "PATCH", credentials: "include" })
+                                    .then((r) => r.ok ? setInquiries((prev) => prev.map((i) => i.id === inq.id ? { ...i, read: true } : i)) : null)
+                                    .catch(() => {});
+                                }}
+                                className="border-border text-muted-foreground hover:text-foreground shrink-0 rounded-full border px-3 py-1 text-xs transition-colors"
+                              >
+                                Mark read
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-foreground mt-3 text-sm leading-relaxed">{inq.message}</p>
+                          <a
+                            href={`mailto:${inq.email}?subject=Re: collaboration inquiry`}
+                            className="text-muted-foreground hover:text-foreground mt-3 inline-block text-xs underline underline-offset-4 transition-colors"
+                          >
+                            Reply via email →
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

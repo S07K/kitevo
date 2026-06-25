@@ -208,9 +208,9 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
 
   if (!effectiveKitId) {
     return (
-      <div className="p-8 border border-[#E8E6E3] rounded-lg bg-white text-center">
-        <p className="text-[#5C5C5C]">No kit selected. Create one from the dashboard.</p>
-        <a href="/dashboard" className="mt-4 inline-block text-sm font-medium text-[#1A1A1A] underline">
+      <div className="p-8 border border-border rounded-2xl bg-background text-center">
+        <p className="text-muted-foreground">No kit selected. Create one from the dashboard.</p>
+        <a href="/dashboard" className="mt-4 inline-block text-sm font-medium text-foreground underline">
           Back to dashboard
         </a>
       </div>
@@ -227,19 +227,19 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-semibold text-[#1A1A1A]">
+        <h2 className="font-display text-xl font-semibold text-foreground">
           Edit your kit
         </h2>
         <button
           type="button"
           onClick={save}
-          className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-sm hover:bg-[#2D2D2D] disabled:opacity-70"
+          className="px-4 py-2 bg-foreground text-background text-sm font-medium rounded-full hover:opacity-80 disabled:opacity-70"
         >
           {saved ? "Saved" : "Save changes"}
         </button>
       </div>
       {loadError && (
-        <div className="rounded-sm bg-red-50 border border-red-200 p-4 text-sm text-red-800">
+        <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-sm text-red-800">
           <p className="font-medium">Something went wrong</p>
           <p className="mt-1">{loadError}</p>
           <button
@@ -253,11 +253,11 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
       )}
 
       {/* Section visibility — what appears on the public kit */}
-      <div className="p-6 border border-[#E8E6E3] rounded-lg bg-white">
-        <h3 className="text-sm uppercase tracking-wider text-[#8C8C8C] font-medium">
+      <div className="p-6 border border-border rounded-2xl bg-background">
+        <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
           Section visibility
         </h3>
-        <p className="mt-1 text-sm text-[#5C5C5C]">
+        <p className="mt-1 text-sm text-muted-foreground">
           Choose which sections appear on your public media kit.
         </p>
         <div className="mt-4 space-y-3">
@@ -267,9 +267,9 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                 type="checkbox"
                 checked={sectionVisibility[key]}
                 onChange={(e) => updateSectionVisibility(key, e.target.checked)}
-                className="rounded border-[#D4D4D4] text-[#1A1A1A] focus:ring-[#1A1A1A]"
+                className="rounded border-border text-foreground focus:ring-ring"
               />
-              <span className="text-sm text-[#1A1A1A]">{label}</span>
+              <span className="text-sm text-foreground">{label}</span>
             </label>
           ))}
         </div>
@@ -446,20 +446,20 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
       )}
 
       {/* Work samples */}
-      <div className="p-6 border border-[#E8E6E3] rounded-lg bg-white">
-        <h3 className="text-sm uppercase tracking-wider text-[#8C8C8C] font-medium">
+      <div className="p-6 border border-border rounded-2xl bg-background">
+        <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
           Work samples
         </h3>
-        <p className="mt-1 text-sm text-[#5C5C5C]">
+        <p className="mt-1 text-sm text-muted-foreground">
           Add posts or videos you want brands to see.
         </p>
 
         {/* Select from Instagram */}
-        <div className="mt-6 pt-6 border-t border-[#E8E6E3]">
-          <p className="text-sm font-medium text-[#1A1A1A]">
+        <div className="mt-6 pt-6 border-t border-border">
+          <p className="text-sm font-medium text-foreground">
             Select from your Instagram posts
           </p>
-          <p className="mt-0.5 text-xs text-[#8C8C8C]">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             We&apos;ll fetch your recent posts so you can pick which to feature.
           </p>
           {fetchedPosts === null ? (
@@ -467,7 +467,7 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
               type="button"
               onClick={loadInstagramPosts}
               disabled={loadingPosts}
-              className="mt-3 px-4 py-2 border border-[#1A1A1A] text-[#1A1A1A] text-sm font-medium rounded-sm hover:bg-[#F5F5F5] disabled:opacity-60"
+              className="mt-3 px-4 py-2 border border-foreground text-foreground text-sm font-medium rounded-full hover:bg-muted disabled:opacity-60"
             >
               {loadingPosts ? "Loading…" : "Load Instagram posts"}
             </button>
@@ -477,7 +477,7 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                 type="button"
                 onClick={loadInstagramPosts}
                 disabled={loadingPosts}
-                className="mt-3 text-xs text-[#5C5C5C] hover:underline disabled:opacity-60"
+                className="mt-3 text-xs text-muted-foreground hover:underline disabled:opacity-60"
               >
                 {loadingPosts ? "Refreshing…" : "Refresh"}
               </button>
@@ -487,28 +487,28 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                   return (
                     <div
                       key={post.id}
-                      className="rounded-lg border border-[#E8E6E3] overflow-hidden bg-[#FAFAFA]"
+                      className="rounded-xl border border-border overflow-hidden bg-muted"
                     >
-                      <div className="aspect-square relative bg-[#E8E6E3]">
+                      <div className="aspect-square relative bg-border">
                         <img
                           src={post.thumbnailUrl}
                           alt=""
                           className="w-full h-full object-cover"
                         />
                         {inKit && (
-                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-[#1A1A1A] text-white text-[10px] font-medium rounded">
+                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-foreground text-background text-[10px] font-medium rounded-full">
                             In kit
                           </span>
                         )}
                       </div>
-                      <p className="p-2 text-xs text-[#5C5C5C] line-clamp-2">
+                      <p className="p-2 text-xs text-muted-foreground line-clamp-2">
                         {post.caption || "No caption"}
                       </p>
                       {!inKit && (
                         <button
                           type="button"
                           onClick={() => addPostToKit(post)}
-                          className="w-full py-1.5 text-xs font-medium text-[#1A1A1A] border-t border-[#E8E6E3] hover:bg-[#F0F0F0]"
+                          className="w-full py-1.5 text-xs font-medium text-foreground border-t border-border hover:bg-muted"
                         >
                           Add to kit
                         </button>
@@ -521,17 +521,17 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
           )}
         </div>
 
-        <p className="mt-6 text-xs text-[#8C8C8C]">
+        <p className="mt-6 text-xs text-muted-foreground">
           Or add an entry manually below.
         </p>
         <div className="mt-4 space-y-4">
           {workSamples.map((s) => (
             <div
               key={s.id}
-              className="p-4 rounded-lg border border-[#E8E6E3] space-y-3"
+              className="p-4 rounded-2xl border border-border space-y-3"
             >
               <div className="flex justify-between items-start">
-                <span className="text-xs text-[#8C8C8C]">{s.platform}</span>
+                <span className="text-xs text-muted-foreground">{s.platform}</span>
                 <button
                   type="button"
                   onClick={() => removeWorkSample(s.id)}
@@ -545,7 +545,7 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                 placeholder="Title (e.g. Spring collection launch)"
                 value={s.title ?? ""}
                 onChange={(e) => updateWorkSample(s.id, { title: e.target.value })}
-                className="w-full px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <select
                 value={s.platform}
@@ -554,7 +554,7 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                     platform: e.target.value as WorkSample["platform"],
                   })
                 }
-                className="w-full px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {PLATFORMS.map((p) => (
                   <option key={p.value} value={p.value}>
@@ -569,14 +569,14 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                 onChange={(e) =>
                   updateWorkSample(s.id, { campaignFor: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <input
                 type="text"
                 placeholder="Caption (e.g. Reel • 2.1M views)"
                 value={s.caption ?? ""}
                 onChange={(e) => updateWorkSample(s.id, { caption: e.target.value })}
-                className="w-full px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <input
                 type="url"
@@ -585,14 +585,14 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                 onChange={(e) =>
                   updateWorkSample(s.id, { thumbnailUrl: e.target.value || undefined })
                 }
-                className="w-full px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           ))}
           <button
             type="button"
             onClick={addWorkSample}
-            className="w-full py-3 border border-dashed border-[#D4D4D4] rounded-lg text-sm text-[#5C5C5C] hover:border-[#1A1A1A] hover:text-[#1A1A1A]"
+            className="w-full py-3 border border-dashed border-border rounded-2xl text-sm text-muted-foreground hover:border-foreground hover:text-foreground transition-colors"
           >
             + Add work sample
           </button>
@@ -600,8 +600,8 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
       </div>
 
       {/* Rates */}
-      <div className="p-6 border border-[#E8E6E3] rounded-lg bg-white">
-        <h3 className="text-sm uppercase tracking-wider text-[#8C8C8C] font-medium">
+      <div className="p-6 border border-border rounded-2xl bg-background">
+        <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
           Rates
         </h3>
         <div className="mt-4 space-y-4">
@@ -610,13 +610,14 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
               type="checkbox"
               checked={rates.show}
               onChange={(e) => setRates((r) => ({ ...r, show: e.target.checked }))}
+              className="rounded border-border text-foreground focus:ring-ring"
             />
-            <span className="text-sm">Show rates on my kit</span>
+            <span className="text-sm text-foreground">Show rates on my kit</span>
           </label>
           {rates.show && (
             <>
               <div>
-                <label className="block text-xs text-[#8C8C8C] mb-1">
+                <label className="block text-xs text-muted-foreground mb-1">
                   From amount ($)
                 </label>
                 <input
@@ -630,14 +631,14 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                       fromAmount: e.target.value ? Number(e.target.value) : undefined,
                     }))
                   }
-                  className="w-full max-w-xs px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                  className="w-full max-w-xs px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
-                <p className="mt-1 text-xs text-[#8C8C8C]">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Leave empty for &quot;Contact for rates&quot;
                 </p>
               </div>
               <div>
-                <label className="block text-xs text-[#8C8C8C] mb-1">
+                <label className="block text-xs text-muted-foreground mb-1">
                   Button label
                 </label>
                 <input
@@ -647,7 +648,7 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                   onChange={(e) =>
                     setRates((r) => ({ ...r, ctaLabel: e.target.value || undefined }))
                   }
-                  className="w-full max-w-xs px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                  className="w-full max-w-xs px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
             </>
@@ -656,32 +657,32 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
       </div>
 
       {/* Brands */}
-      <div className="p-6 border border-[#E8E6E3] rounded-lg bg-white">
-        <h3 className="text-sm uppercase tracking-wider text-[#8C8C8C] font-medium">
+      <div className="p-6 border border-border rounded-2xl bg-background">
+        <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
           Brands I&apos;ve worked with
         </h3>
-        <p className="mt-1 text-sm text-[#5C5C5C]">
+        <p className="mt-1 text-sm text-muted-foreground">
           Add past partners for social proof.
         </p>
         <div className="mt-4 space-y-4">
           {brands.map((b) => (
             <div
               key={b.id}
-              className="p-4 rounded-lg border border-[#E8E6E3] flex gap-3 flex-wrap"
+              className="p-4 rounded-2xl border border-border flex gap-3 flex-wrap"
             >
               <input
                 type="text"
                 placeholder="Brand name"
                 value={b.name}
                 onChange={(e) => updateBrand(b.id, { name: e.target.value })}
-                className="flex-1 min-w-[120px] px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                className="flex-1 min-w-[120px] px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <input
                 type="text"
                 placeholder="Tagline (e.g. Spring campaign • 2024)"
                 value={b.tagline ?? ""}
                 onChange={(e) => updateBrand(b.id, { tagline: e.target.value })}
-                className="flex-1 min-w-[120px] px-3 py-2 border border-[#E8E6E3] rounded-sm text-sm"
+                className="flex-1 min-w-[120px] px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <button
                 type="button"
@@ -695,7 +696,7 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
           <button
             type="button"
             onClick={addBrand}
-            className="w-full py-3 border border-dashed border-[#D4D4D4] rounded-lg text-sm text-[#5C5C5C] hover:border-[#1A1A1A] hover:text-[#1A1A1A]"
+            className="w-full py-3 border border-dashed border-border rounded-2xl text-sm text-muted-foreground hover:border-foreground hover:text-foreground transition-colors"
           >
             + Add brand
           </button>

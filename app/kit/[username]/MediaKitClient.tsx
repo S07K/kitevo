@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useState } from "react";
 import type { PlatformId, PlatformStatsWithCharts } from "@/lib/platforms";
 import { getPlatformMeta } from "@/lib/platforms";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
@@ -56,6 +57,10 @@ interface MediaKitClientProps {
   instagramConnected?: boolean;
   /** Static demo kits (/kit/demo, etc.) — never show connect overlay; always show sample stats/charts */
   isDemoKit?: boolean;
+  /** Kit DB id — required for inquiry form submissions */
+  kitId?: string;
+  /** When true, show the brand inquiry form (Pro feature) */
+  inquiryEnabled?: boolean;
 }
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -76,6 +81,100 @@ function buildSyntheticGrowthFromFollowers(followers: number): { month: string; 
     { month: "Jun", followers: f },
     { month: "Jul", followers: f },
   ];
+}
+
+function InquiryForm({ kitId, creatorName }: { kitId: string; creatorName: string }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("sending");
+    try {
+      const res = await fetch(`/api/kits/${kitId}/inquire`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, company, message }),
+      });
+      setStatus(res.ok ? "sent" : "error");
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  const inputCls =
+    "w-full px-4 py-3 rounded-xl border border-[var(--mk-border)] bg-[var(--mk-surface)] text-[var(--mk-text)] placeholder:text-[var(--mk-text-soft)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)] font-sans transition";
+
+  return (
+    <section className="mt-24 sm:mt-28">
+      <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight">
+        Work together
+      </h2>
+      <p className="mt-2 text-sm text-[var(--mk-text-muted)] font-sans max-w-md">
+        Interested in a collaboration? Send {creatorName.split(" ")[0]} a message and they&apos;ll get back to you.
+      </p>
+
+      {status === "sent" ? (
+        <div className="mt-8 py-10 px-8 rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] text-center">
+          <p className="font-display text-xl font-semibold text-[var(--mk-text)]">Message sent ✓</p>
+          <p className="mt-2 text-sm text-[var(--mk-text-muted)] font-sans">
+            Thanks for reaching out — you&apos;ll hear back soon.
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4 max-w-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input
+              type="text"
+              placeholder="Your name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={inputCls}
+            />
+            <input
+              type="email"
+              placeholder="Your email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+          <input
+            type="text"
+            placeholder="Company / brand (optional)"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            className={inputCls}
+          />
+          <textarea
+            placeholder="Tell me about the collaboration…"
+            required
+            rows={4}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className={inputCls + " resize-none"}
+          />
+          {status === "error" && (
+            <p className="text-sm text-red-600 font-sans">
+              Something went wrong — please try again.
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={status === "sending"}
+            className="w-full py-3.5 bg-[var(--mk-accent)] text-[var(--mk-accent-contrast)] font-semibold text-sm rounded-full hover:opacity-90 transition-opacity disabled:opacity-60 font-sans"
+          >
+            {status === "sending" ? "Sending…" : "Send message"}
+          </button>
+        </form>
+      )}
+    </section>
+  );
 }
 
 function ConnectInstagramOverlay({
@@ -116,6 +215,8 @@ export function MediaKitClient({
   appearance: appearanceProp,
   instagramConnected = true,
   isDemoKit = false,
+  kitId,
+  inquiryEnabled = false,
 }: MediaKitClientProps) {
   const sectionVisibility = initialSectionVisibility ?? DEFAULT_SECTION_VISIBILITY;
   const showConnectInstagramOverlay = !isDemoKit && !instagramConnected;
@@ -467,7 +568,12 @@ export function MediaKitClient({
         </section>
         )}
 
-        {/* 9. Footer */}
+        {/* 9. Brand inquiry form (Pro) */}
+        {inquiryEnabled && kitId && (
+          <InquiryForm kitId={kitId} creatorName={creator.name} />
+        )}
+
+        {/* 10. Footer */}
         <footer className="mt-24 sm:mt-28 pt-10 border-t border-[var(--mk-border-hairline)] text-center">
           <p className="text-sm text-[var(--mk-text-soft)] font-sans">
             Made with Media Kit Pro
