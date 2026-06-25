@@ -61,6 +61,8 @@ interface MediaKitClientProps {
   kitId?: string;
   /** When true, show the brand inquiry form (Pro feature) */
   inquiryEnabled?: boolean;
+  /** When true, the logged-in user owns this kit — show dashboard nav bar */
+  isOwner?: boolean;
 }
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -217,6 +219,7 @@ export function MediaKitClient({
   isDemoKit = false,
   kitId,
   inquiryEnabled = false,
+  isOwner = false,
 }: MediaKitClientProps) {
   const sectionVisibility = initialSectionVisibility ?? DEFAULT_SECTION_VISIBILITY;
   const showConnectInstagramOverlay = !isDemoKit && !instagramConnected;
@@ -259,8 +262,32 @@ export function MediaKitClient({
       style={kitAppearanceToCssVarsWithOverrides(appearance)}
       data-kit-preset={preset}
     >
+      {/* Owner preview bar — only visible to the kit creator */}
+      {isOwner && (
+        <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between gap-4 bg-[#111110] px-5 py-2.5 text-[#fafaf9]">
+          <div className="flex items-center gap-2 text-xs text-[#fafaf9]/70">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            Preview — this is how your kit looks to brands
+          </div>
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/kit/edit?id=${kitId ?? ""}`}
+              className="text-xs font-medium text-[#fafaf9]/70 hover:text-[#fafaf9] transition-colors"
+            >
+              Edit kit
+            </Link>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1 rounded-full bg-[#fafaf9]/10 px-3 py-1 text-xs font-medium text-[#fafaf9] hover:bg-[#fafaf9]/20 transition-colors"
+            >
+              ← Dashboard
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Header — minimal, editorial */}
-      <header className="fixed top-0 left-0 right-0 z-50 px-5 sm:px-8 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 flex items-center justify-between bg-[var(--mk-header-bg)] backdrop-blur-md border-b border-[var(--mk-border-hairline)]">
+      <header className={`fixed left-0 right-0 z-50 px-5 sm:px-8 pb-4 flex items-center justify-between bg-[var(--mk-header-bg)] backdrop-blur-md border-b border-[var(--mk-border-hairline)] ${isOwner ? "top-[41px]" : "top-0 pt-[calc(1rem+env(safe-area-inset-top))]"}`}>
         {appearance.logoUrl ? (
           <img
             src={appearance.logoUrl}
@@ -280,7 +307,7 @@ export function MediaKitClient({
         </Link>
       </header>
 
-      <main className="pt-[calc(5rem+env(safe-area-inset-top))] pb-24 max-w-2xl mx-auto px-5 sm:px-8">
+      <main className={`pb-24 max-w-2xl mx-auto px-5 sm:px-8 ${isOwner ? "pt-[calc(5rem+41px)]" : "pt-[calc(5rem+env(safe-area-inset-top))]"}`}>
         {/* 1. Hero — strong typography, editorial feel */}
         <section className="text-center pt-10 pb-12 sm:pt-14 sm:pb-16">
           {creator.avatarUrl ? (

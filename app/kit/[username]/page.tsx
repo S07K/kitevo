@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getStatsForCreator, getEnabledPlatformIds } from "@/lib/platforms";
 import { getStatsForUser } from "@/lib/instagram-api";
 import {
@@ -45,12 +47,16 @@ export default async function MediaKitPage({ params }: { params: Promise<{ usern
   }
 
   if (result) {
-    const referrer = (await headers()).get("referer") ?? undefined;
+    const [referrer, session] = await Promise.all([
+      headers().then((h) => h.get("referer") ?? undefined),
+      getServerSession(authOptions),
+    ]);
     try {
       await recordKitView(result.kit.id, referrer);
     } catch {
       /* KitView migration not applied yet — page must still render */
     }
+    const isOwner = session?.user?.id === result.kit.userId;
     const [instagramStats, enabledPlatformIds, user] = await Promise.all([
       getStatsForUser(result.kit.userId),
       Promise.resolve(getEnabledPlatformIds()),
@@ -98,6 +104,7 @@ export default async function MediaKitPage({ params }: { params: Promise<{ usern
         instagramConnected={instagramConnected}
         kitId={result.kit.id}
         inquiryEnabled={inquiryEnabled}
+        isOwner={isOwner}
       />
     );
   }
