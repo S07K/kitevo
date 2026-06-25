@@ -265,21 +265,21 @@ export function MediaKitClient({
     >
       {/* Owner preview bar — only visible to the kit creator */}
       {isOwner && (
-        <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between gap-4 bg-[#111110] px-5 py-2.5 text-[#fafaf9]">
-          <div className="flex items-center gap-2 text-xs text-[#fafaf9]/70">
+        <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between gap-4 bg-[#111110]/95 backdrop-blur-sm px-6 sm:px-10 h-[41px] text-[#fafaf9]">
+          <div className="flex items-center gap-2 text-xs text-[#fafaf9]/60">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
             Preview — this is how your kit looks to brands
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Link
               href={`/kit/edit?id=${kitId ?? ""}`}
-              className="text-xs font-medium text-[#fafaf9]/70 hover:text-[#fafaf9] transition-colors"
+              className="text-xs font-medium text-[#fafaf9]/60 hover:text-[#fafaf9] transition-colors"
             >
               Edit kit
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1 rounded-full bg-[#fafaf9]/10 px-3 py-1 text-xs font-medium text-[#fafaf9] hover:bg-[#fafaf9]/20 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#fafaf9]/10 px-3 py-1 text-xs font-medium text-[#fafaf9] hover:bg-[#fafaf9]/20 transition-colors"
             >
               ← Dashboard
             </Link>
@@ -287,13 +287,13 @@ export function MediaKitClient({
         </div>
       )}
 
-      {/* Header — minimal, editorial */}
-      <header className={`fixed left-0 right-0 z-50 px-5 sm:px-8 pb-4 flex items-center justify-between bg-[var(--mk-header-bg)] backdrop-blur-md border-b border-[var(--mk-border-hairline)] ${isOwner ? "top-[41px]" : "top-0 pt-[calc(1rem+env(safe-area-inset-top))]"}`}>
+      {/* Header — minimal, single color, proper spacing */}
+      <header className={`fixed left-0 right-0 z-50 flex items-center justify-between bg-[var(--mk-bg)] border-b border-[var(--mk-border-hairline)] px-6 sm:px-10 h-14 ${isOwner ? "top-[41px]" : "top-0"}`}>
         {appearance.logoUrl ? (
           <img
             src={appearance.logoUrl}
             alt="Brand logo"
-            className="h-7 w-auto object-contain"
+            className="h-6 w-auto object-contain"
           />
         ) : (
           <span className="font-display text-sm tracking-wide text-[var(--mk-text-muted)] font-medium">
@@ -302,51 +302,53 @@ export function MediaKitClient({
         )}
         <Link
           href="/"
-          className="text-sm text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors font-medium"
+          className="text-xs text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors font-medium tracking-wide"
         >
           Create yours →
         </Link>
       </header>
 
-      <main className={`pb-24 max-w-2xl mx-auto px-5 sm:px-8 ${isOwner ? "pt-[calc(5rem+41px)]" : "pt-[calc(5rem+env(safe-area-inset-top))]"}`}>
-        {/* 1. Hero — strong typography, editorial feel */}
-        <section className="text-center pt-10 pb-12 sm:pt-14 sm:pb-16">
-          {creator.avatarUrl ? (
-            <div className="mx-auto w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden ring-2 ring-[var(--mk-surface)] shadow-[0_8px_30px_rgba(0,0,0,0.08)] ring-offset-4 ring-offset-[var(--mk-bg)]">
-              <img
-                src={creator.avatarUrl}
-                alt=""
-                className="w-full h-full object-cover"
-                width={144}
-                height={144}
-              />
+      <main className={`pb-24 max-w-3xl mx-auto px-5 sm:px-8 ${isOwner ? "pt-[calc(3.5rem+41px)]" : "pt-14"}`}>
+        {/* 1. Hero — compact profile layout (avatar left, info right on desktop) */}
+        <section className="pt-10 pb-10 sm:pt-14 sm:pb-12">
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
+            {/* Avatar */}
+            <div className="shrink-0">
+              {creator.avatarUrl ? (
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden ring-2 ring-[var(--mk-border)] shadow-[0_4px_20px_rgba(0,0,0,0.10)]">
+                  <img
+                    src={creator.avatarUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    width={112}
+                    height={112}
+                  />
+                </div>
+              ) : (
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[var(--mk-bg-elevated)] border border-[var(--mk-border)] flex items-center justify-center text-3xl font-display font-semibold text-[var(--mk-text-soft)]">
+                  {creator.name.charAt(0)}
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="w-32 h-32 sm:w-36 sm:h-36 mx-auto rounded-full bg-gradient-to-br from-[var(--mk-border)] via-[var(--mk-bg-elevated)] to-[var(--mk-border)] flex items-center justify-center text-4xl sm:text-5xl font-display font-semibold text-[var(--mk-text-soft)] shadow-inner ring-2 ring-[var(--mk-surface)]/80 ring-offset-4 ring-offset-[var(--mk-bg)]">
-              {creator.name.charAt(0)}
-            </div>
-          )}
-          <p className="mt-8 text-[10px] uppercase tracking-[0.35em] text-[var(--mk-text-soft)] font-medium">
-            Creator media kit
-          </p>
-          <div className="mt-6 w-12 h-px bg-[var(--mk-border)] mx-auto" aria-hidden />
-          <h1 className="mt-8 font-display text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-[var(--mk-text)]">
-            {creator.name}
-          </h1>
-          <p className="mt-3 text-[var(--mk-text-muted)] text-sm sm:text-base font-medium tracking-wide">
-            @{creator.username}
-          </p>
-          {creator.bio ? (
-            <div className="mt-10 w-full max-w-lg mx-auto px-1 sm:px-0">
-              <div
-                className="w-10 h-px bg-[var(--mk-border)] mx-auto opacity-80"
-                aria-hidden
-              />
-              <p className="mt-6 text-[var(--mk-text-muted)] text-[15px] sm:text-lg leading-[1.7] font-sans text-center whitespace-pre-line text-pretty">
-                {creator.bio}
+
+            {/* Info */}
+            <div className="flex-1 text-center sm:text-left min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--mk-text-soft)] font-medium mb-2">
+                Creator media kit
               </p>
+              <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--mk-text)] leading-none">
+                {creator.name}
+              </h1>
+              <p className="mt-1.5 text-[var(--mk-text-muted)] text-sm font-medium tracking-wide">
+                @{creator.username}
+              </p>
+              {creator.bio && (
+                <p className="mt-4 text-[var(--mk-text-muted)] text-sm sm:text-[15px] leading-relaxed font-sans max-w-prose text-pretty">
+                  {creator.bio}
+                </p>
+              )}
             </div>
-          ) : null}
+          </div>
         </section>
 
         {/* 1b. At a glance — bridges hero and detailed stats */}

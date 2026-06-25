@@ -200,27 +200,28 @@ function KitCard({
         className="relative flex h-28 items-center justify-center px-5"
         style={{ backgroundColor: vibe.bg }}
       >
-        {/* Live badge top-right */}
+        {/* Top-left: vibe label */}
         <span
-          className="absolute right-4 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide opacity-80"
-          style={{ backgroundColor: vibe.fg, color: vibe.bg }}
-        >
-          Live →
-        </span>
-        {/* Kit name centered */}
-        <p
-          className="font-display text-xl font-semibold text-center px-8 leading-tight"
-          style={{ color: vibe.fg }}
-        >
-          {kit.name}
-        </p>
-        {/* Vibe label chip bottom-left */}
-        <span
-          className="absolute bottom-3 left-4 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide"
+          className="absolute left-4 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide"
           style={{ backgroundColor: vibe.fg + "22", color: vibe.fg, border: `1px solid ${vibe.fg}33` }}
         >
           {vibe.label}
         </span>
+        {/* Top-right: live indicator */}
+        <span
+          className="absolute right-4 top-3 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide opacity-80"
+          style={{ backgroundColor: vibe.fg + "18", color: vibe.fg }}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          Live
+        </span>
+        {/* Kit name centered */}
+        <p
+          className="font-display text-xl font-semibold text-center px-10 leading-tight"
+          style={{ color: vibe.fg }}
+        >
+          {kit.name}
+        </p>
       </div>
 
       <div className="flex items-center justify-between gap-4 px-5 py-3">
