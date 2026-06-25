@@ -110,10 +110,10 @@ function InquiryForm({ kitId, creatorName }: { kitId: string; creatorName: strin
 
   return (
     <section className="mt-24 sm:mt-28">
-      <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight">
+      <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight text-center">
         Work together
       </h2>
-      <p className="mt-2 text-sm text-[var(--mk-text-muted)] font-sans max-w-md">
+      <p className="mt-2 text-sm text-[var(--mk-text-muted)] font-sans max-w-md mx-auto text-center">
         Interested in a collaboration? Send {creatorName.split(" ")[0]} a message and they&apos;ll get back to you.
       </p>
 
@@ -125,7 +125,7 @@ function InquiryForm({ kitId, creatorName }: { kitId: string; creatorName: strin
           </p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4 max-w-lg">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4 max-w-lg mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <input
               type="text"
