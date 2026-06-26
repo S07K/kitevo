@@ -72,9 +72,9 @@ export async function GET(
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://mediakitpro.com";
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdf = await renderToBuffer(
-    (React.createElement as any)(KitPdf, {
+    // @ts-expect-error react-pdf types diverge from React 19 createElement signature
+    React.createElement(KitPdf, {
       creator: {
         name: user.name ?? "Creator",
         username: user.username ?? "",

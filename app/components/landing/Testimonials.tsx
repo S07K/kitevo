@@ -77,7 +77,7 @@ function QuoteCard({ t }: { t: Testimonial }): ReactNode {
   return (
     <figure className="border-border bg-background flex flex-col gap-6 rounded-3xl border p-7">
       <blockquote className="text-foreground text-base leading-relaxed font-medium tracking-tight">
-        "{t.quote}"
+        &ldquo;{t.quote}&rdquo;
       </blockquote>
       <figcaption className="flex items-center gap-3">
         <div
