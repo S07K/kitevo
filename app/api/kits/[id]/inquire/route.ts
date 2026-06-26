@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendInquiryNotification } from "@/lib/email";
 
 export async function POST(
   req: NextRequest,
@@ -24,7 +25,10 @@ export async function POST(
     return NextResponse.json({ error: "name, email, and message are required" }, { status: 422 });
   }
 
-  const kit = await prisma.kit.findUnique({ where: { id: kitId }, select: { id: true } });
+  const kit = await prisma.kit.findUnique({
+    where: { id: kitId },
+    select: { id: true, name: true, slug: true, user: { select: { email: true, name: true } } },
+  });
   if (!kit) {
     return NextResponse.json({ error: "Kit not found" }, { status: 404 });
   }
@@ -38,6 +42,22 @@ export async function POST(
       message: message.trim(),
     },
   });
+
+  // Fire-and-forget — don't block the response on email delivery
+  if (kit.user.email) {
+    sendInquiryNotification({
+      ownerEmail: kit.user.email,
+      ownerName: kit.user.name ?? "there",
+      kitName: kit.name,
+      kitSlug: kit.slug,
+      from: {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        company: typeof company === "string" && company.trim() ? company.trim() : null,
+        message: message.trim(),
+      },
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ id: inquiry.id }, { status: 201 });
 }

@@ -20,6 +20,63 @@ export async function sendVerificationEmail(email: string, token: string) {
   });
 }
 
+export async function sendInquiryNotification({
+  ownerEmail,
+  ownerName,
+  kitName,
+  kitSlug,
+  from,
+}: {
+  ownerEmail: string;
+  ownerName: string;
+  kitName: string;
+  kitSlug: string;
+  from: { name: string; email: string; company?: string | null; message: string };
+}) {
+  const dashboardUrl = `${APP_URL}/dashboard`;
+  const company = from.company ? ` (${from.company})` : "";
+  await resend.emails.send({
+    from: FROM,
+    to: ownerEmail,
+    subject: `New inquiry on your kit "${kitName}" — Media Kit Pro`,
+    html: emailHtml({
+      heading: `New inquiry on "${kitName}"`,
+      body: `<strong>${from.name}${company}</strong> &lt;${from.email}&gt; sent you a message:<br><br><blockquote style="margin:0;padding:12px 16px;border-left:3px solid #e8e4e0;color:#6b6560;font-style:italic">${from.message.replace(/\n/g, "<br>")}</blockquote><br>Reply directly to <a href="mailto:${from.email}" style="color:#111110">${from.email}</a>.`,
+      ctaLabel: "View dashboard",
+      ctaUrl: dashboardUrl,
+      footer: `You received this because someone submitted an inquiry on your ${kitName} media kit. To stop these emails, contact us at hello@mediakitpro.co.`,
+    }),
+    replyTo: from.email,
+  });
+}
+
+export async function sendViewMilestoneEmail({
+  ownerEmail,
+  ownerName,
+  kitName,
+  milestone,
+}: {
+  ownerEmail: string;
+  ownerName: string;
+  kitName: string;
+  milestone: number;
+}) {
+  const dashboardUrl = `${APP_URL}/dashboard`;
+  const milestoneFormatted = milestone >= 1000 ? `${milestone / 1000}k` : String(milestone);
+  await resend.emails.send({
+    from: FROM,
+    to: ownerEmail,
+    subject: `Your kit "${kitName}" just hit ${milestoneFormatted} views 🎉`,
+    html: emailHtml({
+      heading: `${milestoneFormatted} views on "${kitName}"`,
+      body: `Your media kit just crossed <strong>${milestone.toLocaleString()} views</strong>. Brands and agencies are noticing you — keep sharing your kit link to grow your reach.`,
+      ctaLabel: "View your analytics",
+      ctaUrl: dashboardUrl,
+      footer: `You received this because your kit hit a view milestone. To stop these emails, contact us at hello@mediakitpro.co.`,
+    }),
+  });
+}
+
 export async function sendPasswordResetEmail(email: string, token: string) {
   const url = `${APP_URL}/reset-password?token=${token}`;
   await resend.emails.send({

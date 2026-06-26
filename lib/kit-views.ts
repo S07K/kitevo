@@ -4,6 +4,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { isKitViewTablePresent, markKitViewTablePresent } from "@/lib/kit-view-table";
+import { sendViewMilestoneEmail } from "@/lib/email";
+
+const MILESTONES = [100, 500, 1000, 5000, 10000];
 
 /** Record a view for a kit (e.g. when public kit page is loaded). Never throws. */
 export async function recordKitView(kitId: string, referrer?: string | null): Promise<void> {
@@ -16,11 +19,31 @@ export async function recordKitView(kitId: string, referrer?: string | null): Pr
       },
     });
     markKitViewTablePresent();
+    checkViewMilestone(kitId).catch(() => {});
   } catch (e) {
     if (process.env.NODE_ENV === "development") {
       console.warn("[recordKitView] skipped:", e);
     }
   }
+}
+
+async function checkViewMilestone(kitId: string): Promise<void> {
+  const count = await prisma.kitView.count({ where: { kitId } });
+  const milestone = MILESTONES.find((m) => m === count);
+  if (!milestone) return;
+
+  const kit = await prisma.kit.findUnique({
+    where: { id: kitId },
+    select: { name: true, user: { select: { email: true, name: true } } },
+  });
+  if (!kit?.user.email) return;
+
+  await sendViewMilestoneEmail({
+    ownerEmail: kit.user.email,
+    ownerName: kit.user.name ?? "there",
+    kitName: kit.name,
+    milestone,
+  });
 }
 
 /** Get view counts per kit (for dashboard). Returns map of kitId -> count. */
