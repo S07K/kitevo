@@ -423,9 +423,9 @@ function DashboardContent() {
     fetch("/api/instagram/stats", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((stats) => {
-        if (!cancelled && stats) setPlatformStats({ instagram: stats });
+        if (!cancelled) setPlatformStats(stats ? { instagram: stats } : {});
       })
-      .catch(() => {});
+      .catch(() => { if (!cancelled) setPlatformStats({}); });
     return () => { cancelled = true; };
   }, [isSubscribed]);
 
