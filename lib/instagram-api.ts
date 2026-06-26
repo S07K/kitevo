@@ -257,7 +257,7 @@ export async function getStatsForUser(userId: string): Promise<PlatformStatsWith
   return getInstagramStats();
 }
 
-/** Fetch recent Instagram posts for a user. Uses token from DB if set; else mock. Refreshes token when near expiry; on 190 falls back to mock. */
+/** Fetch recent Instagram posts with engagement metrics. Falls back to mock if no token. */
 export async function getRecentPostsForUser(userId: string): Promise<FetchedPost[]> {
   await refreshInstagramTokenIfNeeded(userId);
   const user = await prisma.user.findUnique({
@@ -265,28 +265,74 @@ export async function getRecentPostsForUser(userId: string): Promise<FetchedPost
     select: { instagramUserId: true, instagramAccessToken: true },
   });
   if (user?.instagramUserId && user?.instagramAccessToken) {
+    const token = user.instagramAccessToken;
+    const igId = user.instagramUserId;
     try {
-      const media = await metaGet<{ data?: Array<{ id: string; media_type?: string; media_url?: string; permalink?: string; caption?: string }> }>(
-        `/${user.instagramUserId}/media?fields=id,media_type,media_url,permalink,caption&limit=25`,
-        user.instagramAccessToken
+      type RawMedia = {
+        id: string;
+        media_type?: string;
+        media_url?: string;
+        thumbnail_url?: string;
+        permalink?: string;
+        caption?: string;
+        like_count?: number;
+        comments_count?: number;
+        timestamp?: string;
+      };
+      const media = await metaGet<{ data?: RawMedia[] }>(
+        `/${igId}/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,like_count,comments_count,timestamp&limit=24`,
+        token
       );
       const list = media.data ?? [];
-      return list.map((m) => ({
-        id: m.id,
-        platform: "instagram" as const,
-        thumbnailUrl: m.media_url || "",
-        caption: m.caption ?? null,
-        permalink: m.permalink,
-        mediaType: (m.media_type === "IMAGE" || m.media_type === "VIDEO" || m.media_type === "CAROUSEL_ALBUM" ? m.media_type : undefined) as FetchedPost["mediaType"],
-      }));
+
+      // Fetch insights (reach, saved, video_views) in parallel for up to 12 posts
+      const withInsights = await Promise.allSettled(
+        list.slice(0, 12).map(async (m) => {
+          const isVideo = m.media_type === "VIDEO";
+          const metrics = isVideo ? "reach,saved,video_views" : "reach,saved";
+          try {
+            const ins = await metaGet<{ data?: Array<{ name: string; values?: Array<{ value: number }> }> }>(
+              `/${m.id}/insights?metric=${metrics}`,
+              token
+            );
+            const get = (name: string) =>
+              ins.data?.find((d) => d.name === name)?.values?.[0]?.value;
+            return { ...m, reach: get("reach"), saves: get("saved"), views: get("video_views") };
+          } catch {
+            return { ...m };
+          }
+        })
+      );
+
+      return list.map((m, i) => {
+        const enriched =
+          i < 12 && withInsights[i].status === "fulfilled"
+            ? (withInsights[i] as PromiseFulfilledResult<RawMedia & { reach?: number; saves?: number; views?: number }>).value
+            : m;
+        const thumb = m.media_type === "VIDEO" ? (m.thumbnail_url || m.media_url || "") : (m.media_url || "");
+        return {
+          id: m.id,
+          platform: "instagram" as const,
+          thumbnailUrl: thumb,
+          caption: m.caption ?? null,
+          permalink: m.permalink,
+          mediaType: (["IMAGE", "VIDEO", "CAROUSEL_ALBUM"].includes(m.media_type ?? "")
+            ? m.media_type
+            : undefined) as FetchedPost["mediaType"],
+          timestamp: m.timestamp,
+          likes: m.like_count,
+          comments: m.comments_count,
+          saves: (enriched as typeof enriched & { saves?: number }).saves,
+          views: (enriched as typeof enriched & { views?: number }).views,
+          reach: (enriched as typeof enriched & { reach?: number }).reach,
+        };
+      });
     } catch (e) {
       if (e instanceof MetaApiError && e.code === 190) {
         await clearUserInstagramToken(userId);
       } else {
         console.error("Meta Instagram media error:", e);
       }
-      const { getInstagramRecentPosts } = await import("@/lib/platforms/instagram");
-      return getInstagramRecentPosts();
     }
   }
   const { getInstagramRecentPosts } = await import("@/lib/platforms/instagram");

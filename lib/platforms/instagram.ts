@@ -61,6 +61,12 @@ export interface FetchedPost {
   caption: string | null;
   permalink?: string;
   mediaType?: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
+  timestamp?: string;
+  likes?: number;
+  comments?: number;
+  saves?: number;
+  views?: number;
+  reach?: number;
 }
 
 /** Mock recent posts. Replace with Meta Graph API: GET /{ig-user-id}/media?fields=id,media_type,media_url,permalink,caption */
