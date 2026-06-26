@@ -40,7 +40,7 @@ export async function sendInquiryNotification({
     to: ownerEmail,
     subject: `New inquiry on your kit "${kitName}" — Media Kit Pro`,
     html: emailHtml({
-      heading: `New inquiry on "${kitName}"`,
+      heading: `New inquiry on your brand kit: "${kitName}"`,
       body: `<strong>${from.name}${company}</strong> &lt;${from.email}&gt; sent you a message:<br><br><blockquote style="margin:0;padding:12px 16px;border-left:3px solid #e8e4e0;color:#6b6560;font-style:italic">${from.message.replace(/\n/g, "<br>")}</blockquote><br>Reply directly to <a href="mailto:${from.email}" style="color:#111110">${from.email}</a>.`,
       ctaLabel: "View dashboard",
       ctaUrl: dashboardUrl,

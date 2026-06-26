@@ -56,7 +56,9 @@ export async function POST(
         company: typeof company === "string" && company.trim() ? company.trim() : null,
         message: message.trim(),
       },
-    }).catch(() => {});
+    }).catch((err) => {
+      console.log("Inquire API Error", err)
+    });
   }
 
   return NextResponse.json({ id: inquiry.id }, { status: 201 });
