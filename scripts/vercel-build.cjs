@@ -11,12 +11,11 @@ function run(cmd) {
 run("npx prisma generate");
 
 if (process.env.DATABASE_URL && String(process.env.DATABASE_URL).trim() !== "") {
-  run("npx prisma migrate deploy");
+  run("npx prisma db push --accept-data-loss");
 } else {
   console.log(
-    "\n[vercel-build] DATABASE_URL not set — skipping prisma migrate deploy.\n" +
-      "  Production: set DATABASE_URL on Vercel (Production) so migrations run.\n" +
-      "  Preview with DB: add DATABASE_URL for Preview too (e.g. Neon branch URL).\n"
+    "\n[vercel-build] DATABASE_URL not set — skipping prisma db push.\n" +
+      "  Production: set DATABASE_URL on Vercel so schema sync runs.\n"
   );
 }
 
