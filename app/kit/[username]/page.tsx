@@ -74,7 +74,14 @@ export default async function MediaKitPage({
       }),
     ]);
     const instagramConnectedForKit = !!(user?.instagramUserId && user?.instagramAccessToken);
-    const instagramStats = instagramConnectedForKit ? await getStatsForUser(result.kit.userId) : null;
+    let instagramStats = null;
+    if (instagramConnectedForKit) {
+      try {
+        instagramStats = await getStatsForUser(result.kit.userId);
+      } catch (e) {
+        console.error("[kit page] getStatsForUser failed:", e);
+      }
+    }
 
     let inquiryEnabled = false;
     if (user?.stripeCustomerId) {
@@ -87,8 +94,8 @@ export default async function MediaKitPage({
         const priceId = subs.data[0]?.items?.data?.[0]?.price?.id ?? null;
         const tier = getTierByPriceId(priceId);
         inquiryEnabled = tier?.id === "pro";
-      } catch {
-        // Stripe unavailable — degrade gracefully
+      } catch (e) {
+        console.error("[kit page] Stripe error:", e);
       }
     }
 
