@@ -9,7 +9,7 @@ export async function sendVerificationEmail(email: string, token: string) {
   await resend.emails.send({
     from: FROM,
     to: email,
-    subject: "Verify your email — Media Kit Pro",
+    subject: "Verify your email — Kitevo",
     html: emailHtml({
       heading: "Verify your email",
       body: "Click the button below to verify your email address and activate your account. This link expires in 24 hours.",
@@ -38,7 +38,7 @@ export async function sendInquiryNotification({
   await resend.emails.send({
     from: FROM,
     to: ownerEmail,
-    subject: `New inquiry on your kit "${kitName}" — Media Kit Pro`,
+    subject: `New inquiry on your kit "${kitName}" — Kitevo`,
     html: emailHtml({
       heading: `New inquiry on your brand kit: "${kitName}"`,
       body: `<strong>${from.name}${company}</strong> &lt;${from.email}&gt; sent you a message:<br><br><blockquote style="margin:0;padding:12px 16px;border-left:3px solid #e8e4e0;color:#6b6560;font-style:italic">${from.message.replace(/\n/g, "<br>")}</blockquote><br>Reply directly to <a href="mailto:${from.email}" style="color:#111110">${from.email}</a>.`,
@@ -82,7 +82,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   await resend.emails.send({
     from: FROM,
     to: email,
-    subject: "Reset your password — Media Kit Pro",
+    subject: "Reset your password — Kitevo",
     html: emailHtml({
       heading: "Reset your password",
       body: "Click the button below to set a new password. This link expires in 1 hour.",
@@ -109,7 +109,7 @@ function emailHtml({ heading, body, ctaLabel, ctaUrl, footer }: {
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
         <!-- Logo -->
         <tr><td style="padding-bottom:32px">
-          <span style="font-size:18px;font-weight:600;color:#111110;letter-spacing:-0.02em">Media Kit Pro</span>
+          <span style="font-size:18px;font-weight:600;color:#111110;letter-spacing:-0.02em">Kitevo</span>
         </td></tr>
         <!-- Card -->
         <tr><td style="background:#ffffff;border-radius:16px;padding:40px;border:1px solid #e8e4e0">

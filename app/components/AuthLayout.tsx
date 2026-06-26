@@ -65,7 +65,7 @@ export function AuthLayout({ children, title, subtitle }: {
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between h-full p-10">
           <Link href="/" className="font-display text-lg font-semibold text-white/90 tracking-tight hover:opacity-70 transition-opacity">
-            Media Kit Pro
+            Kitevo
           </Link>
           <div className="max-w-xs">
             <p className="font-display text-3xl font-semibold text-white leading-snug tracking-tight">
@@ -75,7 +75,7 @@ export function AuthLayout({ children, title, subtitle }: {
               Built for creators who take their brand seriously.
             </p>
           </div>
-          <p className="text-xs text-white/20">© {new Date().getFullYear()} Media Kit Pro</p>
+          <p className="text-xs text-white/20">© {new Date().getFullYear()} Kitevo</p>
         </div>
       </div>
 
@@ -84,7 +84,7 @@ export function AuthLayout({ children, title, subtitle }: {
         {/* Mobile header */}
         <header className="lg:hidden border-b border-border bg-background/95 px-5 py-4 backdrop-blur-md">
           <Link href="/" className="font-display text-foreground text-lg font-semibold tracking-tight hover:opacity-70 transition-opacity">
-            Media Kit Pro
+            Kitevo
           </Link>
         </header>
 

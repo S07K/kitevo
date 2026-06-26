@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
 
 export const metadata = {
-  title: "Connect Instagram — Help | Media Kit Pro",
+  title: "Connect Instagram — Help | Kitevo",
   description: "How to connect your Instagram Business or Creator account and fix common connection errors.",
 };
 

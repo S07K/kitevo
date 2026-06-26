@@ -17,7 +17,7 @@ type Testimonial = {
 const TESTIMONIALS: Testimonial[] = [
   {
     quote:
-      "I sent my Media Kit Pro link to three brands in one week. Two replied the same day. My old PDF got zero responses in a month.",
+      "I sent my Kitevo link to three brands in one week. Two replied the same day. My old PDF got zero responses in a month.",
     name: "Natalie Rose",
     role: "Lifestyle creator · Instagram",
     followers: "182K followers",
@@ -53,7 +53,7 @@ const TESTIMONIALS: Testimonial[] = [
   },
   {
     quote:
-      "I'm a photographer who works with creators. Every one of my clients who uses Media Kit Pro lands better collaborations. It looks like a real agency pitch.",
+      "I'm a photographer who works with creators. Every one of my clients who uses Kitevo lands better collaborations. It looks like a real agency pitch.",
     name: "Priya Nair",
     role: "Brand photographer",
     followers: "Works with 50+ creators",
@@ -119,7 +119,7 @@ export function Testimonials(): ReactNode {
       <SectionHeading
         label="Creator stories"
         title="Creators who went from pitching to closing"
-        description="Real results from influencers who replaced their PDF decks with Media Kit Pro."
+        description="Real results from influencers who replaced their PDF decks with Kitevo."
       />
 
       {reduce ? (

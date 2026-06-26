@@ -16,7 +16,7 @@ export function AppNav({ links, onLogout }: { links: NavLink[]; onLogout?: () =>
         className="font-display text-foreground shrink-0 text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
         onClick={() => setMenuOpen(false)}
       >
-        Media Kit Pro
+        Kitevo
       </Link>
 
       {/* Desktop links */}

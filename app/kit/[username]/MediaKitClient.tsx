@@ -358,7 +358,7 @@ export function MediaKitClient({
             <img src={appearance.logoUrl} alt="Brand logo" className="h-6 w-auto object-contain" />
           ) : (
             <span className="font-display text-sm tracking-wide text-[var(--mk-text-muted)] font-medium">
-              Media Kit Pro
+              Kitevo
             </span>
           )}
           <Link
@@ -672,7 +672,7 @@ export function MediaKitClient({
 
           {/* 10. Footer */}
           <div className="pt-6 pb-2 text-center">
-            <p className="text-xs text-[var(--mk-text-soft)] font-sans">Made with Media Kit Pro</p>
+            <p className="text-xs text-[var(--mk-text-soft)] font-sans">Made with Kitevo</p>
           </div>
 
         </div>

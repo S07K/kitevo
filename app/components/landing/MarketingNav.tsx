@@ -55,7 +55,7 @@ export function MarketingNav(): ReactNode {
             href="/"
             className="focus-ring font-display text-foreground shrink-0 rounded-sm text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
           >
-            Media Kit Pro
+            Kitevo
           </Link>
 
           {/* Desktop nav links */}

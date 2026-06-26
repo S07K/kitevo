@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Media Kit Pro",
-  description: "Terms and conditions for using Media Kit Pro.",
+  title: "Terms of Service — Kitevo",
+  description: "Terms and conditions for using Kitevo.",
 };
 
 export default function TermsOfService() {
@@ -14,7 +14,7 @@ export default function TermsOfService() {
           href="/"
           className="font-display text-foreground text-lg font-semibold tracking-tight hover:opacity-70 transition-opacity"
         >
-          Media Kit Pro
+          Kitevo
         </Link>
       </header>
 
@@ -35,10 +35,10 @@ export default function TermsOfService() {
               1. Acceptance of terms
             </h2>
             <p>
-              By creating an account or using Media Kit Pro ("Service"), you
+              By creating an account or using Kitevo ("Service"), you
               agree to these Terms of Service. If you do not agree, do not use
               the Service. These terms form a binding agreement between you and
-              Media Kit Pro.
+              Kitevo.
             </p>
           </section>
 
@@ -47,7 +47,7 @@ export default function TermsOfService() {
               2. Description of service
             </h2>
             <p>
-              Media Kit Pro is a platform that enables content creators and
+              Kitevo is a platform that enables content creators and
               influencers to create, customize, and share professional media
               kits with brands and agencies. The Service includes a dashboard for
               managing kit content, integration with the Instagram Graph API for
@@ -113,7 +113,7 @@ export default function TermsOfService() {
             <p className="mb-3">
               You retain ownership of all content you upload or enter into the
               Service ("Your Content"), including your bio, work samples, and
-              rates. By using the Service, you grant Media Kit Pro a limited,
+              rates. By using the Service, you grant Kitevo a limited,
               non-exclusive, royalty-free license to store, display, and
               transmit Your Content solely to operate the Service.
             </p>
@@ -169,8 +169,8 @@ export default function TermsOfService() {
               8. Intellectual property
             </h2>
             <p>
-              The Media Kit Pro name, logo, design system, and underlying software
-              are owned by Media Kit Pro and protected by intellectual property
+              The Kitevo name, logo, design system, and underlying software
+              are owned by Kitevo and protected by intellectual property
               laws. You may not copy, modify, or distribute our proprietary
               materials without written permission.
             </p>
@@ -194,7 +194,7 @@ export default function TermsOfService() {
               10. Limitation of liability
             </h2>
             <p>
-              To the maximum extent permitted by law, Media Kit Pro shall not be
+              To the maximum extent permitted by law, Kitevo shall not be
               liable for any indirect, incidental, special, consequential, or
               punitive damages arising from your use of the Service. Our total
               liability to you for any claim shall not exceed the amount you paid

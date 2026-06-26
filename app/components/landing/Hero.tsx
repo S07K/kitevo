@@ -213,7 +213,7 @@ export function Hero(): ReactNode {
           transition={{ duration: 0.7, ease: softEase, delay: 0.55 }}
           className="text-muted-foreground mt-7 max-w-md text-base leading-relaxed"
         >
-          Stop sending ugly PDFs. Media Kit Pro turns your Instagram presence
+          Stop sending ugly PDFs. Kitevo turns your Instagram presence
           into a live, high-end portfolio with real engagement data, audience
           demographics, and growth charts brands actually want to see.
         </motion.p>

@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Media Kit Pro",
-  description: "How Media Kit Pro collects, uses, and protects your data.",
+  title: "Privacy Policy — Kitevo",
+  description: "How Kitevo collects, uses, and protects your data.",
 };
 
 export default function PrivacyPolicy() {
@@ -14,7 +14,7 @@ export default function PrivacyPolicy() {
           href="/"
           className="font-display text-foreground text-lg font-semibold tracking-tight hover:opacity-70 transition-opacity"
         >
-          Media Kit Pro
+          Kitevo
         </Link>
       </header>
 
@@ -35,9 +35,9 @@ export default function PrivacyPolicy() {
               1. Who we are
             </h2>
             <p>
-              Media Kit Pro ("we", "us", or "our") is a platform that allows
+              Kitevo ("we", "us", or "our") is a platform that allows
               content creators to build and share professional media kits. Our
-              service is operated by Media Kit Pro and our website is located at{" "}
+              service is operated by Kitevo and our website is located at{" "}
               {(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/^https?:\/\//, "")}.
             </p>
           </section>
@@ -89,7 +89,7 @@ export default function PrivacyPolicy() {
               3. How we use your data
             </h2>
             <ul className="ml-4 list-disc space-y-2">
-              <li>To operate and improve the Media Kit Pro service.</li>
+              <li>To operate and improve the Kitevo service.</li>
               <li>
                 To display your public media kit page to visitors (brands and
                 agencies) you share your link with.

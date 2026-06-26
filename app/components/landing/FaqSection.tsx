@@ -13,7 +13,7 @@ const FAQS: QA[] = [
   {
     question: "What is a media kit and why do I need one?",
     answer:
-      "A media kit is a document you send to brands when pitching for collaborations. It shows your follower count, engagement rate, audience demographics, past work, and rates. Media Kit Pro turns all of that into a live, professional web page instead of a static PDF — so brands see real-time data and you look serious.",
+      "A media kit is a document you send to brands when pitching for collaborations. It shows your follower count, engagement rate, audience demographics, past work, and rates. Kitevo turns all of that into a live, professional web page instead of a static PDF — so brands see real-time data and you look serious.",
   },
   {
     question: "How does the Instagram connection work?",

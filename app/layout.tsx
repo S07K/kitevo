@@ -16,7 +16,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Media Kit Pro — Professional Pitch Decks for Creators",
+  title: "Kitevo — Professional Pitch Decks for Creators",
   description:
     "Turn your link-in-bio into a high-end agency portfolio. Live engagement data, audience demographics, and growth charts that win brand deals.",
 };

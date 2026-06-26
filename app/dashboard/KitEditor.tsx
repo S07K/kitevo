@@ -451,7 +451,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
                 className="border-border bg-background text-foreground placeholder:text-muted-foreground w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <p className="text-muted-foreground mt-1.5 text-xs">
-                Shown in your kit header instead of the Media Kit Pro wordmark.
+                Shown in your kit header instead of the Kitevo wordmark.
               </p>
             </div>
           )}

@@ -43,7 +43,7 @@ export function MarketingFooter(): ReactNode {
         <div className="mx-auto max-w-[1440px] flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-background/50 text-xs font-semibold tracking-[0.2em] uppercase mb-3">
-              Media Kit Pro
+              Kitevo
             </p>
             <h2 className="text-[clamp(28px,4vw,48px)] font-medium tracking-tight leading-tight max-w-lg text-balance">
               One link. Every stat.<br />Every deal.
@@ -145,7 +145,7 @@ export function MarketingFooter(): ReactNode {
 
           <div className="border-border mt-10 flex flex-col items-start justify-between gap-3 border-t pt-6 text-xs sm:flex-row sm:items-center">
             <p className="text-muted-foreground">
-              © {new Date().getFullYear()} Media Kit Pro. All rights reserved.
+              © {new Date().getFullYear()} Kitevo. All rights reserved.
             </p>
             <p className="text-muted-foreground">
               For creators who are serious about brand deals.

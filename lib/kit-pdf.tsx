@@ -286,7 +286,7 @@ export function KitPdf({
     <Document
       title={`${creator.name} — Media Kit`}
       author={creator.name}
-      creator="Media Kit Pro"
+      creator="Kitevo"
     >
       <Page size="A4" style={s.page}>
         {/* Header */}

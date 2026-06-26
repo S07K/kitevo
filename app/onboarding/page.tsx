@@ -181,7 +181,7 @@ function OnboardingContent() {
             Getting started
           </p>
           <h1 className="font-display text-foreground text-3xl font-semibold tracking-tight">
-            Welcome to Media Kit Pro
+            Welcome to Kitevo
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
             Four quick steps to your first live media kit.
