@@ -70,7 +70,7 @@ export async function GET(
     // Stats unavailable — PDF renders without them
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://mediakitpro.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   const pdf = await renderToBuffer(
     // @ts-expect-error react-pdf types diverge from React 19 createElement signature

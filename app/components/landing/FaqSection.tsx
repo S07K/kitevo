@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { APP_HOST } from "@/lib/app-url";
 import { SectionHeading } from "@/components/section-heading";
 import { softEase, useReducedMotion } from "@/lib/motion";
 import { AnimatePresence, motion } from "motion/react";
@@ -43,7 +44,7 @@ const FAQS: QA[] = [
   {
     question: "Is my media kit URL permanent?",
     answer:
-      "Yes. Your kit URL is based on your username (e.g. mediakitpro.co/yourname) and remains yours as long as your account is active. You can share it anywhere — bio, emails, DMs — and it always shows your latest data.",
+      `Yes. Your kit URL is based on your username (e.g. ${APP_HOST}/yourname) and remains yours as long as your account is active. You can share it anywhere — bio, emails, DMs — and it always shows your latest data.`,
   },
 ];
 

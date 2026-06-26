@@ -16,6 +16,7 @@ import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm"
 import { DashboardSkeleton, StatCardSkeleton, KitCardSkeleton, CountUp } from "../components/Skeleton";
 import type { KitRecord } from "@/lib/kit-storage";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
+import { APP_URL, APP_HOST } from "@/lib/app-url";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -562,11 +563,11 @@ function DashboardContent() {
     ? profile.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?";
   const primaryKit = kits[0] ?? null;
-  const primaryKitUrl = primaryKit ? `mediakitpro.co/kit/${primaryKit.slug}` : null;
+  const primaryKitUrl = primaryKit ? `${APP_HOST}/kit/${primaryKit.slug}` : null;
 
   const handleCopyUrl = () => {
     if (!primaryKit) return;
-    navigator.clipboard.writeText(`https://mediakitpro.co/kit/${primaryKit.slug}`).catch(() => {});
+    navigator.clipboard.writeText(`${APP_URL}/kit/${primaryKit.slug}`).catch(() => {});
     setUrlCopied(true);
     if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     copyTimeoutRef.current = setTimeout(() => setUrlCopied(false), 2000);
@@ -695,7 +696,7 @@ function DashboardContent() {
                     </svg>
                   ),
                   label: "Shareable link",
-                  desc: "Your kit lives at mediakitpro.co/kit/[you]. One link for every brand pitch.",
+                  desc: `Your kit lives at ${APP_HOST}/kit/[you]. One link for every brand pitch.`,
                 },
               ].map((item) => (
                 <div key={item.label} className="border-border bg-background flex gap-4 rounded-2xl border p-5">

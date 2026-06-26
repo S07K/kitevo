@@ -38,7 +38,7 @@ export default function PrivacyPolicy() {
               Media Kit Pro ("we", "us", or "our") is a platform that allows
               content creators to build and share professional media kits. Our
               service is operated by Media Kit Pro and our website is located at{" "}
-              mediakitpro.co.
+              {(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/^https?:\/\//, "")}.
             </p>
           </section>
 
