@@ -66,7 +66,7 @@ export async function sendViewMilestoneEmail({
   await resend.emails.send({
     from: FROM,
     to: ownerEmail,
-    subject: `Your kit "${kitName}" just hit ${milestoneFormatted} views 🎉`,
+    subject: `Your kit "${kitName}" just hit ${milestoneFormatted} views`,
     html: emailHtml({
       heading: `${milestoneFormatted} views on "${kitName}"`,
       body: `Your media kit just crossed <strong>${milestone.toLocaleString()} views</strong>. Brands and agencies are noticing you — keep sharing your kit link to grow your reach.`,

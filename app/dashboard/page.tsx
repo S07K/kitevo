@@ -670,12 +670,36 @@ function DashboardContent() {
 
             <div className="space-y-3">
               {[
-                { icon: "📊", label: "Live Instagram stats", desc: "Follower count, engagement rate, and demographics — always up to date." },
-                { icon: "🎨", label: "Brand Kit Vibes (Pro)", desc: "5 signature design styles. Custom colors, fonts, and logo upload." },
-                { icon: "🔗", label: "Shareable link", desc: "Your kit lives at mediakitpro.co/kit/[you]. One link for every brand pitch." },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                  ),
+                  label: "Live Instagram stats",
+                  desc: "Follower count, engagement rate, and demographics — always up to date.",
+                },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/>
+                    </svg>
+                  ),
+                  label: "Brand Kit Vibes (Pro)",
+                  desc: "5 signature design styles. Custom colors, fonts, and logo upload.",
+                },
+                {
+                  icon: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                    </svg>
+                  ),
+                  label: "Shareable link",
+                  desc: "Your kit lives at mediakitpro.co/kit/[you]. One link for every brand pitch.",
+                },
               ].map((item) => (
                 <div key={item.label} className="border-border bg-background flex gap-4 rounded-2xl border p-5">
-                  <span className="text-2xl">{item.icon}</span>
+                  <div className="mt-0.5 shrink-0 text-muted-foreground">{item.icon}</div>
                   <div>
                     <p className="text-foreground text-sm font-semibold">{item.label}</p>
                     <p className="text-muted-foreground mt-0.5 text-sm">{item.desc}</p>
