@@ -177,7 +177,7 @@ export function ProfileForm({
           {/* Avatar on top */}
           <div className="h-20 w-20 shrink-0 rounded-full overflow-hidden border border-border bg-muted">
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="h-full w-full object-cover" width={80} height={80} />
+              <img src={avatarUrl} alt="" className="h-full w-full object-cover" width={80} height={80} referrerPolicy="no-referrer" />
             ) : (
               <div className="h-full w-full flex items-center justify-center text-2xl font-display text-muted-foreground">
                 {(name || username || "?").charAt(0).toUpperCase()}

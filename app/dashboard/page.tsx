@@ -698,6 +698,7 @@ function DashboardContent() {
                         src={avatarUrl}
                         alt={profile?.name ?? "Avatar"}
                         className="h-11 w-11 rounded-full object-cover"
+                        referrerPolicy="no-referrer"
                       />
                     ) : (
                       <div className="h-11 w-11 rounded-full bg-white/10 flex items-center justify-center">

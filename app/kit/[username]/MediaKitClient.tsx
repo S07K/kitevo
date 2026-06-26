@@ -383,6 +383,7 @@ export function MediaKitClient({
                   alt=""
                   className="h-12 w-12 rounded-full object-cover shrink-0 ring-2 ring-[var(--mk-bg)]/20"
                   width={48} height={48}
+                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <div className="h-12 w-12 rounded-full bg-[var(--mk-bg)]/10 flex items-center justify-center shrink-0">
