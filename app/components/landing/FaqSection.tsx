@@ -129,18 +129,7 @@ export function FaqSection(): ReactNode {
         <SectionHeading
           label="FAQ"
           title="Honest answers to fair questions"
-          description={
-            <>
-              Still curious? Write to{" "}
-              <a
-                href="mailto:hello@mediakitpro.co"
-                className="focus-ring text-foreground underline underline-offset-4 transition-opacity hover:opacity-70"
-              >
-                hello@mediakitpro.co
-              </a>
-              {" "}— a real person replies.
-            </>
-          }
+          description="Still have questions? More answers coming soon."
         />
         <div>
           {FAQS.map((item, i) => (

@@ -241,14 +241,7 @@ export default function TermsOfService() {
               14. Contact
             </h2>
             <p>
-              Questions about these Terms? Email us at{" "}
-              <a
-                href="mailto:hello@mediakitpro.co"
-                className="text-foreground underline underline-offset-4 hover:opacity-70"
-              >
-                hello@mediakitpro.co
-              </a>
-              .
+              Questions about these Terms? Contact us via the dashboard.
             </p>
           </section>
         </div>

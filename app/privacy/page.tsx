@@ -179,9 +179,7 @@ export default function PrivacyPolicy() {
               <li>Access the personal data we hold about you.</li>
               <li>Request correction of inaccurate data.</li>
               <li>
-                Request deletion of your account and associated data. Email us
-                at hello@mediakitpro.co and we will delete your account within
-                30 days.
+                Request deletion of your account and associated data. Delete your account from the dashboard and your data will be removed within 30 days.
               </li>
               <li>
                 Withdraw consent for Instagram data access at any time via your
@@ -210,8 +208,7 @@ export default function PrivacyPolicy() {
               We implement industry-standard security practices including encrypted
               storage of credentials, HTTPS for all data in transit, and strict
               access controls on our database. No system is 100% secure; if you
-              believe your account has been compromised, contact us immediately at
-              hello@mediakitpro.co.
+              believe your account has been compromised, contact us immediately via your dashboard.
             </p>
           </section>
 
@@ -244,14 +241,7 @@ export default function PrivacyPolicy() {
               11. Contact
             </h2>
             <p>
-              Questions about this Privacy Policy? Email us at{" "}
-              <a
-                href="mailto:hello@mediakitpro.co"
-                className="text-foreground underline underline-offset-4 hover:opacity-70"
-              >
-                hello@mediakitpro.co
-              </a>
-              .
+              Questions about this Privacy Policy? Contact us via the dashboard.
             </p>
           </section>
         </div>

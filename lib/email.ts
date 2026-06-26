@@ -44,7 +44,7 @@ export async function sendInquiryNotification({
       body: `<strong>${from.name}${company}</strong> &lt;${from.email}&gt; sent you a message:<br><br><blockquote style="margin:0;padding:12px 16px;border-left:3px solid #e8e4e0;color:#6b6560;font-style:italic">${from.message.replace(/\n/g, "<br>")}</blockquote><br>Reply directly to <a href="mailto:${from.email}" style="color:#111110">${from.email}</a>.`,
       ctaLabel: "View dashboard",
       ctaUrl: dashboardUrl,
-      footer: `You received this because someone submitted an inquiry on your ${kitName} media kit. To stop these emails, contact us at hello@mediakitpro.co.`,
+      footer: `You received this because someone submitted an inquiry on your ${kitName} media kit. To stop these emails, contact us via your dashboard.`,
     }),
     replyTo: from.email,
   });
@@ -72,7 +72,7 @@ export async function sendViewMilestoneEmail({
       body: `Your media kit just crossed <strong>${milestone.toLocaleString()} views</strong>. Brands and agencies are noticing you — keep sharing your kit link to grow your reach.`,
       ctaLabel: "View your analytics",
       ctaUrl: dashboardUrl,
-      footer: `You received this because your kit hit a view milestone. To stop these emails, contact us at hello@mediakitpro.co.`,
+      footer: `You received this because your kit hit a view milestone. To stop these emails, contact us via your dashboard.`,
     }),
   });
 }
