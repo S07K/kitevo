@@ -190,7 +190,7 @@ function ConnectInstagramOverlay({
 }) {
   return (
     <div
-      className={`absolute inset-0 rounded-2xl bg-[var(--mk-bg)]/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-10 border border-[var(--mk-border)]/40 ${className}`}
+      className={`absolute inset-0 bg-[var(--mk-bg)]/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-10 ${className}`}
       aria-hidden
     >
       <p className="font-display text-lg font-semibold text-[var(--mk-text)]">{title}</p>
