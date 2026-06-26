@@ -66,14 +66,15 @@ export default async function MediaKitPage({
       }
     }
     const isOwner = session?.user?.id === result.kit.userId;
-    const [instagramStats, enabledPlatformIds, user] = await Promise.all([
-      getStatsForUser(result.kit.userId),
+    const [enabledPlatformIds, user] = await Promise.all([
       Promise.resolve(getEnabledPlatformIds()),
       prisma.user.findUnique({
         where: { id: result.kit.userId },
-        select: { instagramUserId: true, stripeCustomerId: true },
+        select: { instagramUserId: true, instagramAccessToken: true, stripeCustomerId: true },
       }),
     ]);
+    const instagramConnectedForKit = !!(user?.instagramUserId && user?.instagramAccessToken);
+    const instagramStats = instagramConnectedForKit ? await getStatsForUser(result.kit.userId) : null;
 
     let inquiryEnabled = false;
     if (user?.stripeCustomerId) {
@@ -91,8 +92,8 @@ export default async function MediaKitPage({
       }
     }
 
-    const platformStats = { instagram: instagramStats };
-    const instagramConnected = !!user?.instagramUserId;
+    const platformStats: Record<string, import("@/lib/platforms/types").PlatformStatsWithCharts> = instagramStats ? { instagram: instagramStats } : {};
+    const instagramConnected = instagramConnectedForKit;
     return (
       <MediaKitClient
         username={result.creator.username}

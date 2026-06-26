@@ -413,7 +413,7 @@ export function MediaKitClient({
 
           {/* 2. Platform stats — flat card with divide-x metric grid */}
           {sectionVisibility.stats && (
-            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] relative overflow-hidden">
+            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] relative overflow-hidden min-h-[180px]">
               <div className={`grid divide-x divide-[var(--mk-border)] ${
                 enabledPlatformIds.length === 1
                   ? "grid-cols-3"
