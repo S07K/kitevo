@@ -35,6 +35,18 @@ model User {
   // Phase 11: Onboarding (redirect new users to /onboarding until they finish)
   onboardingCompletedAt DateTime?
 
+  // Email verification
+  emailVerified             Boolean   @default(false)
+  emailVerifyToken          String?   @unique
+  emailVerifyTokenExpiresAt DateTime?
+
+  // Password reset
+  resetPasswordToken          String?   @unique
+  resetPasswordTokenExpiresAt DateTime?
+
+  // OAuth accounts (Google etc.)
+  accounts Account[]
+
   // Relations for Phase 8 (kits)
   kits      Kit[]
 }
@@ -86,4 +98,19 @@ model Inquiry {
 
   @@index([kitId])
   @@index([createdAt])
+}
+
+// OAuth accounts (Google, etc.) linked to a User
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String  // "google"
+  providerAccountId String
+  accessToken       String?
+  refreshToken      String?
+  expiresAt         Int?
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }

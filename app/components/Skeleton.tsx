@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`relative overflow-hidden rounded-xl bg-muted before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.6s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent ${className}`}
+      className={`relative overflow-hidden rounded-xl bg-muted before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.6s_infinite] before:bg-gradient-to-r before:from-transparent before:via-foreground/[0.06] before:to-transparent ${className}`}
       aria-hidden
     />
   );
@@ -129,22 +129,67 @@ export function SidebarCardSkeleton() {
 
 export function DashboardSkeleton() {
   return (
-    <div className="mt-8 grid gap-6 lg:grid-cols-[340px_1fr]">
-      {/* sidebar */}
-      <div className="space-y-4">
-        <SidebarCardSkeleton />
-        <SidebarCardSkeleton />
-        <SidebarCardSkeleton />
-      </div>
-      {/* main */}
-      <div className="space-y-6">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <StatCardSkeleton />
-          <StatCardSkeleton />
+    <div className="space-y-6">
+      {/* Welcome banner */}
+      <div className="rounded-2xl bg-[#111110] dark:bg-[#1c1c1a] dark:border dark:border-[#2a2a28] px-6 py-5 flex items-center gap-4">
+        <div className="h-11 w-11 rounded-full shrink-0 bg-white/15" />
+        <div className="space-y-2">
+          <div className="h-2.5 w-20 rounded-full bg-white/20" />
+          <div className="h-5 w-28 rounded-full bg-white/25" />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <KitCardSkeleton />
-          <KitCardSkeleton />
+      </div>
+
+      {/* Metrics bar */}
+      <div className="bg-background border border-border rounded-2xl grid grid-cols-2 sm:grid-cols-4 divide-x divide-border">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="px-6 py-5 space-y-2">
+            <Skeleton className="h-2.5 w-20 rounded-full" />
+            <Skeleton className="h-7 w-16 rounded-full" />
+            <Skeleton className="h-2 w-14 rounded-full" />
+          </div>
+        ))}
+      </div>
+
+      {/* Main grid */}
+      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+        {/* Sidebar */}
+        <div className="bg-background border border-border rounded-2xl p-6 space-y-5">
+          {/* Profile section */}
+          <div className="space-y-3">
+            <Skeleton className="h-2.5 w-14 rounded-full" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-20 w-20 rounded-full shrink-0" />
+            </div>
+            <Skeleton className="h-9 w-full rounded-xl" />
+            <Skeleton className="h-9 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-9 w-full rounded-full" />
+          </div>
+          <div className="border-t border-border" />
+          {/* Instagram section */}
+          <div className="space-y-2">
+            <Skeleton className="h-2.5 w-20 rounded-full" />
+            <Skeleton className="h-10 w-full rounded-full" />
+          </div>
+          <div className="border-t border-border" />
+          {/* Plan section */}
+          <div className="space-y-2">
+            <Skeleton className="h-2.5 w-10 rounded-full" />
+            <Skeleton className="h-3 w-24 rounded-full" />
+            <div className="flex gap-2 pt-1">
+              <Skeleton className="h-9 w-28 rounded-full" />
+              <Skeleton className="h-9 w-28 rounded-full" />
+            </div>
+          </div>
+        </div>
+
+        {/* Kits */}
+        <div className="space-y-4">
+          <Skeleton className="h-2.5 w-16 rounded-full" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <KitCardSkeleton />
+            <KitCardSkeleton />
+          </div>
         </div>
       </div>
     </div>
@@ -166,16 +211,42 @@ export function KitEditorSkeleton() {
 
 export function PublicKitSkeleton() {
   return (
-    <div className="pt-[calc(5rem+env(safe-area-inset-top))] pb-20 max-w-2xl mx-auto px-5 sm:px-8 space-y-8">
-      <div className="text-center pt-8">
-        <Skeleton className="w-28 h-28 rounded-full mx-auto" />
-        <Skeleton className="h-8 w-40 mx-auto mt-4 rounded-full" />
-        <Skeleton className="h-4 w-24 mx-auto mt-2 rounded-full" />
-      </div>
-      <Skeleton className="h-28 w-full rounded-2xl" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Skeleton className="aspect-[4/5] rounded-2xl" />
-        <Skeleton className="aspect-[4/5] rounded-2xl" />
+    <div className="pb-24 max-w-4xl mx-auto px-5 sm:px-8 pt-14">
+      <div className="pt-6 space-y-4">
+        {/* Hero banner — matches bg-[var(--mk-text)] dark card */}
+        <div className="rounded-2xl bg-muted/60 px-6 py-6 flex items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-foreground/10 shrink-0" />
+          <div className="space-y-2">
+            <div className="h-2.5 w-20 rounded-full bg-foreground/10" />
+            <div className="h-5 w-36 rounded-full bg-foreground/10" />
+          </div>
+        </div>
+
+        {/* Platform stats card */}
+        <Skeleton className="h-24 w-full rounded-2xl" />
+
+        {/* Work samples */}
+        <Skeleton className="h-5 w-28 rounded-full mt-2" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Skeleton className="h-56 rounded-2xl" />
+          <Skeleton className="h-56 rounded-2xl" />
+        </div>
+
+        {/* Rates */}
+        <Skeleton className="h-5 w-20 rounded-full mt-2" />
+        <Skeleton className="h-32 w-full rounded-2xl" />
+
+        {/* Brands */}
+        <Skeleton className="h-5 w-32 rounded-full mt-2" />
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-xl" />
+          ))}
+        </div>
+
+        {/* Growth chart */}
+        <Skeleton className="h-5 w-36 rounded-full mt-2" />
+        <Skeleton className="h-52 w-full rounded-2xl" />
       </div>
     </div>
   );

@@ -39,13 +39,13 @@ function newId(): string {
 }
 
 interface KitEditorProps {
-  /** Kit to edit. If null, uses first kit from storage (backward compat). */
   kitId: string | null;
-  /** Subscription tier id — controls Pro feature gating. */
   tierId?: string | null;
+  /** Called after a successful save with the kit's public slug */
+  onSaved?: (slug: string) => void;
 }
 
-export function KitEditor({ kitId, tierId }: KitEditorProps) {
+export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
   const isPro = tierId === "pro";
   const [effectiveKitId, setEffectiveKitId] = useState<string | null>(kitId);
   const [workSamples, setWorkSamples] = useState<WorkSample[]>(MOCK_WORK_SAMPLES);
@@ -119,10 +119,12 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
         credentials: "include",
         body: JSON.stringify({ workSamples, rates, brands, sectionVisibility, appearance }),
       })
-        .then((r) => {
+        .then(async (r) => {
           if (!r.ok) throw new Error("Failed to save");
+          const data = await r.json().catch(() => ({}));
           setSaved(true);
           setTimeout(() => setSaved(false), 2000);
+          if (data.slug && onSaved) onSaved(data.slug);
         })
         .catch(() => setLoadError("Failed to save"));
       return;
@@ -152,7 +154,7 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
   const loadInstagramPosts = async () => {
     setLoadingPosts(true);
     try {
-      const res = await fetch("/api/instagram/recent-posts", { credentials: "include" });
+      const res = await fetch("/api/instagram/media", { credentials: "include" });
       const posts = res.ok ? (await res.json()) : [];
       setFetchedPosts(Array.isArray(posts) ? posts : []);
     } finally {
@@ -165,15 +167,24 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
 
   const addPostToKit = (post: FetchedPost) => {
     if (isPostInKit(post.id)) return;
+    const contentType =
+      post.mediaType === "VIDEO" ? "Reel" :
+      post.mediaType === "CAROUSEL_ALBUM" ? "Carousel" :
+      post.mediaType === "IMAGE" ? "Photo" : undefined;
     setWorkSamples((prev) => [
       ...prev,
       {
         id: newId(),
         platform: post.platform,
-        thumbnailUrl: post.thumbnailUrl,
-        caption: post.caption ?? undefined,
-        title: post.caption?.slice(0, 50) ?? undefined,
+        thumbnailUrl: post.thumbnailUrl || undefined,
+        title: post.caption?.slice(0, 60).replace(/\s+#\S+/g, "").trim() || "Post",
         sourceMediaId: post.id,
+        contentType,
+        likes: post.likes,
+        comments: post.comments,
+        saves: post.saves,
+        views: post.views,
+        reach: post.reach,
       },
     ]);
   };
@@ -235,9 +246,12 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
           onClick={save}
           className="px-4 py-2 bg-foreground text-background text-sm font-medium rounded-full hover:opacity-80 disabled:opacity-70"
         >
-          {saved ? "Saved" : "Save changes"}
+          {saved ? "✓ Saved" : "Save changes"}
         </button>
       </div>
+      <p className="text-[11px] text-muted-foreground -mt-6">
+        Save changes to refresh the live preview →
+      </p>
       {loadError && (
         <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-sm text-red-800">
           <p className="font-medium">Something went wrong</p>
@@ -260,17 +274,33 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
         <p className="mt-1 text-sm text-muted-foreground">
           Choose which sections appear on your public media kit.
         </p>
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-2.5">
           {visibilityToggles.map(({ key, label }) => (
-            <label key={key} className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={sectionVisibility[key]}
-                onChange={(e) => updateSectionVisibility(key, e.target.checked)}
-                className="rounded border-border text-foreground focus:ring-ring"
-              />
+            <button
+              key={key}
+              type="button"
+              role="checkbox"
+              aria-checked={sectionVisibility[key]}
+              onClick={() => updateSectionVisibility(key, !sectionVisibility[key])}
+              className="flex items-center gap-3 w-full text-left group"
+            >
+              <span
+                className="h-4 w-4 shrink-0 rounded flex items-center justify-center transition-colors"
+                style={{
+                  border: sectionVisibility[key] ? undefined : "1.5px solid #999",
+                  backgroundColor: sectionVisibility[key] ? "var(--color-foreground)" : undefined,
+                  color: sectionVisibility[key] ? "var(--color-background)" : undefined,
+                  outline: sectionVisibility[key] ? "1.5px solid var(--color-foreground)" : undefined,
+                }}
+              >
+                {sectionVisibility[key] && (
+                  <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1.5 5 3.8 7.5 8.5 2" />
+                  </svg>
+                )}
+              </span>
               <span className="text-sm text-foreground">{label}</span>
-            </label>
+            </button>
           ))}
         </div>
       </div>
@@ -298,7 +328,7 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
             <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
               Starter styles
             </p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="flex flex-wrap gap-2">
               {BASIC_PRESETS.map((preset) => {
                 const active = appearance.preset === preset;
                 return (
@@ -306,9 +336,9 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                     key={preset}
                     type="button"
                     onClick={() => setAppearance((a) => ({ ...a, preset }))}
-                    className={`rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-all duration-150 ${
+                    className={`rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all duration-150 ${
                       active
-                        ? "border-foreground bg-foreground text-background shadow-sm"
+                        ? "border-foreground bg-foreground text-background"
                         : "border-border text-foreground hover:bg-muted hover:border-foreground/20"
                     }`}
                   >
@@ -333,73 +363,67 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
             </div>
 
             {!isPro ? (
-              /* Teaser tiles — non-interactive previews */
               <div className="relative">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 opacity-50 pointer-events-none select-none">
-                  {BRAND_KIT_VIBES.slice(0, 3).map((vibe) => {
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 opacity-40 pointer-events-none select-none">
+                  {BRAND_KIT_VIBES.slice(0, 4).map((vibe) => {
                     const meta = BRAND_KIT_VIBE_META[vibe];
                     return (
-                      <div key={vibe} className="relative overflow-hidden rounded-2xl border border-border">
-                        <div className="h-24 w-full flex flex-col justify-end p-4" style={{ backgroundColor: meta.bg }}>
-                          <p className="font-display text-base font-semibold leading-tight" style={{ color: meta.fg }}>{meta.label}</p>
-                          <p className="text-[11px] mt-0.5 opacity-60" style={{ color: meta.fg }}>{meta.tagline}</p>
+                      <div key={vibe} className="flex items-stretch rounded-xl border border-border overflow-hidden">
+                        <div className="w-1.5 shrink-0" style={{ backgroundColor: meta.bg === "#111110" || meta.bg === "#0A0A14" ? meta.fg : meta.bg }} />
+                        <div className="flex-1 px-4 py-3.5">
+                          <p className="text-sm font-semibold text-foreground">{meta.label}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{meta.tagline}</p>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-background/80 backdrop-blur-sm text-center p-6">
+                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-background/85 backdrop-blur-sm text-center px-6 py-8">
                   <p className="text-foreground text-sm font-semibold">5 signature design styles</p>
-                  <p className="text-muted-foreground mt-1 text-xs max-w-xs">
-                    Editorial, Studio, Bloom, Electric, Noir Pro — each with custom accent and font pairings.
+                  <p className="text-muted-foreground mt-1 text-xs max-w-[220px] leading-relaxed">
+                    Editorial, Studio, Bloom, Electric, Noir Pro — with custom accent colors.
                   </p>
                   <a
                     href="/pricing"
-                    className="bg-foreground text-background mt-4 inline-flex h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
+                    className="bg-foreground text-background mt-4 inline-flex h-8 items-center rounded-full px-5 text-xs font-medium transition-opacity hover:opacity-80"
                   >
                     Upgrade to Pro →
                   </a>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {BRAND_KIT_VIBES.map((vibe) => {
                   const meta = BRAND_KIT_VIBE_META[vibe];
                   const active = appearance.preset === vibe;
+                  const accentColor = meta.bg === "#111110" || meta.bg === "#0A0A14" ? meta.fg : meta.bg;
                   return (
                     <button
                       key={vibe}
                       type="button"
                       onClick={() => setAppearance((a) => ({ ...a, preset: vibe }))}
-                      className={`relative overflow-hidden rounded-2xl border text-left transition-all duration-200 ${
+                      className={`flex items-stretch rounded-xl border text-left transition-all duration-150 overflow-hidden ${
                         active
-                          ? "ring-2 ring-foreground ring-offset-2 border-transparent scale-[1.02]"
-                          : "border-border hover:border-foreground/30 hover:scale-[1.01]"
+                          ? "border-foreground bg-muted/40"
+                          : "border-border hover:border-foreground/20 hover:bg-muted/30"
                       }`}
                     >
-                      {/* Full-height color preview with content inside */}
-                      <div
-                        className="h-24 w-full flex flex-col justify-end p-4"
-                        style={{ backgroundColor: meta.bg }}
-                      >
-                        {active && (
-                          <div className="absolute top-3 right-3">
-                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ color: meta.fg }}>
-                                <polyline points="20 6 9 17 4 12" />
+                      {/* Color accent bar */}
+                      <div className="w-1.5 shrink-0" style={{ backgroundColor: accentColor }} />
+                      {/* Content */}
+                      <div className="flex-1 px-4 py-3.5 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-semibold text-foreground leading-snug">{meta.label}</p>
+                          {active && (
+                            <span className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background mt-0.5">
+                              <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="1.5 5 3.8 7.5 8.5 2" />
                               </svg>
                             </span>
-                          </div>
-                        )}
-                        <p className="font-display text-base font-semibold leading-tight" style={{ color: meta.fg }}>
-                          {meta.label}
-                        </p>
-                        <p className="text-[11px] mt-0.5 opacity-60" style={{ color: meta.fg }}>
-                          {meta.tagline}
-                        </p>
-                      </div>
-                      <div className="bg-background border-t border-border px-4 py-2.5">
-                        <p className="text-muted-foreground text-[11px]">{meta.for}</p>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{meta.tagline}</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-2 tracking-wide">{meta.for}</p>
                       </div>
                     </button>
                   );
@@ -407,49 +431,6 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
               </div>
             )}
           </div>
-
-          {/* ── Accent color (Pro) ── */}
-          {isPro && (
-            <div>
-              <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
-                Accent color
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                {[
-                  "#111110", "#f5f0e8", "#c9a84c", "#6366f1",
-                  "#c97b4b", "#2d9b8a", "#e14d6e", "#3b82f6",
-                ].map((color) => {
-                  const active = appearance.accentColor === color;
-                  return (
-                    <button
-                      key={color}
-                      type="button"
-                      title={color}
-                      onClick={() =>
-                        setAppearance((a) => ({
-                          ...a,
-                          accentColor: active ? undefined : color,
-                        }))
-                      }
-                      className={`h-8 w-8 rounded-full transition-all duration-150 hover:scale-110 ${
-                        active ? "ring-2 ring-foreground ring-offset-2 scale-110" : "ring-1 ring-border"
-                      }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  );
-                })}
-                {appearance.accentColor && (
-                  <button
-                    type="button"
-                    onClick={() => setAppearance((a) => ({ ...a, accentColor: undefined }))}
-                    className="border-border text-muted-foreground hover:text-foreground h-8 rounded-full border px-3 text-[11px] font-medium transition-colors"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* ── Logo URL (Pro) ── */}
           {isPro && (
@@ -516,34 +497,52 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {fetchedPosts.map((post) => {
                   const inKit = isPostInKit(post.id);
+                  const fmt = (n?: number) => n == null ? null : n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n/1_000).toFixed(1)}K` : String(n);
+                  const metrics = [
+                    post.views && { label: "Views", val: fmt(post.views) },
+                    post.reach && !post.views && { label: "Reach", val: fmt(post.reach) },
+                    post.likes && { label: "Likes", val: fmt(post.likes) },
+                    post.saves && { label: "Saves", val: fmt(post.saves) },
+                  ].filter(Boolean) as { label: string; val: string | null }[];
                   return (
                     <div
                       key={post.id}
-                      className="rounded-xl border border-border overflow-hidden bg-muted"
+                      className={`rounded-xl border overflow-hidden bg-background ${inKit ? "border-foreground/30 opacity-60" : "border-border"}`}
                     >
-                      <div className="aspect-square relative bg-border">
-                        <img
-                          src={post.thumbnailUrl}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
+                      <div className="aspect-square relative bg-muted">
+                        {post.thumbnailUrl ? (
+                          <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No image</div>
+                        )}
+                        <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/60 text-white text-[10px] font-medium rounded-full">
+                          {post.mediaType === "VIDEO" ? "Reel" : post.mediaType === "CAROUSEL_ALBUM" ? "Carousel" : "Photo"}
+                        </span>
                         {inKit && (
                           <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-foreground text-background text-[10px] font-medium rounded-full">
-                            In kit
+                            ✓ Added
                           </span>
                         )}
                       </div>
-                      <p className="p-2 text-xs text-muted-foreground line-clamp-2">
-                        {post.caption || "No caption"}
-                      </p>
-                      {!inKit && (
+                      {metrics.length > 0 && (
+                        <div className="px-2 py-1.5 flex flex-wrap gap-x-3 gap-y-0.5 border-b border-border">
+                          {metrics.map(({ label, val }) => (
+                            <span key={label} className="text-[10px] text-muted-foreground">
+                              <span className="font-semibold text-foreground">{val}</span> {label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {!inKit ? (
                         <button
                           type="button"
                           onClick={() => addPostToKit(post)}
-                          className="w-full py-1.5 text-xs font-medium text-foreground border-t border-border hover:bg-muted"
+                          className="w-full py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
                         >
-                          Add to kit
+                          + Add to kit
                         </button>
+                      ) : (
+                        <p className="py-1.5 text-center text-[10px] text-muted-foreground">In kit</p>
                       )}
                     </div>
                   );
@@ -594,29 +593,65 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
                   </option>
                 ))}
               </select>
-              <input
-                type="text"
-                placeholder="Campaign for (e.g. Fashion Co)"
-                value={s.campaignFor ?? ""}
-                onChange={(e) =>
-                  updateWorkSample(s.id, { campaignFor: e.target.value })
-                }
-                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <input
-                type="text"
-                placeholder="Caption (e.g. Reel • 2.1M views)"
-                value={s.caption ?? ""}
-                onChange={(e) => updateWorkSample(s.id, { caption: e.target.value })}
-                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  placeholder="Brand (e.g. Fashion Co)"
+                  value={s.campaignFor ?? ""}
+                  onChange={(e) => updateWorkSample(s.id, { campaignFor: e.target.value })}
+                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <input
+                  type="text"
+                  placeholder="Type (e.g. Reel)"
+                  value={s.contentType ?? ""}
+                  onChange={(e) => updateWorkSample(s.id, { contentType: e.target.value || undefined })}
+                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Metrics</p>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  placeholder="Views"
+                  value={s.views ?? ""}
+                  onChange={(e) => updateWorkSample(s.id, { views: e.target.value ? Number(e.target.value) : undefined })}
+                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <input
+                  type="number"
+                  placeholder="Reach"
+                  value={s.reach ?? ""}
+                  onChange={(e) => updateWorkSample(s.id, { reach: e.target.value ? Number(e.target.value) : undefined })}
+                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <input
+                  type="number"
+                  placeholder="Likes"
+                  value={s.likes ?? ""}
+                  onChange={(e) => updateWorkSample(s.id, { likes: e.target.value ? Number(e.target.value) : undefined })}
+                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <input
+                  type="number"
+                  placeholder="Comments"
+                  value={s.comments ?? ""}
+                  onChange={(e) => updateWorkSample(s.id, { comments: e.target.value ? Number(e.target.value) : undefined })}
+                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <input
+                  type="number"
+                  placeholder="Saves"
+                  value={s.saves ?? ""}
+                  onChange={(e) => updateWorkSample(s.id, { saves: e.target.value ? Number(e.target.value) : undefined })}
+                  className="col-span-2 px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
               <input
                 type="url"
                 placeholder="Thumbnail image URL (optional)"
                 value={s.thumbnailUrl ?? ""}
-                onChange={(e) =>
-                  updateWorkSample(s.id, { thumbnailUrl: e.target.value || undefined })
-                }
+                onChange={(e) => updateWorkSample(s.id, { thumbnailUrl: e.target.value || undefined })}
                 className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
@@ -637,15 +672,30 @@ export function KitEditor({ kitId, tierId }: KitEditorProps) {
           Rates
         </h3>
         <div className="mt-4 space-y-4">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={rates.show}
-              onChange={(e) => setRates((r) => ({ ...r, show: e.target.checked }))}
-              className="rounded border-border text-foreground focus:ring-ring"
-            />
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={rates.show}
+            onClick={() => setRates((r) => ({ ...r, show: !r.show }))}
+            className="flex items-center gap-3 text-left group"
+          >
+            <span
+              className="h-4 w-4 shrink-0 rounded flex items-center justify-center transition-colors"
+              style={{
+                border: rates.show ? undefined : "1.5px solid #999",
+                backgroundColor: rates.show ? "var(--color-foreground)" : undefined,
+                color: rates.show ? "var(--color-background)" : undefined,
+                outline: rates.show ? "1.5px solid var(--color-foreground)" : undefined,
+              }}
+            >
+              {rates.show && (
+                <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="1.5 5 3.8 7.5 8.5 2" />
+                </svg>
+              )}
+            </span>
             <span className="text-sm text-foreground">Show rates on my kit</span>
-          </label>
+          </button>
           {rates.show && (
             <>
               <div>

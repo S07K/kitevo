@@ -3,6 +3,7 @@
 import { softEase, useReducedMotion } from "@/lib/motion";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 const NAV_LINKS = [
@@ -70,8 +71,9 @@ export function MarketingNav(): ReactNode {
             ))}
           </nav>
 
-          {/* Right: CTA + hamburger */}
+          {/* Right: CTA + theme toggle + hamburger */}
           <div className="flex items-center gap-3">
+            <ThemeToggle className="hidden md:inline-flex" />
             <Link
               href="/signup"
               className="focus-ring bg-foreground text-background hidden h-10 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80 md:inline-flex"

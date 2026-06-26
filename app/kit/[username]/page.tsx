@@ -34,9 +34,16 @@ export async function generateStaticParams() {
 export const dynamicParams = true;
 
 /** Server component: loads kit from DB by slug, or mock for demo slugs; passes to client. */
-export default async function MediaKitPage({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = await params;
+export default async function MediaKitPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ username: string }>;
+  searchParams: Promise<{ preview?: string }>;
+}) {
+  const [{ username }, sp] = await Promise.all([params, searchParams]);
   const slug = username ?? "demo";
+  const previewMode = sp?.preview === "1";
 
   let result: Awaited<ReturnType<typeof getKitBySlug>> = null;
   try {
@@ -51,10 +58,12 @@ export default async function MediaKitPage({ params }: { params: Promise<{ usern
       headers().then((h) => h.get("referer") ?? undefined),
       getServerSession(authOptions),
     ]);
-    try {
-      await recordKitView(result.kit.id, referrer);
-    } catch {
-      /* KitView migration not applied yet — page must still render */
+    if (!previewMode) {
+      try {
+        await recordKitView(result.kit.id, referrer);
+      } catch {
+        /* KitView migration not applied yet — page must still render */
+      }
     }
     const isOwner = session?.user?.id === result.kit.userId;
     const [instagramStats, enabledPlatformIds, user] = await Promise.all([
@@ -104,7 +113,7 @@ export default async function MediaKitPage({ params }: { params: Promise<{ usern
         instagramConnected={instagramConnected}
         kitId={result.kit.id}
         inquiryEnabled={inquiryEnabled}
-        isOwner={isOwner}
+        isOwner={isOwner && !previewMode}
       />
     );
   }

@@ -9,19 +9,19 @@ export default function PricingPage() {
 
       <main className="pt-[calc(8rem+env(safe-area-inset-top))] px-6 pb-24 max-w-4xl mx-auto text-center">
         <CanceledMessage />
-        <p className="text-sm uppercase tracking-[0.2em] text-[#8C8C8C] mb-6">
+        <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground mb-6">
           Pricing
         </p>
-        <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight text-[#1A1A1A]">
+        <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
           Choose your plan
         </h1>
-        <p className="mt-6 text-[#5C5C5C]">
+        <p className="mt-6 text-muted-foreground">
           Professional media kits, live stats, and shareable links. Cancel anytime.
         </p>
 
         <PricingContent />
 
-        <p className="mt-12 text-sm text-[#8C8C8C]">
+        <p className="mt-12 text-sm text-muted-foreground">
           Secure payment via Stripe. Manage or upgrade your subscription anytime.
         </p>
       </main>

@@ -38,10 +38,10 @@ function SubscribeButton({ tier }: { tier: SubscriptionTier }) {
         type="button"
         onClick={handleSubscribe}
         disabled={loading}
-        className={`w-full px-6 py-3 font-medium rounded-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed ${
+        className={`w-full px-6 py-3 font-medium rounded-full transition-opacity disabled:opacity-70 disabled:cursor-not-allowed ${
           tier.highlight
-            ? "bg-[#1A1A1A] text-white hover:bg-[#2D2D2D]"
-            : "border border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#FAFAFA]"
+            ? "bg-foreground text-background hover:opacity-80"
+            : "border border-border text-foreground hover:bg-muted"
         }`}
       >
         {loading ? "Redirecting…" : `Continue with ${tier.name}`}
@@ -57,27 +57,27 @@ export function PricingTiers({ tiers }: { tiers: SubscriptionTier[] }) {
       {tiers.map((tier) => (
         <div
           key={tier.id}
-          className={`relative p-8 rounded-lg border bg-white text-left ${
-            tier.highlight ? "border-[#1A1A1A] ring-1 ring-[#1A1A1A]" : "border-[#E8E6E3]"
+          className={`relative p-8 rounded-2xl border bg-background text-left ${
+            tier.highlight ? "border-foreground ring-1 ring-foreground" : "border-border"
           }`}
         >
           {tier.highlight && (
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[#1A1A1A] text-white text-xs font-medium rounded-full">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-foreground text-background text-xs font-medium rounded-full">
               Most popular
             </span>
           )}
-          <h2 className="font-display text-xl font-semibold text-[#1A1A1A]">{tier.name}</h2>
+          <h2 className="font-display text-xl font-semibold text-foreground">{tier.name}</h2>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="font-display text-3xl font-semibold text-[#1A1A1A]">
+            <span className="font-display text-3xl font-semibold text-foreground">
               ${tier.priceMonthly}
             </span>
-            <span className="text-[#5C5C5C]">/month</span>
+            <span className="text-muted-foreground">/month</span>
           </div>
-          <p className="mt-1 text-xs text-[#8C8C8C]">{tier.kitsAllowed} media kit{tier.kitsAllowed !== 1 ? "s" : ""}</p>
-          <ul className="mt-6 space-y-3 text-sm text-[#5C5C5C]">
+          <p className="mt-1 text-xs text-muted-foreground">{tier.kitsAllowed} media kit{tier.kitsAllowed !== 1 ? "s" : ""}</p>
+          <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
             {tier.features.map((feature, i) => (
               <li key={i} className="flex items-center gap-2">
-                <span className="text-[#1A1A1A]">✓</span>
+                <span className="text-foreground">✓</span>
                 {feature}
               </li>
             ))}

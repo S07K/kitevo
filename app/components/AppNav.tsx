@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ThemeToggle } from "./ThemeToggle";
 
 type NavLink = { href: string; label: string; primary?: boolean; external?: boolean };
 
@@ -47,6 +48,7 @@ export function AppNav({ links, onLogout }: { links: NavLink[]; onLogout?: () =>
             Log out
           </button>
         )}
+        <ThemeToggle />
       </div>
 
       {/* Mobile menu button */}

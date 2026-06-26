@@ -29,7 +29,7 @@ export default function TermsOfService() {
           Last updated: June 2026
         </p>
 
-        <div className="mt-12 space-y-10 text-sm leading-relaxed text-[#4a4a47]">
+        <div className="mt-12 space-y-10 text-sm leading-relaxed text-muted-foreground">
           <section>
             <h2 className="text-foreground mb-3 text-lg font-medium tracking-tight">
               1. Acceptance of terms

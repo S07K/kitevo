@@ -20,6 +20,7 @@ const ACCOUNT = [
   { label: "Sign up", href: "/signup" },
   { label: "Log in", href: "/login" },
   { label: "Dashboard", href: "/dashboard" },
+  { label: "Instagram help", href: "/help/instagram" },
 ];
 
 const LEGAL = [

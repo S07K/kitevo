@@ -688,7 +688,7 @@ function DashboardContent() {
           /* ── Subscribed dashboard ── */
           <div className="space-y-6">
             {/* ── Welcome banner ── */}
-            <div className="bg-foreground text-background rounded-2xl px-6 py-5">
+            <div className="bg-[#111110] dark:bg-[#1c1c1a] dark:border dark:border-[#2a2a28] rounded-2xl px-6 py-5">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-4">
                   {/* Avatar */}

@@ -164,60 +164,89 @@ export function ProfileForm({
   const updateLink = (i: number, field: "label" | "url", value: string) =>
     setLinks((prev) => prev.map((l, idx) => (idx === i ? { ...l, [field]: value } : l)));
 
+  const inputCls = "mt-1 w-full px-3 py-2.5 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition";
+
   return (
     <form onSubmit={handleSubmit} className="mt-4 space-y-6 max-w-md">
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A]">Profile photo</label>
-        <p className="mt-0.5 text-xs text-[#5C5C5C]">
+        <label className="block text-sm font-semibold text-foreground">Profile photo</label>
+        <p className="mt-0.5 text-xs text-muted-foreground">
           Shown on your public kit. Upload a photo or pull from Instagram when connected.
         </p>
-        <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="h-20 w-20 shrink-0 rounded-full overflow-hidden border border-[#E8E6E3] bg-[#F5F5F5]">
+        <div className="mt-4 flex flex-col items-center gap-3">
+          {/* Avatar on top */}
+          <div className="h-20 w-20 shrink-0 rounded-full overflow-hidden border border-border bg-muted">
             {avatarUrl ? (
               <img src={avatarUrl} alt="" className="h-full w-full object-cover" width={80} height={80} />
             ) : (
-              <div className="h-full w-full flex items-center justify-center text-2xl font-display text-[#A3A3A3]">
+              <div className="h-full w-full flex items-center justify-center text-2xl font-display text-muted-foreground">
                 {(name || username || "?").charAt(0).toUpperCase()}
               </div>
             )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
+
+          {/* Half-half buttons */}
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
+          <div className="flex w-full gap-2">
             <button
               type="button"
               disabled={avatarBusy || saving}
               onClick={() => fileInputRef.current?.click()}
-              className="px-3 py-2 text-sm font-medium border border-[#1A1A1A] text-[#1A1A1A] rounded-sm hover:bg-[#FAFAFA] disabled:opacity-50"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-foreground bg-foreground text-background hover:opacity-80 disabled:opacity-40 transition-opacity whitespace-nowrap"
             >
-              {avatarBusy ? "Working…" : "Upload photo"}
+              {avatarBusy ? (
+                <>
+                  <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                  Uploading…
+                </>
+              ) : (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" />
+                  </svg>
+                  Upload photo
+                </>
+              )}
             </button>
-            {profile.instagramConnected ? (
+            {profile.instagramConnected && (
               <button
                 type="button"
                 disabled={avatarBusy || saving}
                 onClick={useInstagramPhoto}
-                className="px-3 py-2 text-sm font-medium border border-[#E8E6E3] text-[#1A1A1A] rounded-sm hover:bg-[#FAFAFA] disabled:opacity-50"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-border text-foreground hover:border-foreground/40 disabled:opacity-40 transition-colors whitespace-nowrap"
               >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect width="20" height="20" x="2" y="2" rx="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+                </svg>
                 Use Instagram
               </button>
-            ) : null}
-            {avatarUrl ? (
-              <button
-                type="button"
-                disabled={avatarBusy || saving}
-                onClick={clearPhoto}
-                className="px-3 py-2 text-sm text-[#737373] hover:underline disabled:opacity-50"
-              >
-                Remove
-              </button>
-            ) : null}
+            )}
           </div>
+
+          {/* Remove at bottom */}
+          {avatarUrl && (
+            <button
+              type="button"
+              disabled={avatarBusy || saving}
+              onClick={clearPhoto}
+              className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+              </svg>
+              Remove photo
+            </button>
+          )}
+          {avatarError && <p className="text-xs text-red-500">{avatarError}</p>}
         </div>
-        {avatarError && <p className="mt-2 text-sm text-red-600">{avatarError}</p>}
+
+        {/* Advanced URL toggle */}
         <button
           type="button"
           onClick={() => setShowAdvancedAvatarUrl((v) => !v)}
-          className="mt-3 text-xs text-[#737373] hover:underline"
+          className="mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           {showAdvancedAvatarUrl ? "Hide" : "Advanced"}: paste image URL
         </button>
@@ -226,46 +255,46 @@ export function ProfileForm({
             type="url"
             value={avatarUrl}
             onChange={(e) => setAvatarUrl(e.target.value)}
-            className="mt-2 w-full px-3 py-2 border border-[#D4D4D4] rounded-sm text-[#1A1A1A] text-sm"
+            className="mt-2 w-full px-3 py-2 border border-border rounded-xl text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20 transition"
             placeholder="https://…"
           />
         )}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A]">Display name</label>
+        <label className="block text-sm font-medium text-foreground">Display name</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full px-3 py-2 border border-[#D4D4D4] rounded-sm text-[#1A1A1A]"
+          className={inputCls}
           placeholder="Your name"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A]">Username (for /kit/username link)</label>
+        <label className="block text-sm font-medium text-foreground">Username (for /kit/username link)</label>
         <input
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="mt-1 w-full px-3 py-2 border border-[#D4D4D4] rounded-sm text-[#1A1A1A]"
+          className={inputCls}
           placeholder="username"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-[#1A1A1A]">Bio</label>
+        <label className="block text-sm font-medium text-foreground">Bio</label>
         <textarea
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           rows={3}
-          className="mt-1 w-full px-3 py-2 border border-[#D4D4D4] rounded-sm text-[#1A1A1A]"
+          className={inputCls}
           placeholder="Short bio"
         />
       </div>
       <div>
         <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium text-[#1A1A1A]">Links</label>
-          <button type="button" onClick={addLink} className="text-sm text-[#5C5C5C] hover:underline">+ Add</button>
+          <label className="block text-sm font-medium text-foreground">Links</label>
+          <button type="button" onClick={addLink} className="text-sm text-muted-foreground hover:text-foreground transition-colors">+ Add</button>
         </div>
         <div className="mt-2 space-y-3">
           {links.map((l, i) => (
@@ -276,20 +305,20 @@ export function ProfileForm({
                   value={l.label}
                   onChange={(e) => updateLink(i, "label", e.target.value)}
                   placeholder="Label"
-                  className="w-full min-w-0 sm:flex-1 px-3 py-2 border border-[#D4D4D4] rounded-sm text-sm text-[#1A1A1A]"
+                  className={`${inputCls} sm:flex-1`}
                 />
                 <input
                   type="url"
                   value={l.url}
                   onChange={(e) => updateLink(i, "url", e.target.value)}
                   placeholder="URL"
-                  className="w-full min-w-0 sm:flex-1 px-3 py-2 border border-[#D4D4D4] rounded-sm text-sm text-[#1A1A1A]"
+                  className={`${inputCls} sm:flex-1`}
                 />
               </div>
               <button
                 type="button"
                 onClick={() => removeLink(i)}
-                className="shrink-0 self-end sm:self-center inline-flex items-center gap-1.5 px-2.5 py-2 text-sm text-red-600 hover:bg-red-50 rounded-sm border border-red-200 hover:border-red-300 transition-colors"
+                className="shrink-0 self-end sm:self-center inline-flex items-center gap-1.5 px-2.5 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-xl border border-red-500/30 hover:border-red-500/50 transition-colors"
                 aria-label="Remove link"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -304,7 +333,7 @@ export function ProfileForm({
       <button
         type="submit"
         disabled={saving || avatarBusy}
-        className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-medium rounded-sm hover:bg-[#2D2D2D] disabled:opacity-70"
+        className="w-full h-10 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 disabled:opacity-50 transition-opacity"
       >
         {saving ? "Saving…" : submitLabel}
       </button>

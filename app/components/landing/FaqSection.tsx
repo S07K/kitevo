@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { SectionHeading } from "@/components/section-heading";
 import { softEase, useReducedMotion } from "@/lib/motion";
 import { AnimatePresence, motion } from "motion/react";
 import { useState, type ReactNode } from "react";
 
-type QA = { question: string; answer: string };
+type QA = { question: string; answer: string | ReactNode };
 
 const FAQS: QA[] = [
   {
@@ -15,8 +16,14 @@ const FAQS: QA[] = [
   },
   {
     question: "How does the Instagram connection work?",
-    answer:
-      "We use the official Instagram Graph API. You authorize access through Meta's secure OAuth flow, and we pull your follower count, engagement rate, recent posts, and audience demographics (age, gender, top locations). We never see your password.",
+    answer: (
+      <>
+        We use the official Instagram Graph API. You authorize access through Meta&apos;s secure OAuth flow, and we pull your follower count, engagement rate, recent posts, and audience demographics (age, gender, top locations). We never see your password.{" "}
+        <Link href="/help/instagram" className="underline underline-offset-4 hover:opacity-70 transition-opacity">
+          Connection troubleshooting guide →
+        </Link>
+      </>
+    ),
   },
   {
     question: "What's included in the free plan?",

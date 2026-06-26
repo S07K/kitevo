@@ -16,8 +16,6 @@ export type KitAppearancePreset = BasicPreset | BrandKitVibe;
 export interface KitAppearance {
   /** Named palette; drives page background, text, cards, and CTA blocks. */
   preset?: KitAppearancePreset;
-  /** Pro: custom accent color (hex). Overrides the preset accent. */
-  accentColor?: string;
   /** Pro: font pair id. */
   fontPair?: string;
   /** Pro: logo URL (hosted image). */
@@ -240,9 +238,6 @@ export function parseKitAppearance(raw: string | null | undefined): KitAppearanc
     if (preset && ALL_VALID_PRESETS.includes(preset as KitAppearancePreset)) {
       result.preset = preset as KitAppearancePreset;
     }
-    if (typeof obj.accentColor === "string" && /^#[0-9a-fA-F]{3,8}$/.test(obj.accentColor)) {
-      result.accentColor = obj.accentColor;
-    }
     if (typeof obj.fontPair === "string") result.fontPair = obj.fontPair;
     if (typeof obj.logoUrl === "string") result.logoUrl = obj.logoUrl;
     return result;
@@ -252,7 +247,9 @@ export function parseKitAppearance(raw: string | null | undefined): KitAppearanc
 }
 
 export function serializeKitAppearance(a: KitAppearance): string {
-  return JSON.stringify({ preset: a.preset ?? "warm" });
+  const obj: Record<string, unknown> = { preset: a.preset ?? "warm" };
+  if (a.logoUrl) obj.logoUrl = a.logoUrl;
+  return JSON.stringify(obj);
 }
 
 /** SVG / Recharts accents (CSS variables are unreliable inside Recharts SVG). */
@@ -270,12 +267,6 @@ export function kitChartColors(preset: KitAppearancePreset | undefined): { strok
   }
 }
 
-/** Also apply custom accentColor overrides to the CSS var object if set. */
 export function kitAppearanceToCssVarsWithOverrides(appearance: KitAppearance | null | undefined): React.CSSProperties {
-  const base = kitAppearanceToCssVars(appearance) as Record<string, string>;
-  if (appearance?.accentColor) {
-    base["--mk-accent"] = appearance.accentColor;
-    base["--mk-chart-stroke"] = appearance.accentColor;
-  }
-  return base as React.CSSProperties;
+  return kitAppearanceToCssVars(appearance) as React.CSSProperties;
 }

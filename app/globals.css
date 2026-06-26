@@ -11,6 +11,17 @@
   --surface-foreground: #fafaf9;
 }
 
+.dark {
+  --background: #111110;
+  --foreground: #f5f3f0;
+  --muted: #1c1c1a;
+  --muted-foreground: #8a8a86;
+  --border: #2a2a28;
+  --ring: #f5f3f0;
+  --surface: #f5f3f0;
+  --surface-foreground: #111110;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -24,6 +35,9 @@
 
 html {
   color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
@@ -109,7 +110,7 @@ function InquiryForm({ kitId, creatorName }: { kitId: string; creatorName: strin
   }
 
   const inputCls =
-    "w-full px-4 py-3 rounded-xl border border-[var(--mk-border)] bg-[var(--mk-surface)] text-[var(--mk-text)] placeholder:text-[var(--mk-text-soft)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mk-accent)] font-sans transition";
+    "w-full px-4 py-3 rounded-xl border border-[var(--mk-border)] bg-[var(--mk-surface)] text-[var(--mk-text)] placeholder:text-[var(--mk-text-soft)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mk-text)]/30 font-sans transition";
 
   return (
     <section className="mt-24 sm:mt-28">
@@ -170,7 +171,7 @@ function InquiryForm({ kitId, creatorName }: { kitId: string; creatorName: strin
           <button
             type="submit"
             disabled={status === "sending"}
-            className="w-full py-3.5 bg-[var(--mk-accent)] text-[var(--mk-accent-contrast)] font-semibold text-sm rounded-full hover:opacity-90 transition-opacity disabled:opacity-60 font-sans"
+            className="w-full py-3.5 bg-[var(--mk-text)] text-[var(--mk-bg)] font-semibold text-sm rounded-full hover:opacity-90 transition-opacity disabled:opacity-60 font-sans"
           >
             {status === "sending" ? "Sending…" : "Send message"}
           </button>
@@ -198,10 +199,71 @@ function ConnectInstagramOverlay({
       </p>
       <Link
         href="/dashboard"
-        className="mt-5 px-6 py-3 bg-[var(--mk-accent)] text-[var(--mk-accent-contrast)] text-sm font-semibold rounded-full hover:opacity-90 transition-opacity"
+        className="mt-5 px-6 py-3 bg-[var(--mk-text)] text-[var(--mk-bg)] text-sm font-semibold rounded-full hover:opacity-90 transition-opacity"
       >
         Go to Dashboard
       </Link>
+    </div>
+  );
+}
+
+function PatternLayer({ preset }: { preset: KitAppearancePreset }) {
+  type PatternDef = { w: number; h: number; children: React.ReactNode };
+  const defs: Partial<Record<KitAppearancePreset, PatternDef>> = {
+    warm: { w: 20, h: 20, children: <circle cx="10" cy="10" r="1" fill="rgba(26,26,26,0.05)" /> },
+    cool: { w: 20, h: 20, children: <line x1="0" y1="20" x2="20" y2="0" stroke="rgba(30,58,95,0.06)" strokeWidth="0.75" /> },
+    paper: {
+      w: 20, h: 20,
+      children: <>
+        <line x1="0" y1="0" x2="20" y2="0" stroke="rgba(17,17,17,0.04)" strokeWidth="0.5" />
+        <line x1="0" y1="10" x2="20" y2="10" stroke="rgba(17,17,17,0.025)" strokeWidth="0.5" />
+        <line x1="0" y1="0" x2="0" y2="20" stroke="rgba(17,17,17,0.04)" strokeWidth="0.5" />
+        <line x1="10" y1="0" x2="10" y2="20" stroke="rgba(17,17,17,0.025)" strokeWidth="0.5" />
+      </>,
+    },
+    noir: { w: 16, h: 16, children: <circle cx="8" cy="8" r="0.6" fill="rgba(232,232,232,0.07)" /> },
+    editorial: {
+      w: 16, h: 16,
+      children: <>
+        <circle cx="4" cy="4" r="0.8" fill="rgba(245,240,232,0.08)" />
+        <circle cx="12" cy="12" r="0.5" fill="rgba(245,240,232,0.06)" />
+        <circle cx="12" cy="4" r="0.3" fill="rgba(245,240,232,0.05)" />
+      </>,
+    },
+    studio: { w: 24, h: 24, children: <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(45,45,43,0.05)" strokeWidth="0.5" /> },
+    bloom: {
+      w: 30, h: 30,
+      children: <>
+        <circle cx="5" cy="5" r="1.5" fill="rgba(201,123,75,0.06)" />
+        <circle cx="20" cy="15" r="1" fill="rgba(201,123,75,0.05)" />
+        <circle cx="10" cy="25" r="0.8" fill="rgba(201,123,75,0.07)" />
+        <circle cx="25" cy="5" r="0.5" fill="rgba(201,123,75,0.04)" />
+      </>,
+    },
+    electric: {
+      w: 24, h: 24,
+      children: <>
+        <circle cx="12" cy="12" r="1" fill="rgba(99,102,241,0.15)" />
+        <circle cx="0" cy="0" r="0.5" fill="rgba(99,102,241,0.08)" />
+        <circle cx="24" cy="0" r="0.5" fill="rgba(99,102,241,0.08)" />
+        <circle cx="0" cy="24" r="0.5" fill="rgba(99,102,241,0.08)" />
+        <circle cx="24" cy="24" r="0.5" fill="rgba(99,102,241,0.08)" />
+      </>,
+    },
+    noir_pro: { w: 20, h: 20, children: <line x1="0" y1="20" x2="20" y2="0" stroke="rgba(201,168,76,0.09)" strokeWidth="0.75" /> },
+  };
+  const def = defs[preset] ?? defs.warm!;
+  const id = `mkp-${preset}`;
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id={id} x="0" y="0" width={def.w} height={def.h} patternUnits="userSpaceOnUse">
+            {def.children}
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#${id})`} />
+      </svg>
     </div>
   );
 }
@@ -259,18 +321,23 @@ export function MediaKitClient({
 
   return (
     <div
-      className="min-h-screen bg-[var(--mk-bg)] text-[var(--mk-text)] antialiased"
+      className="relative min-h-screen bg-[var(--mk-bg)] text-[var(--mk-text)] antialiased"
       style={kitAppearanceToCssVarsWithOverrides(appearance)}
       data-kit-preset={preset}
     >
-      {/* Owner preview bar — only visible to the kit creator */}
-      {isOwner && (
-        <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between gap-4 bg-[#111110]/95 backdrop-blur-sm px-6 sm:px-10 h-[41px] text-[#fafaf9]">
-          <div className="flex items-center gap-2 text-xs text-[#fafaf9]/60">
+      <PatternLayer preset={preset} />
+      {/* Single unified header — owner gets dark bar with edit controls, visitors get themed bar */}
+      {isOwner ? (
+        <header className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between bg-[#111110] border-b border-white/[0.06] px-6 sm:px-10 h-14 text-[#fafaf9]">
+          <div className="flex items-center gap-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            Preview — this is how your kit looks to brands
+            {appearance.logoUrl ? (
+              <img src={appearance.logoUrl} alt="Brand logo" className="h-5 w-auto object-contain brightness-0 invert" />
+            ) : (
+              <span className="text-sm font-medium text-[#fafaf9]/70 tracking-wide">Preview</span>
+            )}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link
               href={`/kit/edit?id=${kitId ?? ""}`}
               className="text-xs font-medium text-[#fafaf9]/60 hover:text-[#fafaf9] transition-colors"
@@ -279,336 +346,335 @@ export function MediaKitClient({
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#fafaf9]/10 px-3 py-1 text-xs font-medium text-[#fafaf9] hover:bg-[#fafaf9]/20 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#fafaf9]/10 px-3 py-1 text-xs font-medium text-[#fafaf9] hover:bg-[#fafaf9]/15 transition-colors"
             >
               ← Dashboard
             </Link>
           </div>
-        </div>
+        </header>
+      ) : (
+        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-[var(--mk-bg)] border-b border-[var(--mk-border-hairline)] px-6 sm:px-10 h-14">
+          {appearance.logoUrl ? (
+            <img src={appearance.logoUrl} alt="Brand logo" className="h-6 w-auto object-contain" />
+          ) : (
+            <span className="font-display text-sm tracking-wide text-[var(--mk-text-muted)] font-medium">
+              Media Kit Pro
+            </span>
+          )}
+          <Link
+            href="/"
+            className="text-xs text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors font-medium tracking-wide"
+          >
+            Create yours →
+          </Link>
+        </header>
       )}
 
-      {/* Header — minimal, single color, proper spacing */}
-      <header className={`fixed left-0 right-0 z-50 flex items-center justify-between bg-[var(--mk-bg)] border-b border-[var(--mk-border-hairline)] px-6 sm:px-10 h-14 ${isOwner ? "top-[41px]" : "top-0"}`}>
-        {appearance.logoUrl ? (
-          <img
-            src={appearance.logoUrl}
-            alt="Brand logo"
-            className="h-6 w-auto object-contain"
-          />
-        ) : (
-          <span className="font-display text-sm tracking-wide text-[var(--mk-text-muted)] font-medium">
-            Media Kit Pro
-          </span>
-        )}
-        <Link
-          href="/"
-          className="text-xs text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors font-medium tracking-wide"
-        >
-          Create yours →
-        </Link>
-      </header>
+      <main className="relative pb-24 max-w-4xl mx-auto px-5 sm:px-8 pt-14">
+        <div className="pt-6 space-y-4">
 
-      <main className={`pb-24 max-w-3xl mx-auto px-5 sm:px-8 ${isOwner ? "pt-[calc(3.5rem+41px)]" : "pt-14"}`}>
-        {/* 1. Hero — compact profile layout (avatar left, info right on desktop) */}
-        <section className="pt-10 pb-10 sm:pt-14 sm:pb-12">
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
-            {/* Avatar */}
-            <div className="shrink-0">
+          {/* 1. Hero banner — dark inverted card, avatar + name + bio */}
+          <div className="rounded-2xl bg-[var(--mk-text)] px-6 py-6">
+            <div className="flex items-center gap-4">
+              {/* Avatar */}
               {creator.avatarUrl ? (
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden ring-2 ring-[var(--mk-border)] shadow-[0_4px_20px_rgba(0,0,0,0.10)]">
-                  <img
-                    src={creator.avatarUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    width={112}
-                    height={112}
-                  />
-                </div>
-              ) : (
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[var(--mk-bg-elevated)] border border-[var(--mk-border)] flex items-center justify-center text-3xl font-display font-semibold text-[var(--mk-text-soft)]">
-                  {creator.name.charAt(0)}
-                </div>
-              )}
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 text-center sm:text-left min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--mk-text-soft)] font-medium mb-2">
-                Creator media kit
-              </p>
-              <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--mk-text)] leading-none">
-                {creator.name}
-              </h1>
-              <p className="mt-1.5 text-[var(--mk-text-muted)] text-sm font-medium tracking-wide">
-                @{creator.username}
-              </p>
-              {creator.bio && (
-                <p className="mt-4 text-[var(--mk-text-muted)] text-sm sm:text-[15px] leading-relaxed font-sans max-w-prose text-pretty">
-                  {creator.bio}
-                </p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* 1b. At a glance — bridges hero and detailed stats */}
-        {(sectionVisibility.stats || sectionVisibility.growthChart) && enabledPlatformIds.length > 0 && (
-          <section className="mb-16 sm:mb-20 flex flex-wrap justify-center gap-x-12 gap-y-5 py-8 px-2 border-y border-[var(--mk-border-hairline)]">
-            {enabledPlatformIds.map((platformId) => {
-              const stats = platformStats[platformId];
-              if (!stats) return null;
-              const posts = stats.extra && typeof stats.extra.posts === "number" ? stats.extra.posts : null;
-              return (
-                <div key={platformId} className="text-center min-w-[120px]">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--mk-text-soft)] font-medium">
-                    {PLATFORM_LABELS[platformId] ?? platformId}
-                  </p>
-                  <p className="mt-2 font-display text-2xl font-semibold text-[var(--mk-text)] tracking-tight">
-                    <CountUp value={stats.followers} duration={1400} />
-                  </p>
-                  <p className="text-xs text-[var(--mk-text-muted)] font-sans">followers</p>
-                  {posts != null && (
-                    <p className="mt-1.5 text-xs text-[var(--mk-text-soft)] font-sans tabular-nums">
-                      <CountUp value={posts} duration={1200} /> posts
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </section>
-        )}
-
-        {/* 2. Stats — elevated cards with accent (or Connect Instagram overlay) */}
-        {sectionVisibility.stats && (
-        <section className="space-y-6">
-          <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight">
-            Reach & engagement
-          </h2>
-          <div className="relative">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 min-h-[180px]">
-              {enabledPlatformIds.map((platformId) => {
-                const meta = getPlatformMeta(platformId);
-                const stats = platformStats[platformId];
-                if (!stats) return null;
-                return (
-                  <div
-                    key={platformId}
-                    className="group p-6 sm:p-7 rounded-2xl bg-[var(--mk-surface)] border border-[var(--mk-border)] shadow-[0_2px_12px_rgba(26,26,26,0.04)] hover:shadow-[0_8px_24px_rgba(26,26,26,0.06)] transition-shadow duration-300"
-                  >
-                    <p className="text-xs uppercase tracking-widest text-[var(--mk-text-soft)] font-medium">
-                      {meta.displayName}
-                    </p>
-                    <p className="mt-4 font-display text-3xl sm:text-4xl font-semibold text-[var(--mk-text)] tracking-tight">
-                      <CountUp value={stats.followers} duration={1600} />
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-emerald-700/90">
-                      +<CountUp value={stats.growthThisMonth} decimals={1} suffix="%" duration={1000} /> this month
-                    </p>
-                    <p className="mt-1 text-sm text-[var(--mk-text-muted)]">
-                      <CountUp value={stats.avgEngagement} decimals={1} suffix="%" duration={1000} /> avg. engagement
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-            {showConnectInstagramOverlay && (
-              <ConnectInstagramOverlay title="Connect Instagram to show your reach and engagement" />
-            )}
-          </div>
-        </section>
-        )}
-
-        {/* 3. Work samples — proof of work, elevated grid */}
-        {sectionVisibility.workSamples && workSamples.length > 0 && (
-          <section className="mt-24 sm:mt-28">
-            <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight">
-              Work samples
-            </h2>
-            <p className="mt-2 text-[var(--mk-text-muted)] text-sm max-w-md font-sans">
-              Recent campaigns and content for brands.
-            </p>
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {workSamples.map((sample) => (
-                <article
-                  key={sample.id}
-                  className="group rounded-2xl overflow-hidden bg-[var(--mk-surface)] border border-[var(--mk-border)] shadow-[0_2px_12px_rgba(26,26,26,0.04)] hover:shadow-[0_12px_32px_rgba(26,26,26,0.08)] hover:-translate-y-0.5 transition-all duration-300"
-                >
-                  <div className="aspect-[4/5] bg-gradient-to-br from-[var(--mk-border)] to-[var(--mk-bg-elevated)] flex items-center justify-center overflow-hidden">
-                    {sample.thumbnailUrl ? (
-                      <img
-                        src={sample.thumbnailUrl}
-                        alt={sample.title ?? ""}
-                        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
-                      />
-                    ) : (
-                      <span className="text-4xl font-display font-semibold text-[var(--mk-text-soft)]">
-                        {sample.title?.charAt(0) ?? "•"}
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <p className="text-xs uppercase tracking-widest text-[var(--mk-text-soft)] font-medium">
-                      {PLATFORM_LABELS[sample.platform] ?? sample.platform}
-                    </p>
-                    <p className="mt-2 font-display font-semibold text-[var(--mk-text)] text-lg">
-                      {sample.title ?? "Campaign"}
-                    </p>
-                    {sample.campaignFor && (
-                      <p className="mt-0.5 text-sm text-[var(--mk-text-muted)] font-sans">
-                        {sample.campaignFor}
-                      </p>
-                    )}
-                    {sample.caption && (
-                      <p className="mt-2 text-xs text-[var(--mk-text-soft)] line-clamp-2 font-sans">{sample.caption}</p>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 4. Rates — CTA block */}
-        {sectionVisibility.rates && rates.show && (
-          <section className="mt-24 sm:mt-28 py-10 px-8 rounded-2xl bg-[var(--mk-rates-bg)] text-center border border-[var(--mk-border)] shadow-[0_8px_32px_rgba(26,26,26,0.12)]">
-            <h2 className="text-xs uppercase tracking-widest text-[var(--mk-rates-muted)] font-medium">
-              Rates
-            </h2>
-            <p className="mt-4 font-display text-2xl sm:text-3xl font-semibold text-[var(--mk-rates-text)] tracking-tight">
-              {rates.fromAmount != null
-                ? `From $${rates.fromAmount.toLocaleString()}`
-                : "Contact for rates"}
-            </p>
-            {rates.ctaLabel && (
-              <a
-                href={links[0]?.url ?? "#"}
-                className="mt-6 inline-block px-8 py-3.5 bg-[var(--mk-accent-contrast)] text-[var(--mk-accent)] text-sm font-semibold rounded-full hover:opacity-90 transition-opacity"
-              >
-                {rates.ctaLabel}
-              </a>
-            )}
-          </section>
-        )}
-
-        {/* 5. Brands / case studies — past partners */}
-        {sectionVisibility.brands && brands.length > 0 && (
-          <section className="mt-24 sm:mt-28">
-            <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight">
-              Brands I've worked with
-            </h2>
-            <div className="mt-8 flex flex-wrap gap-8 sm:gap-10 items-center">
-              {brands.map((brand) => (
-                <div
-                  key={brand.id}
-                  className="flex flex-col items-center sm:items-start gap-2"
-                >
-                  {brand.logoUrl ? (
-                    <img
-                      src={brand.logoUrl}
-                      alt={brand.name}
-                      className="h-11 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity"
-                    />
-                  ) : (
-                    <span className="font-display font-semibold text-[var(--mk-text)] text-lg">
-                      {brand.name}
-                    </span>
-                  )}
-                  {brand.tagline && (
-                    <span className="text-xs text-[var(--mk-text-muted)] font-sans">{brand.tagline}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 6. Growth chart (or Connect Instagram overlay) */}
-        {sectionVisibility.growthChart && (
-          <section className="mt-24 sm:mt-28">
-            <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight">
-              Follower growth
-            </h2>
-            <p className="mt-1 text-sm text-[var(--mk-text-muted)] font-sans max-w-md">
-              Recent trajectory based on your connected account (or estimated when daily insights aren&apos;t available).
-            </p>
-            <div className="mt-8 relative p-6 sm:p-7 rounded-2xl bg-[var(--mk-surface)] border border-[var(--mk-border)] shadow-[0_2px_12px_rgba(26,26,26,0.04)] min-h-[280px]">
-              {(isDemoKit || instagramConnected) && growthData.length > 0 ? (
-                <GrowthAreaChart
-                  data={growthData}
-                  preset={preset}
-                  stroke={chartColors.stroke}
-                  fillOpacity={chartColors.fillOpacity}
+                <img
+                  src={creator.avatarUrl}
+                  alt=""
+                  className="h-12 w-12 rounded-full object-cover shrink-0 ring-2 ring-[var(--mk-bg)]/20"
+                  width={48} height={48}
                 />
-              ) : showConnectInstagramOverlay ? (
-                <ConnectInstagramOverlay title="Connect Instagram to show follower growth" />
-              ) : (isDemoKit || instagramConnected) && growthData.length === 0 ? (
-                <div className="flex min-h-[200px] flex-col items-center justify-center px-6 text-center">
-                  <p className="text-sm text-[var(--mk-text-muted)] max-w-sm font-sans">
-                    Once your account has follower data from Instagram, a growth chart will appear here.
-                  </p>
+              ) : (
+                <div className="h-12 w-12 rounded-full bg-[var(--mk-bg)]/10 flex items-center justify-center shrink-0">
+                  <span className="font-display text-base font-semibold text-[var(--mk-bg)]/70">
+                    {creator.name.charAt(0)}
+                  </span>
                 </div>
-              ) : null}
+              )}
+              <div>
+                <p className="text-[var(--mk-bg)]/50 text-[11px] font-semibold tracking-[0.16em] uppercase mb-0.5">
+                  Creator Media Kit
+                </p>
+                <h1 className="font-display text-xl font-semibold text-[var(--mk-bg)] leading-none tracking-tight">
+                  {creator.name}
+                </h1>
+                <p className="text-[var(--mk-bg)]/50 text-xs font-medium tracking-wide mt-0.5">
+                  @{creator.username}
+                </p>
+              </div>
             </div>
-          </section>
-        )}
-
-        {/* 7. Audience demographics (or Connect Instagram overlay) */}
-        {sectionVisibility.audience && (
-          <section className="mt-16">
-            <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight">
-              Audience demographics
-            </h2>
-            <div className="mt-8 relative p-6 sm:p-7 rounded-2xl bg-[var(--mk-surface)] border border-[var(--mk-border)] shadow-[0_2px_12px_rgba(26,26,26,0.04)] min-h-[220px]">
-              {(isDemoKit || instagramConnected) && audience.length > 0 ? (
-                <AudienceBarChart data={audience} stroke={chartColors.stroke} />
-              ) : showConnectInstagramOverlay ? (
-                <ConnectInstagramOverlay title="Connect Instagram to show audience demographics" />
-              ) : (isDemoKit || instagramConnected) && audience.length === 0 ? (
-                <div className="flex min-h-[160px] flex-col items-center justify-center px-6 text-center">
-                  <p className="font-sans text-sm text-[var(--mk-text-muted)] max-w-sm">
-                    Instagram didn&apos;t return age demographics yet. Meta often requires a
-                    professional account with enough followers or engagement; data can also be delayed
-                    up to ~48 hours.
-                  </p>
-                </div>
-              ) : null}
-            </div>
-          </section>
-        )}
-
-        {/* 8. Links — CTAs */}
-        {sectionVisibility.links && links.length > 0 && (
-        <section className="mt-24 sm:mt-28 space-y-4">
-          <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight">
-            Get in touch
-          </h2>
-          <div className="space-y-3">
-            {links.map((link, i) => (
-              <a
-                key={i}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full py-4 px-6 rounded-2xl bg-[var(--mk-accent)] text-[var(--mk-accent-contrast)] font-semibold text-center hover:opacity-90 transition-opacity shadow-[0_2px_12px_rgba(26,26,26,0.08)]"
-              >
-                {link.label}
-              </a>
-            ))}
+            {creator.bio && (
+              <p className="mt-4 text-[var(--mk-bg)]/60 text-sm leading-relaxed font-sans max-w-2xl text-pretty border-t border-[var(--mk-bg)]/10 pt-4">
+                {creator.bio}
+              </p>
+            )}
           </div>
-        </section>
-        )}
 
-        {/* 9. Brand inquiry form (Pro) */}
-        {inquiryEnabled && kitId && (
-          <InquiryForm kitId={kitId} creatorName={creator.name} />
-        )}
+          {/* 2. Platform stats — flat card with divide-x metric grid */}
+          {sectionVisibility.stats && (
+            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] relative overflow-hidden">
+              <div className={`grid divide-x divide-[var(--mk-border)] ${
+                enabledPlatformIds.length === 1
+                  ? "grid-cols-3"
+                  : enabledPlatformIds.length === 2
+                    ? "grid-cols-2 sm:grid-cols-6"
+                    : "grid-cols-2 sm:grid-cols-3"
+              }`}>
+                {enabledPlatformIds.map((platformId) => {
+                  const meta = getPlatformMeta(platformId);
+                  const stats = platformStats[platformId];
+                  if (!stats) return null;
+                  const posts = stats.extra && typeof stats.extra.posts === "number" ? stats.extra.posts : null;
+                  return (
+                    <div key={platformId} className="contents">
+                      <div className="px-5 py-5">
+                        <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">
+                          {meta.displayName}
+                        </p>
+                        <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums">
+                          <CountUp value={stats.followers} duration={1400} />
+                        </p>
+                        <p className="text-[var(--mk-text-soft)] text-xs mt-0.5">followers</p>
+                      </div>
+                      <div className="px-5 py-5">
+                        <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Engagement</p>
+                        <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums">
+                          <CountUp value={stats.avgEngagement} decimals={1} suffix="%" duration={1000} />
+                        </p>
+                        <p className="text-[var(--mk-text-soft)] text-xs mt-0.5">avg rate</p>
+                      </div>
+                      {posts != null ? (
+                        <div className="px-5 py-5">
+                          <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Posts</p>
+                          <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums">
+                            <CountUp value={posts} duration={1100} />
+                          </p>
+                          <p className="text-[var(--mk-text-soft)] text-xs mt-0.5">published</p>
+                        </div>
+                      ) : (
+                        <div className="px-5 py-5">
+                          <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Growth</p>
+                          <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums">
+                            +<CountUp value={stats.growthThisMonth} decimals={1} suffix="%" duration={900} />
+                          </p>
+                          <p className="text-[var(--mk-text-soft)] text-xs mt-0.5">this month</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {showConnectInstagramOverlay && (
+                <ConnectInstagramOverlay title="Connect Instagram to show your reach and engagement" />
+              )}
+            </div>
+          )}
 
-        {/* 10. Footer */}
-        <footer className="mt-24 sm:mt-28 pt-10 border-t border-[var(--mk-border-hairline)] text-center">
-          <p className="text-sm text-[var(--mk-text-soft)] font-sans">
-            Made with Media Kit Pro
-          </p>
-        </footer>
+          {/* 3. Work samples — post performance rows */}
+          {sectionVisibility.workSamples && workSamples.length > 0 && (
+            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+              <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
+                <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">
+                  Work samples
+                </p>
+              </div>
+              <div className="divide-y divide-[var(--mk-border)]">
+                {workSamples.map((sample) => (
+                  <div key={sample.id} className="flex items-start gap-4 py-4 pr-5">
+                    <div className="w-[3px] self-stretch rounded-full bg-[var(--mk-text)]/20 shrink-0" />
+                    {/* Thumbnail or placeholder */}
+                    <div className="shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-[var(--mk-bg)] border border-[var(--mk-border)] flex items-center justify-center">
+                      {sample.thumbnailUrl ? (
+                        <img src={sample.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-display text-base font-semibold text-[var(--mk-text-soft)]">
+                          {sample.title?.charAt(0) ?? "•"}
+                        </span>
+                      )}
+                    </div>
+                    {/* Info + metrics */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-[10px] text-[var(--mk-text-soft)] uppercase tracking-[0.14em] font-semibold">
+                            {PLATFORM_LABELS[sample.platform] ?? sample.platform}
+                            {sample.contentType && <span className="opacity-60 ml-1.5">· {sample.contentType}</span>}
+                          </p>
+                          <p className="mt-0.5 font-display font-semibold text-[var(--mk-text)] text-sm leading-snug">
+                            {sample.title ?? "Campaign"}
+                          </p>
+                          {sample.campaignFor && (
+                            <p className="text-xs text-[var(--mk-text-muted)] font-sans">{sample.campaignFor}</p>
+                          )}
+                        </div>
+                      </div>
+                      {/* Metrics inline row */}
+                      {(sample.views || sample.reach || sample.likes || sample.comments || sample.saves) && (
+                        <div className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1.5">
+                          {(sample.views || sample.reach) && (
+                            <div>
+                              <span className="text-[10px] text-[var(--mk-text-soft)] uppercase tracking-wide mr-1">
+                                {sample.views ? "Views" : "Reach"}
+                              </span>
+                              <span className="text-sm font-semibold text-[var(--mk-text)] tabular-nums">
+                                <CountUp value={sample.views ?? sample.reach ?? 0} duration={1200} />
+                              </span>
+                            </div>
+                          )}
+                          {sample.likes && (
+                            <div>
+                              <span className="text-[10px] text-[var(--mk-text-soft)] uppercase tracking-wide mr-1">Likes</span>
+                              <span className="text-sm font-semibold text-[var(--mk-text)] tabular-nums">
+                                <CountUp value={sample.likes} duration={1100} />
+                              </span>
+                            </div>
+                          )}
+                          {sample.comments && (
+                            <div>
+                              <span className="text-[10px] text-[var(--mk-text-soft)] uppercase tracking-wide mr-1">Comments</span>
+                              <span className="text-sm font-semibold text-[var(--mk-text)] tabular-nums">
+                                <CountUp value={sample.comments} duration={1000} />
+                              </span>
+                            </div>
+                          )}
+                          {sample.saves && (
+                            <div>
+                              <span className="text-[10px] text-[var(--mk-text-soft)] uppercase tracking-wide mr-1">Saves</span>
+                              <span className="text-sm font-semibold text-[var(--mk-text)] tabular-nums">
+                                <CountUp value={sample.saves} duration={1000} />
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {!sample.views && !sample.reach && !sample.likes && sample.caption && (
+                        <p className="mt-1.5 text-xs text-[var(--mk-text-soft)] font-sans">{sample.caption}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. Brands — flat chips card */}
+          {sectionVisibility.brands && brands.length > 0 && (
+            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] p-5">
+              <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-4">
+                Brands I&apos;ve worked with
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {brands.map((brand) => (
+                  <div key={brand.id} className="flex items-center gap-2 border border-[var(--mk-border)] rounded-full px-3.5 py-2">
+                    {brand.logoUrl && (
+                      <img src={brand.logoUrl} alt={brand.name} className="h-4 w-auto object-contain" />
+                    )}
+                    <span className="text-sm font-medium text-[var(--mk-text)]">{brand.name}</span>
+                    {brand.tagline && (
+                      <span className="text-xs text-[var(--mk-text-muted)]">· {brand.tagline}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 5. Rates — inverted CTA block */}
+          {sectionVisibility.rates && rates.show && (
+            <div className="rounded-2xl bg-[var(--mk-text)] px-6 py-6 flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className="text-[var(--mk-bg)]/50 text-[11px] font-semibold tracking-[0.16em] uppercase mb-1">Rates</p>
+                <p className="font-display text-2xl font-semibold text-[var(--mk-bg)] tracking-tight">
+                  {rates.fromAmount != null ? `From $${rates.fromAmount.toLocaleString()}` : "Contact for rates"}
+                </p>
+              </div>
+              {rates.ctaLabel && (
+                <a
+                  href={links[0]?.url ?? "#"}
+                  className="inline-flex items-center rounded-full bg-[var(--mk-bg)] text-[var(--mk-text)] px-6 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity"
+                >
+                  {rates.ctaLabel}
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* 6. Growth chart */}
+          {sectionVisibility.growthChart && (
+            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+              <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
+                <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Follower growth</p>
+              </div>
+              <div className="relative p-5 min-h-[260px]">
+                {(isDemoKit || instagramConnected) && growthData.length > 0 ? (
+                  <GrowthAreaChart data={growthData} preset={preset} stroke={chartColors.stroke} fillOpacity={chartColors.fillOpacity} />
+                ) : showConnectInstagramOverlay ? (
+                  <ConnectInstagramOverlay title="Connect Instagram to show follower growth" />
+                ) : (isDemoKit || instagramConnected) && growthData.length === 0 ? (
+                  <div className="flex min-h-[200px] flex-col items-center justify-center text-center">
+                    <p className="text-sm text-[var(--mk-text-muted)] max-w-sm font-sans">
+                      Follower data will appear here once available from Instagram.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          {/* 7. Audience demographics */}
+          {sectionVisibility.audience && (
+            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+              <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
+                <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Audience demographics</p>
+              </div>
+              <div className="relative p-5 min-h-[200px]">
+                {(isDemoKit || instagramConnected) && audience.length > 0 ? (
+                  <AudienceBarChart data={audience} stroke={chartColors.stroke} />
+                ) : showConnectInstagramOverlay ? (
+                  <ConnectInstagramOverlay title="Connect Instagram to show audience demographics" />
+                ) : (isDemoKit || instagramConnected) && audience.length === 0 ? (
+                  <div className="flex min-h-[160px] flex-col items-center justify-center text-center">
+                    <p className="font-sans text-sm text-[var(--mk-text-muted)] max-w-sm">
+                      Instagram didn&apos;t return age demographics yet. This can take up to 48 hours.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          {/* 8. Links */}
+          {sectionVisibility.links && links.length > 0 && (
+            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] p-5">
+              <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-3">Get in touch</p>
+              <div className="space-y-2">
+                {links.map((link, i) => (
+                  <a
+                    key={i}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between w-full py-3 px-5 rounded-xl bg-[var(--mk-text)] text-[var(--mk-bg)] text-sm font-medium hover:opacity-90 transition-opacity"
+                  >
+                    {link.label}
+                    <span className="text-[var(--mk-text-soft)]">→</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 9. Brand inquiry form (Pro) */}
+          {inquiryEnabled && kitId && (
+            <InquiryForm kitId={kitId} creatorName={creator.name} />
+          )}
+
+          {/* 10. Footer */}
+          <div className="pt-6 pb-2 text-center">
+            <p className="text-xs text-[var(--mk-text-soft)] font-sans">Made with Media Kit Pro</p>
+          </div>
+
+        </div>
       </main>
     </div>
   );

@@ -21,14 +21,23 @@ export const MOCK_LINKS = [
 /** Work sample: example post or video for the "proof of work" section. */
 export interface WorkSample {
   id: string;
-  /** Placeholder: use neutral gradient or image URL when available. */
   thumbnailUrl?: string;
   platform: "instagram" | "tiktok" | "youtube";
   title?: string;
+  /** Legacy free-text caption — superseded by structured metrics */
   caption?: string;
-  /** e.g. "Campaign for Brand X" */
+  /** e.g. "Fashion Co" */
   campaignFor?: string;
-  /** When sample was picked from fetched posts: platform media id for dedupe/refresh. */
+  /** e.g. "Reel", "Carousel", "Video", "Story" */
+  contentType?: string;
+  /** Total views / video plays */
+  views?: number;
+  likes?: number;
+  comments?: number;
+  /** Instagram saves */
+  saves?: number;
+  /** Total reach (unique accounts) */
+  reach?: number;
   sourceMediaId?: string;
 }
 
@@ -38,21 +47,33 @@ export const MOCK_WORK_SAMPLES: WorkSample[] = [
     platform: "instagram",
     title: "Spring collection launch",
     campaignFor: "Fashion Co",
-    caption: "Reel • 2.1M views",
+    contentType: "Reel",
+    views: 2100000,
+    likes: 84000,
+    comments: 1200,
+    saves: 9400,
   },
   {
     id: "2",
     platform: "instagram",
     title: "Unboxing series",
     campaignFor: "Beauty Brand",
-    caption: "Carousel • 890K reach",
+    contentType: "Carousel",
+    reach: 890000,
+    likes: 41000,
+    comments: 680,
+    saves: 5200,
   },
   {
     id: "3",
     platform: "instagram",
     title: "Travel diary",
     campaignFor: "Travel Co",
-    caption: "Reel • 1.4M views",
+    contentType: "Reel",
+    views: 1400000,
+    likes: 62000,
+    comments: 940,
+    saves: 7800,
   },
 ];
 
