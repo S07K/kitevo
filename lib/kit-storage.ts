@@ -30,6 +30,18 @@ export const DEFAULT_SECTION_VISIBILITY: SectionVisibility = {
   links: true,
 };
 
+export type SectionKey = keyof SectionVisibility;
+
+export const DEFAULT_SECTION_ORDER: SectionKey[] = [
+  "stats",
+  "workSamples",
+  "rates",
+  "brands",
+  "growthChart",
+  "audience",
+  "links",
+];
+
 export interface StoredKitContent {
   workSamples: WorkSample[];
   rates: KitRates;

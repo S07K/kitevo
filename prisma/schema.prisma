@@ -62,6 +62,7 @@ model Kit {
   rates             String   // JSON
   brands            String   // JSON
   sectionVisibility String   // JSON
+  sectionOrder      String   @default("[]") // JSON array of section keys in display order
   appearance        String   @default("{}") // kit theme JSON: { preset: warm|cool|paper|noir }
   passwordHash      String?  // bcrypt hash; null = public kit
   createdAt         DateTime @default(now())

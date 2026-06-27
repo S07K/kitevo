@@ -3,8 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
-import type { SectionVisibility } from "@/lib/kit-storage";
+import { DEFAULT_SECTION_VISIBILITY, DEFAULT_SECTION_ORDER } from "@/lib/kit-storage";
+import type { SectionVisibility, SectionKey } from "@/lib/kit-storage";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
 import {
   parseKitAppearance,
@@ -30,6 +30,7 @@ function toKitResponse(k: {
   rates: string;
   brands: string;
   sectionVisibility: string;
+  sectionOrder: string;
   appearance: string;
 }) {
   return {
@@ -41,6 +42,7 @@ function toKitResponse(k: {
     rates: parseJson<KitRates>(k.rates, { show: false }),
     brands: parseJson<BrandPartner[]>(k.brands, []),
     sectionVisibility: parseJson<SectionVisibility>(k.sectionVisibility, { ...DEFAULT_SECTION_VISIBILITY }),
+    sectionOrder: parseJson<SectionKey[]>(k.sectionOrder, [...DEFAULT_SECTION_ORDER]),
     appearance: parseKitAppearance(k.appearance),
   };
 }
@@ -90,6 +92,7 @@ export async function PUT(
     rates: string;
     brands: string;
     sectionVisibility: string;
+    sectionOrder: string;
     appearance: string;
   }> = {};
   if (typeof body.name === "string") updates.name = body.name.trim() || kit.name;
@@ -116,6 +119,9 @@ export async function PUT(
   if (Array.isArray(body.brands)) updates.brands = JSON.stringify(body.brands);
   if (body.sectionVisibility !== undefined && body.sectionVisibility !== null) {
     updates.sectionVisibility = JSON.stringify(body.sectionVisibility);
+  }
+  if (Array.isArray(body.sectionOrder)) {
+    updates.sectionOrder = JSON.stringify(body.sectionOrder);
   }
   if (body.appearance !== undefined && body.appearance !== null && typeof body.appearance === "object") {
     updates.appearance = serializeKitAppearance(body.appearance as KitAppearance);

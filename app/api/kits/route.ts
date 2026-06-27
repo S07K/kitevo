@@ -4,8 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getAllowedKitsForUser } from "@/lib/subscription-for-request";
 import { getViewCountsForKits } from "@/lib/kit-views";
-import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
-import type { SectionVisibility } from "@/lib/kit-storage";
+import { DEFAULT_SECTION_VISIBILITY, DEFAULT_SECTION_ORDER } from "@/lib/kit-storage";
+import type { SectionVisibility, SectionKey } from "@/lib/kit-storage";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
 import { parseKitAppearance } from "@/lib/kit-appearance";
 
@@ -42,6 +42,7 @@ export async function GET() {
     rates: parseJson<KitRates>(k.rates, { show: false }),
     brands: parseJson<BrandPartner[]>(k.brands, []),
     sectionVisibility: parseJson<SectionVisibility>(k.sectionVisibility, defaultVisibility()),
+    sectionOrder: parseJson<SectionKey[]>(k.sectionOrder, [...DEFAULT_SECTION_ORDER]),
     appearance: parseKitAppearance(k.appearance),
     viewCount: viewCounts[k.id] ?? 0,
   }));
