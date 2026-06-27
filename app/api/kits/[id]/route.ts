@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import type { SectionVisibility } from "@/lib/kit-storage";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
@@ -24,6 +25,7 @@ function toKitResponse(k: {
   id: string;
   slug: string;
   name: string;
+  passwordHash?: string | null;
   workSamples: string;
   rates: string;
   brands: string;
@@ -34,6 +36,7 @@ function toKitResponse(k: {
     id: k.id,
     slug: k.slug,
     name: k.name,
+    hasPassword: !!k.passwordHash,
     workSamples: parseJson<WorkSample[]>(k.workSamples, []),
     rates: parseJson<KitRates>(k.rates, { show: false }),
     brands: parseJson<BrandPartner[]>(k.brands, []),
@@ -81,6 +84,8 @@ export async function PUT(
   const body = await req.json().catch(() => ({}));
   const updates: Partial<{
     name: string;
+    slug: string;
+    passwordHash: string | null;
     workSamples: string;
     rates: string;
     brands: string;
@@ -88,6 +93,24 @@ export async function PUT(
     appearance: string;
   }> = {};
   if (typeof body.name === "string") updates.name = body.name.trim() || kit.name;
+  if (typeof body.slug === "string") {
+    const newSlug = body.slug.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    if (newSlug && newSlug !== kit.slug) {
+      const conflict = await prisma.kit.findFirst({ where: { slug: newSlug } });
+      if (conflict) {
+        return NextResponse.json({ error: "That URL slug is already taken" }, { status: 409 });
+      }
+      updates.slug = newSlug;
+    }
+  }
+  // password: "" or null → remove password; string → set new hash
+  if ("password" in body) {
+    if (!body.password) {
+      updates.passwordHash = null;
+    } else if (typeof body.password === "string" && body.password.length > 0) {
+      updates.passwordHash = await bcrypt.hash(body.password, 10);
+    }
+  }
   if (Array.isArray(body.workSamples)) updates.workSamples = JSON.stringify(body.workSamples);
   if (body.rates !== undefined && body.rates !== null) updates.rates = JSON.stringify(body.rates);
   if (Array.isArray(body.brands)) updates.brands = JSON.stringify(body.brands);

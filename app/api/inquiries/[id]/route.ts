@@ -3,9 +3,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-/** PATCH /api/inquiries/[id] — mark inquiry as read */
+const VALID_STATUSES = ["new", "reviewing", "negotiating", "won", "lost"] as const;
+
+/** PATCH /api/inquiries/[id] — update read status and/or pipeline status */
 export async function PATCH(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
@@ -24,6 +26,17 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await prisma.inquiry.update({ where: { id }, data: { read: true } });
-  return NextResponse.json({ ok: true });
+  const body = await req.json().catch(() => ({}));
+  const data: { read?: boolean; status?: string } = {};
+
+  if (body.read === true || body.read === false) data.read = body.read;
+  if (typeof body.status === "string" && VALID_STATUSES.includes(body.status as typeof VALID_STATUSES[number])) {
+    data.status = body.status;
+    if (body.status !== "new") data.read = true;
+  }
+
+  if (Object.keys(data).length === 0) data.read = true;
+
+  const updated = await prisma.inquiry.update({ where: { id }, data });
+  return NextResponse.json(updated);
 }

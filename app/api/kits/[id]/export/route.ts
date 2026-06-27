@@ -35,7 +35,7 @@ export async function GET(
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { name: true, username: true, bio: true, links: true },
+      select: { name: true, username: true, bio: true, links: true, instagramUserId: true, instagramAccessToken: true },
     }),
   ]);
 
@@ -54,9 +54,9 @@ export async function GET(
   );
   const links = parseJson<{ label: string; url: string }[]>(user.links ?? "[]", []);
 
-  // Fetch live Instagram stats (non-fatal if unavailable)
+  // Fetch live Instagram stats only if actually connected
   let stats: { followers: number; avgEngagement: number; growthThisMonth: number; platform: string } | null = null;
-  try {
+  if (user.instagramUserId && user.instagramAccessToken) try {
     const igStats = await getStatsForUser(session.user.id);
     if (igStats.followers > 0) {
       stats = {

@@ -17,7 +17,9 @@ import { getTierByPriceId } from "@/config/subscriptions";
 import { getKitBySlug } from "@/lib/get-kit-by-slug";
 import { recordKitView } from "@/lib/kit-views";
 import { MediaKitClient } from "./MediaKitClient";
+import { PasswordWall } from "./PasswordWall";
 import { DEFAULT_KIT_APPEARANCE } from "@/lib/kit-appearance";
+import { cookies } from "next/headers";
 
 const DEMO_SLUGS = ["demo", "alexchen", "my-kit"];
 
@@ -54,6 +56,24 @@ export default async function MediaKitPage({
   }
 
   if (result) {
+    // Password check — skip for kit owner (preview mode or logged in)
+    if (result.kit.passwordHash) {
+      const cookieStore = await cookies();
+      const unlockCookie = cookieStore.get(`kit_unlock_${result.kit.id}`)?.value;
+      const session = await getServerSession(authOptions);
+      const isOwner = session?.user?.id === result.kit.userId;
+      if (!isOwner && unlockCookie !== result.kit.passwordHash) {
+        return (
+          <PasswordWall
+            kitId={result.kit.id}
+            kitName={result.kit.name}
+            creatorName={result.creator.name}
+            avatarUrl={result.creator.avatarUrl}
+          />
+        );
+      }
+    }
+
     const [referrer, session] = await Promise.all([
       headers().then((h) => h.get("referer") ?? undefined),
       getServerSession(authOptions),

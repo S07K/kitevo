@@ -167,71 +167,66 @@ export function ProfileForm({
   const inputCls = "mt-1 w-full px-3 py-2.5 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition";
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 space-y-6 max-w-md">
-      <div>
-        <label className="block text-sm font-semibold text-foreground">Profile photo</label>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Shown on your public kit. Upload a photo or pull from Instagram when connected.
-        </p>
-        <div className="mt-4 flex flex-col items-center gap-3">
-          {/* Avatar on top */}
-          <div className="h-20 w-20 shrink-0 rounded-full overflow-hidden border border-border bg-muted">
+    <form onSubmit={handleSubmit}>
+      {/* Two-col layout: avatar left, fields right */}
+      <div className="flex flex-col gap-8 lg:flex-row lg:gap-10">
+
+        {/* Avatar column */}
+        <div className="flex flex-col items-center gap-3 lg:w-48 lg:shrink-0 lg:pt-1">
+          <div className="h-28 w-28 shrink-0 rounded-full overflow-hidden border-2 border-border bg-muted shadow-sm">
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="h-full w-full object-cover" width={80} height={80} referrerPolicy="no-referrer" />
+              <img src={avatarUrl} alt="" className="h-full w-full object-cover" width={112} height={112} referrerPolicy="no-referrer" />
             ) : (
-              <div className="h-full w-full flex items-center justify-center text-2xl font-display text-muted-foreground">
+              <div className="h-full w-full flex items-center justify-center text-3xl font-display text-muted-foreground">
                 {(name || username || "?").charAt(0).toUpperCase()}
               </div>
             )}
           </div>
 
-          {/* Half-half buttons */}
           <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
-          <div className="flex w-full gap-2">
+          <button
+            type="button"
+            disabled={avatarBusy || saving}
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-foreground bg-foreground text-background hover:opacity-80 disabled:opacity-40 transition-opacity"
+          >
+            {avatarBusy ? (
+              <>
+                <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+                Uploading…
+              </>
+            ) : (
+              <>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" />
+                </svg>
+                Upload photo
+              </>
+            )}
+          </button>
+
+          {profile.instagramConnected && (
             <button
               type="button"
               disabled={avatarBusy || saving}
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-foreground bg-foreground text-background hover:opacity-80 disabled:opacity-40 transition-opacity whitespace-nowrap"
+              onClick={useInstagramPhoto}
+              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-border text-foreground hover:border-foreground/40 disabled:opacity-40 transition-colors"
             >
-              {avatarBusy ? (
-                <>
-                  <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                  </svg>
-                  Uploading…
-                </>
-              ) : (
-                <>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" />
-                  </svg>
-                  Upload photo
-                </>
-              )}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <rect width="20" height="20" x="2" y="2" rx="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+              </svg>
+              Use Instagram photo
             </button>
-            {profile.instagramConnected && (
-              <button
-                type="button"
-                disabled={avatarBusy || saving}
-                onClick={useInstagramPhoto}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-border text-foreground hover:border-foreground/40 disabled:opacity-40 transition-colors whitespace-nowrap"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <rect width="20" height="20" x="2" y="2" rx="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                </svg>
-                Use Instagram
-              </button>
-            )}
-          </div>
+          )}
 
-          {/* Remove at bottom */}
           {avatarUrl && (
             <button
               type="button"
               disabled={avatarBusy || saving}
               onClick={clearPhoto}
-              className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
@@ -239,104 +234,112 @@ export function ProfileForm({
               Remove photo
             </button>
           )}
-          {avatarError && <p className="text-xs text-red-500">{avatarError}</p>}
+
+          {avatarError && <p className="text-xs text-red-500 text-center">{avatarError}</p>}
+
+          <button
+            type="button"
+            onClick={() => setShowAdvancedAvatarUrl((v) => !v)}
+            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showAdvancedAvatarUrl ? "Hide URL field" : "Paste image URL"}
+          </button>
+          {showAdvancedAvatarUrl && (
+            <input
+              type="url"
+              value={avatarUrl}
+              onChange={(e) => setAvatarUrl(e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-xl text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-foreground/20 transition"
+              placeholder="https://…"
+            />
+          )}
         </div>
 
-        {/* Advanced URL toggle */}
-        <button
-          type="button"
-          onClick={() => setShowAdvancedAvatarUrl((v) => !v)}
-          className="mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {showAdvancedAvatarUrl ? "Hide" : "Advanced"}: paste image URL
-        </button>
-        {showAdvancedAvatarUrl && (
-          <input
-            type="url"
-            value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            className="mt-2 w-full px-3 py-2 border border-border rounded-xl text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20 transition"
-            placeholder="https://…"
-          />
-        )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-foreground">Display name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className={inputCls}
-          placeholder="Your name"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-foreground">Username (for /kit/username link)</label>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className={inputCls}
-          placeholder="username"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-foreground">Bio</label>
-        <textarea
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          rows={3}
-          className={inputCls}
-          placeholder="Short bio"
-        />
-      </div>
-      <div>
-        <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium text-foreground">Links</label>
-          <button type="button" onClick={addLink} className="text-sm text-muted-foreground hover:text-foreground transition-colors">+ Add</button>
-        </div>
-        <div className="mt-2 space-y-3">
-          {links.map((l, i) => (
-            <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-1 sm:gap-2 min-w-0">
+        {/* Fields column */}
+        <div className="flex-1 min-w-0 space-y-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-foreground">Display name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={inputCls}
+                placeholder="Your name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground">Username</label>
+              <div className="relative mt-1">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">/k/</span>
                 <input
                   type="text"
-                  value={l.label}
-                  onChange={(e) => updateLink(i, "label", e.target.value)}
-                  placeholder="Label"
-                  className={`${inputCls} sm:flex-1`}
-                />
-                <input
-                  type="url"
-                  value={l.url}
-                  onChange={(e) => updateLink(i, "url", e.target.value)}
-                  placeholder="URL"
-                  className={`${inputCls} sm:flex-1`}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition"
+                  placeholder="yourname"
                 />
               </div>
-              <button
-                type="button"
-                onClick={() => removeLink(i)}
-                className="shrink-0 self-end sm:self-center inline-flex items-center gap-1.5 px-2.5 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-xl border border-red-500/30 hover:border-red-500/50 transition-colors"
-                aria-label="Remove link"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                <span>Remove</span>
-              </button>
             </div>
-          ))}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground">Bio</label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={3}
+              className={inputCls}
+              placeholder="Short bio shown on your media kit"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-foreground">Links</label>
+              <button type="button" onClick={addLink} className="text-sm text-muted-foreground hover:text-foreground transition-colors">+ Add link</button>
+            </div>
+            <div className="mt-2 space-y-2">
+              {links.map((l, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={l.label}
+                    onChange={(e) => updateLink(i, "label", e.target.value)}
+                    placeholder="Label"
+                    className="w-28 shrink-0 px-3 py-2 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition"
+                  />
+                  <input
+                    type="url"
+                    value={l.url}
+                    onChange={(e) => updateLink(i, "url", e.target.value)}
+                    placeholder="https://…"
+                    className="flex-1 min-w-0 px-3 py-2 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeLink(i)}
+                    className="shrink-0 p-2 text-muted-foreground hover:text-red-500 transition-colors rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20"
+                    aria-label="Remove link"
+                  >
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={saving || avatarBusy}
+            className="h-10 rounded-full bg-foreground text-background px-8 text-sm font-medium hover:opacity-80 disabled:opacity-50 transition-opacity"
+          >
+            {saving ? "Saving…" : submitLabel}
+          </button>
         </div>
       </div>
-      <button
-        type="submit"
-        disabled={saving || avatarBusy}
-        className="w-full h-10 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 disabled:opacity-50 transition-opacity"
-      >
-        {saving ? "Saving…" : submitLabel}
-      </button>
     </form>
   );
 }

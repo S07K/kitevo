@@ -37,6 +37,7 @@ export async function GET() {
     id: k.id,
     slug: k.slug,
     name: k.name,
+    hasPassword: !!k.passwordHash,
     workSamples: parseJson<WorkSample[]>(k.workSamples, []),
     rates: parseJson<KitRates>(k.rates, { show: false }),
     brands: parseJson<BrandPartner[]>(k.brands, []),

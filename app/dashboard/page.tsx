@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -14,6 +15,7 @@ import {
 import { AppNav } from "../components/AppNav";
 import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm";
 import { DashboardSkeleton, StatCardSkeleton, KitCardSkeleton, CountUp } from "../components/Skeleton";
+import { AnalyticsChart } from "../components/AnalyticsChart";
 import type { KitRecord } from "@/lib/kit-storage";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
 import { APP_URL, APP_HOST } from "@/lib/app-url";
@@ -27,16 +29,7 @@ interface KitViewRecord {
   kit: { id: string; name: string; slug: string };
 }
 
-interface InquiryRecord {
-  id: string;
-  name: string;
-  email: string;
-  company: string | null;
-  message: string;
-  createdAt: string;
-  read: boolean;
-  kit: { id: string; name: string; slug: string };
-}
+import { DealPipeline, type InquiryRecord, type DealStatus } from "../components/DealPipeline";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -167,56 +160,141 @@ const VIBE_COLORS: Record<string, { bg: string; fg: string; label: string }> = {
 function KitCard({
   kit,
   onDelete,
+  onSlugChange,
+  onPasswordChange,
 }: {
-  kit: KitRecord & { appearance?: { preset?: string } };
+  kit: KitRecord & { appearance?: { preset?: string }; hasPassword?: boolean };
   onDelete: () => void;
+  onSlugChange: (id: string, newSlug: string) => void;
+  onPasswordChange: (id: string, hasPassword: boolean) => void;
 }) {
   const preset = (kit as { appearance?: { preset?: string } }).appearance?.preset ?? "warm";
   const vibe = VIBE_COLORS[preset] ?? VIBE_COLORS.warm;
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"pdf" | "pptx" | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const [editingSlug, setEditingSlug] = useState(false);
+  const [slugDraft, setSlugDraft] = useState(kit.slug);
+  const [slugSaving, setSlugSaving] = useState(false);
+  const [slugError, setSlugError] = useState<string | null>(null);
+  const slugInputRef = useRef<HTMLInputElement>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordDraft, setPasswordDraft] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const hasPassword = (kit as { hasPassword?: boolean }).hasPassword ?? false;
 
-  async function downloadPdf() {
-    setExporting(true);
+  async function downloadFile(format: "pdf" | "pptx") {
+    setExporting(format);
     try {
-      const res = await fetch(`/api/kits/${kit.id}/export`, { credentials: "include" });
+      const endpoint = format === "pptx" ? `/api/kits/${kit.id}/export-pptx` : `/api/kits/${kit.id}/export`;
+      const res = await fetch(endpoint, { credentials: "include" });
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${kit.slug}-media-kit.pdf`;
+      a.download = `${kit.slug}-media-kit.${format}`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      // silent — could show a toast here
+      // silent
     } finally {
-      setExporting(false);
+      setExporting(null);
+    }
+  }
+
+  async function savePassword(remove = false) {
+    setPasswordSaving(true);
+    setPasswordError(null);
+    try {
+      const res = await fetch(`/api/kits/${kit.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ password: remove ? "" : passwordDraft }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setPasswordError(data.error ?? "Failed"); return; }
+      onPasswordChange(kit.id, !remove && !!passwordDraft);
+      setShowPasswordModal(false);
+      setPasswordDraft("");
+    } finally {
+      setPasswordSaving(false);
+    }
+  }
+
+  function copyLink() {
+    const url = `${typeof window !== "undefined" ? window.location.origin : ""}/kit/${kit.slug}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function startEditSlug() {
+    setSlugDraft(kit.slug);
+    setSlugError(null);
+    setEditingSlug(true);
+    setTimeout(() => slugInputRef.current?.select(), 50);
+  }
+
+  async function saveSlug() {
+    const clean = slugDraft.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    if (!clean || clean === kit.slug) { setEditingSlug(false); return; }
+    setSlugSaving(true);
+    setSlugError(null);
+    try {
+      const res = await fetch(`/api/kits/${kit.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ slug: clean }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setSlugError(data.error ?? "Could not update URL"); return; }
+      onSlugChange(kit.id, data.slug ?? clean);
+      setEditingSlug(false);
+    } finally {
+      setSlugSaving(false);
     }
   }
 
   return (
     <div className="border-border bg-background group relative overflow-hidden rounded-2xl border transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-      {/* Vibe color strip — taller, with centered name and live badge */}
+      {/* Vibe color strip */}
       <div
         className="relative flex h-28 items-center justify-center px-5"
         style={{ backgroundColor: vibe.bg }}
       >
-        {/* Top-left: vibe label */}
         <span
           className="absolute left-4 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide"
           style={{ backgroundColor: vibe.fg + "22", color: vibe.fg, border: `1px solid ${vibe.fg}33` }}
         >
           {vibe.label}
         </span>
-        {/* Top-right: live indicator */}
-        <span
-          className="absolute right-4 top-3 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide opacity-80"
-          style={{ backgroundColor: vibe.fg + "18", color: vibe.fg }}
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          Live
-        </span>
-        {/* Kit name centered */}
+        <div className="absolute right-4 top-3 flex items-center gap-1.5">
+          {hasPassword && (
+            <span
+              className="flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide opacity-80"
+              style={{ backgroundColor: vibe.fg + "18", color: vibe.fg }}
+            >
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Private
+            </span>
+          )}
+          <span
+            className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide opacity-80"
+            style={{ backgroundColor: vibe.fg + "18", color: vibe.fg }}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            Live
+          </span>
+        </div>
         <p
           className="font-display text-xl font-semibold text-center px-10 leading-tight"
           style={{ color: vibe.fg }}
@@ -225,16 +303,79 @@ function KitCard({
         </p>
       </div>
 
-      <div className="flex items-center justify-between gap-4 px-5 py-3">
-        <p className="text-muted-foreground text-xs">/kit/{kit.slug}</p>
-        {typeof kit.viewCount === "number" && (
-          <span className="bg-muted text-muted-foreground shrink-0 rounded-full px-2.5 py-1 text-xs font-medium">
-            {kit.viewCount === 0 ? "0 views" : `${kit.viewCount} view${kit.viewCount !== 1 ? "s" : ""}`}
-          </span>
+      {/* URL row with inline slug editing */}
+      <div className="px-5 py-3">
+        {editingSlug ? (
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-xs shrink-0">/kit/</span>
+            <input
+              ref={slugInputRef}
+              value={slugDraft}
+              onChange={(e) => { setSlugDraft(e.target.value); setSlugError(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter") saveSlug(); if (e.key === "Escape") setEditingSlug(false); }}
+              className="flex-1 min-w-0 border-border rounded-lg border px-2 py-1 text-xs font-mono bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={saveSlug}
+              disabled={slugSaving}
+              className="text-xs font-medium text-foreground hover:opacity-70 disabled:opacity-40 transition-opacity shrink-0"
+            >
+              {slugSaving ? "…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingSlug(false)}
+              className="text-xs text-muted-foreground hover:text-foreground shrink-0"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <p className="text-muted-foreground text-xs truncate">/kit/{kit.slug}</p>
+              <button
+                type="button"
+                onClick={startEditSlug}
+                className="text-muted-foreground/50 hover:text-muted-foreground transition-colors shrink-0"
+                title="Edit URL slug"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {typeof kit.viewCount === "number" && (
+                <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-1 text-xs font-medium">
+                  {kit.viewCount === 0 ? "0 views" : `${kit.viewCount} view${kit.viewCount !== 1 ? "s" : ""}`}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={copyLink}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title="Copy link"
+              >
+                {copied ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500" aria-hidden>
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <rect width="14" height="14" x="8" y="8" rx="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
         )}
+        {slugError && <p className="mt-1 text-[11px] text-red-500">{slugError}</p>}
       </div>
 
-      <div className="border-border flex items-center gap-1.5 border-t px-4 py-3">
+      <div className="border-border flex items-center gap-2 border-t px-4 py-3">
         <Link
           href={`/kit/edit?id=${encodeURIComponent(kit.id)}`}
           className="bg-foreground text-background inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-opacity hover:opacity-80"
@@ -244,43 +385,224 @@ function KitCard({
           </svg>
           Edit
         </Link>
-        <a
-          href={`/kit/${kit.slug}`}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => setShowShareModal(true)}
           className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-            <polyline points="15 3 21 3 21 9" />
-            <line x1="10" x2="21" y1="14" y2="3" />
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/>
           </svg>
-          View
-        </a>
-        <button
-          type="button"
-          onClick={downloadPdf}
-          disabled={exporting}
-          className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex items-center rounded-full p-2 transition-colors disabled:opacity-50"
-          aria-label="Download PDF"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" x2="12" y1="15" y2="3" />
-          </svg>
+          Share
         </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          className="text-muted-foreground hover:text-red-600 hover:bg-red-50 ml-auto inline-flex items-center rounded-full p-2 transition-colors"
-          aria-label="Delete kit"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-          </svg>
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => { setPasswordDraft(""); setPasswordError(null); setShowPasswordModal(true); }}
+            className={`inline-flex items-center rounded-full p-2 transition-colors ${hasPassword ? "text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+            title={hasPassword ? "Private — click to manage" : "Set a password"}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="text-muted-foreground hover:text-red-600 hover:bg-red-50 inline-flex items-center rounded-full p-2 transition-colors"
+            aria-label="Delete kit"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+          </button>
+        </div>
       </div>
+
+      {/* Share modal */}
+      {mounted && showShareModal && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          onClick={() => setShowShareModal(false)}
+        >
+          <div
+            className="bg-background border-border w-full max-w-sm rounded-2xl border shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <div>
+                <h3 className="font-semibold text-foreground text-sm">Share kit</h3>
+                <p className="text-muted-foreground text-xs mt-0.5">{kit.name}</p>
+              </div>
+              <button type="button" onClick={() => setShowShareModal(false)} className="text-muted-foreground hover:text-foreground p-1 transition-colors">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-5 space-y-3">
+              {/* Copy link */}
+              <div className="rounded-xl border border-border p-4">
+                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-2">Public link</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 min-w-0 truncate text-xs text-foreground bg-muted rounded-lg px-3 py-2 font-mono">
+                    {typeof window !== "undefined" ? window.location.origin : "https://kitevo.com"}/kit/{kit.slug}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={copyLink}
+                    className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${copied ? "bg-emerald-500 text-white" : "bg-foreground text-background hover:opacity-80"}`}
+                  >
+                    {copied ? (
+                      <>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                        </svg>
+                        Copy
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Download section */}
+              <div className="rounded-xl border border-border p-4">
+                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-3">Download</p>
+                <div className="space-y-2">
+                  {/* PPTX */}
+                  <button
+                    type="button"
+                    onClick={() => downloadFile("pptx")}
+                    disabled={!!exporting}
+                    className="w-full flex items-center gap-3 rounded-xl border border-border px-4 py-3 hover:bg-muted/50 transition-colors disabled:opacity-50 text-left"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/30">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500" aria-hidden>
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">PowerPoint (.pptx)</p>
+                      <p className="text-xs text-muted-foreground">Opens in Google Slides or PowerPoint</p>
+                    </div>
+                    {exporting === "pptx" ? (
+                      <svg className="animate-spin shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0" aria-hidden>
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* PDF */}
+                  <button
+                    type="button"
+                    onClick={() => downloadFile("pdf")}
+                    disabled={!!exporting}
+                    className="w-full flex items-center gap-3 rounded-xl border border-border px-4 py-3 hover:bg-muted/50 transition-colors disabled:opacity-50 text-left"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 dark:bg-red-950/30">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500" aria-hidden>
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">PDF (.pdf)</p>
+                      <p className="text-xs text-muted-foreground">Print-ready, universally supported</p>
+                    </div>
+                    {exporting === "pdf" ? (
+                      <svg className="animate-spin shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0" aria-hidden>
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* View live */}
+              <a
+                href={`/kit/${kit.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/>
+                </svg>
+                View live kit
+              </a>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
+      {/* Password modal */}
+      {mounted && showPasswordModal && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          onClick={() => setShowPasswordModal(false)}
+        >
+          <div
+            className="bg-background border-border w-full max-w-sm rounded-2xl border p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-semibold text-foreground mb-1">
+              {hasPassword ? "Password protection" : "Set a password"}
+            </h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              {hasPassword
+                ? "Your kit is private. Set a new password or remove protection."
+                : "Only people with the password can view this kit."}
+            </p>
+            <input
+              type="password"
+              value={passwordDraft}
+              onChange={(e) => { setPasswordDraft(e.target.value); setPasswordError(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter" && passwordDraft) savePassword(); }}
+              placeholder={hasPassword ? "New password (leave blank to keep current)" : "Enter a password"}
+              className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition mb-2"
+              autoFocus
+            />
+            {passwordError && <p className="text-red-500 text-xs mb-2">{passwordError}</p>}
+            <div className="flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => savePassword()}
+                disabled={passwordSaving || !passwordDraft}
+                className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+              >
+                {passwordSaving ? "Saving…" : hasPassword ? "Update password" : "Set password"}
+              </button>
+              {hasPassword && (
+                <button
+                  type="button"
+                  onClick={() => savePassword(true)}
+                  disabled={passwordSaving}
+                  className="text-red-500 hover:text-red-600 border border-red-200 hover:border-red-300 inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  Remove password
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowPasswordModal(false)}
+                className="border-border text-muted-foreground hover:text-foreground inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors ml-auto"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
     </div>
   );
 }
@@ -316,6 +638,9 @@ function DashboardContent() {
   const [inquiriesLoaded, setInquiriesLoaded] = useState(false);
   const [kitViews, setKitViews] = useState<KitViewRecord[]>([]);
   const [kitViewsThisWeek, setKitViewsThisWeek] = useState(0);
+  const [kitViewsTotal, setKitViewsTotal] = useState(0);
+  const [kitViewsDaily, setKitViewsDaily] = useState<{ date: string; count: number }[]>([]);
+  const [kitViewsReferrers, setKitViewsReferrers] = useState<{ source: string; count: number }[]>([]);
   const [kitViewsLoaded, setKitViewsLoaded] = useState(false);
   const [disconnectingInstagram, setDisconnectingInstagram] = useState(false);
   const [activeTab, setActiveTab] = useState<"inbox" | "activity">("inbox");
@@ -373,6 +698,9 @@ function DashboardContent() {
         if (cancelled || !data) return;
         setKitViews(Array.isArray(data.views) ? data.views : []);
         setKitViewsThisWeek(typeof data.thisWeek === "number" ? data.thisWeek : 0);
+        setKitViewsTotal(typeof data.total === "number" ? data.total : 0);
+        setKitViewsDaily(Array.isArray(data.daily) ? data.daily : []);
+        setKitViewsReferrers(Array.isArray(data.referrers) ? data.referrers : []);
         setKitViewsLoaded(true);
       })
       .catch(() => { if (!cancelled) setKitViewsLoaded(true); });
@@ -556,6 +884,18 @@ function DashboardContent() {
     }
   };
 
+  const updateInquiryStatus = async (id: string, status: DealStatus) => {
+    setInquiries((prev) =>
+      prev.map((i) => i.id === id ? { ...i, status, read: status !== "new" ? true : i.read } : i)
+    );
+    fetch(`/api/inquiries/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+      credentials: "include",
+    }).catch(() => {});
+  };
+
   // Derived helpers
   const firstName = profile?.name?.split(" ")[0] ?? "there";
   const avatarUrl = profile?.avatarUrl ?? null;
@@ -716,25 +1056,36 @@ function DashboardContent() {
             <div className="bg-[#111110] dark:bg-[#1c1c1a] dark:border dark:border-[#2a2a28] rounded-2xl px-6 py-5">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-4">
-                  {/* Avatar */}
-                  <div className="shrink-0">
+                  {/* Avatar — click to edit profile */}
+                  <Link href="/profile" className="shrink-0 group relative">
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}
                         alt={profile?.name ?? "Avatar"}
-                        className="h-11 w-11 rounded-full object-cover"
+                        className="h-11 w-11 rounded-full object-cover transition-opacity group-hover:opacity-75"
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <div className="h-11 w-11 rounded-full bg-white/10 flex items-center justify-center">
+                      <div className="h-11 w-11 rounded-full bg-white/10 flex items-center justify-center transition-opacity group-hover:opacity-75">
                         <span className="font-display text-sm font-semibold text-white/80">{avatarInitials}</span>
                       </div>
                     )}
-                  </div>
+                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      </svg>
+                    </span>
+                  </Link>
                   <div>
                     <p className="text-white/50 text-[11px] font-semibold tracking-[0.16em] uppercase mb-0.5">Welcome back</p>
                     <p className="font-display text-xl font-semibold text-white leading-none">{firstName}</p>
                   </div>
+                  <Link
+                    href="/profile"
+                    className="text-white/50 hover:text-white/80 text-xs transition-colors ml-1"
+                  >
+                    Edit profile →
+                  </Link>
                 </div>
 
                 {/* Kit URL pill — only if kits exist */}
@@ -833,375 +1184,186 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* ── Main grid ── */}
-            <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-              {/* ── Left sidebar — single card ── */}
-              <aside>
-                <div className="bg-background border-border rounded-2xl border p-6">
-                  {/* Profile section */}
-                  {profile && (
-                    <div>
-                      <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-3">Profile</p>
-                      {profileSaveError && (
-                        <div className="mb-4 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                          <span>{profileSaveError}</span>
-                          <button
-                            type="button"
-                            onClick={() => setProfileSaveError(null)}
-                            className="ml-3 text-xs text-red-600 hover:underline"
-                          >
-                            Dismiss
-                          </button>
-                        </div>
-                      )}
-                      <ProfileForm
-                        profile={profile}
-                        onAvatarUrlChange={(url) =>
-                          setProfile((p) => (p ? { ...p, avatarUrl: url } : null))
-                        }
-                        onSave={async (data) => {
-                          setProfileSaving(true);
-                          setProfileSaveError(null);
-                          try {
-                            const res = await fetch("/api/me/profile", {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify(data),
-                              credentials: "include",
-                            });
-                            if (res.ok) {
-                              const updated = await res.json();
-                              setProfile((p) => (p ? { ...p, ...updated } : null));
-                            } else {
-                              const err = await res.json().catch(() => ({}));
-                              setProfileSaveError(err.error ?? "Failed to save profile");
-                            }
-                          } finally {
-                            setProfileSaving(false);
-                          }
-                        }}
-                        saving={profileSaving}
-                      />
-                    </div>
-                  )}
-
-                  {/* Divider */}
-                  <div className="border-t border-border my-5" />
-
-                  {/* Instagram section */}
-                  <div>
-                    <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-3">Instagram</p>
-                    {instagramConnected ? (
-                      <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-600">
-                          <span className="h-2 w-2 rounded-full bg-green-500" aria-hidden />
-                          Instagram connected
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleDisconnectInstagram}
-                          disabled={disconnectingInstagram}
-                          className="text-muted-foreground hover:text-foreground text-xs transition-colors disabled:opacity-50"
-                        >
-                          {disconnectingInstagram ? "Disconnecting…" : "Disconnect"}
-                        </button>
-                      </div>
-                    ) : (
-                      <a
-                        href="/api/instagram/connect"
-                        className="bg-foreground text-background inline-flex h-10 w-full items-center justify-center rounded-full text-sm font-medium transition-opacity hover:opacity-80"
-                      >
-                        Connect Instagram →
-                      </a>
-                    )}
-                    <Link
-                      href="/help/instagram"
-                      className="text-muted-foreground hover:text-foreground mt-2.5 inline-block text-xs transition-colors"
+            {/* ── Pipeline / Activity ── */}
+            {(tierId === "pro" || (kitViewsLoaded && kits.length > 0)) && (
+              <div>
+                <div className="mb-4 flex items-center gap-1">
+                  {tierId === "pro" && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("inbox")}
+                      className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                        activeTab === "inbox"
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
                     >
-                      Connection help →
-                    </Link>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="border-t border-border my-5" />
-
-                  {/* Plan section */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Plan</p>
-                      {tierName && (
-                        <span className="bg-foreground text-background rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
-                          {tierName}
+                      Pipeline
+                      {inquiries.filter((i) => !i.read).length > 0 && (
+                        <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                          activeTab === "inbox" ? "bg-white/20 text-white" : "bg-foreground text-background"
+                        }`}>
+                          {inquiries.filter((i) => !i.read).length}
                         </span>
                       )}
-                    </div>
-                    <p className="text-muted-foreground text-xs mb-3">
-                      {kits.length} / {allowedKits} kit{allowedKits !== 1 ? "s" : ""} used
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {tierId === "starter" && (
-                        <button
-                          type="button"
-                          onClick={upgradeToPro}
-                          disabled={upgradeToProLoading}
-                          className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
-                        >
-                          {upgradeToProLoading ? "Upgrading…" : "Upgrade to Pro"}
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={openPortal}
-                        disabled={portalLoading}
-                        className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors disabled:opacity-50"
-                      >
-                        {portalLoading ? "Opening…" : "Manage billing"}
-                      </button>
-                    </div>
-                  </div>
+                    </button>
+                  )}
+                  {kitViewsLoaded && kits.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("activity")}
+                      className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                        activeTab === "activity"
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Activity
+                    </button>
+                  )}
                 </div>
-              </aside>
 
-              {/* ── Main content ── */}
-              <div className="space-y-6">
-                {/* Kits */}
-                <div>
-                  <div className="mb-4 flex items-center justify-between">
-                    <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Your kits</p>
-                    {kits.length > 0 && kits.length < allowedKits && !showAddKit && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAddKit(true)}
-                        className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors"
-                      >
-                        + New kit
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Empty state */}
-                  {kits.length === 0 && allowedKits > 0 && (
-                    <div className="border-border rounded-2xl border border-dashed p-8">
-                      <p className="text-foreground text-base font-semibold">Create your first kit</p>
-                      <p className="text-muted-foreground mt-1 text-sm">
-                        Give it a name and a URL slug. Add work samples, rates, and brands in the editor.
-                      </p>
-                      <div className="mt-6 space-y-3">
-                        <TextInput value={newKitName} onChange={setNewKitName} placeholder="Kit name (e.g. Fashion & Lifestyle)" />
-                        <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
-                        {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
-                        <PrimaryBtn onClick={createKit}>Create &amp; edit →</PrimaryBtn>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Kit cards — shimmer until kits loaded */}
-                  {!subscriptionLoaded ? (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <KitCardSkeleton />
-                      <KitCardSkeleton />
-                    </div>
-                  ) : kits.length > 0 && (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {kits.map((kit) => (
-                        <KitCard
-                          key={kit.id}
-                          kit={kit}
-                          onDelete={() => { setDeleteError(null); setKitToDelete({ id: kit.id, name: kit.name }); }}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Add kit form */}
-                  {showAddKit && kits.length > 0 && (
-                    <div className="border-border mt-4 space-y-3 rounded-2xl border p-5">
-                      <p className="text-foreground text-sm font-semibold">New kit</p>
-                      <TextInput value={newKitName} onChange={setNewKitName} placeholder="Kit name" />
-                      <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
-                      {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
-                      <div className="flex gap-2">
-                        <PrimaryBtn onClick={createKit}>Create &amp; edit →</PrimaryBtn>
-                        <SecondaryBtn onClick={() => { setShowAddKit(false); setNewKitName(""); setNewKitSlug(""); }}>
-                          Cancel
-                        </SecondaryBtn>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* At limit message */}
-                  {kits.length >= allowedKits && kits.length > 0 && !showAddKit && (
-                    <p className="text-muted-foreground mt-4 text-sm">
-                      At kit limit ({allowedKits}).{" "}
-                      <Link href="/pricing" className="text-foreground underline underline-offset-4 hover:no-underline">
-                        Upgrade for more
-                      </Link>
-                      .
-                    </p>
-                  )}
-
-                  {/* Pro upgrade prompt for Starter users */}
-                  {tierId === "starter" && (
-                    <div className="border-border bg-background mt-4 flex items-center justify-between gap-4 rounded-2xl border p-5">
-                      <div>
-                        <p className="text-foreground text-sm font-semibold">Unlock Brand Kit Vibes</p>
-                        <p className="text-muted-foreground mt-0.5 text-xs">
-                          Pro gives you 5 signature styles, custom colors, fonts, and logo upload.
+                {activeTab === "inbox" && tierId === "pro" && (
+                  <div>
+                    {!inquiriesLoaded ? (
+                      <p className="text-muted-foreground text-sm">Loading…</p>
+                    ) : inquiries.length === 0 ? (
+                      <div className="border-border rounded-2xl border border-dashed p-8 text-center">
+                        <p className="text-foreground text-sm font-semibold">No inquiries yet</p>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                          When brands fill out your inquiry form, they&apos;ll appear here as deals to track.
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={upgradeToPro}
-                        disabled={upgradeToProLoading}
-                        className="bg-foreground text-background shrink-0 inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
-                      >
-                        {upgradeToProLoading ? "…" : "Upgrade"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* ── Tabbed inbox + activity ── */}
-                {(tierId === "pro" || (kitViewsLoaded && kits.length > 0)) && (
-                  <div>
-                    {/* Tab switcher */}
-                    <div className="mb-4 flex items-center gap-1">
-                      {tierId === "pro" && (
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab("inbox")}
-                          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                            activeTab === "inbox"
-                              ? "bg-foreground text-background"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          Inbox
-                          {inquiries.filter((i) => !i.read).length > 0 && (
-                            <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                              activeTab === "inbox" ? "bg-white/20 text-white" : "bg-foreground text-background"
-                            }`}>
-                              {inquiries.filter((i) => !i.read).length}
-                            </span>
-                          )}
-                        </button>
-                      )}
-                      {kitViewsLoaded && kits.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab("activity")}
-                          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                            activeTab === "activity"
-                              ? "bg-foreground text-background"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          Activity
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Inbox panel */}
-                    {activeTab === "inbox" && tierId === "pro" && (
-                      <div>
-                        {!inquiriesLoaded ? (
-                          <p className="text-muted-foreground text-sm">Loading…</p>
-                        ) : inquiries.length === 0 ? (
-                          <div className="border-border rounded-2xl border border-dashed p-8 text-center">
-                            <p className="text-foreground text-sm font-semibold">No inquiries yet</p>
-                            <p className="text-muted-foreground mt-1 text-sm">
-                              When brands fill out your inquiry form, messages will appear here.
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            {inquiries.map((inq) => (
-                              <div
-                                key={inq.id}
-                                className={`border-border rounded-2xl border p-5 transition-colors ${
-                                  !inq.read ? "bg-muted/60" : "bg-background"
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <p className="text-foreground text-sm font-semibold truncate">{inq.name}</p>
-                                      {!inq.read && (
-                                        <span className="bg-foreground text-background shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide">
-                                          New
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className="text-muted-foreground text-xs mt-0.5">
-                                      {inq.email}{inq.company ? ` · ${inq.company}` : ""}
-                                    </p>
-                                    <p className="text-muted-foreground text-[10px] mt-0.5">
-                                      {inq.kit.name} · {new Date(inq.createdAt).toLocaleDateString()}
-                                    </p>
-                                  </div>
-                                  {!inq.read && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        fetch(`/api/inquiries/${inq.id}`, { method: "PATCH", credentials: "include" })
-                                          .then((r) => r.ok ? setInquiries((prev) => prev.map((i) => i.id === inq.id ? { ...i, read: true } : i)) : null)
-                                          .catch(() => {});
-                                      }}
-                                      className="border-border text-muted-foreground hover:text-foreground shrink-0 rounded-full border px-3 py-1 text-xs transition-colors"
-                                    >
-                                      Mark read
-                                    </button>
-                                  )}
-                                </div>
-                                <p className="text-foreground mt-3 text-sm leading-relaxed">{inq.message}</p>
-                                <a
-                                  href={`mailto:${inq.email}?subject=Re: collaboration inquiry`}
-                                  className="text-muted-foreground hover:text-foreground mt-3 inline-block text-xs underline underline-offset-4 transition-colors"
-                                >
-                                  Reply via email →
-                                </a>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                    ) : (
+                      <DealPipeline inquiries={inquiries} onUpdate={updateInquiryStatus} />
                     )}
+                  </div>
+                )}
 
-                    {/* Activity panel */}
-                    {activeTab === "activity" && kitViewsLoaded && kits.length > 0 && (
-                      <div>
-                        {kitViews.length === 0 ? (
-                          <div className="border-border rounded-2xl border border-dashed p-8 text-center">
-                            <p className="text-foreground text-sm font-semibold">No views yet</p>
-                            <p className="text-muted-foreground mt-1 text-sm">
-                              Share your kit link and views will appear here in real time.
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="border-border rounded-2xl border divide-y divide-border overflow-hidden">
-                            {kitViews.slice(0, 20).map((view) => {
+                {activeTab === "activity" && kitViewsLoaded && kits.length > 0 && (
+                  <div>
+                    {kitViewsTotal === 0 ? (
+                      <div className="border-border rounded-2xl border border-dashed p-8 text-center">
+                        <p className="text-foreground text-sm font-semibold">No views yet</p>
+                        <p className="text-muted-foreground mt-1 text-sm">Share your kit link and views will appear here in real time.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <AnalyticsChart daily={kitViewsDaily} referrers={kitViewsReferrers} total={kitViewsTotal} />
+                        <div className="bg-background border-border rounded-2xl border overflow-hidden">
+                          <p className="px-5 pt-5 pb-3 text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Recent visits</p>
+                          <div className="divide-y divide-border">
+                            {kitViews.slice(0, 10).map((view) => {
                               const ago = timeAgo(view.viewedAt);
                               const domain = referrerDomain(view.referrer);
                               return (
-                                <div key={view.id} className="flex items-center justify-between gap-4 px-5 py-3.5 bg-background hover:bg-muted/40 transition-colors">
+                                <div key={view.id} className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-muted/40 transition-colors">
                                   <div className="min-w-0">
                                     <p className="text-foreground text-sm font-medium truncate">{view.kit.name}</p>
-                                    {domain && (
-                                      <p className="text-muted-foreground text-xs mt-0.5 truncate">via {domain}</p>
-                                    )}
+                                    {domain && <p className="text-muted-foreground text-xs mt-0.5 truncate">via {domain}</p>}
                                   </div>
                                   <p className="text-muted-foreground text-xs shrink-0">{ago}</p>
                                 </div>
                               );
                             })}
                           </div>
-                        )}
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
               </div>
+            )}
+
+            {/* ── Kits ── */}
+            <div>
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Your kits</p>
+                {kits.length > 0 && kits.length < allowedKits && !showAddKit && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddKit(true)}
+                    className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors"
+                  >
+                    + New kit
+                  </button>
+                )}
+              </div>
+
+              {/* Empty state */}
+              {kits.length === 0 && allowedKits > 0 && (
+                <div className="border-border rounded-2xl border border-dashed p-8 max-w-md">
+                  <p className="text-foreground text-base font-semibold">Create your first kit</p>
+                  <p className="text-muted-foreground mt-1 text-sm">Give it a name and a URL slug. Add work samples, rates, and brands in the editor.</p>
+                  <div className="mt-6 space-y-3">
+                    <TextInput value={newKitName} onChange={setNewKitName} placeholder="Kit name (e.g. Fashion & Lifestyle)" />
+                    <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
+                    {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
+                    <PrimaryBtn onClick={createKit}>Create &amp; edit →</PrimaryBtn>
+                  </div>
+                </div>
+              )}
+
+              {/* Kit cards */}
+              {!subscriptionLoaded ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <KitCardSkeleton /><KitCardSkeleton />
+                </div>
+              ) : kits.length > 0 && (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {kits.map((kit) => (
+                    <KitCard
+                      key={kit.id}
+                      kit={kit}
+                      onDelete={() => { setDeleteError(null); setKitToDelete({ id: kit.id, name: kit.name }); }}
+                      onSlugChange={(id, newSlug) => setKits((prev) => prev.map((k) => k.id === id ? { ...k, slug: newSlug } : k))}
+                      onPasswordChange={(id, hp) => setKits((prev) => prev.map((k) => k.id === id ? { ...k, hasPassword: hp } : k))}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Add kit form */}
+              {showAddKit && kits.length > 0 && (
+                <div className="border-border mt-4 space-y-3 rounded-2xl border p-5 max-w-md">
+                  <p className="text-foreground text-sm font-semibold">New kit</p>
+                  <TextInput value={newKitName} onChange={setNewKitName} placeholder="Kit name" />
+                  <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
+                  {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
+                  <div className="flex gap-2">
+                    <PrimaryBtn onClick={createKit}>Create &amp; edit →</PrimaryBtn>
+                    <SecondaryBtn onClick={() => { setShowAddKit(false); setNewKitName(""); setNewKitSlug(""); }}>Cancel</SecondaryBtn>
+                  </div>
+                </div>
+              )}
+
+              {/* At limit message */}
+              {kits.length >= allowedKits && kits.length > 0 && !showAddKit && (
+                <p className="text-muted-foreground mt-4 text-sm">
+                  At kit limit ({allowedKits}).{" "}
+                  <Link href="/pricing" className="text-foreground underline underline-offset-4 hover:no-underline">Upgrade for more</Link>.
+                </p>
+              )}
+
+              {/* Pro upgrade prompt for Starter users */}
+              {tierId === "starter" && (
+                <div className="border-border bg-background mt-4 flex items-center justify-between gap-4 rounded-2xl border p-5">
+                  <div>
+                    <p className="text-foreground text-sm font-semibold">Unlock Brand Kit Vibes</p>
+                    <p className="text-muted-foreground mt-0.5 text-xs">Pro gives you 5 signature styles, custom colors, fonts, and logo upload.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={upgradeToPro}
+                    disabled={upgradeToProLoading}
+                    className="bg-foreground text-background shrink-0 inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+                  >
+                    {upgradeToProLoading ? "…" : "Upgrade"}
+                  </button>
+                </div>
+              )}
             </div>
+
           </div>
         )}
       </main>

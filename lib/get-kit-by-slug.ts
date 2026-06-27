@@ -40,6 +40,7 @@ export type PublicKit = {
   userId: string;
   slug: string;
   name: string;
+  passwordHash: string | null;
   workSamples: WorkSample[];
   rates: KitRates;
   brands: BrandPartner[];
@@ -87,6 +88,7 @@ export async function getKitBySlug(slug: string): Promise<KitBySlugResult> {
       userId: kit.userId,
       slug: kit.slug,
       name: kit.name,
+      passwordHash: kit.passwordHash ?? null,
       workSamples: parseJson<WorkSample[]>(kit.workSamples, []),
       rates: parseJson<KitRates>(kit.rates, { show: false }),
       brands: parseJson<BrandPartner[]>(kit.brands, []),

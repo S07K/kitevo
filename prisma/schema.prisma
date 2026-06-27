@@ -63,6 +63,7 @@ model Kit {
   brands            String   // JSON
   sectionVisibility String   // JSON
   appearance        String   @default("{}") // kit theme JSON: { preset: warm|cool|paper|noir }
+  passwordHash      String?  // bcrypt hash; null = public kit
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -95,6 +96,7 @@ model Inquiry {
   message   String
   createdAt DateTime @default(now())
   read      Boolean  @default(false)
+  status    String   @default("new") // new | reviewing | negotiating | won | lost
 
   @@index([kitId])
   @@index([createdAt])

@@ -22,6 +22,7 @@ export async function GET() {
       message: true,
       createdAt: true,
       read: true,
+      status: true,
       kit: { select: { id: true, name: true, slug: true } },
     },
   });
