@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -641,6 +641,9 @@ function DashboardContent() {
   const [kitViewsTotal, setKitViewsTotal] = useState(0);
   const [kitViewsDaily, setKitViewsDaily] = useState<{ date: string; count: number }[]>([]);
   const [kitViewsReferrers, setKitViewsReferrers] = useState<{ source: string; count: number }[]>([]);
+  const [kitViewsByKit, setKitViewsByKit] = useState<{ id: string; name: string; slug: string; count: number }[]>([]);
+  const [kitViewsTrend, setKitViewsTrend] = useState<number | null>(null);
+  const [kitViewsDays, setKitViewsDays] = useState(30);
   const [kitViewsLoaded, setKitViewsLoaded] = useState(false);
   const [disconnectingInstagram, setDisconnectingInstagram] = useState(false);
   const [activeTab, setActiveTab] = useState<"inbox" | "activity">("inbox");
@@ -689,22 +692,27 @@ function DashboardContent() {
     return () => { cancelled = true; };
   }, [isSubscribed]);
 
-  useEffect(() => {
-    if (!isSubscribed) return;
-    let cancelled = false;
-    fetch("/api/kit-views", { credentials: "include" })
+  const fetchKitViews = useCallback((days: number) => {
+    fetch(`/api/kit-views?days=${days}`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (cancelled || !data) return;
+        if (!data) return;
         setKitViews(Array.isArray(data.views) ? data.views : []);
         setKitViewsThisWeek(typeof data.thisWeek === "number" ? data.thisWeek : 0);
         setKitViewsTotal(typeof data.total === "number" ? data.total : 0);
         setKitViewsDaily(Array.isArray(data.daily) ? data.daily : []);
         setKitViewsReferrers(Array.isArray(data.referrers) ? data.referrers : []);
+        setKitViewsByKit(Array.isArray(data.byKit) ? data.byKit : []);
+        setKitViewsTrend(typeof data.trend === "number" ? data.trend : null);
         setKitViewsLoaded(true);
       })
-      .catch(() => { if (!cancelled) setKitViewsLoaded(true); });
-    return () => { cancelled = true; };
+      .catch(() => setKitViewsLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (!isSubscribed) return;
+    fetchKitViews(kitViewsDays);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSubscribed]);
 
   useEffect(() => {
@@ -1249,7 +1257,20 @@ function DashboardContent() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <AnalyticsChart daily={kitViewsDaily} referrers={kitViewsReferrers} total={kitViewsTotal} />
+                        <AnalyticsChart
+                          daily={kitViewsDaily}
+                          referrers={kitViewsReferrers}
+                          byKit={kitViewsByKit}
+                          total={kitViewsTotal}
+                          trend={kitViewsTrend}
+                          days={kitViewsDays}
+                          inquiryCount={inquiries.length}
+                          wonCount={inquiries.filter((i) => i.status === "won").length}
+                          onDaysChange={(d) => {
+                            setKitViewsDays(d);
+                            fetchKitViews(d);
+                          }}
+                        />
                         <div className="bg-background border-border rounded-2xl border overflow-hidden">
                           <p className="px-5 pt-5 pb-3 text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Recent visits</p>
                           <div className="divide-y divide-border">
