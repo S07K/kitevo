@@ -1,6 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  useDraggable,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 
 export type DealStatus = "new" | "reviewing" | "negotiating" | "won" | "lost";
 
@@ -17,11 +31,11 @@ export interface InquiryRecord {
 }
 
 const COLUMNS: { id: DealStatus; label: string; color: string; dot: string }[] = [
-  { id: "new",         label: "New",         color: "bg-blue-50 dark:bg-blue-950/30",   dot: "bg-blue-400" },
-  { id: "reviewing",   label: "Reviewing",   color: "bg-amber-50 dark:bg-amber-950/30", dot: "bg-amber-400" },
-  { id: "negotiating", label: "Negotiating", color: "bg-violet-50 dark:bg-violet-950/30", dot: "bg-violet-400" },
+  { id: "new",         label: "New",         color: "bg-blue-50 dark:bg-blue-950/30",      dot: "bg-blue-400" },
+  { id: "reviewing",   label: "Reviewing",   color: "bg-amber-50 dark:bg-amber-950/30",    dot: "bg-amber-400" },
+  { id: "negotiating", label: "Negotiating", color: "bg-violet-50 dark:bg-violet-950/30",  dot: "bg-violet-400" },
   { id: "won",         label: "Won",         color: "bg-emerald-50 dark:bg-emerald-950/30", dot: "bg-emerald-500" },
-  { id: "lost",        label: "Lost",        color: "bg-muted/60",  dot: "bg-muted-foreground/40" },
+  { id: "lost",        label: "Lost",        color: "bg-muted/60",                          dot: "bg-muted-foreground/40" },
 ];
 
 function timeAgo(iso: string) {
@@ -34,19 +48,31 @@ function timeAgo(iso: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+// ── Draggable card ────────────────────────────────────────────────────────────
+
 interface CardProps {
   inq: InquiryRecord;
-  onMove: (id: string, status: DealStatus) => void;
   onExpand: (inq: InquiryRecord) => void;
+  isDragging?: boolean;
 }
 
-function DealCard({ inq, onMove, onExpand }: CardProps) {
-  const otherCols = COLUMNS.filter((c) => c.id !== inq.status);
+function DealCard({ inq, onExpand, isDragging }: CardProps) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: inq.id });
+
+  const style = transform
+    ? { transform: `translate(${transform.x}px, ${transform.y}px)` }
+    : undefined;
 
   return (
     <div
-      className="bg-background border-border rounded-xl border p-4 cursor-pointer hover:shadow-md transition-shadow group"
-      onClick={() => onExpand(inq)}
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      onClick={() => !isDragging && onExpand(inq)}
+      className={`bg-background border-border rounded-xl border p-4 cursor-grab active:cursor-grabbing select-none transition-shadow ${
+        isDragging ? "opacity-40" : "hover:shadow-md"
+      }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -64,27 +90,79 @@ function DealCard({ inq, onMove, onExpand }: CardProps) {
       <p className="text-muted-foreground text-xs mt-2 line-clamp-2 leading-relaxed">
         {inq.message}
       </p>
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+      <div className="flex items-center mt-3 pt-3 border-t border-border">
         <p className="text-muted-foreground text-[10px]">
           {inq.kit.name} · {timeAgo(inq.createdAt)}
         </p>
-        {/* Move menu */}
-        <div className="relative" onClick={(e) => e.stopPropagation()}>
-          <select
-            value={inq.status}
-            onChange={(e) => onMove(inq.id, e.target.value as DealStatus)}
-            className="text-muted-foreground hover:text-foreground text-[10px] font-medium bg-transparent border-0 cursor-pointer focus:outline-none pr-1 appearance-none"
-            title="Move to stage"
-          >
-            {COLUMNS.map((c) => (
-              <option key={c.id} value={c.id}>{c.label}</option>
-            ))}
-          </select>
-        </div>
       </div>
     </div>
   );
 }
+
+// Ghost card shown under the cursor while dragging
+function DragGhostCard({ inq }: { inq: InquiryRecord }) {
+  return (
+    <div className="bg-background border-foreground/20 rounded-xl border p-4 shadow-2xl w-52 rotate-2 opacity-95">
+      <p className="text-foreground text-sm font-semibold truncate">{inq.name}</p>
+      {inq.company && (
+        <p className="text-muted-foreground text-xs truncate">{inq.company}</p>
+      )}
+      <p className="text-muted-foreground text-xs mt-2 line-clamp-2 leading-relaxed">
+        {inq.message}
+      </p>
+    </div>
+  );
+}
+
+// ── Droppable column ──────────────────────────────────────────────────────────
+
+interface ColumnProps {
+  col: typeof COLUMNS[number];
+  cards: InquiryRecord[];
+  draggingId: string | null;
+  onExpand: (inq: InquiryRecord) => void;
+}
+
+function KanbanColumn({ col, cards, draggingId, onExpand }: ColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: col.id });
+
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-2 mb-3">
+        <span className={`h-2 w-2 rounded-full ${col.dot}`} />
+        <p className="text-foreground text-xs font-semibold">{col.label}</p>
+        {cards.length > 0 && (
+          <span className="text-muted-foreground text-[10px] ml-auto">{cards.length}</span>
+        )}
+      </div>
+      <div
+        ref={setNodeRef}
+        className={`min-h-[120px] rounded-2xl p-3 space-y-3 transition-colors ${col.color} ${
+          isOver ? "ring-2 ring-foreground/20 brightness-95" : ""
+        }`}
+      >
+        {cards.length === 0 && !isOver ? (
+          <p className="text-muted-foreground/50 text-[11px] text-center pt-6">Empty</p>
+        ) : (
+          cards.map((inq) => (
+            <DealCard
+              key={inq.id}
+              inq={inq}
+              onExpand={onExpand}
+              isDragging={draggingId === inq.id}
+            />
+          ))
+        )}
+        {/* Drop target hint */}
+        {isOver && draggingId && !cards.some((c) => c.id === draggingId) && (
+          <div className="h-16 rounded-xl border-2 border-dashed border-foreground/20" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Detail modal ──────────────────────────────────────────────────────────────
 
 interface DetailModalProps {
   inq: InquiryRecord;
@@ -125,7 +203,6 @@ function DetailModal({ inq, onClose, onMove }: DetailModalProps) {
 
         <p className="text-foreground text-sm leading-relaxed">{inq.message}</p>
 
-        {/* Stage selector */}
         <div className="mt-5 pt-5 border-t border-border">
           <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase mb-3">Move to stage</p>
           <div className="flex flex-wrap gap-2">
@@ -167,6 +244,8 @@ function DetailModal({ inq, onClose, onMove }: DetailModalProps) {
   );
 }
 
+// ── Main pipeline ─────────────────────────────────────────────────────────────
+
 interface Props {
   inquiries: InquiryRecord[];
   onUpdate: (id: string, status: DealStatus) => void;
@@ -174,31 +253,41 @@ interface Props {
 
 export function DealPipeline({ inquiries, onUpdate }: Props) {
   const [expanded, setExpanded] = useState<InquiryRecord | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
 
   const byStatus = (status: DealStatus) =>
     inquiries.filter((i) => (i.status ?? "new") === status);
 
-  const handleMove = (id: string, status: DealStatus) => {
-    onUpdate(id, status);
+  const handleDragStart = (event: DragStartEvent) => {
+    setDraggingId(event.active.id as string);
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setDraggingId(null);
+    if (!over) return;
+    const newStatus = over.id as DealStatus;
+    const inq = inquiries.find((i) => i.id === active.id);
+    if (inq && newStatus !== inq.status) {
+      onUpdate(inq.id, newStatus);
+    }
+  };
+
+  const draggingInq = draggingId ? inquiries.find((i) => i.id === draggingId) : null;
   const total = inquiries.length;
   const wonCount = byStatus("won").length;
 
-  return (
+  const board = (
     <>
-      {expanded && (
-        <DetailModal
-          inq={expanded}
-          onClose={() => setExpanded(null)}
-          onMove={(id, status) => {
-            handleMove(id, status);
-            setExpanded((prev) => prev ? { ...prev, status } : null);
-          }}
-        />
-      )}
-
-      {/* Summary stats */}
       {total > 0 && (
         <div className="flex items-center gap-4 mb-4">
           <span className="text-muted-foreground text-xs">{total} deal{total !== 1 ? "s" : ""} total</span>
@@ -207,38 +296,48 @@ export function DealPipeline({ inquiries, onUpdate }: Props) {
           )}
         </div>
       )}
-
-      {/* Kanban columns — equal-width on desktop, scrollable on mobile */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 overflow-x-auto">
-        {COLUMNS.map((col) => {
-          const cards = byStatus(col.id);
-          return (
-            <div key={col.id} className="min-w-0">
-              <div className="flex items-center gap-2 mb-3">
-                <span className={`h-2 w-2 rounded-full ${col.dot}`} />
-                <p className="text-foreground text-xs font-semibold">{col.label}</p>
-                {cards.length > 0 && (
-                  <span className="text-muted-foreground text-[10px] ml-auto">{cards.length}</span>
-                )}
-              </div>
-              <div className={`min-h-[120px] rounded-2xl p-3 space-y-3 ${col.color}`}>
-                {cards.length === 0 ? (
-                  <p className="text-muted-foreground/50 text-[11px] text-center pt-6">Empty</p>
-                ) : (
-                  cards.map((inq) => (
-                    <DealCard
-                      key={inq.id}
-                      inq={inq}
-                      onMove={handleMove}
-                      onExpand={setExpanded}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {COLUMNS.map((col) => (
+          <KanbanColumn
+            key={col.id}
+            col={col}
+            cards={byStatus(col.id)}
+            draggingId={draggingId}
+            onExpand={setExpanded}
+          />
+        ))}
       </div>
+    </>
+  );
+
+  return (
+    <>
+      {expanded && (
+        <DetailModal
+          inq={expanded}
+          onClose={() => setExpanded(null)}
+          onMove={(id, status) => {
+            onUpdate(id, status);
+            setExpanded((prev) => prev ? { ...prev, status } : null);
+          }}
+        />
+      )}
+
+      {mounted ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          {board}
+          <DragOverlay>
+            {draggingInq && <DragGhostCard inq={draggingInq} />}
+          </DragOverlay>
+        </DndContext>
+      ) : (
+        board
+      )}
     </>
   );
 }
