@@ -334,6 +334,9 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
   const [loadingKit, setLoadingKit] = useState(false);
   const [fetchedPosts, setFetchedPosts] = useState<FetchedPost[] | null>(null);
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -580,18 +583,49 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
         <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">Section visibility</h3>
         <p className="mt-1 text-sm text-muted-foreground">Toggle and drag to control which sections appear and in what order.</p>
         <div className="mt-4 space-y-2.5">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
-            <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-              {sectionOrder.map((key) => (
-                <SortableSectionRow
-                  key={key}
-                  sectionKey={key}
-                  visible={sectionVisibility[key]}
-                  onToggle={updateSectionVisibility}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+          {mounted ? (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
+              <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
+                {sectionOrder.map((key) => (
+                  <SortableSectionRow
+                    key={key}
+                    sectionKey={key}
+                    visible={sectionVisibility[key]}
+                    onToggle={updateSectionVisibility}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          ) : (
+            sectionOrder.map((key) => (
+              <div key={key} className="flex items-center gap-3 pl-6">
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={sectionVisibility[key]}
+                  onClick={() => updateSectionVisibility(key, !sectionVisibility[key])}
+                  className="flex items-center gap-3 text-left flex-1"
+                >
+                  <span
+                    className="h-4 w-4 shrink-0 rounded flex items-center justify-center"
+                    style={{
+                      border: sectionVisibility[key] ? undefined : "1.5px solid #999",
+                      backgroundColor: sectionVisibility[key] ? "var(--color-foreground)" : undefined,
+                      color: sectionVisibility[key] ? "var(--color-background)" : undefined,
+                      outline: sectionVisibility[key] ? "1.5px solid var(--color-foreground)" : undefined,
+                    }}
+                  >
+                    {sectionVisibility[key] && (
+                      <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="1.5 5 3.8 7.5 8.5 2" />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="text-sm text-foreground">{SECTION_LABELS[key]}</span>
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -790,18 +824,20 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
 
         <p className="mt-6 text-xs text-muted-foreground">Or add an entry manually below.</p>
         <div className="mt-4 space-y-4">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleWorkSampleDragEnd}>
-            <SortableContext items={workSamples.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-              {workSamples.map((s) => (
-                <SortableWorkSample
-                  key={s.id}
-                  sample={s}
-                  onUpdate={updateWorkSample}
-                  onRemove={removeWorkSample}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+          {mounted && (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleWorkSampleDragEnd}>
+              <SortableContext items={workSamples.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                {workSamples.map((s) => (
+                  <SortableWorkSample
+                    key={s.id}
+                    sample={s}
+                    onUpdate={updateWorkSample}
+                    onRemove={removeWorkSample}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          )}
           <button
             type="button"
             onClick={addWorkSample}
@@ -874,18 +910,15 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
         <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">Brands I&apos;ve worked with</h3>
         <p className="mt-1 text-sm text-muted-foreground">Add past partners for social proof.</p>
         <div className="mt-4 space-y-4">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleBrandDragEnd}>
-            <SortableContext items={brands.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-              {brands.map((b) => (
-                <SortableBrand
-                  key={b.id}
-                  brand={b}
-                  onUpdate={updateBrand}
-                  onRemove={removeBrand}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+          {mounted && (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleBrandDragEnd}>
+              <SortableContext items={brands.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+                {brands.map((b) => (
+                  <SortableBrand key={b.id} brand={b} onUpdate={updateBrand} onRemove={removeBrand} />
+                ))}
+              </SortableContext>
+            </DndContext>
+          )}
           <button
             type="button"
             onClick={addBrand}
