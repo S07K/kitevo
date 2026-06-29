@@ -9,6 +9,17 @@ export interface YouTubeStats {
   subscriberCount: number;
   viewCount: number;
   videoCount: number;
+  recentVideos: YouTubeVideo[];
+}
+
+export interface YouTubeVideo {
+  id: string;
+  title: string;
+  thumbnailUrl: string;
+  viewCount: number;
+  likeCount: number;
+  publishedAt: string;
+  url: string;
 }
 
 async function refreshAccessToken(userId: string, refreshToken: string): Promise<string | null> {
@@ -33,6 +44,44 @@ async function refreshAccessToken(userId: string, refreshToken: string): Promise
   return data.access_token;
 }
 
+async function getRecentVideos(channelId: string, token: string): Promise<YouTubeVideo[]> {
+  // Search for recent uploads from the channel
+  const searchRes = await fetch(
+    `${YOUTUBE_API}/search?part=snippet&channelId=${channelId}&maxResults=6&order=date&type=video&access_token=${encodeURIComponent(token)}`
+  );
+  if (!searchRes.ok) return [];
+
+  const searchData = await searchRes.json() as {
+    items?: Array<{ id: { videoId: string }; snippet: { title: string; publishedAt: string; thumbnails: { medium?: { url: string }; high?: { url: string } } } }>;
+  };
+
+  const videoIds = (searchData.items ?? []).map((i) => i.id.videoId).filter(Boolean);
+  if (videoIds.length === 0) return [];
+
+  // Fetch stats for those videos
+  const statsRes = await fetch(
+    `${YOUTUBE_API}/videos?part=statistics&id=${videoIds.join(",")}&access_token=${encodeURIComponent(token)}`
+  );
+  const statsData = statsRes.ok
+    ? await statsRes.json() as { items?: Array<{ id: string; statistics: { viewCount?: string; likeCount?: string } }> }
+    : { items: [] };
+
+  const statsMap = new Map((statsData.items ?? []).map((i) => [i.id, i.statistics]));
+
+  return (searchData.items ?? []).map((item) => {
+    const stats = statsMap.get(item.id.videoId) ?? {};
+    return {
+      id: item.id.videoId,
+      title: item.snippet.title,
+      thumbnailUrl: item.snippet.thumbnails.high?.url ?? item.snippet.thumbnails.medium?.url ?? "",
+      viewCount: parseInt(stats.viewCount ?? "0", 10),
+      likeCount: parseInt(stats.likeCount ?? "0", 10),
+      publishedAt: item.snippet.publishedAt,
+      url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+    };
+  });
+}
+
 export async function getYouTubeStatsForUser(userId: string): Promise<YouTubeStats | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -48,7 +97,6 @@ export async function getYouTubeStatsForUser(userId: string): Promise<YouTubeSta
 
   let token = user.youtubeAccessToken;
 
-  // Refresh token if expires within 5 minutes
   if (user.youtubeTokenExpiresAt && user.youtubeRefreshToken) {
     const expiresIn = user.youtubeTokenExpiresAt.getTime() - Date.now();
     if (expiresIn < 5 * 60 * 1000) {
@@ -56,13 +104,14 @@ export async function getYouTubeStatsForUser(userId: string): Promise<YouTubeSta
     }
   }
 
-  const res = await fetch(
-    `${YOUTUBE_API}/channels?part=statistics,snippet&id=${user.youtubeChannelId}&access_token=${encodeURIComponent(token)}`
-  );
+  const [channelRes, recentVideos] = await Promise.all([
+    fetch(`${YOUTUBE_API}/channels?part=statistics,snippet&id=${user.youtubeChannelId}&access_token=${encodeURIComponent(token)}`),
+    getRecentVideos(user.youtubeChannelId, token),
+  ]);
 
-  if (!res.ok) return null;
+  if (!channelRes.ok) return null;
 
-  const data = await res.json() as {
+  const data = await channelRes.json() as {
     items?: Array<{
       id: string;
       snippet: { title: string };
@@ -79,5 +128,6 @@ export async function getYouTubeStatsForUser(userId: string): Promise<YouTubeSta
     subscriberCount: parseInt(channel.statistics.subscriberCount ?? "0", 10),
     viewCount: parseInt(channel.statistics.viewCount ?? "0", 10),
     videoCount: parseInt(channel.statistics.videoCount ?? "0", 10),
+    recentVideos,
   };
 }

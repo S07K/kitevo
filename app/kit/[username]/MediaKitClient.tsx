@@ -427,6 +427,7 @@ export function MediaKitClient({
                   if (!stats) return null;
                   const posts = stats.extra && typeof stats.extra.posts === "number" ? stats.extra.posts : null;
                   const videoCount = platformId === "youtube" && stats.extra && typeof stats.extra.videoCount === "number" ? stats.extra.videoCount : null;
+                  const totalViews = platformId === "youtube" && stats.extra && typeof stats.extra.totalViews === "number" ? stats.extra.totalViews : null;
                   return (
                     <div key={platformId} className="contents">
                       <div className="px-5 py-5">
@@ -438,6 +439,15 @@ export function MediaKitClient({
                         </p>
                         <p className="text-[var(--mk-text-soft)] text-xs mt-0.5">{platformId === "youtube" ? "subscribers" : "followers"}</p>
                       </div>
+                      {totalViews != null ? (
+                        <div className="px-5 py-5">
+                          <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Total Views</p>
+                          <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums">
+                            <CountUp value={totalViews} duration={1200} />
+                          </p>
+                          <p className="text-[var(--mk-text-soft)] text-xs mt-0.5">all time</p>
+                        </div>
+                      ) : (
                       <div className="px-5 py-5">
                         <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Engagement</p>
                         <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums">
@@ -445,6 +455,7 @@ export function MediaKitClient({
                         </p>
                         <p className="text-[var(--mk-text-soft)] text-xs mt-0.5">avg rate</p>
                       </div>
+                      )}
                       {videoCount != null ? (
                         <div className="px-5 py-5">
                           <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Videos</p>
@@ -479,6 +490,50 @@ export function MediaKitClient({
               )}
             </div>
           )}
+
+          {/* YouTube recent videos */}
+          {enabledPlatformIds.includes("youtube" as import("@/lib/platforms/types").PlatformId) && (() => {
+            const ytStats = platformStats["youtube"];
+            const videosJson = ytStats?.extra?.recentVideosJson as string | undefined;
+            const videos = videosJson ? JSON.parse(videosJson) as Array<{ id: string; title: string; thumbnailUrl: string; viewCount: number; likeCount: number; url: string }> : undefined;
+            if (!videos?.length) return null;
+            return (
+              <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+                <div className="px-5 pt-5 pb-3 flex items-center gap-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#FF0000" aria-hidden="true">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                  <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Recent videos</p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 pt-0">
+                  {videos.map((video) => (
+                    <a
+                      key={video.id}
+                      href={video.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group block rounded-xl overflow-hidden border border-[var(--mk-border)] hover:border-[var(--mk-text-soft)] transition-colors"
+                    >
+                      <div className="relative aspect-video bg-[var(--mk-border)]">
+                        {video.thumbnailUrl && (
+                          <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
+                        )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="white" className="opacity-0 group-hover:opacity-90 transition-opacity drop-shadow" aria-hidden>
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="p-2.5">
+                        <p className="text-[var(--mk-text)] text-xs font-medium line-clamp-2 leading-snug">{video.title}</p>
+                        <p className="text-[var(--mk-text-soft)] text-[10px] mt-1">{video.viewCount.toLocaleString()} views · {video.likeCount.toLocaleString()} likes</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 3. Work samples — post performance rows */}
           {sectionVisibility.workSamples && workSamples.length > 0 && (

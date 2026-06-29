@@ -132,7 +132,7 @@ export default async function MediaKitPage({
 
     const platformStats: Record<string, import("@/lib/platforms/types").PlatformStatsWithCharts> = {
       ...(instagramStats ? { instagram: instagramStats } : {}),
-      ...(youtubeStats ? { youtube: { followers: youtubeStats.subscriberCount, avgEngagement: 0, growthThisMonth: 0, extra: { videoCount: youtubeStats.videoCount } } } : {}),
+      ...(youtubeStats ? { youtube: { followers: youtubeStats.subscriberCount, avgEngagement: 0, growthThisMonth: 0, extra: { videoCount: youtubeStats.videoCount, totalViews: youtubeStats.viewCount, recentVideosJson: JSON.stringify(youtubeStats.recentVideos) } } } : {}),
     };
     const enabledPlatformIds = Object.keys(platformStats) as import("@/lib/platforms/types").PlatformId[];
     const instagramConnected = instagramConnectedForKit;
