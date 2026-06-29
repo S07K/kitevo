@@ -426,6 +426,7 @@ export function MediaKitClient({
                   const stats = platformStats[platformId];
                   if (!stats) return null;
                   const posts = stats.extra && typeof stats.extra.posts === "number" ? stats.extra.posts : null;
+                  const videoCount = platformId === "youtube" && stats.extra && typeof stats.extra.videoCount === "number" ? stats.extra.videoCount : null;
                   return (
                     <div key={platformId} className="contents">
                       <div className="px-5 py-5">
@@ -435,7 +436,7 @@ export function MediaKitClient({
                         <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums">
                           <CountUp value={stats.followers} duration={1400} />
                         </p>
-                        <p className="text-[var(--mk-text-soft)] text-xs mt-0.5">followers</p>
+                        <p className="text-[var(--mk-text-soft)] text-xs mt-0.5">{platformId === "youtube" ? "subscribers" : "followers"}</p>
                       </div>
                       <div className="px-5 py-5">
                         <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Engagement</p>
@@ -444,7 +445,15 @@ export function MediaKitClient({
                         </p>
                         <p className="text-[var(--mk-text-soft)] text-xs mt-0.5">avg rate</p>
                       </div>
-                      {posts != null ? (
+                      {videoCount != null ? (
+                        <div className="px-5 py-5">
+                          <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Videos</p>
+                          <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums">
+                            <CountUp value={videoCount} duration={1100} />
+                          </p>
+                          <p className="text-[var(--mk-text-soft)] text-xs mt-0.5">published</p>
+                        </div>
+                      ) : posts != null ? (
                         <div className="px-5 py-5">
                           <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Posts</p>
                           <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums">

@@ -86,7 +86,7 @@ export default async function MediaKitPage({
       }
     }
     const isOwner = session?.user?.id === result.kit.userId;
-    const [enabledPlatformIds, user] = await Promise.all([
+    const [, user] = await Promise.all([
       Promise.resolve(getEnabledPlatformIds()),
       prisma.user.findUnique({
         where: { id: result.kit.userId },
@@ -132,8 +132,9 @@ export default async function MediaKitPage({
 
     const platformStats: Record<string, import("@/lib/platforms/types").PlatformStatsWithCharts> = {
       ...(instagramStats ? { instagram: instagramStats } : {}),
-      ...(youtubeStats ? { youtube: { followers: youtubeStats.subscriberCount, avgEngagement: 0, growthThisMonth: 0 } } : {}),
+      ...(youtubeStats ? { youtube: { followers: youtubeStats.subscriberCount, avgEngagement: 0, growthThisMonth: 0, extra: { videoCount: youtubeStats.videoCount } } } : {}),
     };
+    const enabledPlatformIds = Object.keys(platformStats) as import("@/lib/platforms/types").PlatformId[];
     const instagramConnected = instagramConnectedForKit;
     return (
       <MediaKitClient
