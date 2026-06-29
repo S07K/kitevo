@@ -90,7 +90,7 @@ export default async function MediaKitPage({
       Promise.resolve(getEnabledPlatformIds()),
       prisma.user.findUnique({
         where: { id: result.kit.userId },
-        select: { instagramUserId: true, instagramAccessToken: true, stripeCustomerId: true },
+        select: { instagramUserId: true, instagramAccessToken: true, stripeCustomerId: true, youtubeChannelId: true, youtubeAccessToken: true },
       }),
     ]);
     const instagramConnectedForKit = !!(user?.instagramUserId && user?.instagramAccessToken);
@@ -100,6 +100,17 @@ export default async function MediaKitPage({
         instagramStats = await getStatsForUser(result.kit.userId);
       } catch (e) {
         console.error("[kit page] getStatsForUser failed:", e);
+      }
+    }
+
+    const youtubeConnectedForKit = !!(user?.youtubeChannelId && user?.youtubeAccessToken);
+    let youtubeStats = null;
+    if (youtubeConnectedForKit) {
+      try {
+        const { getYouTubeStatsForUser } = await import("@/lib/youtube-api");
+        youtubeStats = await getYouTubeStatsForUser(result.kit.userId);
+      } catch (e) {
+        console.error("[kit page] getYouTubeStatsForUser failed:", e);
       }
     }
 
@@ -119,7 +130,10 @@ export default async function MediaKitPage({
       }
     }
 
-    const platformStats: Record<string, import("@/lib/platforms/types").PlatformStatsWithCharts> = instagramStats ? { instagram: instagramStats } : {};
+    const platformStats: Record<string, import("@/lib/platforms/types").PlatformStatsWithCharts> = {
+      ...(instagramStats ? { instagram: instagramStats } : {}),
+      ...(youtubeStats ? { youtube: { followers: youtubeStats.subscriberCount, avgEngagement: 0, growthThisMonth: 0 } } : {}),
+    };
     const instagramConnected = instagramConnectedForKit;
     return (
       <MediaKitClient

@@ -646,6 +646,9 @@ function DashboardContent() {
   const [kitViewsDays, setKitViewsDays] = useState(30);
   const [kitViewsLoaded, setKitViewsLoaded] = useState(false);
   const [disconnectingInstagram, setDisconnectingInstagram] = useState(false);
+  const [youtubeConnected, setYoutubeConnected] = useState(false);
+  const [youtubeStats, setYoutubeStats] = useState<{ subscriberCount: number; viewCount: number; videoCount: number; channelTitle: string } | null>(null);
+  const [disconnectingYoutube, setDisconnectingYoutube] = useState(false);
   const [activeTab, setActiveTab] = useState<"inbox" | "activity">("inbox");
   const [urlCopied, setUrlCopied] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -654,6 +657,7 @@ function DashboardContent() {
   const sessionId = searchParams.get("session_id") ?? null;
   const instagramConnectedParam = searchParams.get("instagram_connected");
   const instagramErrorParam = searchParams.get("instagram_error");
+  const youtubeParam = searchParams.get("youtube");
 
   useEffect(() => {
     let cancelled = false;
@@ -775,6 +779,30 @@ function DashboardContent() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [instagramConnectedParam]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/youtube/stats", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled) {
+          setYoutubeStats(data ?? null);
+          setYoutubeConnected(!!data?.channelId);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [youtubeParam]);
+
+  const handleDisconnectYoutube = async () => {
+    setDisconnectingYoutube(true);
+    try {
+      const res = await fetch("/api/youtube/disconnect", { method: "POST", credentials: "include" });
+      if (res.ok) { setYoutubeConnected(false); setYoutubeStats(null); }
+    } finally {
+      setDisconnectingYoutube(false);
+    }
+  };
 
   const handleDisconnectInstagram = async () => {
     setDisconnectingInstagram(true);
@@ -1146,8 +1174,19 @@ function DashboardContent() {
                   ) : (
                     <p className="text-muted-foreground text-sm">—</p>
                   )}
-                  <p className="text-muted-foreground text-xs mt-0.5">Instagram</p>
+                  <p className="text-muted-foreground text-xs mt-0.5">{youtubeConnected && youtubeStats ? "Instagram" : "Instagram"}</p>
                 </div>
+
+                {/* YouTube subscribers */}
+                {youtubeConnected && youtubeStats && (
+                  <div className="px-6 py-5 border-l border-border">
+                    <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Subscribers</p>
+                    <p className="font-display text-foreground text-2xl font-semibold tabular-nums">
+                      <CountUp value={youtubeStats.subscriberCount} duration={1400} />
+                    </p>
+                    <p className="text-muted-foreground text-xs mt-0.5">YouTube</p>
+                  </div>
+                )}
 
                 {/* Engagement */}
                 <div className="px-6 py-5">
@@ -1364,6 +1403,105 @@ function DashboardContent() {
                   At kit limit ({allowedKits}).{" "}
                   <Link href="/pricing" className="text-foreground underline underline-offset-4 hover:no-underline">Upgrade for more</Link>.
                 </p>
+              )}
+
+              {/* ── Integrations ── */}
+              <div className="border-border rounded-2xl border overflow-hidden mt-4">
+                <p className="px-5 pt-5 pb-3 text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Integrations</p>
+
+                {/* YouTube */}
+                <div className="flex items-center justify-between gap-4 px-5 py-4 border-t border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="#FF0000" aria-hidden="true">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-foreground text-sm font-semibold">YouTube</p>
+                      {youtubeConnected && youtubeStats ? (
+                        <p className="text-muted-foreground text-xs mt-0.5">
+                          {youtubeStats.channelTitle} · {youtubeStats.subscriberCount.toLocaleString()} subscribers
+                        </p>
+                      ) : (
+                        <p className="text-muted-foreground text-xs mt-0.5">Show subscriber count on your kit</p>
+                      )}
+                    </div>
+                  </div>
+                  {youtubeConnected ? (
+                    <button
+                      type="button"
+                      onClick={handleDisconnectYoutube}
+                      disabled={disconnectingYoutube}
+                      className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-colors disabled:opacity-50"
+                    >
+                      {disconnectingYoutube ? "…" : "Disconnect"}
+                    </button>
+                  ) : (
+                    <a
+                      href="/api/youtube/connect"
+                      className="bg-foreground text-background inline-flex h-8 items-center rounded-full px-3 text-xs font-medium transition-opacity hover:opacity-80"
+                    >
+                      Connect
+                    </a>
+                  )}
+                </div>
+
+                {/* Instagram */}
+                <div className="flex items-center justify-between gap-4 px-5 py-4 border-t border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-xl bg-pink-50 dark:bg-pink-950/30 flex items-center justify-center shrink-0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="url(#ig-grad)" aria-hidden="true">
+                        <defs>
+                          <linearGradient id="ig-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#f09433"/>
+                            <stop offset="25%" stopColor="#e6683c"/>
+                            <stop offset="50%" stopColor="#dc2743"/>
+                            <stop offset="75%" stopColor="#cc2366"/>
+                            <stop offset="100%" stopColor="#bc1888"/>
+                          </linearGradient>
+                        </defs>
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-foreground text-sm font-semibold">Instagram</p>
+                      {instagramConnected ? (
+                        <p className="text-muted-foreground text-xs mt-0.5">Connected · stats syncing</p>
+                      ) : (
+                        <p className="text-muted-foreground text-xs mt-0.5">Show live follower count and engagement</p>
+                      )}
+                    </div>
+                  </div>
+                  {instagramConnected ? (
+                    <button
+                      type="button"
+                      onClick={handleDisconnectInstagram}
+                      disabled={disconnectingInstagram}
+                      className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-colors disabled:opacity-50"
+                    >
+                      {disconnectingInstagram ? "…" : "Disconnect"}
+                    </button>
+                  ) : (
+                    <a
+                      href="/api/instagram/connect"
+                      className="bg-foreground text-background inline-flex h-8 items-center rounded-full px-3 text-xs font-medium transition-opacity hover:opacity-80"
+                    >
+                      Connect
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Toasts */}
+              {youtubeParam === "connected" && (
+                <p className="text-emerald-600 text-sm mt-2">YouTube connected successfully.</p>
+              )}
+              {youtubeParam === "error" && (
+                <p className="text-red-600 text-sm mt-2">YouTube connection failed. Please try again.</p>
+              )}
+              {youtubeParam === "no_channel" && (
+                <p className="text-red-600 text-sm mt-2">No YouTube channel found on this Google account.</p>
               )}
 
               {/* Pro upgrade prompt for Starter users */}

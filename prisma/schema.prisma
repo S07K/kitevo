@@ -32,6 +32,12 @@ model User {
   instagramAccessToken      String?   // Long-lived token for API calls
   instagramTokenExpiresAt   DateTime? // When token expires (for refresh prompt)
 
+  // YouTube integration
+  youtubeChannelId          String?
+  youtubeAccessToken        String?
+  youtubeRefreshToken       String?
+  youtubeTokenExpiresAt     DateTime?
+
   // Phase 11: Onboarding (redirect new users to /onboarding until they finish)
   onboardingCompletedAt DateTime?
 
