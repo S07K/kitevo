@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getStatsForCreator, getEnabledPlatformIds } from "@/lib/platforms";
-import { getStatsForUser } from "@/lib/instagram-api";
+import { getStatsForUser, getRecentPostsForUser } from "@/lib/instagram-api";
 import {
   MOCK_CREATOR,
   MOCK_LINKS,
@@ -95,11 +95,15 @@ export default async function MediaKitPage({
     ]);
     const instagramConnectedForKit = !!(user?.instagramUserId && user?.instagramAccessToken);
     let instagramStats = null;
+    let instagramPosts: Awaited<ReturnType<typeof getRecentPostsForUser>> = [];
     if (instagramConnectedForKit) {
       try {
-        instagramStats = await getStatsForUser(result.kit.userId);
+        [instagramStats, instagramPosts] = await Promise.all([
+          getStatsForUser(result.kit.userId),
+          getRecentPostsForUser(result.kit.userId),
+        ]);
       } catch (e) {
-        console.error("[kit page] getStatsForUser failed:", e);
+        console.error("[kit page] Instagram fetch failed:", e);
       }
     }
 
@@ -154,6 +158,7 @@ export default async function MediaKitPage({
         sectionVisibility={result.kit.sectionVisibility}
         appearance={result.kit.appearance}
         instagramConnected={instagramConnected}
+        instagramPosts={instagramPosts}
         kitId={result.kit.id}
         inquiryEnabled={inquiryEnabled}
         isOwner={isOwner && !previewMode}

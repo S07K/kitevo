@@ -8,6 +8,7 @@ import { CountUp } from "@/app/components/Skeleton";
 import type { PlatformId, PlatformStatsWithCharts } from "@/lib/platforms";
 import { getPlatformMeta } from "@/lib/platforms";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
+import type { FetchedPost } from "@/lib/platforms/instagram";
 import { DEFAULT_SECTION_VISIBILITY, type SectionVisibility } from "@/lib/kit-storage";
 import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
 import {
@@ -65,6 +66,8 @@ interface MediaKitClientProps {
   inquiryEnabled?: boolean;
   /** When true, the logged-in user owns this kit — show dashboard nav bar */
   isOwner?: boolean;
+  /** Real Instagram posts for the grid */
+  instagramPosts?: FetchedPost[];
 }
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -283,9 +286,12 @@ export function MediaKitClient({
   kitId,
   inquiryEnabled = false,
   isOwner = false,
+  instagramPosts = [],
 }: MediaKitClientProps) {
   const sectionVisibility = initialSectionVisibility ?? DEFAULT_SECTION_VISIBILITY;
   const showConnectInstagramOverlay = !isDemoKit && !instagramConnected;
+  const [selectedPost, setSelectedPost] = useState<FetchedPost | null>(null);
+  const [youtubeEmbedId, setYoutubeEmbedId] = useState<string | null>(null);
   const appearance = appearanceProp ?? DEFAULT_KIT_APPEARANCE;
   const preset: KitAppearancePreset = appearance.preset ?? "warm";
   const chartColors = kitChartColors(preset);
@@ -326,6 +332,79 @@ export function MediaKitClient({
       data-kit-preset={preset}
     >
       <PatternLayer preset={preset} />
+
+      {/* Instagram post modal */}
+      {selectedPost && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setSelectedPost(null)}>
+          <div className="bg-white dark:bg-[#1c1c1a] rounded-2xl overflow-hidden max-w-lg w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {selectedPost.thumbnailUrl && (
+              <div className="aspect-square bg-black">
+                <img src={selectedPost.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="p-5">
+              {selectedPost.caption && (
+                <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed mb-4 line-clamp-4">{selectedPost.caption}</p>
+              )}
+              <div className="flex flex-wrap gap-4 text-sm mb-4">
+                {selectedPost.likes != null && (
+                  <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    <span>{selectedPost.likes.toLocaleString()} likes</span>
+                  </div>
+                )}
+                {selectedPost.comments != null && (
+                  <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span>{selectedPost.comments.toLocaleString()} comments</span>
+                  </div>
+                )}
+                {selectedPost.saves != null && (
+                  <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    <span>{selectedPost.saves.toLocaleString()} saves</span>
+                  </div>
+                )}
+                {selectedPost.reach != null && (
+                  <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    <span>{selectedPost.reach.toLocaleString()} reach</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                {selectedPost.permalink ? (
+                  <a href={selectedPost.permalink} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-pink-600 hover:text-pink-700 transition-colors">
+                    View on Instagram →
+                  </a>
+                ) : <span />}
+                <button type="button" onClick={() => setSelectedPost(null)} className="text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* YouTube embed modal */}
+      {youtubeEmbedId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setYoutubeEmbedId(null)}>
+          <div className="w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="relative aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl">
+              <iframe
+                src={`https://www.youtube.com/embed/${youtubeEmbedId}?autoplay=1`}
+                className="absolute inset-0 w-full h-full"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                title="YouTube video"
+              />
+            </div>
+            <button type="button" onClick={() => setYoutubeEmbedId(null)} className="mt-4 mx-auto flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       {/* Single unified header — owner gets dark bar with edit controls, visitors get themed bar */}
       {isOwner ? (
         <header className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between bg-[#111110] border-b border-white/[0.06] px-6 sm:px-10 h-14 text-[#fafaf9]">
@@ -507,33 +586,91 @@ export function MediaKitClient({
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 pt-0">
                   {videos.map((video) => (
-                    <a
+                    <button
                       key={video.id}
-                      href={video.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group block rounded-xl overflow-hidden border border-[var(--mk-border)] hover:border-[var(--mk-text-soft)] transition-colors"
+                      type="button"
+                      onClick={() => setYoutubeEmbedId(video.id)}
+                      className="group block rounded-xl overflow-hidden border border-[var(--mk-border)] hover:border-[var(--mk-text-soft)] transition-colors text-left w-full"
                     >
                       <div className="relative aspect-video bg-[var(--mk-border)]">
                         {video.thumbnailUrl && (
                           <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
                         )}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                          <svg width="32" height="32" viewBox="0 0 24 24" fill="white" className="opacity-0 group-hover:opacity-90 transition-opacity drop-shadow" aria-hidden>
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
+                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                          <div className="h-10 w-10 rounded-full bg-white/90 group-hover:bg-white flex items-center justify-center transition-colors shadow-lg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#111" aria-hidden>
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                          </div>
                         </div>
                       </div>
                       <div className="p-2.5">
                         <p className="text-[var(--mk-text)] text-xs font-medium line-clamp-2 leading-snug">{video.title}</p>
                         <p className="text-[var(--mk-text-soft)] text-[10px] mt-1">{video.viewCount.toLocaleString()} views · {video.likeCount.toLocaleString()} likes</p>
                       </div>
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
             );
           })()}
+
+          {/* Instagram posts grid */}
+          {instagramPosts.length > 0 && (
+            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+              <div className="px-5 pt-5 pb-3 flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="url(#ig-kit-grad)" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="ig-kit-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#f09433"/>
+                      <stop offset="50%" stopColor="#dc2743"/>
+                      <stop offset="100%" stopColor="#bc1888"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+                <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Recent posts</p>
+              </div>
+              <div className="grid grid-cols-3 gap-1 p-3 pt-0">
+                {instagramPosts.slice(0, 9).map((post) => (
+                  <button
+                    key={post.id}
+                    type="button"
+                    onClick={() => setSelectedPost(post)}
+                    className="group relative aspect-square bg-[var(--mk-border)] overflow-hidden rounded-lg"
+                  >
+                    {post.thumbnailUrl && (
+                      <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
+                      {post.likes != null && (
+                        <span className="flex items-center gap-1 text-white text-xs font-semibold drop-shadow">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                          {post.likes >= 1000 ? `${(post.likes / 1000).toFixed(1)}k` : post.likes}
+                        </span>
+                      )}
+                      {post.comments != null && (
+                        <span className="flex items-center gap-1 text-white text-xs font-semibold drop-shadow">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                          {post.comments}
+                        </span>
+                      )}
+                    </div>
+                    {post.mediaType === "VIDEO" && (
+                      <div className="absolute top-2 right-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="white" className="drop-shadow" aria-hidden><path d="M8 5v14l11-7z"/></svg>
+                      </div>
+                    )}
+                    {post.mediaType === "CAROUSEL_ALBUM" && (
+                      <div className="absolute top-2 right-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="drop-shadow" aria-hidden><rect x="2" y="7" width="15" height="15" rx="2"/><path d="M17 2h2a2 2 0 0 1 2 2v2"/></svg>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 3. Work samples — post performance rows */}
           {sectionVisibility.workSamples && workSamples.length > 0 && (
