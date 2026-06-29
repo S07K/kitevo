@@ -31,7 +31,7 @@ export const DEFAULT_SECTION_VISIBILITY: SectionVisibility = {
 };
 
 export interface StoredKitContent {
-  workSamples: WorkSample[];
+  workSamples?: WorkSample[];
   rates: KitRates;
   brands: BrandPartner[];
   sectionVisibility?: SectionVisibility;
@@ -161,7 +161,7 @@ export function setKitContent(kitId: string, data: StoredKitContent): void {
   if (idx >= 0) {
     kits[idx] = {
       ...kits[idx],
-      workSamples: data.workSamples,
+      workSamples: data.workSamples ?? kits[idx].workSamples,
       rates: data.rates,
       brands: data.brands,
       sectionVisibility: visibility,

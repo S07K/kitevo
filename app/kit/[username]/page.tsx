@@ -7,7 +7,6 @@ import { getStatsForUser, getRecentPostsForUser } from "@/lib/instagram-api";
 import {
   MOCK_CREATOR,
   MOCK_LINKS,
-  MOCK_WORK_SAMPLES,
   MOCK_RATES,
   MOCK_BRANDS,
 } from "@/lib/mock-data";
@@ -34,6 +33,9 @@ export async function generateStaticParams() {
 
 /** Allow any kit slug; unlisted ones are server-rendered on first request. */
 export const dynamicParams = true;
+
+/** Always fetch fresh data — Instagram/YouTube media URLs expire and change. */
+export const revalidate = 0;
 
 /** Server component: loads kit from DB by slug, or mock for demo slugs; passes to client. */
 export default async function MediaKitPage({
@@ -152,7 +154,6 @@ export default async function MediaKitPage({
         links={result.creator.links}
         platformStats={platformStats}
         enabledPlatformIds={enabledPlatformIds}
-        workSamples={result.kit.workSamples}
         rates={result.kit.rates}
         brands={result.kit.brands}
         sectionVisibility={result.kit.sectionVisibility}
@@ -179,7 +180,6 @@ export default async function MediaKitPage({
         links={MOCK_LINKS}
         platformStats={platformStats}
         enabledPlatformIds={enabledPlatformIds}
-        workSamples={MOCK_WORK_SAMPLES}
         rates={MOCK_RATES}
         brands={MOCK_BRANDS}
         appearance={DEFAULT_KIT_APPEARANCE}

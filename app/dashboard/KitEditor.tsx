@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from "react";
 import {
-  MOCK_WORK_SAMPLES,
   MOCK_RATES,
   MOCK_BRANDS,
-  type WorkSample,
   type KitRates,
   type BrandPartner,
 } from "@/lib/mock-data";
@@ -25,14 +23,7 @@ import {
   BRAND_KIT_VIBE_META,
   parseKitAppearance,
 } from "@/lib/kit-appearance";
-import type { FetchedPost } from "@/lib/platforms";
 import { KitEditorSkeleton } from "@/app/components/Skeleton";
-
-const PLATFORMS: { value: WorkSample["platform"]; label: string }[] = [
-  { value: "instagram", label: "Instagram" },
-  { value: "tiktok", label: "TikTok" },
-  { value: "youtube", label: "YouTube" },
-];
 
 function newId(): string {
   return Math.random().toString(36).slice(2, 11);
@@ -48,14 +39,11 @@ interface KitEditorProps {
 export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
   const isPro = tierId === "pro";
   const [effectiveKitId, setEffectiveKitId] = useState<string | null>(kitId);
-  const [workSamples, setWorkSamples] = useState<WorkSample[]>(MOCK_WORK_SAMPLES);
   const [rates, setRates] = useState<KitRates>(MOCK_RATES);
   const [brands, setBrands] = useState<BrandPartner[]>(MOCK_BRANDS);
   const [saved, setSaved] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingKit, setLoadingKit] = useState(false);
-  const [fetchedPosts, setFetchedPosts] = useState<FetchedPost[] | null>(null);
-  const [loadingPosts, setLoadingPosts] = useState(false);
   const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>(
     DEFAULT_SECTION_VISIBILITY
   );
@@ -81,7 +69,6 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
           return r.json();
         })
         .then((data) => {
-          setWorkSamples(Array.isArray(data.workSamples) ? data.workSamples : MOCK_WORK_SAMPLES);
           setRates(data.rates && typeof data.rates === "object" ? data.rates : MOCK_RATES);
           setBrands(Array.isArray(data.brands) ? data.brands : MOCK_BRANDS);
           setSectionVisibility(
@@ -102,7 +89,6 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
 
     const stored = getKitContent(effectiveKitId);
     if (stored) {
-      setWorkSamples(stored.workSamples);
       setRates(stored.rates);
       setBrands(stored.brands);
       setSectionVisibility(stored.sectionVisibility ?? DEFAULT_SECTION_VISIBILITY);
@@ -117,7 +103,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ workSamples, rates, brands, sectionVisibility, appearance }),
+        body: JSON.stringify({ rates, brands, sectionVisibility, appearance }),
       })
         .then(async (r) => {
           if (!r.ok) throw new Error("Failed to save");
@@ -129,64 +115,9 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
         .catch(() => setLoadError("Failed to save"));
       return;
     }
-    setKitContent(effectiveKitId, { workSamples, rates, brands, sectionVisibility });
+    setKitContent(effectiveKitId, { rates, brands, sectionVisibility });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-  };
-
-  const addWorkSample = () => {
-    setWorkSamples((prev) => [
-      ...prev,
-      { id: newId(), platform: "instagram", title: "", caption: "", campaignFor: "" },
-    ]);
-  };
-
-  const updateWorkSample = (id: string, updates: Partial<WorkSample>) => {
-    setWorkSamples((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
-    );
-  };
-
-  const removeWorkSample = (id: string) => {
-    setWorkSamples((prev) => prev.filter((s) => s.id !== id));
-  };
-
-  const loadInstagramPosts = async () => {
-    setLoadingPosts(true);
-    try {
-      const res = await fetch("/api/instagram/media", { credentials: "include" });
-      const posts = res.ok ? (await res.json()) : [];
-      setFetchedPosts(Array.isArray(posts) ? posts : []);
-    } finally {
-      setLoadingPosts(false);
-    }
-  };
-
-  const isPostInKit = (mediaId: string) =>
-    workSamples.some((s) => s.sourceMediaId === mediaId);
-
-  const addPostToKit = (post: FetchedPost) => {
-    if (isPostInKit(post.id)) return;
-    const contentType =
-      post.mediaType === "VIDEO" ? "Reel" :
-      post.mediaType === "CAROUSEL_ALBUM" ? "Carousel" :
-      post.mediaType === "IMAGE" ? "Photo" : undefined;
-    setWorkSamples((prev) => [
-      ...prev,
-      {
-        id: newId(),
-        platform: post.platform,
-        thumbnailUrl: post.thumbnailUrl || undefined,
-        title: post.caption?.slice(0, 60).replace(/\s+#\S+/g, "").trim() || "Post",
-        sourceMediaId: post.id,
-        contentType,
-        likes: post.likes,
-        comments: post.comments,
-        saves: post.saves,
-        views: post.views,
-        reach: post.reach,
-      },
-    ]);
   };
 
   const addBrand = () => {
@@ -209,7 +140,6 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
 
   const visibilityToggles: { key: keyof SectionVisibility; label: string }[] = [
     { key: "stats", label: "Reach & engagement" },
-    { key: "workSamples", label: "Work samples" },
     { key: "rates", label: "Rates" },
     { key: "brands", label: "Brands I've worked with" },
     { key: "growthChart", label: "Follower growth chart" },
@@ -457,214 +387,6 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
           )}
         </div>
       )}
-
-      {/* Work samples */}
-      <div className="p-6 border border-border rounded-2xl bg-background">
-        <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
-          Work samples
-        </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Add posts or videos you want brands to see.
-        </p>
-
-        {/* Select from Instagram */}
-        <div className="mt-6 pt-6 border-t border-border">
-          <p className="text-sm font-medium text-foreground">
-            Select from your Instagram posts
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            We&apos;ll fetch your recent posts so you can pick which to feature.
-          </p>
-          {fetchedPosts === null ? (
-            <button
-              type="button"
-              onClick={loadInstagramPosts}
-              disabled={loadingPosts}
-              className="mt-3 px-4 py-2 border border-foreground text-foreground text-sm font-medium rounded-full hover:bg-muted disabled:opacity-60"
-            >
-              {loadingPosts ? "Loading…" : "Load Instagram posts"}
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={loadInstagramPosts}
-                disabled={loadingPosts}
-                className="mt-3 text-xs text-muted-foreground hover:underline disabled:opacity-60"
-              >
-                {loadingPosts ? "Refreshing…" : "Refresh"}
-              </button>
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {fetchedPosts.map((post) => {
-                  const inKit = isPostInKit(post.id);
-                  const fmt = (n?: number) => n == null ? null : n >= 1_000_000 ? `${(n/1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n/1_000).toFixed(1)}K` : String(n);
-                  const metrics = [
-                    post.views && { label: "Views", val: fmt(post.views) },
-                    post.reach && !post.views && { label: "Reach", val: fmt(post.reach) },
-                    post.likes && { label: "Likes", val: fmt(post.likes) },
-                    post.saves && { label: "Saves", val: fmt(post.saves) },
-                  ].filter(Boolean) as { label: string; val: string | null }[];
-                  return (
-                    <div
-                      key={post.id}
-                      className={`rounded-xl border overflow-hidden bg-background ${inKit ? "border-foreground/30 opacity-60" : "border-border"}`}
-                    >
-                      <div className="aspect-square relative bg-muted">
-                        {post.thumbnailUrl ? (
-                          <img src={post.thumbnailUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No image</div>
-                        )}
-                        <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/60 text-white text-[10px] font-medium rounded-full">
-                          {post.mediaType === "VIDEO" ? "Reel" : post.mediaType === "CAROUSEL_ALBUM" ? "Carousel" : "Photo"}
-                        </span>
-                        {inKit && (
-                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-foreground text-background text-[10px] font-medium rounded-full">
-                            ✓ Added
-                          </span>
-                        )}
-                      </div>
-                      {metrics.length > 0 && (
-                        <div className="px-2 py-1.5 flex flex-wrap gap-x-3 gap-y-0.5 border-b border-border">
-                          {metrics.map(({ label, val }) => (
-                            <span key={label} className="text-[10px] text-muted-foreground">
-                              <span className="font-semibold text-foreground">{val}</span> {label}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {!inKit ? (
-                        <button
-                          type="button"
-                          onClick={() => addPostToKit(post)}
-                          className="w-full py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-                        >
-                          + Add to kit
-                        </button>
-                      ) : (
-                        <p className="py-1.5 text-center text-[10px] text-muted-foreground">In kit</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-
-        <p className="mt-6 text-xs text-muted-foreground">
-          Or add an entry manually below.
-        </p>
-        <div className="mt-4 space-y-4">
-          {workSamples.map((s) => (
-            <div
-              key={s.id}
-              className="p-4 rounded-2xl border border-border space-y-3"
-            >
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-muted-foreground">{s.platform}</span>
-                <button
-                  type="button"
-                  onClick={() => removeWorkSample(s.id)}
-                  className="text-xs text-red-600 hover:underline"
-                >
-                  Remove
-                </button>
-              </div>
-              <input
-                type="text"
-                placeholder="Title (e.g. Spring collection launch)"
-                value={s.title ?? ""}
-                onChange={(e) => updateWorkSample(s.id, { title: e.target.value })}
-                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <select
-                value={s.platform}
-                onChange={(e) =>
-                  updateWorkSample(s.id, {
-                    platform: e.target.value as WorkSample["platform"],
-                  })
-                }
-                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {PLATFORMS.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  placeholder="Brand (e.g. Fashion Co)"
-                  value={s.campaignFor ?? ""}
-                  onChange={(e) => updateWorkSample(s.id, { campaignFor: e.target.value })}
-                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <input
-                  type="text"
-                  placeholder="Type (e.g. Reel)"
-                  value={s.contentType ?? ""}
-                  onChange={(e) => updateWorkSample(s.id, { contentType: e.target.value || undefined })}
-                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Metrics</p>
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="number"
-                  placeholder="Views"
-                  value={s.views ?? ""}
-                  onChange={(e) => updateWorkSample(s.id, { views: e.target.value ? Number(e.target.value) : undefined })}
-                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <input
-                  type="number"
-                  placeholder="Reach"
-                  value={s.reach ?? ""}
-                  onChange={(e) => updateWorkSample(s.id, { reach: e.target.value ? Number(e.target.value) : undefined })}
-                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <input
-                  type="number"
-                  placeholder="Likes"
-                  value={s.likes ?? ""}
-                  onChange={(e) => updateWorkSample(s.id, { likes: e.target.value ? Number(e.target.value) : undefined })}
-                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <input
-                  type="number"
-                  placeholder="Comments"
-                  value={s.comments ?? ""}
-                  onChange={(e) => updateWorkSample(s.id, { comments: e.target.value ? Number(e.target.value) : undefined })}
-                  className="px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <input
-                  type="number"
-                  placeholder="Saves"
-                  value={s.saves ?? ""}
-                  onChange={(e) => updateWorkSample(s.id, { saves: e.target.value ? Number(e.target.value) : undefined })}
-                  className="col-span-2 px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-              <input
-                type="url"
-                placeholder="Thumbnail image URL (optional)"
-                value={s.thumbnailUrl ?? ""}
-                onChange={(e) => updateWorkSample(s.id, { thumbnailUrl: e.target.value || undefined })}
-                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={addWorkSample}
-            className="w-full py-3 border border-dashed border-border rounded-2xl text-sm text-muted-foreground hover:border-foreground hover:text-foreground transition-colors"
-          >
-            + Add work sample
-          </button>
-        </div>
-      </div>
 
       {/* Rates */}
       <div className="p-6 border border-border rounded-2xl bg-background">
