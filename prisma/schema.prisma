@@ -62,7 +62,7 @@ model Kit {
   id                String   @id @default(cuid())
   userId            String
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  slug              String   // unique per user (userId_slug); use findFirst for global slug lookup
+  slug              String   @unique // globally unique — kit URLs must not clash across users
   name              String
   workSamples       String   // JSON
   rates             String   // JSON
@@ -73,7 +73,6 @@ model Kit {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  @@unique([userId, slug])
   @@index([userId])
 
   // Phase 12.3: Kit analytics (views)
