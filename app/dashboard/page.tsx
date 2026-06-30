@@ -1429,6 +1429,24 @@ function DashboardContent() {
                 </p>
               )}
 
+              {/* Free tier upgrade nudge */}
+              {subscriptionLoaded && tierId === "free" && kits.length > 0 && (
+                <div className="mt-4 rounded-2xl border border-border bg-muted/30 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">You&apos;re on the Free plan</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Upgrade to Starter to unlock live Instagram stats, growth charts, audience demographics, and section visibility controls.
+                    </p>
+                  </div>
+                  <Link
+                    href="/pricing?plan=starter"
+                    className="shrink-0 bg-foreground text-background rounded-full px-5 py-2 text-sm font-medium hover:opacity-80 transition-opacity"
+                  >
+                    Upgrade to Starter →
+                  </Link>
+                </div>
+              )}
+
               {/* ── Integrations ── */}
               <div className="border-border rounded-2xl border overflow-hidden mt-4">
                 <p className="px-5 pt-5 pb-3 text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Integrations</p>

@@ -38,6 +38,8 @@ interface KitEditorProps {
 
 export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
   const isPro = tierId === "pro";
+  const isStarter = tierId === "starter" || isPro;
+  const isFree = !tierId || tierId === "free";
   const [effectiveKitId, setEffectiveKitId] = useState<string | null>(kitId);
   const [rates, setRates] = useState<KitRates>(MOCK_RATES);
   const [brands, setBrands] = useState<BrandPartner[]>(MOCK_BRANDS);
@@ -198,41 +200,67 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
 
       {/* Section visibility — what appears on the public kit */}
       <div className="p-6 border border-border rounded-2xl bg-background">
-        <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
-          Section visibility
-        </h3>
+        <div className="flex items-start justify-between gap-4 mb-1">
+          <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
+            Section visibility
+          </h3>
+          {isFree && (
+            <span className="bg-foreground text-background rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide shrink-0">
+              Starter
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Choose which sections appear on your public media kit.
         </p>
         <div className="mt-4 space-y-2.5">
-          {visibilityToggles.map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              role="checkbox"
-              aria-checked={sectionVisibility[key]}
-              onClick={() => updateSectionVisibility(key, !sectionVisibility[key])}
-              className="flex items-center gap-3 w-full text-left group"
-            >
-              <span
-                className="h-4 w-4 shrink-0 rounded flex items-center justify-center transition-colors"
-                style={{
-                  border: sectionVisibility[key] ? undefined : "1.5px solid #999",
-                  backgroundColor: sectionVisibility[key] ? "var(--color-foreground)" : undefined,
-                  color: sectionVisibility[key] ? "var(--color-background)" : undefined,
-                  outline: sectionVisibility[key] ? "1.5px solid var(--color-foreground)" : undefined,
-                }}
-              >
-                {sectionVisibility[key] && (
-                  <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="1.5 5 3.8 7.5 8.5 2" />
-                  </svg>
+          {visibilityToggles.map(({ key, label }) => {
+            const starterOnly = ["stats", "growthChart", "audience"].includes(key);
+            const locked = isFree && starterOnly;
+            return (
+              <div key={key} className="flex items-center gap-3 w-full">
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={!locked && sectionVisibility[key]}
+                  disabled={locked}
+                  onClick={() => !locked && updateSectionVisibility(key, !sectionVisibility[key])}
+                  className={`flex items-center gap-3 flex-1 text-left ${locked ? "opacity-40 cursor-not-allowed" : "group"}`}
+                >
+                  <span
+                    className="h-4 w-4 shrink-0 rounded flex items-center justify-center transition-colors"
+                    style={locked ? { border: "1.5px solid #999" } : {
+                      border: sectionVisibility[key] ? undefined : "1.5px solid #999",
+                      backgroundColor: sectionVisibility[key] ? "var(--color-foreground)" : undefined,
+                      color: sectionVisibility[key] ? "var(--color-background)" : undefined,
+                      outline: sectionVisibility[key] ? "1.5px solid var(--color-foreground)" : undefined,
+                    }}
+                  >
+                    {!locked && sectionVisibility[key] && (
+                      <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="1.5 5 3.8 7.5 8.5 2" />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="text-sm text-foreground">{label}</span>
+                </button>
+                {locked && (
+                  <a href="/pricing" className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                    Upgrade →
+                  </a>
                 )}
-              </span>
-              <span className="text-sm text-foreground">{label}</span>
-            </button>
-          ))}
+              </div>
+            );
+          })}
         </div>
+        {isFree && (
+          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">Unlock live stats, growth charts & audience sections</p>
+            <a href="/pricing" className="shrink-0 bg-foreground text-background rounded-full px-4 py-1.5 text-xs font-medium hover:opacity-80 transition-opacity">
+              Upgrade to Starter →
+            </a>
+          </div>
+        )}
       </div>
 
       {isDbKit && (
