@@ -720,7 +720,7 @@ function DashboardContent() {
   }, [isSubscribed]);
 
   useEffect(() => {
-    if (tierId !== "pro") return;
+    if (!tierId || tierId === "free") return;
     let cancelled = false;
     fetch("/api/inquiries", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
@@ -928,6 +928,16 @@ function DashboardContent() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
+      credentials: "include",
+    }).catch(() => {});
+  };
+
+  const markInquiryRead = async (id: string) => {
+    setInquiries((prev) => prev.map((i) => i.id === id ? { ...i, read: true } : i));
+    fetch(`/api/inquiries/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ read: true }),
       credentials: "include",
     }).catch(() => {});
   };
@@ -1232,10 +1242,10 @@ function DashboardContent() {
             </div>
 
             {/* ── Pipeline / Activity ── */}
-            {(tierId === "pro" || (kitViewsLoaded && kits.length > 0)) && (
+            {((tierId && tierId !== "free") || (kitViewsLoaded && kits.length > 0)) && (
               <div>
                 <div className="mb-4 flex items-center gap-1">
-                  {tierId === "pro" && (
+                  {tierId && tierId !== "free" && (
                     <button
                       type="button"
                       onClick={() => setActiveTab("inbox")}
@@ -1270,7 +1280,7 @@ function DashboardContent() {
                   )}
                 </div>
 
-                {activeTab === "inbox" && tierId === "pro" && (
+                {activeTab === "inbox" && tierId && tierId !== "free" && (
                   <div>
                     {!inquiriesLoaded ? (
                       <p className="text-muted-foreground text-sm">Loading…</p>
@@ -1282,7 +1292,7 @@ function DashboardContent() {
                         </p>
                       </div>
                     ) : (
-                      <DealPipeline inquiries={inquiries} onUpdate={updateInquiryStatus} />
+                      <DealPipeline inquiries={inquiries} onUpdate={updateInquiryStatus} onMarkRead={markInquiryRead} />
                     )}
                   </div>
                 )}

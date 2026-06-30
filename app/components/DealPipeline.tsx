@@ -246,17 +246,70 @@ function DetailModal({ inq, onClose, onMove }: DetailModalProps) {
 
 // ── Main pipeline ─────────────────────────────────────────────────────────────
 
+// ── List view ─────────────────────────────────────────────────────────────────
+
+const STATUS_BADGE: Record<DealStatus, string> = {
+  new:         "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
+  reviewing:   "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
+  negotiating: "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300",
+  won:         "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
+  lost:        "bg-muted text-muted-foreground",
+};
+
+function InboxList({ inquiries, onExpand }: { inquiries: InquiryRecord[]; onExpand: (inq: InquiryRecord) => void }) {
+  const sorted = [...inquiries].sort((a, b) => {
+    if (!a.read && b.read) return -1;
+    if (a.read && !b.read) return 1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  return (
+    <div className="divide-y divide-border rounded-2xl border border-border overflow-hidden">
+      {sorted.map((inq) => (
+        <button
+          key={inq.id}
+          type="button"
+          onClick={() => onExpand(inq)}
+          className={`w-full text-left px-5 py-4 flex items-start gap-4 hover:bg-muted/40 transition-colors ${!inq.read ? "bg-muted/20" : ""}`}
+        >
+          <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${!inq.read ? "bg-foreground" : "bg-transparent"}`} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-foreground">{inq.name}</span>
+              {inq.company && <span className="text-xs text-muted-foreground">{inq.company}</span>}
+              <span className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${STATUS_BADGE[inq.status ?? "new"]}`}>
+                {inq.status ?? "new"}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">{inq.message}</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-1">{inq.kit.name} · {timeAgo(inq.createdAt)}</p>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Main pipeline ─────────────────────────────────────────────────────────────
+
 interface Props {
   inquiries: InquiryRecord[];
   onUpdate: (id: string, status: DealStatus) => void;
+  onMarkRead: (id: string) => void;
 }
 
-export function DealPipeline({ inquiries, onUpdate }: Props) {
+export function DealPipeline({ inquiries, onUpdate, onMarkRead }: Props) {
   const [expanded, setExpanded] = useState<InquiryRecord | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [view, setView] = useState<"list" | "kanban">("list");
 
   useEffect(() => { setMounted(true); }, []);
+
+  const handleExpand = (inq: InquiryRecord) => {
+    setExpanded(inq);
+    if (!inq.read) onMarkRead(inq.id);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -285,29 +338,20 @@ export function DealPipeline({ inquiries, onUpdate }: Props) {
   const draggingInq = draggingId ? inquiries.find((i) => i.id === draggingId) : null;
   const total = inquiries.length;
   const wonCount = byStatus("won").length;
+  const unreadCount = inquiries.filter((i) => !i.read).length;
 
   const board = (
-    <>
-      {total > 0 && (
-        <div className="flex items-center gap-4 mb-4">
-          <span className="text-muted-foreground text-xs">{total} deal{total !== 1 ? "s" : ""} total</span>
-          {wonCount > 0 && (
-            <span className="text-emerald-600 text-xs font-medium">{wonCount} won</span>
-          )}
-        </div>
-      )}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {COLUMNS.map((col) => (
-          <KanbanColumn
-            key={col.id}
-            col={col}
-            cards={byStatus(col.id)}
-            draggingId={draggingId}
-            onExpand={setExpanded}
-          />
-        ))}
-      </div>
-    </>
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {COLUMNS.map((col) => (
+        <KanbanColumn
+          key={col.id}
+          col={col}
+          cards={byStatus(col.id)}
+          draggingId={draggingId}
+          onExpand={handleExpand}
+        />
+      ))}
+    </div>
   );
 
   return (
@@ -323,7 +367,28 @@ export function DealPipeline({ inquiries, onUpdate }: Props) {
         />
       )}
 
-      {mounted ? (
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">{total} inquiry{total !== 1 ? "s" : ""}</span>
+          {wonCount > 0 && <span className="text-xs font-medium text-emerald-600">{wonCount} won</span>}
+          {unreadCount > 0 && <span className="text-xs font-medium text-foreground">{unreadCount} unread</span>}
+        </div>
+        <div className="flex items-center gap-1 border border-border rounded-full p-0.5">
+          <button type="button" onClick={() => setView("list")}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${view === "list" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>
+            List
+          </button>
+          <button type="button" onClick={() => setView("kanban")}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${view === "kanban" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>
+            Kanban
+          </button>
+        </div>
+      </div>
+
+      {view === "list" ? (
+        <InboxList inquiries={inquiries} onExpand={handleExpand} />
+      ) : mounted ? (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
