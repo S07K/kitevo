@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { SubscriptionTier } from "@/config/subscriptions";
 
-function SubscribeButton({ tier }: { tier: SubscriptionTier }) {
+function SubscribeButton({ tier, isHighlighted }: { tier: SubscriptionTier; isHighlighted?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +39,7 @@ function SubscribeButton({ tier }: { tier: SubscriptionTier }) {
         onClick={handleSubscribe}
         disabled={loading}
         className={`w-full px-6 py-3 font-medium rounded-full transition-opacity disabled:opacity-70 disabled:cursor-not-allowed ${
-          tier.highlight
+          isHighlighted
             ? "bg-foreground text-background hover:opacity-80"
             : "border border-border text-foreground hover:bg-muted"
         }`}
@@ -51,27 +51,33 @@ function SubscribeButton({ tier }: { tier: SubscriptionTier }) {
   );
 }
 
-export function PricingTiers({ tiers }: { tiers: SubscriptionTier[] }) {
+export function PricingTiers({ tiers, highlightTierId }: { tiers: SubscriptionTier[]; highlightTierId?: string }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 max-w-3xl mx-auto">
-      {tiers.map((tier) => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
+      {tiers.map((tier) => {
+        const isHighlighted = highlightTierId ? tier.id === highlightTierId : tier.highlight;
+        return (
         <div
           key={tier.id}
-          className={`relative p-8 rounded-2xl border bg-background text-left ${
-            tier.highlight ? "border-foreground ring-1 ring-foreground" : "border-border"
+          className={`relative p-8 rounded-2xl border bg-background text-left transition-shadow ${
+            isHighlighted ? "border-foreground ring-2 ring-foreground shadow-lg" : "border-border"
           }`}
         >
-          {tier.highlight && (
+          {isHighlighted && (
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-foreground text-background text-xs font-medium rounded-full">
-              Most popular
+              {highlightTierId ? "Selected plan" : "Most popular"}
             </span>
           )}
           <h2 className="font-display text-xl font-semibold text-foreground">{tier.name}</h2>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="font-display text-3xl font-semibold text-foreground">
-              ${tier.priceMonthly}
-            </span>
-            <span className="text-muted-foreground">/month</span>
+            {tier.priceMonthly === 0 ? (
+              <span className="font-display text-3xl font-semibold text-foreground">Free</span>
+            ) : (
+              <>
+                <span className="font-display text-3xl font-semibold text-foreground">${tier.priceMonthly}</span>
+                <span className="text-muted-foreground">/month</span>
+              </>
+            )}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">{tier.kitsAllowed} media kit{tier.kitsAllowed !== 1 ? "s" : ""}</p>
           <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
@@ -83,10 +89,17 @@ export function PricingTiers({ tiers }: { tiers: SubscriptionTier[] }) {
             ))}
           </ul>
           <div className="mt-8">
-            <SubscribeButton tier={tier} />
+            {tier.priceMonthly === 0 ? (
+              <a href="/signup" className="block w-full px-6 py-3 text-center font-medium rounded-full border border-border text-foreground hover:bg-muted transition-colors text-sm">
+                Start for free
+              </a>
+            ) : (
+              <SubscribeButton tier={tier} isHighlighted={!!isHighlighted} />
+            )}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

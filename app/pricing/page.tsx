@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { AppNav } from "../components/AppNav";
 import { CanceledMessage } from "./CanceledMessage";
 import { PricingContent } from "./PricingContent";
@@ -19,7 +20,9 @@ export default function PricingPage() {
           Professional media kits, live stats, and shareable links. Cancel anytime.
         </p>
 
-        <PricingContent />
+        <Suspense fallback={<p className="mt-12 text-muted-foreground">Loading…</p>}>
+          <PricingContent />
+        </Suspense>
 
         <p className="mt-12 text-sm text-muted-foreground">
           Secure payment via Stripe. Manage or upgrade your subscription anytime.

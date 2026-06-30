@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getPublicTiers } from "@/config/subscriptions";
 import { PricingTiers } from "./PricingTiers";
 
 export function PricingContent() {
+  const searchParams = useSearchParams();
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     hasSubscription: boolean;
     tierName?: string | null;
@@ -72,7 +74,7 @@ export function PricingContent() {
   }
 
   const tiers = getPublicTiers();
-  return <PricingTiers tiers={tiers} />;
+  return <PricingTiers tiers={tiers} highlightTierId={searchParams.get("plan") ?? undefined} />;
 }
 
 function ManageSubscriptionButton() {

@@ -3,7 +3,14 @@ import { getServerSession } from "next-auth";
 import { stripe } from "@/lib/stripe";
 import { authOptions } from "@/lib/auth";
 import { getPriceIdForTier } from "@/config/subscriptions";
-import { getAllowedKitsForUser } from "@/lib/subscription-for-request";
+import { prisma } from "@/lib/prisma";
+
+async function hasPaidSubscription(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { stripeCustomerId: true } });
+  if (!user?.stripeCustomerId) return false;
+  const subs = await stripe.subscriptions.list({ customer: user.stripeCustomerId, status: "active", limit: 1 });
+  return subs.data.length > 0;
+}
 
 export async function POST(req: Request) {
   try {
@@ -18,14 +25,11 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const { tierId, returnTo } = body as { tierId?: string; returnTo?: string };
 
-    if (authSession.user.id) {
-      const allowedKits = await getAllowedKitsForUser(authSession.user.id);
-      if (allowedKits > 0) {
-        return NextResponse.json(
-          { error: "You already have an active subscription. Manage it from your dashboard." },
-          { status: 409 }
-        );
-      }
+    if (await hasPaidSubscription(authSession.user.id)) {
+      return NextResponse.json(
+        { error: "You already have an active subscription. Manage it from your dashboard." },
+        { status: 409 }
+      );
     }
 
     const tier = tierId && typeof tierId === "string" ? tierId : "starter";

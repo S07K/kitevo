@@ -54,7 +54,7 @@ const PLANS: Plan[] = [
     ],
     proOnly: [false, false, false, false, false],
     cta: "Get Starter",
-    ctaHref: "/pricing",
+    ctaHref: "/pricing?plan=starter",
   },
   {
     id: "pro",
@@ -73,7 +73,7 @@ const PLANS: Plan[] = [
     proOnly: [false, false, true, true, true],
     highlight: true,
     cta: "Get Pro",
-    ctaHref: "/pricing",
+    ctaHref: "/pricing?plan=pro",
   },
 ];
 
