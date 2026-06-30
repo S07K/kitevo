@@ -1,12 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_APP_URL));
   }
+
+  const returnTo = req.nextUrl.searchParams.get("return_to") ?? "";
+
+  // Encode userId + returnTo into state so callback can redirect correctly
+  const state = returnTo ? `${session.user.id}:${returnTo}` : session.user.id;
 
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID ?? "",
@@ -15,7 +20,7 @@ export async function GET() {
     scope: "https://www.googleapis.com/auth/youtube.readonly",
     access_type: "offline",
     prompt: "consent",
-    state: session.user.id,
+    state,
   });
 
   return NextResponse.redirect(

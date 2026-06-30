@@ -11,6 +11,7 @@ function KitEditContent() {
   const searchParams = useSearchParams();
   const kitId = searchParams.get("id");
   const [tierId, setTierId] = useState<string | null>(null);
+  const [tierLoaded, setTierLoaded] = useState(false);
   const [kitSlug, setKitSlug] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -25,7 +26,8 @@ function KitEditContent() {
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => { if (data) setTierId(data.tierId ?? null); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setTierLoaded(true));
   }, []);
 
   // Fetch kit slug on mount
@@ -76,7 +78,10 @@ function KitEditContent() {
               </a>
             )}
           </div>
-          <KitEditor kitId={kitId} tierId={tierId} onSaved={handleSaved} />
+          {tierLoaded
+            ? <KitEditor kitId={kitId} tierId={tierId} onSaved={handleSaved} />
+            : <div className="space-y-4 animate-pulse"><div className="h-8 bg-muted rounded-xl w-1/2" /><div className="h-32 bg-muted rounded-2xl" /><div className="h-48 bg-muted rounded-2xl" /></div>
+          }
         </div>
       </div>
 

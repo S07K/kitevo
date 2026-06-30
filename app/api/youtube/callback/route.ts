@@ -7,14 +7,22 @@ const YOUTUBE_API = "https://www.googleapis.com/youtube/v3";
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const code = searchParams.get("code");
-  const userId = searchParams.get("state");
+  const rawState = searchParams.get("state") ?? "";
   const error = searchParams.get("error");
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const dashboardUrl = `${appUrl}/dashboard`;
+
+  // State format: "userId" or "userId:return_to"
+  const colonIdx = rawState.indexOf(":");
+  const userId = colonIdx >= 0 ? rawState.slice(0, colonIdx) : rawState;
+  const returnTo = colonIdx >= 0 ? rawState.slice(colonIdx + 1) : "";
+
+  const baseRedirect = returnTo === "onboarding"
+    ? `${appUrl}/onboarding`
+    : `${appUrl}/dashboard`;
 
   if (error || !code || !userId) {
-    return NextResponse.redirect(`${dashboardUrl}?youtube=error`);
+    return NextResponse.redirect(`${baseRedirect}?youtube=error`);
   }
 
   // Exchange code for tokens
@@ -33,7 +41,7 @@ export async function GET(req: NextRequest) {
   if (!tokenRes.ok) {
     const body = await tokenRes.text();
     console.error("[youtube/callback] token exchange failed:", tokenRes.status, body);
-    return NextResponse.redirect(`${dashboardUrl}?youtube=error`);
+    return NextResponse.redirect(`${baseRedirect}?youtube=error`);
   }
 
   const tokens = await tokenRes.json() as {
@@ -43,7 +51,7 @@ export async function GET(req: NextRequest) {
   };
 
   if (!tokens.access_token) {
-    return NextResponse.redirect(`${dashboardUrl}?youtube=error`);
+    return NextResponse.redirect(`${baseRedirect}?youtube=error`);
   }
 
   // Fetch the user's channel id
@@ -54,7 +62,7 @@ export async function GET(req: NextRequest) {
   if (!channelRes.ok) {
     const body = await channelRes.text();
     console.error("[youtube/callback] channel fetch failed:", channelRes.status, body);
-    return NextResponse.redirect(`${dashboardUrl}?youtube=error`);
+    return NextResponse.redirect(`${baseRedirect}?youtube=error`);
   }
 
   const channelData = await channelRes.json() as {
@@ -63,7 +71,7 @@ export async function GET(req: NextRequest) {
 
   const channelId = channelData.items?.[0]?.id;
   if (!channelId) {
-    return NextResponse.redirect(`${dashboardUrl}?youtube=no_channel`);
+    return NextResponse.redirect(`${baseRedirect}?youtube=no_channel`);
   }
 
   const expiresAt = new Date(Date.now() + (tokens.expires_in ?? 3600) * 1000);
@@ -78,5 +86,5 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  return NextResponse.redirect(`${dashboardUrl}?youtube=connected`);
+  return NextResponse.redirect(`${baseRedirect}?youtube=connected`);
 }

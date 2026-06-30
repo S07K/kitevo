@@ -637,6 +637,25 @@ export function MediaKitClient({
             );
           })()}
 
+          {/* No platforms connected — prompt to connect (owner only, non-demo) */}
+          {!isDemoKit && !instagramConnected && !enabledPlatformIds.includes("youtube" as import("@/lib/platforms/types").PlatformId) && isOwner && (
+            <div className="rounded-2xl border border-dashed border-[var(--mk-border)] bg-[var(--mk-surface)] p-6 text-center space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--mk-text-soft)]" aria-hidden><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <p className="text-[var(--mk-text)] text-sm font-semibold">No platforms connected yet</p>
+              </div>
+              <p className="text-[var(--mk-text-soft)] text-xs leading-relaxed max-w-xs mx-auto">
+                Connect Instagram or YouTube from your dashboard to show live stats, posts, and videos on this kit.
+              </p>
+              <a
+                href="/dashboard"
+                className="inline-flex h-8 items-center rounded-full bg-[var(--mk-text)] px-4 text-xs font-medium text-[var(--mk-bg)] hover:opacity-80 transition-opacity"
+              >
+                Go to dashboard →
+              </a>
+            </div>
+          )}
+
           {/* 4. Brands — flat chips card */}
           {sectionVisibility.brands && brands.length > 0 && (
             <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] p-5">

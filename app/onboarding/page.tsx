@@ -9,13 +9,11 @@ import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm"
 import { getPublicTiers } from "@/config/subscriptions";
 import type { SubscriptionTier } from "@/config/subscriptions";
 
-// ─── Step config ─────────────────────────────────────────────────────────────
-
 const STEPS = [
-  { number: "01", title: "Your profile",     short: "Profile" },
-  { number: "02", title: "Connect Instagram", short: "Instagram" },
-  { number: "03", title: "Choose a plan",    short: "Plan" },
-  { number: "04", title: "Create your kit",  short: "Kit" },
+  { number: "01", title: "Your profile",       short: "Profile" },
+  { number: "02", title: "Connect platforms",  short: "Platforms" },
+  { number: "03", title: "Choose a plan",      short: "Plan" },
+  { number: "04", title: "Create your kit",    short: "Kit" },
 ];
 
 const totalSteps = STEPS.length;
@@ -27,8 +25,6 @@ const emptyProfile: ProfileFormProfile = {
   avatarUrl: null,
   links: [],
 };
-
-// ─── Shared primitives ────────────────────────────────────────────────────────
 
 function Input({
   value,
@@ -52,38 +48,111 @@ function Input({
   );
 }
 
-// ─── Main content ─────────────────────────────────────────────────────────────
+function PlatformRow({
+  icon,
+  name,
+  description,
+  connected,
+  connectHref,
+  connectLabel,
+  error,
+}: {
+  icon: React.ReactNode;
+  name: string;
+  description: string;
+  connected: boolean;
+  connectHref: string;
+  connectLabel: string;
+  error?: string | null;
+}) {
+  return (
+    <div className="rounded-xl border border-border p-4 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          {icon}
+          <div>
+            <p className="text-sm font-semibold text-foreground">{name}</p>
+            <p className="text-xs text-muted-foreground">{description}</p>
+          </div>
+        </div>
+        {connected ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600 shrink-0">
+            <span className="h-2 w-2 rounded-full bg-green-500" />
+            Connected
+          </span>
+        ) : (
+          <a
+            href={connectHref}
+            className="shrink-0 inline-flex h-8 items-center rounded-full border border-foreground px-4 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            {connectLabel}
+          </a>
+        )}
+      </div>
+      {error && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
 
 function OnboardingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [currentStep, setCurrentStep] = useState(0);
   const [finishing, setFinishing] = useState(false);
+
+  // Step 1 — profile
   const [profile, setProfile] = useState<ProfileFormProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
+
+  // Step 2 — platforms
   const [instagramConnected, setInstagramConnected] = useState(false);
-  const [kits, setKits] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [youtubeConnected, setYoutubeConnected] = useState(false);
+  const [platformsLoading, setPlatformsLoading] = useState(false);
+
+  // Step 3 — subscription
+  const [hasSubscription, setHasSubscription] = useState(false);
+  const [tierName, setTierName] = useState<string | null>(null);
   const [allowedKits, setAllowedKits] = useState(0);
   const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
+  const [subscribeLoadingTier, setSubscribeLoadingTier] = useState<string | null>(null);
+  const [subscribeError, setSubscribeError] = useState<string | null>(null);
+
+  // Step 4 — kit
+  const [kits, setKits] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [newKitName, setNewKitName] = useState("");
   const [newKitSlug, setNewKitSlug] = useState("");
   const [addKitError, setAddKitError] = useState("");
   const [createKitLoading, setCreateKitLoading] = useState(false);
   const [kitCreated, setKitCreated] = useState(false);
-  const [hasSubscription, setHasSubscription] = useState(false);
-  const [tierName, setTierName] = useState<string | null>(null);
-  const [subscribeLoadingTier, setSubscribeLoadingTier] = useState<string | null>(null);
-  const [subscribeError, setSubscribeError] = useState<string | null>(null);
 
-  const searchParams = useSearchParams();
+  const instagramErrors: Record<string, string> = {
+    not_configured: "Instagram connect is not configured.",
+    invalid: "Invalid or expired request. Try again.",
+    no_pages: "No Facebook Page found. Create a Page first.",
+    permission_denied: "Access declined — grant all permissions when prompted.",
+    no_instagram_account: "No Instagram Business or Creator account linked to your Page.",
+    server: "Something went wrong. Try again.",
+    access_denied: "You declined access. Try again.",
+  };
 
+  // Handle OAuth returns — bump to step 2 (platforms)
   useEffect(() => {
-    const connected = searchParams.get("instagram_connected");
-    const err = searchParams.get("instagram_error");
-    if (connected === "1" || err) setCurrentStep(1);
+    const igConnected = searchParams.get("instagram_connected");
+    const igErr = searchParams.get("instagram_error");
+    const ytResult = searchParams.get("youtube");
+    if (igConnected === "1" || igErr || ytResult) {
+      setCurrentStep(1);
+    }
   }, [searchParams]);
 
+  // Handle Stripe return
   useEffect(() => {
     const success = searchParams.get("success");
     const sessionId = searchParams.get("session_id");
@@ -107,6 +176,7 @@ function OnboardingContent() {
     }
   }, [searchParams, router]);
 
+  // Load profile
   useEffect(() => {
     let cancelled = false;
     fetch("/api/me/profile", { credentials: "include" })
@@ -116,15 +186,20 @@ function OnboardingContent() {
     return () => { cancelled = true; };
   }, []);
 
+  // Load platform connection status when on step 2
   useEffect(() => {
     if (currentStep !== 1) return;
-    fetch("/api/instagram/status", { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => data && setInstagramConnected(data.connected === true));
+    setPlatformsLoading(true);
+    Promise.all([
+      fetch("/api/instagram/status", { credentials: "include" }).then((r) => r.ok ? r.json() : null),
+      fetch("/api/youtube/stats", { credentials: "include" }).then((r) => r.ok ? r.json() : null),
+    ]).then(([ig, yt]) => {
+      setInstagramConnected(ig?.connected === true);
+      setYoutubeConnected(yt !== null && typeof yt === "object" && "subscriberCount" in yt);
+    }).finally(() => setPlatformsLoading(false));
   }, [currentStep]);
 
-  // Always fetch subscription + kits on mount so step 4 has accurate data
-  // regardless of which step the user lands on.
+  // Load subscription + kits on mount
   useEffect(() => {
     let cancelled = false;
     Promise.all([
@@ -142,9 +217,6 @@ function OnboardingContent() {
     return () => { cancelled = true; };
   }, []);
 
-  const isFirst = currentStep === 0;
-  const isLast = currentStep === totalSteps - 1;
-
   async function handleFinish() {
     setFinishing(true);
     try {
@@ -154,15 +226,8 @@ function OnboardingContent() {
     } catch { setFinishing(false); }
   }
 
-  const instagramErrors: Record<string, string> = {
-    not_configured: "Instagram connect is not configured.",
-    invalid: "Invalid or expired request. Try again.",
-    no_pages: "No Facebook Page found. Create a Page first.",
-    permission_denied: "Access declined — grant all permissions when prompted.",
-    no_instagram_account: "No Instagram Business or Creator account linked to your Page.",
-    server: "Something went wrong. Try again later.",
-    access_denied: "You declined access. Connect again.",
-  };
+  const isFirst = currentStep === 0;
+  const isLast = currentStep === totalSteps - 1;
 
   return (
     <div className="min-h-screen bg-muted/20">
@@ -175,7 +240,7 @@ function OnboardingContent() {
       />
 
       <main className="mx-auto max-w-xl px-5 pb-24 pt-28 sm:px-8">
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="mb-10">
           <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-[0.18em] uppercase">
             Getting started
@@ -188,7 +253,7 @@ function OnboardingContent() {
           </p>
         </div>
 
-        {/* ── Step indicators ── */}
+        {/* Step indicators */}
         <div className="mb-8 flex items-center gap-0">
           {STEPS.map((s, i) => {
             const done = i < currentStep;
@@ -198,20 +263,16 @@ function OnboardingContent() {
                 <div className="flex flex-col items-center gap-1.5">
                   <div
                     className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
-                      done
+                      done || active
                         ? "bg-foreground text-background"
-                        : active
-                          ? "bg-foreground text-background"
-                          : "border-border bg-background text-muted-foreground border"
+                        : "border-border bg-background text-muted-foreground border"
                     }`}
                   >
                     {done ? (
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
-                    ) : (
-                      s.number
-                    )}
+                    ) : s.number}
                   </div>
                   <span className={`hidden text-[10px] font-medium sm:block ${active ? "text-foreground" : "text-muted-foreground"}`}>
                     {s.short}
@@ -225,7 +286,7 @@ function OnboardingContent() {
           })}
         </div>
 
-        {/* ── Step card ── */}
+        {/* Step card */}
         <div className="bg-background border-border rounded-2xl border p-6 shadow-sm">
           <p className="text-muted-foreground mb-1 text-[11px] font-semibold tracking-[0.16em] uppercase">
             Step {currentStep + 1} of {totalSteps}
@@ -277,48 +338,69 @@ function OnboardingContent() {
             </div>
           )}
 
-          {/* ── Step 2: Instagram ── */}
+          {/* ── Step 2: Connect platforms ── */}
           {currentStep === 1 && (
             <div className="mt-5 space-y-4">
-              {searchParams.get("instagram_error") && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                  {instagramErrors[searchParams.get("instagram_error")!] ?? `Error: ${searchParams.get("instagram_error")}`}
-                </div>
-              )}
-              {searchParams.get("instagram_connected") === "1" && (
-                <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800 font-medium">
-                  Instagram connected successfully.
-                </div>
-              )}
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Connect your Instagram Business or Creator account to show live follower stats, engagement rate, and recent posts on your kit.
+                Connect your platforms so your kit shows live stats, posts, and videos. Both are optional — you can connect later from your dashboard.
               </p>
-              <div className="flex flex-wrap items-center gap-3">
-                {instagramConnected ? (
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-600">
-                    <span className="h-2 w-2 rounded-full bg-green-500" aria-hidden />
-                    Connected
-                  </span>
-                ) : (
-                  <a
-                    href="/api/instagram/connect?return_to=onboarding"
-                    className="bg-foreground text-background inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
-                  >
-                    Connect Instagram
-                  </a>
-                )}
-                <Link
-                  href="/help/instagram"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-                >
-                  Connection help →
-                </Link>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                You&apos;ll be brought back here after connecting. You can also skip this and connect later from your dashboard.
-              </p>
+
+              {platformsLoading ? (
+                <p className="text-muted-foreground text-sm">Checking connections…</p>
+              ) : (
+                <div className="space-y-3">
+                  <PlatformRow
+                    icon={
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="url(#ig-ob-grad)" aria-hidden>
+                        <defs>
+                          <linearGradient id="ig-ob-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#f09433"/>
+                            <stop offset="50%" stopColor="#dc2743"/>
+                            <stop offset="100%" stopColor="#bc1888"/>
+                          </linearGradient>
+                        </defs>
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                    }
+                    name="Instagram"
+                    description="Followers, engagement rate, Reels grid"
+                    connected={instagramConnected}
+                    connectHref="/api/instagram/connect?return_to=onboarding"
+                    connectLabel="Connect"
+                    error={
+                      searchParams.get("instagram_error")
+                        ? (instagramErrors[searchParams.get("instagram_error")!] ?? `Error: ${searchParams.get("instagram_error")}`)
+                        : null
+                    }
+                  />
+
+                  <PlatformRow
+                    icon={
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF0000" aria-hidden>
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      </svg>
+                    }
+                    name="YouTube"
+                    description="Subscribers, total views, video grid"
+                    connected={youtubeConnected}
+                    connectHref="/api/youtube/connect?return_to=onboarding"
+                    connectLabel="Connect"
+                    error={
+                      searchParams.get("youtube") === "error"
+                        ? "Something went wrong connecting YouTube. Try again."
+                        : searchParams.get("youtube") === "no_channel"
+                          ? "No YouTube channel found on your Google account."
+                          : null
+                    }
+                  />
+                </div>
+              )}
+
+              {(instagramConnected || youtubeConnected) && (
+                <p className="text-xs text-green-700 font-medium">
+                  {[instagramConnected && "Instagram", youtubeConnected && "YouTube"].filter(Boolean).join(" & ")} connected ✓
+                </p>
+              )}
             </div>
           )}
 
@@ -345,9 +427,7 @@ function OnboardingContent() {
                     {getPublicTiers().map((tier: SubscriptionTier) => (
                       <div
                         key={tier.id}
-                        className={`relative rounded-2xl border p-5 ${
-                          tier.highlight ? "border-foreground" : "border-border"
-                        }`}
+                        className={`relative rounded-2xl border p-5 ${tier.highlight ? "border-foreground" : "border-border"}`}
                       >
                         {tier.highlight && (
                           <span className="bg-foreground text-background absolute -top-3 left-4 rounded-full px-3 py-0.5 text-[10px] font-semibold tracking-wide">
@@ -429,13 +509,13 @@ function OnboardingContent() {
               ) : kits.length > 0 || kitCreated ? (
                 <div className="rounded-xl border border-green-200 bg-green-50 p-4">
                   <p className="text-sm font-medium text-green-800">
-                    {kitCreated ? "Kit created!" : `You have ${kits.length} kit${kits.length !== 1 ? "s" : ""}.`} Click Go to Dashboard to finish.
+                    {kitCreated ? "Kit created!" : `You already have ${kits.length} kit${kits.length !== 1 ? "s" : ""}.`} Click Go to Dashboard to finish.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <p className="text-muted-foreground text-sm">
-                    Give your kit a name and a URL slug. You can edit content, rates, and work samples in the editor.
+                    Give your kit a name and a URL. You can customise everything from the dashboard.
                   </p>
                   <Input
                     value={newKitName}
@@ -483,7 +563,7 @@ function OnboardingContent() {
           )}
         </div>
 
-        {/* ── Navigation ── */}
+        {/* Navigation */}
         <div className="mt-6 flex items-center justify-between">
           <button
             type="button"
@@ -512,10 +592,19 @@ function OnboardingContent() {
               onClick={() => setCurrentStep((s) => Math.min(totalSteps - 1, s + 1))}
               className="bg-foreground text-background inline-flex h-11 items-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80"
             >
-              {currentStep === 1 && !instagramConnected ? "Skip for now →" : "Next →"}
+              {currentStep === 1 && !instagramConnected && !youtubeConnected ? "Skip for now →" : "Next →"}
             </button>
           )}
         </div>
+
+        {currentStep === 1 && (
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            You can also connect platforms later from your dashboard.{" "}
+            <Link href="/help/instagram" target="_blank" className="hover:text-foreground underline">
+              Need help?
+            </Link>
+          </p>
+        )}
       </main>
     </div>
   );
