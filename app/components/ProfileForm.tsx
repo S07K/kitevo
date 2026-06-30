@@ -60,7 +60,6 @@ export function ProfileForm({
   const [bio, setBio] = useState(profile.bio ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? "");
   const [links, setLinks] = useState<ProfileLink[]>(profile.links?.length ? [...profile.links] : [{ label: "", url: "" }]);
-  const [showAdvancedAvatarUrl, setShowAdvancedAvatarUrl] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -168,63 +167,61 @@ export function ProfileForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* Avatar top, fields below — clean single-column layout */}
       <div className="flex flex-col gap-6">
 
-        {/* Avatar row — horizontal, compact */}
-        <div className="flex items-center gap-4">
-          {/* Avatar circle */}
-          <div className="h-16 w-16 shrink-0 rounded-full overflow-hidden border-2 border-border bg-muted shadow-sm">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="h-full w-full object-cover" width={64} height={64} referrerPolicy="no-referrer" />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center text-2xl font-display text-muted-foreground">
-                {(name || username || "?").charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
-
-          {/* Upload actions */}
-          <div className="flex flex-col gap-1.5 min-w-0">
+        {/* Avatar + name/username row */}
+        <div className="flex items-stretch gap-4">
+          {/* Avatar with pencil overlay */}
+          <div className="shrink-0 w-32">
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
-            <button
-              type="button"
-              disabled={avatarBusy || saving}
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-foreground bg-foreground text-background hover:opacity-80 disabled:opacity-40 transition-opacity"
-            >
-              {avatarBusy ? "Uploading…" : "Upload photo"}
-            </button>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative group h-32 w-32 rounded-full overflow-hidden border-2 border-border bg-muted shadow-sm">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="h-full w-full object-cover" width={128} height={128} referrerPolicy="no-referrer" />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-3xl font-display text-muted-foreground">
+                  {(name || username || "?").charAt(0).toUpperCase()}
+                </div>
+              )}
+              {/* Pencil overlay — scoped inside the circle */}
+              <button
+                type="button"
+                disabled={avatarBusy || saving}
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity disabled:cursor-not-allowed"
+                aria-label="Upload photo"
+              >
+              {avatarBusy ? (
+                <svg className="animate-spin" width="20" height="20" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" strokeOpacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round"/>
+                </svg>
+              ) : (
+                <svg width="20" height="20" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              )}
+              </button>
+            </div>
+            {/* Secondary actions below avatar */}
+            <div className="mt-1.5 flex justify-center gap-2 flex-wrap">
               {profile.instagramConnected && (
                 <button type="button" disabled={avatarBusy || saving} onClick={useInstagramPhoto}
-                  className="text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors">
-                  Use Instagram photo
+                  className="text-[10px] text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors whitespace-nowrap">
+                  IG photo
                 </button>
               )}
               {avatarUrl && (
                 <button type="button" disabled={avatarBusy || saving} onClick={clearPhoto}
-                  className="text-[11px] text-muted-foreground hover:text-red-500 disabled:opacity-40 transition-colors">
+                  className="text-[10px] text-muted-foreground hover:text-red-500 disabled:opacity-40 transition-colors">
                   Remove
                 </button>
               )}
-              <button type="button" onClick={() => setShowAdvancedAvatarUrl((v) => !v)}
-                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-                {showAdvancedAvatarUrl ? "Hide URL" : "Paste URL"}
-              </button>
             </div>
-            {showAdvancedAvatarUrl && (
-              <input type="url" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-xl text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-foreground/20 transition"
-                placeholder="https://…" />
-            )}
-            {avatarError && <p className="text-xs text-red-500">{avatarError}</p>}
+            {avatarError && <p className="text-[10px] text-red-500 text-center mt-1">{avatarError}</p>}
           </div>
-        </div>
 
-        {/* Fields */}
-        <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          {/* Display name + username stacked to fill height */}
+          <div className="flex flex-col gap-3 flex-1 min-w-0 justify-center">
             <div>
               <label className="block text-sm font-medium text-foreground">Display name</label>
               <input
@@ -249,6 +246,10 @@ export function ProfileForm({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Remaining fields */}
+        <div className="space-y-4">
 
           <div>
             <label className="block text-sm font-medium text-foreground">Bio</label>
