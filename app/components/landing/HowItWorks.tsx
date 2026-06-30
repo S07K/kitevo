@@ -11,9 +11,9 @@ const STEPS = [
   },
   {
     number: "02",
-    title: "Connect Instagram",
+    title: "Connect your platforms",
     description:
-      "Link your Instagram account. We pull your follower count, engagement rate, audience demographics, and recent posts automatically.",
+      "Link Instagram and YouTube. We pull follower counts, engagement rate, audience demographics, and recent content automatically — always live.",
   },
   {
     number: "03",

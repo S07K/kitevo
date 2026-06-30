@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getStatsForCreator, getEnabledPlatformIds } from "@/lib/platforms";
@@ -21,6 +22,52 @@ import { DEFAULT_KIT_APPEARANCE } from "@/lib/kit-appearance";
 import { cookies } from "next/headers";
 
 const DEMO_SLUGS = ["demo", "alexchen", "my-kit"];
+
+const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://kitevo.com").replace(/\/$/, "");
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const slug = username ?? "demo";
+
+  try {
+    const result = await getKitBySlug(slug);
+    if (!result) return { title: "Media Kit — Kitevo" };
+
+    const { creator, kit } = result;
+    const title = `${creator.name} — Media Kit`;
+    const description = creator.bio
+      ? creator.bio.slice(0, 155)
+      : `View ${creator.name}'s professional media kit powered by Kitevo.`;
+    const url = `${BASE_URL}/kit/${slug}`;
+    const image = creator.avatarUrl ?? `${BASE_URL}/og-default.png`;
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        url,
+        siteName: "Kitevo",
+        type: "profile",
+        images: [{ url: image, width: 400, height: 400, alt: creator.name }],
+      },
+      twitter: {
+        card: "summary",
+        title,
+        description,
+        images: [image],
+      },
+      alternates: { canonical: url },
+    };
+  } catch {
+    return { title: "Media Kit — Kitevo" };
+  }
+}
 
 /** Pre-render these at build time; other slugs render on demand (web server). */
 export async function generateStaticParams() {

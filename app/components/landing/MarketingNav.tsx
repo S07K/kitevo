@@ -75,6 +75,12 @@ export function MarketingNav(): ReactNode {
           <div className="flex items-center gap-3">
             <ThemeToggle className="hidden md:inline-flex" />
             <Link
+              href="/login"
+              className="focus-ring text-muted-foreground hover:text-foreground hidden text-sm font-medium transition-colors md:inline-flex"
+            >
+              Log in
+            </Link>
+            <Link
               href="/signup"
               className="focus-ring bg-foreground text-background hidden h-10 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80 md:inline-flex"
             >

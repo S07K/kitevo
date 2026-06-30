@@ -43,7 +43,7 @@ export function FinalCta(): ReactNode {
         className="flex flex-col items-center overflow-hidden rounded-[40px] px-6 pt-20 pb-24 text-center sm:pt-24 sm:pb-32"
       >
         <p className="mb-6 text-xs font-semibold tracking-[0.2em] uppercase opacity-50">
-          Join thousands of creators
+          Free to start · No credit card
         </p>
 
         <h2 className="max-w-2xl text-[clamp(34px,5.5vw,64px)] leading-[1.06] font-medium tracking-tight">

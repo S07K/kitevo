@@ -15,10 +15,31 @@ const dmSans = DM_Sans({
   subsets: ["latin"],
 });
 
+const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://kitevo.com").replace(/\/$/, "");
+
 export const metadata: Metadata = {
-  title: "Kitevo — Professional Pitch Decks for Creators",
+  title: {
+    default: "Kitevo — Professional Media Kits for Creators",
+    template: "%s — Kitevo",
+  },
   description:
-    "Turn your link-in-bio into a high-end agency portfolio. Live engagement data, audience demographics, and growth charts that win brand deals.",
+    "Turn your link-in-bio into a high-end agency portfolio. Live Instagram & YouTube stats, audience demographics, and growth charts that win brand deals.",
+  metadataBase: new URL(BASE_URL),
+  openGraph: {
+    siteName: "Kitevo",
+    type: "website",
+    url: BASE_URL,
+    title: "Kitevo — Professional Media Kits for Creators",
+    description:
+      "Live stats, audience demographics, and growth charts. One link that closes brand deals.",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "Kitevo" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kitevo — Professional Media Kits for Creators",
+    description: "Live stats, audience demographics, and growth charts. One link that closes brand deals.",
+    images: ["/og-default.png"],
+  },
 };
 
 import type { Viewport } from 'next'
