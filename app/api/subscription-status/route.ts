@@ -98,7 +98,15 @@ export async function POST(req: Request) {
       const customerId = user?.stripeCustomerId ?? null;
       if (customerId) {
         const payload = await getSubscriptionPayload(customerId);
-        const res = NextResponse.json(payload);
+        // Fall back to free tier if no active paid subscription
+        const effective = payload.hasSubscription ? payload : {
+          hasSubscription: false,
+          status: "inactive",
+          allowedKits: 1,
+          tierId: "free",
+          tierName: "Free",
+        };
+        const res = NextResponse.json(effective);
         if (payload.hasSubscription) {
           res.headers.set("Set-Cookie", setSubscriptionCookie(customerId));
         } else {
@@ -106,7 +114,8 @@ export async function POST(req: Request) {
         }
         return res;
       }
-      const res = NextResponse.json({ hasSubscription: false });
+      // No Stripe customer — free tier by default
+      const res = NextResponse.json({ hasSubscription: false, allowedKits: 1, tierId: "free", tierName: "Free" });
       res.headers.set("Set-Cookie", clearSubscriptionCookie());
       return res;
     }

@@ -16,14 +16,15 @@ async function allowedKitsForCustomer(customerId: string): Promise<number> {
   return getKitsAllowedForPriceId(priceId);
 }
 
-/** Get allowed kits for a logged-in user (uses stripeCustomerId from DB). */
+/** Get allowed kits for a logged-in user (uses stripeCustomerId from DB). Free tier = 1 kit. */
 export async function getAllowedKitsForUser(userId: string): Promise<number> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { stripeCustomerId: true },
   });
-  if (!user?.stripeCustomerId) return 0;
-  return allowedKitsForCustomer(user.stripeCustomerId);
+  if (!user?.stripeCustomerId) return 1; // Free tier default
+  const paid = await allowedKitsForCustomer(user.stripeCustomerId);
+  return paid > 0 ? paid : 1; // Fall back to free tier if subscription lapsed
 }
 
 /** Get allowed kits for the subscription tied to the request cookie (legacy / no session). */

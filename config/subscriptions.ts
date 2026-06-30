@@ -21,6 +21,18 @@ export interface SubscriptionTier {
 /** All tiers in display order. Change prices and limits here; add new tiers by appending. */
 export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
   {
+    id: "free",
+    name: "Free",
+    priceMonthly: 0,
+    kitsAllowed: 1,
+    features: [
+      "1 media kit",
+      "Shareable link",
+      "Basic profile & bio",
+      "Rates & brand partners",
+    ],
+  },
+  {
     id: "starter",
     name: "Starter",
     priceMonthly: 9,

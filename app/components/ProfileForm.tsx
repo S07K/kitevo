@@ -168,96 +168,63 @@ export function ProfileForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* Two-col layout: avatar left, fields right */}
-      <div className="flex flex-col gap-8 lg:flex-row lg:gap-10">
+      {/* Avatar top, fields below — clean single-column layout */}
+      <div className="flex flex-col gap-6">
 
-        {/* Avatar column */}
-        <div className="flex flex-col items-center gap-3 lg:w-48 lg:shrink-0 lg:pt-1">
-          <div className="h-28 w-28 shrink-0 rounded-full overflow-hidden border-2 border-border bg-muted shadow-sm">
+        {/* Avatar row — horizontal, compact */}
+        <div className="flex items-center gap-4">
+          {/* Avatar circle */}
+          <div className="h-16 w-16 shrink-0 rounded-full overflow-hidden border-2 border-border bg-muted shadow-sm">
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="h-full w-full object-cover" width={112} height={112} referrerPolicy="no-referrer" />
+              <img src={avatarUrl} alt="" className="h-full w-full object-cover" width={64} height={64} referrerPolicy="no-referrer" />
             ) : (
-              <div className="h-full w-full flex items-center justify-center text-3xl font-display text-muted-foreground">
+              <div className="h-full w-full flex items-center justify-center text-2xl font-display text-muted-foreground">
                 {(name || username || "?").charAt(0).toUpperCase()}
               </div>
             )}
           </div>
 
-          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
-          <button
-            type="button"
-            disabled={avatarBusy || saving}
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-foreground bg-foreground text-background hover:opacity-80 disabled:opacity-40 transition-opacity"
-          >
-            {avatarBusy ? (
-              <>
-                <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                </svg>
-                Uploading…
-              </>
-            ) : (
-              <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" />
-                </svg>
-                Upload photo
-              </>
+          {/* Upload actions */}
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
+            <button
+              type="button"
+              disabled={avatarBusy || saving}
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-foreground bg-foreground text-background hover:opacity-80 disabled:opacity-40 transition-opacity"
+            >
+              {avatarBusy ? "Uploading…" : "Upload photo"}
+            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {profile.instagramConnected && (
+                <button type="button" disabled={avatarBusy || saving} onClick={useInstagramPhoto}
+                  className="text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors">
+                  Use Instagram photo
+                </button>
+              )}
+              {avatarUrl && (
+                <button type="button" disabled={avatarBusy || saving} onClick={clearPhoto}
+                  className="text-[11px] text-muted-foreground hover:text-red-500 disabled:opacity-40 transition-colors">
+                  Remove
+                </button>
+              )}
+              <button type="button" onClick={() => setShowAdvancedAvatarUrl((v) => !v)}
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                {showAdvancedAvatarUrl ? "Hide URL" : "Paste URL"}
+              </button>
+            </div>
+            {showAdvancedAvatarUrl && (
+              <input type="url" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-xl text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-foreground/20 transition"
+                placeholder="https://…" />
             )}
-          </button>
-
-          {profile.instagramConnected && (
-            <button
-              type="button"
-              disabled={avatarBusy || saving}
-              onClick={useInstagramPhoto}
-              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-border text-foreground hover:border-foreground/40 disabled:opacity-40 transition-colors"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <rect width="20" height="20" x="2" y="2" rx="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-              </svg>
-              Use Instagram photo
-            </button>
-          )}
-
-          {avatarUrl && (
-            <button
-              type="button"
-              disabled={avatarBusy || saving}
-              onClick={clearPhoto}
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-              </svg>
-              Remove photo
-            </button>
-          )}
-
-          {avatarError && <p className="text-xs text-red-500 text-center">{avatarError}</p>}
-
-          <button
-            type="button"
-            onClick={() => setShowAdvancedAvatarUrl((v) => !v)}
-            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {showAdvancedAvatarUrl ? "Hide URL field" : "Paste image URL"}
-          </button>
-          {showAdvancedAvatarUrl && (
-            <input
-              type="url"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-xl text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-foreground/20 transition"
-              placeholder="https://…"
-            />
-          )}
+            {avatarError && <p className="text-xs text-red-500">{avatarError}</p>}
+          </div>
         </div>
 
-        {/* Fields column */}
-        <div className="flex-1 min-w-0 space-y-5">
-          <div className="grid gap-5 sm:grid-cols-2">
+        {/* Fields */}
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-foreground">Display name</label>
               <input

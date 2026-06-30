@@ -404,27 +404,55 @@ function OnboardingContent() {
             </div>
           )}
 
-          {/* ── Step 3: Subscribe ── */}
+          {/* ── Step 3: Choose a plan ── */}
           {currentStep === 2 && (
             <div className="mt-5">
-              {hasSubscription && tierName ? (
+              {hasSubscription && tierName && tierName !== "Free" ? (
                 <div className="rounded-xl border border-green-200 bg-green-50 p-4">
                   <p className="text-sm font-medium text-green-800">
                     You&apos;re on <span className="font-semibold">{tierName}</span>. Hit Next to create your first kit.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <p className="text-muted-foreground text-sm">
-                    Choose a plan. After payment you&apos;ll return here to continue.
-                  </p>
+                <div className="space-y-3">
                   {subscribeError && (
                     <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
                       {subscribeError}
                     </div>
                   )}
+
+                  {/* Free tier — always first */}
+                  <div className="rounded-2xl border border-border p-5">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-foreground font-semibold">Free</p>
+                        <p className="text-muted-foreground text-xs mt-0.5">1 kit · basic profile · rates & brands</p>
+                      </div>
+                      <span className="text-foreground text-xl font-semibold tabular-nums">$0</span>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={subscribeLoadingTier !== null}
+                      onClick={() => setCurrentStep(3)}
+                      className="mt-4 inline-flex h-9 w-full items-center justify-center rounded-full border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                    >
+                      Start for free
+                    </button>
+                    <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                      Live platform stats, growth charts, and advanced styling require a paid plan.
+                    </p>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">or upgrade</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+
+                  {/* Paid tiers */}
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {getPublicTiers().map((tier: SubscriptionTier) => (
+                    {getPublicTiers().filter((t: SubscriptionTier) => t.priceMonthly > 0).map((tier: SubscriptionTier) => (
                       <div
                         key={tier.id}
                         className={`relative rounded-2xl border p-5 ${tier.highlight ? "border-foreground" : "border-border"}`}
@@ -478,7 +506,7 @@ function OnboardingContent() {
                               : "border-border text-foreground border hover:bg-muted"
                           }`}
                         >
-                          {subscribeLoadingTier === tier.id ? "Redirecting…" : `Continue with ${tier.name}`}
+                          {subscribeLoadingTier === tier.id ? "Redirecting…" : `Get ${tier.name}`}
                         </button>
                       </div>
                     ))}
