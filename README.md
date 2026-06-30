@@ -1,80 +1,156 @@
-# Media Kit Pro — Influencer Media Kit Builder
+# Kitevo — Creator Media Kit Builder
 
-A professional pitch deck for creators. Turn your link-in-bio into a high-end agency portfolio with live engagement data, audience demographics, and growth charts.
+A professional media kit platform for creators. Turn your social stats into a high-end, shareable page with live Instagram and YouTube data, audience demographics, and growth charts — built to send to brands.
 
-## Features
+## What's built
 
-- **Landing page** — Marketing site with high-end agency design
-- **Pricing** — $15/month subscription via Stripe
-- **Dashboard** — Creator control panel to manage media kit
-- **Public media kit** — Link-in-bio style page with live stats, growth charts, demographics
+### Auth & accounts
+- Email/password signup with email verification
+- Google SSO (OAuth)
+- Forgot password / reset password flow
+- Onboarding flow: profile → connect platforms → choose plan → create kit
 
-## Stripe Setup
+### Creator dashboard
+- Multi-kit management (create, rename slug, delete, password-protect)
+- Integrations panel: connect/disconnect Instagram and YouTube
+- Kit editor: brand kit styles, rates, brand partners, section visibility toggles
+- Analytics: kit views over time, referrer breakdown
+- Inquiry inbox (Pro): manage brand inquiries with status pipeline
 
-1. Create a [Stripe account](https://dashboard.stripe.com) and get your API keys.
+### Kit page (public, brand-facing)
+- Hero card with avatar, name, bio
+- **Instagram section**: live followers, engagement rate, post count + 9:16 Reels-style post grid (clickable, opens stats modal)
+- **YouTube section**: live subscribers, total views, video count + 16:9 video grid (clickable, plays inline)
+- Brands I've worked with chips
+- Rates card with optional CTA
+- Audience demographics and follower growth chart
+- Password protection option
+- Theme system: 2 starter styles + 5 Pro Brand Kit Vibes (Editorial, Studio, Bloom, Electric, Noir)
 
-2. Create a Product and Price in Stripe Dashboard:
-   - Products → Add product
-   - Name: "Media Kit Pro"
-   - Price: $15/month, recurring
-   - Copy the **Price ID** (starts with `price_`)
+### Integrations
+- **Instagram** (Meta Graph API) — Business/Creator accounts; fetches followers, engagement, demographics, recent posts with full engagement metrics
+- **YouTube** (Data API v3) — OAuth via Google; fetches channel stats + 6 recent videos with view/like counts; token auto-refresh
 
-3. Copy `.env.example` to `.env.local` and fill in:
+### Subscriptions & payments
+- Stripe Checkout + webhook for subscription lifecycle
+- Starter plan (1 kit) and Pro plan (multiple kits, brand kit vibes, inquiry management)
+- Stripe Customer Portal for plan management
 
-```env
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_PRICE_ID=price_...
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
+## Tech stack
 
-4. For webhooks (subscription events), use Stripe CLI:
+- **Framework**: Next.js 15 App Router + React 19 + TypeScript 5
+- **Styling**: Tailwind CSS 4
+- **Database**: PostgreSQL via Prisma ORM
+- **Auth**: NextAuth.js (credentials + Google provider)
+- **Payments**: Stripe
+- **Email**: Resend
 
-```bash
-stripe listen --forward-to localhost:3000/api/webhook
-```
-
-Copy the webhook signing secret to `.env.local`:
-
-```env
-STRIPE_WEBHOOK_SECRET=whsec_...
-```
-
-## Development
+## Local development
 
 ```bash
 npm install
-cp .env.example .env.local   # then fill in values
-npx prisma generate && npx prisma migrate deploy
+cp .env.example .env.local  # fill in all values (see below)
+DATABASE_URL="postgresql://..." npx prisma db push
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-**Full setup:** See **[docs/SETUP.md](docs/SETUP.md)** for all env vars, migrations, and **deploy to Vercel**.
+## Environment variables
 
-## Build (Web)
+```env
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-```bash
-npm run build
-npm start
+# Database
+DATABASE_URL=postgresql://user@localhost:5432/kitevo
+
+# Auth
+NEXTAUTH_SECRET=your-secret
+NEXTAUTH_URL=http://localhost:3000
+
+# Google (OAuth + YouTube)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+# Instagram (Meta Graph API)
+INSTAGRAM_APP_ID=...
+INSTAGRAM_APP_SECRET=...
+
+# Stripe
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+
+# Resend (email)
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=hello@yourdomain.com
+
+# Stripe price IDs (from Stripe dashboard)
+STRIPE_STARTER_PRICE_ID=price_...
+STRIPE_PRO_PRICE_ID=price_...
 ```
 
-## Build (iOS / Android)
+## Stripe setup
+
+1. Create products in [Stripe dashboard](https://dashboard.stripe.com): Starter ($9/mo) and Pro ($29/mo)
+2. Copy price IDs to `.env.local`
+3. Forward webhooks locally:
 
 ```bash
-npm run build
-npm run ios:build    # then: npm run ios
-npm run android:build # then: npm run android
+stripe listen --forward-to localhost:3000/api/webhook
 ```
 
-## Project Structure
+## Google / YouTube setup
 
-- `app/` — Next.js App Router pages
-- `app/api/` — Stripe API routes (checkout, webhook, subscription-status, portal)
-- `app/components/` — Shared UI (AppNav, SubscribeButton)
-- `app/kit/[username]/` — Public media kit (brand-facing)
-- `lib/platforms/` — Social platform abstraction (Instagram only for now; add TikTok/YouTube here)
-- `lib/` — Stripe client, subscription cookie, mock data
-- `docs/` — [SETUP.md](docs/SETUP.md) (developer onboarding), [MEDIAKIT_PLAN.md](docs/MEDIAKIT_PLAN.md) (product plan; product name inside is Media Kit Pro)
+1. Create a project in [Google Cloud Console](https://console.cloud.google.com)
+2. Enable **YouTube Data API v3**
+3. Create OAuth 2.0 credentials, add authorized redirect URI:
+   `http://localhost:3000/api/youtube/callback`
+4. Same client ID/secret is used for Google SSO — no separate credentials needed
 
-**New developers:** See **[docs/SETUP.md](docs/SETUP.md)** for env setup, project layout, and how to add a new social platform.
+## Instagram setup
+
+1. Create a Meta app at [developers.facebook.com](https://developers.facebook.com)
+2. Add Instagram Graph API product
+3. Add redirect URI: `http://localhost:3000/api/instagram/callback`
+4. Requires a Facebook Page linked to an Instagram Business or Creator account
+
+## Project structure
+
+```
+app/
+  api/           — All API routes (auth, kits, instagram, youtube, stripe, inquiries)
+  dashboard/     — Creator dashboard + kit editor
+  kit/[username] — Public kit page (server + client components)
+  onboarding/    — 4-step new user setup flow
+  components/    — Shared UI components
+lib/
+  platforms/     — Social platform abstraction layer
+  instagram-api.ts
+  youtube-api.ts
+  kit-storage.ts
+  kit-appearance.ts
+  mock-data.ts
+prisma/
+  schema.prisma  — DB schema (User, Kit, KitView, Inquiry, Account)
+```
+
+## Roadmap (pre-launch)
+
+**Phase 2 — Reliability**
+- [ ] Instagram token auto-refresh (60-day expiry)
+- [ ] Graceful API error handling on kit page
+- [ ] Rate limit handling for IG/YouTube quota
+
+**Phase 3 — Growth / Monetization**
+- [ ] Pricing page → Stripe checkout wired
+- [ ] Inquiry inbox UI in dashboard
+- [ ] Free vs Pro limits enforced
+- [ ] Kit analytics visible to owner
+
+**Phase 4 — Launch**
+- [ ] OG/SEO metadata per kit (generateMetadata)
+- [ ] Supabase migration
+- [ ] Vercel deploy
+- [ ] Landing page polish

@@ -1350,11 +1350,25 @@ function DashboardContent() {
                 )}
               </div>
 
-              {/* Empty state */}
+              {/* Empty state — no plan */}
+              {subscriptionLoaded && kits.length === 0 && allowedKits === 0 && (
+                <div className="border-border rounded-2xl border border-dashed p-8 max-w-md text-center">
+                  <p className="text-foreground text-base font-semibold">Choose a plan to get started</p>
+                  <p className="text-muted-foreground mt-1 text-sm">Pick a plan and create your first media kit in minutes.</p>
+                  <Link
+                    href="/pricing"
+                    className="mt-5 inline-flex h-10 items-center rounded-full bg-foreground px-6 text-sm font-medium text-background hover:opacity-80 transition-opacity"
+                  >
+                    View plans →
+                  </Link>
+                </div>
+              )}
+
+              {/* Empty state — has plan, no kit */}
               {kits.length === 0 && allowedKits > 0 && (
                 <div className="border-border rounded-2xl border border-dashed p-8 max-w-md">
                   <p className="text-foreground text-base font-semibold">Create your first kit</p>
-                  <p className="text-muted-foreground mt-1 text-sm">Give it a name and a URL slug. Add work samples, rates, and brands in the editor.</p>
+                  <p className="text-muted-foreground mt-1 text-sm">Give it a name and a URL. Connect Instagram or YouTube from the dashboard to show live stats.</p>
                   <div className="mt-6 space-y-3">
                     <TextInput value={newKitName} onChange={setNewKitName} placeholder="Kit name (e.g. Fashion & Lifestyle)" />
                     <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
