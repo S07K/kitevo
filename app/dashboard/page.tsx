@@ -649,7 +649,9 @@ function DashboardContent() {
   const [youtubeConnected, setYoutubeConnected] = useState(false);
   const [youtubeStats, setYoutubeStats] = useState<{ subscriberCount: number; viewCount: number; videoCount: number; channelTitle: string } | null>(null);
   const [disconnectingYoutube, setDisconnectingYoutube] = useState(false);
-  const [activeTab, setActiveTab] = useState<"inbox" | "activity">("inbox");
+  const [activeTab, setActiveTab] = useState<"inbox" | "activity">(() =>
+    typeof window !== "undefined" && window.location.hash === "#activity" ? "activity" : "inbox"
+  );
   const [urlCopied, setUrlCopied] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchParams = useSearchParams();
@@ -714,10 +716,10 @@ function DashboardContent() {
   }, []);
 
   useEffect(() => {
-    if (!isSubscribed) return;
+    if (!subscriptionLoaded) return;
     fetchKitViews(kitViewsDays);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSubscribed]);
+  }, [subscriptionLoaded]);
 
   useEffect(() => {
     if (!tierId || tierId === "free") return;
@@ -1242,8 +1244,8 @@ function DashboardContent() {
             </div>
 
             {/* ── Pipeline / Activity ── */}
-            {((tierId && tierId !== "free") || (kitViewsLoaded && kits.length > 0)) && (
-              <div>
+            {(kitViewsLoaded && kits.length > 0) || (tierId && tierId !== "free") ? (
+              <div id="activity">
                 <div className="mb-4 flex items-center gap-1">
                   {tierId && tierId !== "free" && (
                     <button
@@ -1265,7 +1267,7 @@ function DashboardContent() {
                       )}
                     </button>
                   )}
-                  {kitViewsLoaded && kits.length > 0 && (
+                  {kitViewsLoaded && (
                     <button
                       type="button"
                       onClick={() => setActiveTab("activity")}
@@ -1297,7 +1299,7 @@ function DashboardContent() {
                   </div>
                 )}
 
-                {activeTab === "activity" && kitViewsLoaded && kits.length > 0 && (
+                {activeTab === "activity" && kitViewsLoaded && (
                   <div>
                     {kitViewsTotal === 0 ? (
                       <div className="border-border rounded-2xl border border-dashed p-8 text-center">
@@ -1343,7 +1345,7 @@ function DashboardContent() {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
 
             {/* ── Kits ── */}
             <div>

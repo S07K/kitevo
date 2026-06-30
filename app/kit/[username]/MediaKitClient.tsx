@@ -410,6 +410,12 @@ export function MediaKitClient({
           </div>
           <div className="flex items-center gap-3">
             <Link
+              href="/dashboard#activity"
+              className="text-xs font-medium text-[#fafaf9]/60 hover:text-[#fafaf9] transition-colors hidden sm:inline"
+            >
+              Analytics →
+            </Link>
+            <Link
               href={`/kit/edit?id=${kitId ?? ""}`}
               className="text-xs font-medium text-[#fafaf9]/60 hover:text-[#fafaf9] transition-colors"
             >
