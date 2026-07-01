@@ -95,7 +95,7 @@ export function AppNav({
         aria-label="Toggle menu"
         aria-expanded={menuOpen}
         onClick={() => setMenuOpen((o) => !o)}
-        className="text-foreground hover:bg-muted -mr-2 rounded-lg p-2 transition-colors md:hidden"
+        className="text-foreground hover:bg-muted ml-auto -mr-2 rounded-lg p-2 transition-colors md:hidden"
       >
         {menuOpen ? (
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>

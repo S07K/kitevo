@@ -1107,50 +1107,45 @@ function DashboardContent() {
           /* ── Subscribed dashboard ── */
           <div className="space-y-6">
             {/* ── Welcome banner ── */}
-            <div className="bg-[#111110] dark:bg-[#1c1c1a] dark:border dark:border-[#2a2a28] rounded-2xl px-6 py-5">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-4">
-                  {/* Avatar — click to edit profile */}
-                  <Link href="/profile" className="shrink-0 group relative">
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt={profile?.name ?? "Avatar"}
-                        className="h-11 w-11 rounded-full object-cover transition-opacity group-hover:opacity-75"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="h-11 w-11 rounded-full bg-white/10 flex items-center justify-center transition-opacity group-hover:opacity-75">
-                        <span className="font-display text-sm font-semibold text-white/80">{avatarInitials}</span>
-                      </div>
-                    )}
-                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      </svg>
-                    </span>
-                  </Link>
-                  <div>
-                    <p className="text-white/50 text-[11px] font-semibold tracking-[0.16em] uppercase mb-0.5">Welcome back</p>
-                    <p className="font-display text-xl font-semibold text-white leading-none">{firstName}</p>
-                  </div>
-                  <Link
-                    href="/profile"
-                    className="text-white/50 hover:text-white/80 text-xs transition-colors ml-1"
-                  >
-                    Edit profile →
-                  </Link>
+            <div className="bg-[#111110] dark:bg-[#1c1c1a] dark:border dark:border-[#2a2a28] rounded-2xl px-5 py-4 sm:px-6 sm:py-5">
+              <div className="flex items-center gap-3">
+                {/* Avatar */}
+                <Link href="/profile" className="shrink-0 group relative">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={profile?.name ?? "Avatar"}
+                      className="h-10 w-10 rounded-full object-cover transition-opacity group-hover:opacity-75"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center transition-opacity group-hover:opacity-75">
+                      <span className="font-display text-sm font-semibold text-white/80">{avatarInitials}</span>
+                    </div>
+                  )}
+                </Link>
+
+                {/* Name + subtitle */}
+                <div className="min-w-0 flex-1">
+                  <p className="text-white/50 text-[10px] font-semibold tracking-[0.18em] uppercase leading-none mb-0.5">Welcome back</p>
+                  <p className="font-display text-base font-semibold text-white leading-none truncate">{firstName}</p>
                 </div>
 
-                {/* Kit URL pill — only if kits exist */}
-                {primaryKitUrl && (
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 bg-white/8 rounded-full px-4 py-2">
-                      <span className="text-white/40 text-xs font-mono hidden sm:inline">{primaryKitUrl}</span>
+                {/* Actions — right side */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link
+                    href="/profile"
+                    className="text-white/50 hover:text-white/80 text-xs transition-colors"
+                  >
+                    Edit →
+                  </Link>
+                  {primaryKitUrl && (
+                    <>
+                      <span className="text-white/20 text-xs">·</span>
                       <button
                         type="button"
                         onClick={handleCopyUrl}
-                        className="text-white/60 hover:text-white transition-colors"
+                        className="text-white/50 hover:text-white/80 transition-colors"
                         aria-label="Copy kit URL"
                       >
                         {urlCopied ? (
@@ -1163,17 +1158,17 @@ function DashboardContent() {
                           </svg>
                         )}
                       </button>
-                    </div>
-                    <a
-                      href={`/kit/${primaryKit!.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-white/70 hover:text-white text-xs font-medium transition-colors whitespace-nowrap"
-                    >
-                      View →
-                    </a>
-                  </div>
-                )}
+                      <a
+                        href={`/kit/${primaryKit!.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white/50 hover:text-white/80 text-xs font-medium transition-colors"
+                      >
+                        View →
+                      </a>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
