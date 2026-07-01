@@ -261,7 +261,7 @@ export default function CampaignDetailPage() {
                 <textarea
                   value={pitch}
                   onChange={(e) => setPitch(e.target.value)}
-                  placeholder="I've been running marathons for 3 years and document every training block…"
+                  placeholder="Tell the brand why you're a great fit — your niche, audience, past work…"
                   rows={5}
                   className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 resize-none"
                 />
