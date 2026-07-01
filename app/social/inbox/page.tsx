@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { signOut } from "next-auth/react";
@@ -110,10 +111,6 @@ export default function CreatorInbox() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
   const [campaignNiche, setCampaignNiche] = useState("All");
-  const [applyingId, setApplyingId] = useState<string | null>(null);
-  const [applyMessage, setApplyMessage] = useState("");
-  const [applySubmitting, setApplySubmitting] = useState(false);
-  const [applyError, setApplyError] = useState<string | null>(null);
 
   const NICHES = ["All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 
@@ -128,29 +125,6 @@ export default function CreatorInbox() {
       .catch(() => {})
       .finally(() => setLoadingCampaigns(false));
   }, [tab, campaignNiche]);
-
-  async function applyToCampaign(campaignId: string) {
-    setApplySubmitting(true);
-    setApplyError(null);
-    try {
-      const res = await fetch(`/api/social/campaigns/${campaignId}/apply`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: applyMessage }),
-        credentials: "include",
-      });
-      if (res.ok) {
-        setCampaigns((prev) => prev.map((c) => c.id === campaignId ? { ...c, applications: [{ status: "pending" }] } : c));
-        setApplyingId(null);
-        setApplyMessage("");
-      } else {
-        const d = await res.json().catch(() => ({}));
-        setApplyError(d.error ?? "Failed to apply");
-      }
-    } finally {
-      setApplySubmitting(false);
-    }
-  }
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
@@ -207,82 +181,61 @@ export default function CreatorInbox() {
                   const appStatus = c.applications[0]?.status;
                   const brand = c.brand;
                   const company = brand.brandProfile?.companyName ?? brand.name ?? "Brand";
+                  const daysLeft = c.deadline
+                    ? Math.ceil((new Date(c.deadline).getTime() - Date.now()) / 86400000)
+                    : null;
                   return (
-                    <div key={c.id} className="rounded-2xl border border-border bg-background p-5 space-y-3">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="h-6 w-6 rounded-full overflow-hidden bg-muted border border-border shrink-0">
-                              {brand.avatarUrl ? (
-                                <img src={brand.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                              ) : (
-                                <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                                  {company.charAt(0).toUpperCase()}
-                                </div>
-                              )}
+                    <Link
+                      key={c.id}
+                      href={`/campaigns/${c.id}`}
+                      className="block rounded-2xl border border-border bg-background p-5 hover:border-foreground/30 hover:shadow-sm transition-all"
+                    >
+                      {/* Brand row */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="h-6 w-6 rounded-full overflow-hidden bg-muted border border-border shrink-0">
+                          {brand.avatarUrl ? (
+                            <img src={brand.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                              {company.charAt(0).toUpperCase()}
                             </div>
-                            <p className="text-xs text-muted-foreground">{company}</p>
-                            {brand.brandProfile?.industry && (
-                              <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{brand.brandProfile.industry}</span>
-                            )}
-                          </div>
-                          <p className="text-sm font-semibold text-foreground">{c.title}</p>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{c.description}</p>
+                          )}
                         </div>
-                        <div className="shrink-0 text-right space-y-1">
-                          {c.niche && <span className="block text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{c.niche}</span>}
-                          {c.budget && <span className="block text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{c.budget}</span>}
-                          {c.deadline && <p className="text-[10px] text-muted-foreground">Due {new Date(c.deadline).toLocaleDateString()}</p>}
-                        </div>
+                        <p className="text-xs text-muted-foreground">{company}</p>
+                        {brand.brandProfile?.industry && (
+                          <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{brand.brandProfile.industry}</span>
+                        )}
                       </div>
 
-                      {applied ? (
-                        <div className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full border ${
-                          appStatus === "accepted" ? "border-green-400 text-green-700 bg-green-50 dark:bg-green-950/20" :
-                          appStatus === "rejected" ? "border-red-400 text-red-600 bg-red-50 dark:bg-red-950/20" :
-                          "border-yellow-300 text-yellow-700 bg-yellow-50 dark:bg-yellow-950/20"
-                        }`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${appStatus === "accepted" ? "bg-green-500" : appStatus === "rejected" ? "bg-red-500" : "bg-yellow-500"}`} />
-                          Application {appStatus}
+                      {/* Title + description */}
+                      <p className="text-sm font-semibold text-foreground mb-1">{c.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{c.description}</p>
+
+                      {/* Footer row */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {c.niche && <span className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{c.niche}</span>}
+                          {c.budget && <span className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{c.budget}</span>}
+                          {daysLeft !== null && (
+                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${daysLeft <= 3 ? "text-red-600 bg-red-50 dark:bg-red-950/20" : "text-muted-foreground bg-muted"}`}>
+                              {daysLeft > 0 ? `${daysLeft}d left` : "Closing soon"}
+                            </span>
+                          )}
                         </div>
-                      ) : applyingId === c.id ? (
-                        <div className="space-y-2">
-                          {applyError && <p className="text-xs text-red-500">{applyError}</p>}
-                          <textarea
-                            placeholder="Introduce yourself — why are you a great fit? (optional)"
-                            value={applyMessage}
-                            onChange={(e) => setApplyMessage(e.target.value)}
-                            rows={3}
-                            className="w-full px-3 py-2 border border-border rounded-xl bg-muted/30 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 resize-none"
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => applyToCampaign(c.id)}
-                              disabled={applySubmitting}
-                              className="h-8 px-4 rounded-full bg-foreground text-background text-xs font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
-                            >
-                              {applySubmitting ? "Applying…" : "Submit application"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => { setApplyingId(null); setApplyMessage(""); setApplyError(null); }}
-                              className="h-8 px-3 rounded-full border border-border text-xs text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => { setApplyingId(c.id); setApplyError(null); }}
-                          className="h-8 px-4 rounded-full bg-foreground text-background text-xs font-medium hover:opacity-80 transition-opacity"
-                        >
-                          Apply →
-                        </button>
-                      )}
-                    </div>
+                        {applied ? (
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2.5 py-1 rounded-full border ${
+                            appStatus === "accepted" ? "border-green-300 text-green-700 bg-green-50 dark:bg-green-950/20" :
+                            appStatus === "rejected" ? "border-red-300 text-red-600 bg-red-50 dark:bg-red-950/20" :
+                            "border-yellow-200 text-yellow-700 bg-yellow-50 dark:bg-yellow-950/20"
+                          }`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${appStatus === "accepted" ? "bg-green-500" : appStatus === "rejected" ? "bg-red-500" : "bg-yellow-500"}`} />
+                            {appStatus}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-muted-foreground">View & apply →</span>
+                        )}
+                      </div>
+                    </Link>
                   );
                 })}
               </div>

@@ -3,6 +3,19 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+/** GET /api/social/campaigns/[id]/apply — check if current user already applied */
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return NextResponse.json(null);
+
+  const { id } = await params;
+  const existing = await prisma.campaignApplication.findUnique({
+    where: { campaignId_creatorId: { campaignId: id, creatorId: session.user.id } },
+    select: { status: true },
+  });
+  return NextResponse.json(existing ?? null);
+}
+
 /** POST /api/social/campaigns/[id]/apply — creator applies to a campaign */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);

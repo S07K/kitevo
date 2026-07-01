@@ -3,6 +3,27 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+/** GET /api/social/campaigns/[id] — public campaign detail */
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const campaign = await prisma.campaign.findUnique({
+    where: { id },
+    include: {
+      brand: {
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+          brandProfile: { select: { companyName: true, industry: true, logoUrl: true, website: true, description: true } },
+        },
+      },
+      _count: { select: { applications: true } },
+    },
+  });
+  if (!campaign || campaign.status !== "open") return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json(campaign);
+}
+
 /** PATCH /api/social/campaigns/[id] — brand updates status (open/closed/draft) */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
