@@ -153,7 +153,7 @@ export default function CreatorInbox() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
       <AppNav
         links={[
           { href: "/dashboard", label: "Dashboard" },
@@ -165,37 +165,34 @@ export default function CreatorInbox() {
         }}
       />
 
-      <main className="mx-auto max-w-6xl px-5 sm:px-8 pt-24 pb-0 overflow-hidden">
-        <div className="mb-6">
-          <h1 className="font-display text-2xl font-semibold text-foreground tracking-tight">Social</h1>
-          <p className="text-sm text-muted-foreground mt-1">Your inbox and open brand campaigns.</p>
-        </div>
+      {/* Tab bar — full width, fixed under nav */}
+      <div className="shrink-0 border-b border-border flex items-center px-5 sm:px-8 mt-[57px]">
+        {(["inbox", "campaigns"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`relative px-5 py-3 text-sm font-medium transition-colors capitalize ${
+              tab === t ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t}
+            {t === "inbox" && unreadCount > 0 && (
+              <span className="absolute top-1.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+            {tab === t && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-t-full" />}
+          </button>
+        ))}
+      </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-border mb-6">
-          {(["inbox", "campaigns"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={`relative px-5 py-2.5 text-sm font-medium transition-colors capitalize ${
-                tab === t ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t}
-              {t === "inbox" && unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-              {tab === t && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-t-full" />}
-            </button>
-          ))}
-        </div>
+      {/* Content — fills remaining height exactly */}
+      <div className="flex-1 overflow-hidden">
 
         {/* Campaigns tab */}
         {tab === "campaigns" && (
-          <div>
+          <div className="h-full overflow-y-auto px-5 sm:px-8 py-6 max-w-4xl mx-auto">
             <div className="flex gap-2 flex-wrap mb-5">
               {NICHES.map((n) => (
                 <button
@@ -313,7 +310,7 @@ export default function CreatorInbox() {
         )}
 
         {tab === "inbox" && (
-          <div className="flex border-t border-border -mx-5 sm:-mx-8" style={{ height: "calc(100vh - 13rem)" }}>
+          <div className="flex h-full border-t border-border">
             {/* Sidebar */}
             <div className="w-72 shrink-0 border-r border-border flex flex-col">
               <div className="px-5 py-4 border-b border-border">
@@ -479,7 +476,7 @@ export default function CreatorInbox() {
             </div>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

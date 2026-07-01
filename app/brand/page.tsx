@@ -365,7 +365,7 @@ export default function BrandDashboard() {
   const activeConvo = conversations.find((c) => c.id === activeConvoId);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
       <AppNav
         links={[{ href: "/brand", label: "Dashboard" }]}
         onLogout={async () => {
@@ -374,39 +374,44 @@ export default function BrandDashboard() {
         }}
       />
 
-      <main className={`mx-auto max-w-6xl px-5 sm:px-8 pt-24 ${tab === "inbox" ? "pb-0 overflow-hidden" : "pb-24"}`}>
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-2xl font-semibold text-foreground tracking-tight">Brand Dashboard</h1>
-            <p className="text-sm text-muted-foreground mt-1">Discover creators, review kits, and reach out directly.</p>
+      {/* Sticky header + tabs — full width, sits under fixed nav */}
+      <div className="shrink-0 mt-[57px] border-b border-border">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <div className="pt-6 pb-4 flex items-center justify-between">
+            <div>
+              <h1 className="font-display text-xl font-semibold text-foreground tracking-tight">Brand Dashboard</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">Discover creators, review kits, and reach out directly.</p>
+            </div>
+            <Link href="/profile" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors">
+              Brand settings
+            </Link>
           </div>
-          <Link href="/profile" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors">
-            Brand settings
-          </Link>
+          <div className="flex gap-1">
+            {(["discover", "campaigns", "inbox"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTab(t)}
+                className={`relative px-5 py-2.5 text-sm font-medium transition-colors capitalize ${
+                  tab === t ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t}
+                {t === "inbox" && unreadCount > 0 && (
+                  <span className="absolute top-1.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+                {tab === t && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-t-full" />}
+              </button>
+            ))}
+          </div>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-border mb-8">
-          {(["discover", "campaigns", "inbox"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={`relative px-5 py-2.5 text-sm font-medium transition-colors capitalize ${
-                tab === t ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t}
-              {t === "inbox" && unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-              {tab === t && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-t-full" />}
-            </button>
-          ))}
-        </div>
+      {/* Content area — fills remaining viewport exactly */}
+      <div className={`flex-1 overflow-hidden ${tab !== "inbox" ? "overflow-y-auto" : ""}`}>
+        <div className={tab !== "inbox" ? "mx-auto max-w-6xl px-5 sm:px-8 py-8" : "h-full"}>
 
         {/* Discover tab */}
         {tab === "discover" && (
@@ -721,7 +726,7 @@ export default function BrandDashboard() {
 
         {/* Inbox tab */}
         {tab === "inbox" && (
-          <div className="flex border-t border-border -mx-5 sm:-mx-8" style={{ height: "calc(100vh - 15rem)" }}>
+          <div className="flex h-full border-t border-border">
             {/* Sidebar */}
             <div className="w-72 shrink-0 border-r border-border flex flex-col">
               <div className="px-5 py-4 border-b border-border">
@@ -885,7 +890,8 @@ export default function BrandDashboard() {
             </div>
           </div>
         )}
-      </main>
+        </div>
+      </div>
     </div>
   );
 }
