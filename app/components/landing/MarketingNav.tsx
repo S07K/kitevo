@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+type NavUser = { name: string | null; avatarUrl: string | null; username: string | null; accountType: string | null } | null;
+
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
   { label: "Vibes", href: "#vibes" },
@@ -18,6 +20,14 @@ export function MarketingNav(): ReactNode {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const [user, setUser] = useState<NavUser>(undefined as unknown as NavUser);
+
+  useEffect(() => {
+    fetch("/api/me/profile", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setUser(d ? { name: d.name ?? null, avatarUrl: d.avatarUrl ?? null, username: d.username ?? null, accountType: d.accountType ?? null } : null))
+      .catch(() => setUser(null));
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -71,21 +81,48 @@ export function MarketingNav(): ReactNode {
             ))}
           </nav>
 
-          {/* Right: CTA + theme toggle + hamburger */}
+          {/* Right: CTA / avatar + theme toggle + hamburger */}
           <div className="flex items-center gap-3">
             <ThemeToggle className="hidden md:inline-flex" />
-            <Link
-              href="/login"
-              className="focus-ring text-muted-foreground hover:text-foreground hidden text-sm font-medium transition-colors md:inline-flex"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="focus-ring bg-foreground text-background hidden h-10 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80 md:inline-flex"
-            >
-              Get started free
-            </Link>
+            {user === (undefined as unknown as NavUser) ? (
+              /* loading — keep space stable */
+              <span className="hidden md:inline-flex h-9 w-24 rounded-full bg-muted/40 animate-pulse" />
+            ) : user ? (
+              /* Logged in — show avatar linking to dashboard */
+              <Link
+                href={user.accountType === "brand" ? "/brand" : "/dashboard"}
+                className="hidden md:inline-flex items-center gap-2.5 rounded-full border border-border px-2 pr-4 py-1 hover:bg-muted transition-colors"
+              >
+                <div className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0">
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                      {(user.name ?? user.username ?? "?").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <span className="text-sm font-medium text-foreground">
+                  {user.name ?? user.username ?? "Dashboard"}
+                </span>
+              </Link>
+            ) : (
+              /* Logged out — show auth buttons */
+              <>
+                <Link
+                  href="/login"
+                  className="focus-ring text-muted-foreground hover:text-foreground hidden text-sm font-medium transition-colors md:inline-flex"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="focus-ring bg-foreground text-background hidden h-10 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80 md:inline-flex"
+                >
+                  Get started free
+                </Link>
+              </>
+            )}
 
             <button
               ref={toggleRef}
@@ -163,20 +200,32 @@ export function MarketingNav(): ReactNode {
                   </Link>
                 </div>
               </div>
-              <Link
-                href="/signup"
-                onClick={close}
-                className="focus-ring bg-foreground text-background flex h-13 w-full items-center justify-center rounded-2xl text-base font-medium transition-opacity hover:opacity-80"
-              >
-                Get started free
-              </Link>
-              <Link
-                href="/login"
-                onClick={close}
-                className="focus-ring text-muted-foreground flex h-12 w-full items-center justify-center rounded-2xl text-sm font-medium transition-colors hover:bg-muted"
-              >
-                Log in
-              </Link>
+              {user ? (
+                <Link
+                  href={user.accountType === "brand" ? "/brand" : "/dashboard"}
+                  onClick={close}
+                  className="focus-ring bg-foreground text-background flex h-13 w-full items-center justify-center rounded-2xl text-base font-medium transition-opacity hover:opacity-80"
+                >
+                  Go to Dashboard →
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/signup"
+                    onClick={close}
+                    className="focus-ring bg-foreground text-background flex h-13 w-full items-center justify-center rounded-2xl text-base font-medium transition-opacity hover:opacity-80"
+                  >
+                    Get started free
+                  </Link>
+                  <Link
+                    href="/login"
+                    onClick={close}
+                    className="focus-ring text-muted-foreground flex h-12 w-full items-center justify-center rounded-2xl text-sm font-medium transition-colors hover:bg-muted"
+                  >
+                    Log in
+                  </Link>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}
