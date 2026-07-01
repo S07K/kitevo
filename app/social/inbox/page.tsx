@@ -165,8 +165,8 @@ export default function CreatorInbox() {
         }}
       />
 
-      {/* Tab bar — full width, fixed under nav */}
-      <div className="shrink-0 border-b border-border flex items-center px-5 sm:px-8 mt-[57px]">
+      {/* Tab bar — full width under nav */}
+      <div className="shrink-0 border-b border-border flex items-center px-5 sm:px-8 mt-[57px] gap-1">
         {(["inbox", "campaigns"] as const).map((t) => (
           <button
             key={t}
@@ -375,7 +375,7 @@ export default function CreatorInbox() {
             </div>
 
             {/* Thread */}
-            <div className="flex-1 flex flex-col min-w-0 bg-background">
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
               {!activeId ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center">
                   <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40">
