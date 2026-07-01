@@ -199,6 +199,7 @@ export default function ProfilePage() {
           ) : profile ? (
             <ProfileForm
               profile={profile}
+              externalError={saveError}
               onAvatarUrlChange={(url) => setProfile((p) => (p ? { ...p, avatarUrl: url } : null))}
               onSave={handleSave}
               saving={saving}

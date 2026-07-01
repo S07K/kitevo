@@ -529,16 +529,12 @@ function OnboardingContent() {
           {/* ── Step 1: Profile ── */}
           {currentStep === 0 && (
             <div className="mt-5">
-              {profileSaveError && (
-                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                  {profileSaveError}
-                </div>
-              )}
               {profileLoading ? (
                 <p className="text-muted-foreground text-sm">Loading…</p>
               ) : (
                 <ProfileForm
                   profile={profile ?? emptyProfile}
+                  externalError={profileSaveError}
                   onAvatarUrlChange={(url) =>
                     setProfile((p) => (p ? { ...p, avatarUrl: url } : { ...emptyProfile, avatarUrl: url }))
                   }

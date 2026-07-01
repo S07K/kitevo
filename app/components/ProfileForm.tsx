@@ -47,6 +47,7 @@ export function ProfileForm({
   saving,
   submitLabel = "Save profile",
   onAvatarUrlChange,
+  externalError,
 }: {
   profile: ProfileFormProfile;
   onSave: (data: ProfilePayload) => Promise<void>;
@@ -54,6 +55,8 @@ export function ProfileForm({
   submitLabel?: string;
   /** Called after upload or Instagram sync so parent can refresh local profile state. */
   onAvatarUrlChange?: (avatarUrl: string | null) => void;
+  /** Error from the parent (e.g. "Username is already taken") shown inline. */
+  externalError?: string | null;
 }) {
   const [name, setName] = useState(profile.name ?? "");
   const [username, setUsername] = useState(profile.username ?? "");
@@ -169,6 +172,13 @@ export function ProfileForm({
     <form onSubmit={handleSubmit}>
       <div className="flex flex-col gap-6">
 
+        {/* External error (non-username) */}
+        {externalError && !externalError.toLowerCase().includes("username") && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-500">
+            {externalError}
+          </div>
+        )}
+
         {/* Avatar + name/username row */}
         <div className="flex items-stretch gap-4">
           {/* Avatar with pencil overlay */}
@@ -240,15 +250,21 @@ export function ProfileForm({
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-7 pr-3 py-2.5 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition"
+                  className={`w-full pl-7 pr-3 py-2.5 border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 transition ${
+                    externalError?.toLowerCase().includes("username")
+                      ? "border-red-500 focus:ring-red-300"
+                      : "border-border focus:ring-ring/30"
+                  }`}
                   placeholder="yourname"
                 />
               </div>
-              {username && (
+              {externalError?.toLowerCase().includes("username") ? (
+                <p className="mt-1 text-xs text-red-500 font-medium">{externalError}</p>
+              ) : username ? (
                 <p className="mt-1 text-xs text-muted-foreground">
                   kitevo.com/{username.trim().toLowerCase().replace(/\s+/g, "-")}
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
