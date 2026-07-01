@@ -5,12 +5,25 @@ import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 
 type NavLink = { href: string; label: string; primary?: boolean; external?: boolean };
+type NavTab = { key: string; label: string; badge?: number };
 
-export function AppNav({ links, onLogout }: { links: NavLink[]; onLogout?: () => void }) {
+export function AppNav({
+  links,
+  onLogout,
+  tabs,
+  activeTab,
+  onTabChange,
+}: {
+  links: NavLink[];
+  onLogout?: () => void;
+  tabs?: NavTab[];
+  activeTab?: string;
+  onTabChange?: (key: string) => void;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <nav className="bg-background/95 border-border fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b px-5 py-4 backdrop-blur-md sm:px-8">
+    <nav className="bg-background/95 border-border fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b px-5 backdrop-blur-md sm:px-8" style={{ height: 57 }}>
       <Link
         href="/"
         className="font-display text-foreground shrink-0 text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
@@ -18,6 +31,31 @@ export function AppNav({ links, onLogout }: { links: NavLink[]; onLogout?: () =>
       >
         Kitevo
       </Link>
+
+      {/* Centre tabs */}
+      {tabs && tabs.length > 0 && (
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-1 md:flex">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => onTabChange?.(t.key)}
+              className={`relative h-9 rounded-full px-4 text-sm font-medium transition-colors ${
+                activeTab === t.key
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+              {t.badge && t.badge > 0 ? (
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                  {t.badge > 9 ? "9+" : t.badge}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Desktop links */}
       <div className="hidden items-center gap-2 md:flex">
@@ -79,6 +117,28 @@ export function AppNav({ links, onLogout }: { links: NavLink[]; onLogout?: () =>
             onClick={() => setMenuOpen(false)}
           />
           <div className="bg-background border-border fixed left-4 right-4 top-[65px] z-50 flex flex-col gap-1 rounded-2xl border p-3 shadow-xl md:hidden">
+            {tabs && tabs.length > 0 && (
+              <>
+                {tabs.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => { setMenuOpen(false); onTabChange?.(t.key); }}
+                    className={`flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                      activeTab === t.key ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {t.label}
+                    {t.badge && t.badge > 0 ? (
+                      <span className="ml-1.5 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                        {t.badge > 9 ? "9+" : t.badge}
+                      </span>
+                    ) : null}
+                  </button>
+                ))}
+                <div className="my-1 border-t border-border" />
+              </>
+            )}
             {links.map((link) => {
               const key = `${link.href}-${link.label}`;
               const cls = link.primary

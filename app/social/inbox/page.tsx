@@ -155,40 +155,21 @@ export default function CreatorInbox() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <AppNav
-        links={[
-          { href: "/dashboard", label: "Dashboard" },
-          { href: "/social/inbox", label: unreadCount > 0 ? `Inbox (${unreadCount})` : "Inbox" },
-        ]}
+        links={[{ href: "/dashboard", label: "Dashboard" }]}
         onLogout={async () => {
           await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
           signOut({ callbackUrl: "/" });
         }}
+        tabs={[
+          { key: "inbox", label: "Inbox", badge: unreadCount },
+          { key: "campaigns", label: "Campaigns" },
+        ]}
+        activeTab={tab}
+        onTabChange={(k) => setTab(k as typeof tab)}
       />
 
-      {/* Tab bar — full width under nav */}
-      <div className="shrink-0 border-b border-border flex items-center px-5 sm:px-8 mt-[57px] gap-1">
-        {(["inbox", "campaigns"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={`relative px-5 py-3 text-sm font-medium transition-colors capitalize ${
-              tab === t ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t}
-            {t === "inbox" && unreadCount > 0 && (
-              <span className="absolute top-1.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-            {tab === t && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-t-full" />}
-          </button>
-        ))}
-      </div>
-
-      {/* Content — fills remaining height exactly */}
-      <div className="flex-1 overflow-hidden">
+      {/* Content — fills remaining height exactly, sits under 57px fixed nav */}
+      <div className="flex-1 overflow-hidden mt-[57px]">
 
         {/* Campaigns tab */}
         {tab === "campaigns" && (
