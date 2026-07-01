@@ -750,6 +750,11 @@ function DashboardContent() {
     if (!profileLoaded || profile === null) return;
     if (profile.onboardingCompletedAt == null || profile.onboardingCompletedAt === "") {
       router.replace("/onboarding");
+      return;
+    }
+    // Brand accounts have their own dashboard
+    if ((profile as { accountType?: string }).accountType === "brand") {
+      router.replace("/brand");
     }
   }, [profileLoaded, profile, router]);
 
@@ -1005,6 +1010,7 @@ function DashboardContent() {
       <AppNav
         links={[
           { href: "/pricing", label: "Pricing" },
+          { href: "/social/inbox", label: "Inbox" },
           { href: kits[0] ? `/kit/${kits[0].slug}` : "/kit/demo", label: "View Kit", external: true },
         ]}
         onLogout={async () => {

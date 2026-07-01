@@ -9,6 +9,8 @@ import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm"
 import { getPublicTiers } from "@/config/subscriptions";
 import type { SubscriptionTier } from "@/config/subscriptions";
 
+type AccountType = "creator" | "brand";
+
 const STEPS = [
   { number: "01", title: "Your profile",       short: "Profile" },
   { number: "02", title: "Connect platforms",  short: "Platforms" },
@@ -102,6 +104,22 @@ function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Step 0 — account type
+  const [accountType, setAccountType] = useState<AccountType | null>(null);
+  const [accountTypeLoading, setAccountTypeLoading] = useState(true);
+  const [accountTypeSaving, setAccountTypeSaving] = useState(false);
+
+  // Brand onboarding fields (used when accountType === "brand")
+  const [brandCompany, setBrandCompany] = useState("");
+  const [brandIndustry, setBrandIndustry] = useState("");
+  const [brandBudget, setBrandBudget] = useState("");
+  const [brandWebsite, setBrandWebsite] = useState("");
+  const [brandDescription, setBrandDescription] = useState("");
+  const [brandSaving, setBrandSaving] = useState(false);
+  const [brandError, setBrandError] = useState<string | null>(null);
+  // Brand step: 0 = role picker, 1 = brand profile form
+  const [brandStep, setBrandStep] = useState(0);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [finishing, setFinishing] = useState(false);
 
@@ -176,6 +194,20 @@ function OnboardingContent() {
     }
   }, [searchParams, router]);
 
+  // Load account type (check if user already chose)
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/me/account-type", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.accountType) {
+          setAccountType(data.accountType as AccountType);
+        }
+      })
+      .finally(() => { if (!cancelled) setAccountTypeLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
   // Load profile
   useEffect(() => {
     let cancelled = false;
@@ -226,6 +258,50 @@ function OnboardingContent() {
     } catch { setFinishing(false); }
   }
 
+  async function handleBrandFinish() {
+    setBrandError(null);
+    setBrandSaving(true);
+    try {
+      const res = await fetch("/api/brand/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyName: brandCompany.trim(),
+          industry: brandIndustry.trim(),
+          budgetRange: brandBudget,
+          website: brandWebsite.trim(),
+          description: brandDescription.trim(),
+        }),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setBrandError(err.error ?? "Failed to save brand profile");
+        return;
+      }
+      // Mark onboarding complete then redirect to brand dashboard
+      await fetch("/api/me/onboarding-complete", { method: "POST", credentials: "include" });
+      router.replace("/brand");
+    } catch {
+      setBrandError("Something went wrong. Please try again.");
+    } finally {
+      setBrandSaving(false);
+    }
+  }
+
+  async function chooseAccountType(type: AccountType) {
+    setAccountTypeSaving(true);
+    await fetch("/api/me/account-type", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountType: type }),
+      credentials: "include",
+    }).catch(() => {});
+    setAccountType(type);
+    setAccountTypeSaving(false);
+    if (type === "brand") setBrandStep(1);
+  }
+
   const isFirst = currentStep === 0;
   const isLast = currentStep === totalSteps - 1;
 
@@ -249,12 +325,167 @@ function OnboardingContent() {
             Welcome to Kitevo
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            Four quick steps to your first live media kit.
+            {accountType === "brand"
+              ? "Set up your brand profile to start finding creators."
+              : "Four quick steps to your first live media kit."}
           </p>
         </div>
 
-        {/* Step indicators */}
-        <div className="mb-8 flex items-center gap-0">
+        {/* ── ROLE PICKER (step 0 — shown until type is chosen) ── */}
+        {(accountTypeLoading || !accountType) && (
+          <div className="bg-background border-border rounded-2xl border p-8 shadow-sm">
+            {accountTypeLoading ? (
+              <p className="text-muted-foreground text-sm text-center">Loading…</p>
+            ) : (
+              <>
+                <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-2">
+                  Step 0 of setup
+                </p>
+                <h2 className="font-display text-foreground text-xl font-semibold tracking-tight">
+                  Who are you on Kitevo?
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground mb-8">
+                  This shapes your entire experience — choose carefully.
+                </p>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {/* Creator card */}
+                  <button
+                    type="button"
+                    disabled={accountTypeSaving}
+                    onClick={() => chooseAccountType("creator")}
+                    className="group relative text-left rounded-2xl border-2 border-border hover:border-foreground transition-all duration-150 p-6 space-y-3 disabled:opacity-60"
+                  >
+                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white text-xl">
+                      ✦
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground text-base">Creator</p>
+                      <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                        I create content — Instagram, YouTube, TikTok, blogs. I want a media kit to pitch to brands.
+                      </p>
+                    </div>
+                    <p className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                      Get a kit →
+                    </p>
+                  </button>
+
+                  {/* Brand card */}
+                  <button
+                    type="button"
+                    disabled={accountTypeSaving}
+                    onClick={() => chooseAccountType("brand")}
+                    className="group relative text-left rounded-2xl border-2 border-border hover:border-foreground transition-all duration-150 p-6 space-y-3 disabled:opacity-60"
+                  >
+                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-xl">
+                      ◈
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground text-base">Brand</p>
+                      <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                        I represent a company. I want to discover creators, review their kits, and hire them for campaigns.
+                      </p>
+                    </div>
+                    <p className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                      Find creators →
+                    </p>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── BRAND ONBOARDING FLOW ── */}
+        {accountType === "brand" && brandStep === 1 && (
+          <div className="bg-background border-border rounded-2xl border p-6 shadow-sm space-y-5">
+            <div>
+              <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-1">
+                Brand profile
+              </p>
+              <h2 className="font-display text-foreground text-xl font-semibold tracking-tight">
+                Tell creators about your brand
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                This is how creators will see you when you reach out.
+              </p>
+            </div>
+
+            {brandError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                {brandError}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Company name *</label>
+                <Input value={brandCompany} onChange={setBrandCompany} placeholder="Acme Co." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Industry *</label>
+                <select
+                  value={brandIndustry}
+                  onChange={(e) => setBrandIndustry(e.target.value)}
+                  className="border-border bg-background text-foreground w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Select industry…</option>
+                  {["Fashion & Apparel", "Beauty & Skincare", "Food & Beverage", "Tech & SaaS", "Health & Wellness",
+                    "Travel & Hospitality", "Home & Lifestyle", "Sports & Fitness", "Entertainment", "Finance", "Education", "Other"].map((i) => (
+                    <option key={i} value={i}>{i}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Typical campaign budget *</label>
+                <select
+                  value={brandBudget}
+                  onChange={(e) => setBrandBudget(e.target.value)}
+                  className="border-border bg-background text-foreground w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Select range…</option>
+                  {["< $500", "$500–$2k", "$2k–$10k", "$10k–$50k", "$50k+"].map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Website</label>
+                <Input value={brandWebsite} onChange={setBrandWebsite} placeholder="https://yourcompany.com" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">What are you looking for?</label>
+                <textarea
+                  value={brandDescription}
+                  onChange={(e) => setBrandDescription(e.target.value)}
+                  rows={3}
+                  placeholder="We partner with lifestyle creators for product launches and seasonal campaigns…"
+                  className="border-border bg-background text-foreground placeholder:text-muted-foreground w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => { setAccountType(null); setBrandStep(0); }}
+                className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+              >
+                ← Change role
+              </button>
+              <button
+                type="button"
+                disabled={brandSaving || !brandCompany.trim() || !brandIndustry || !brandBudget}
+                onClick={handleBrandFinish}
+                className="bg-foreground text-background inline-flex h-11 items-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50 ml-auto"
+              >
+                {brandSaving ? "Saving…" : "Enter Kitevo →"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── CREATOR FLOW (step indicators + step card) ── */}
+        {accountType === "creator" && <><div className="mb-8 flex items-center gap-0">
           {STEPS.map((s, i) => {
             const done = i < currentStep;
             const active = i === currentStep;
@@ -633,6 +864,7 @@ function OnboardingContent() {
             </Link>
           </p>
         )}
+        </>}
       </main>
     </div>
   );

@@ -36,6 +36,7 @@ export async function GET() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      id: true,
       name: true,
       username: true,
       bio: true,
@@ -44,12 +45,15 @@ export async function GET() {
       email: true,
       onboardingCompletedAt: true,
       instagramUserId: true,
+      accountType: true,
+      verifiedTier: true,
     },
   });
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
   return NextResponse.json({
+    id: user.id,
     name: user.name,
     username: user.username,
     bio: user.bio,
@@ -58,6 +62,8 @@ export async function GET() {
     links: parseLinks(user.links),
     onboardingCompletedAt: user.onboardingCompletedAt?.toISOString() ?? null,
     instagramConnected: !!user.instagramUserId,
+    accountType: user.accountType,
+    verifiedTier: user.verifiedTier,
   });
 }
 

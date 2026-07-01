@@ -1,0 +1,501 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { AppNav } from "@/app/components/AppNav";
+import { VerifiedBadge } from "@/app/components/VerifiedBadge";
+import { signOut } from "next-auth/react";
+
+const NICHES = [
+  "All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel",
+  "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education",
+];
+
+const BUDGET_ICONS: Record<string, string> = {
+  "< $500": "💰",
+  "$500–$2k": "💰💰",
+  "$2k–$10k": "💰💰💰",
+  "$10k–$50k": "💰💰💰💰",
+  "$50k+": "💰💰💰💰💰",
+};
+
+type Creator = {
+  id: string;
+  name: string | null;
+  username: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  niches: string[];
+  openToCollab: boolean;
+  location: string | null;
+  verifiedTier: string | null;
+  hasInstagram: boolean;
+  kit: { id: string; slug: string; name: string } | null;
+};
+
+type Conversation = {
+  id: string;
+  other: {
+    id: string;
+    name: string | null;
+    username: string | null;
+    avatarUrl: string | null;
+    verifiedTier: string | null;
+  } | null;
+  lastMessage: { body: string; at: string; mine: boolean } | null;
+  unread: boolean;
+};
+
+function CreatorCard({ creator, onMessage }: { creator: Creator; onMessage: (id: string) => void }) {
+  const initials = (creator.name ?? creator.username ?? "?").charAt(0).toUpperCase();
+  return (
+    <div className="bg-background border border-border rounded-2xl overflow-hidden hover:shadow-md transition-shadow group">
+      {/* Header band */}
+      <div className="h-16 bg-gradient-to-r from-foreground/5 to-foreground/10 relative" />
+
+      <div className="px-5 pb-5 -mt-8">
+        {/* Avatar */}
+        <div className="relative mb-3 inline-block">
+          <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-background bg-muted shadow">
+            {creator.avatarUrl ? (
+              <img src={creator.avatarUrl} alt={creator.name ?? ""} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center font-semibold text-lg text-muted-foreground">
+                {initials}
+              </div>
+            )}
+          </div>
+          {creator.openToCollab && (
+            <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-green-500 border-2 border-background" title="Open to collaboration" />
+          )}
+        </div>
+
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="font-semibold text-foreground text-sm truncate">{creator.name ?? creator.username}</p>
+              <VerifiedBadge tier={creator.verifiedTier} size="sm" />
+            </div>
+            {creator.username && (
+              <p className="text-xs text-muted-foreground">@{creator.username}</p>
+            )}
+          </div>
+          {creator.hasInstagram && (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="url(#ig-brand-grad)" aria-label="Instagram connected" className="shrink-0 mt-0.5">
+              <defs>
+                <linearGradient id="ig-brand-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f09433" />
+                  <stop offset="100%" stopColor="#bc1888" />
+                </linearGradient>
+              </defs>
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+            </svg>
+          )}
+        </div>
+
+        {creator.bio && (
+          <p className="mt-2 text-xs text-muted-foreground line-clamp-2 leading-relaxed">{creator.bio}</p>
+        )}
+
+        {creator.niches.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {creator.niches.slice(0, 3).map((n) => (
+              <span key={n} className="text-[10px] font-medium bg-muted text-muted-foreground rounded-full px-2 py-0.5">{n}</span>
+            ))}
+          </div>
+        )}
+
+        {creator.location && (
+          <p className="mt-2 text-xs text-muted-foreground">📍 {creator.location}</p>
+        )}
+
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => onMessage(creator.id)}
+            className="flex-1 inline-flex justify-center h-8 items-center rounded-full bg-foreground text-background text-xs font-medium hover:opacity-80 transition-opacity"
+          >
+            Message
+          </button>
+          {creator.kit && (
+            <Link
+              href={`/kit/${creator.kit.slug}`}
+              target="_blank"
+              className="flex-1 inline-flex justify-center h-8 items-center rounded-full border border-border text-foreground text-xs font-medium hover:bg-muted transition-colors"
+            >
+              View kit
+            </Link>
+          )}
+          {creator.username && (
+            <Link
+              href={`/${creator.username}`}
+              target="_blank"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Public profile"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function BrandDashboard() {
+  const [tab, setTab] = useState<"discover" | "inbox">("discover");
+  const [niche, setNiche] = useState("All");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [creators, setCreators] = useState<Creator[]>([]);
+  const [loadingCreators, setLoadingCreators] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loadingConvos, setLoadingConvos] = useState(false);
+  const [activeConvoId, setActiveConvoId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<{ id: string; body: string; createdAt: string; senderId: string; sender: { name: string | null; avatarUrl: string | null } }[]>([]);
+  const [msgInput, setMsgInput] = useState("");
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Load my user id
+  useEffect(() => {
+    fetch("/api/me/profile", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d && setMyUserId(d.id ?? null))
+      .catch(() => {});
+  }, []);
+
+  // Load creators
+  useEffect(() => {
+    if (tab !== "discover") return;
+    setLoadingCreators(true);
+    const params = new URLSearchParams();
+    if (niche !== "All") params.set("niche", niche);
+    if (debouncedSearch) params.set("q", debouncedSearch);
+    fetch(`/api/social/creators?${params}`, { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d && setCreators(d.items ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingCreators(false));
+  }, [tab, niche, debouncedSearch]);
+
+  // Load conversations + poll
+  const loadConvos = useCallback(() => {
+    fetch("/api/social/conversations", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (Array.isArray(d)) {
+          setConversations(d);
+          setUnreadCount(d.filter((c: Conversation) => c.unread).length);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setLoadingConvos(true);
+    loadConvos();
+    setLoadingConvos(false);
+    const id = setInterval(loadConvos, 3000);
+    return () => clearInterval(id);
+  }, [loadConvos]);
+
+  // Load messages when conversation selected
+  useEffect(() => {
+    if (!activeConvoId) return;
+    const load = () => {
+      fetch(`/api/social/conversations/${activeConvoId}`, { credentials: "include" })
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => Array.isArray(d) && setMessages(d))
+        .catch(() => {});
+    };
+    load();
+    const id = setInterval(load, 3000);
+    return () => clearInterval(id);
+  }, [activeConvoId]);
+
+  async function startConversation(creatorId: string) {
+    const res = await fetch("/api/social/conversations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ otherUserId: creatorId }),
+      credentials: "include",
+    });
+    if (res.ok) {
+      const d = await res.json();
+      setActiveConvoId(d.conversationId);
+      setTab("inbox");
+      loadConvos();
+    }
+  }
+
+  async function sendMessage() {
+    if (!msgInput.trim() || !activeConvoId) return;
+    setSendingMsg(true);
+    try {
+      const res = await fetch(`/api/social/conversations/${activeConvoId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: msgInput.trim() }),
+        credentials: "include",
+      });
+      if (res.ok) {
+        setMsgInput("");
+        // Reload messages
+        const d = await fetch(`/api/social/conversations/${activeConvoId}`, { credentials: "include" }).then((r) => r.json());
+        if (Array.isArray(d)) setMessages(d);
+      }
+    } finally {
+      setSendingMsg(false);
+    }
+  }
+
+  const activeConvo = conversations.find((c) => c.id === activeConvoId);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <AppNav
+        links={[{ href: "/brand", label: "Dashboard" }]}
+        onLogout={async () => {
+          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
+          signOut({ callbackUrl: "/" });
+        }}
+      />
+
+      <main className="mx-auto max-w-6xl px-5 sm:px-8 pt-24 pb-24">
+        {/* Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-2xl font-semibold text-foreground tracking-tight">Brand Dashboard</h1>
+            <p className="text-sm text-muted-foreground mt-1">Discover creators, review kits, and reach out directly.</p>
+          </div>
+          <Link href="/profile" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors">
+            Brand settings
+          </Link>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 border-b border-border mb-8">
+          {(["discover", "inbox"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={`relative px-5 py-2.5 text-sm font-medium transition-colors capitalize ${
+                tab === t ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t}
+              {t === "inbox" && unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+              {tab === t && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-t-full" />}
+            </button>
+          ))}
+        </div>
+
+        {/* Discover tab */}
+        {tab === "discover" && (
+          <div>
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search creators by name, handle, or bio…"
+                className="flex-1 border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap mb-6">
+              {NICHES.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setNiche(n)}
+                  className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                    niche === n
+                      ? "bg-foreground text-background border-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/40"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+
+            {loadingCreators ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-64 rounded-2xl border border-border bg-muted animate-pulse" />
+                ))}
+              </div>
+            ) : creators.length === 0 ? (
+              <div className="text-center py-24">
+                <p className="text-muted-foreground text-sm">No creators found. Try a different niche or search.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {creators.map((c) => (
+                  <CreatorCard key={c.id} creator={c} onMessage={startConversation} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Inbox tab */}
+        {tab === "inbox" && (
+          <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-0 border border-border rounded-2xl overflow-hidden min-h-[560px]">
+            {/* Conversation list */}
+            <div className="border-r border-border bg-muted/20">
+              <div className="p-4 border-b border-border">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Messages</p>
+              </div>
+              {loadingConvos ? (
+                <div className="p-4 space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />)}
+                </div>
+              ) : conversations.length === 0 ? (
+                <div className="p-6 text-center">
+                  <p className="text-xs text-muted-foreground">No conversations yet. Message a creator from Discover.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {conversations.map((c) => {
+                    const other = c.other;
+                    const name = other?.name ?? other?.username ?? "Unknown";
+                    const initials = name.charAt(0).toUpperCase();
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setActiveConvoId(c.id)}
+                        className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${activeConvoId === c.id ? "bg-muted" : ""}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="relative shrink-0">
+                            <div className="h-9 w-9 rounded-full overflow-hidden bg-muted border border-border">
+                              {other?.avatarUrl ? (
+                                <img src={other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">{initials}</div>
+                              )}
+                            </div>
+                            {c.unread && <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-blue-500 border border-background" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1">
+                              <p className={`text-xs truncate ${c.unread ? "font-semibold text-foreground" : "text-foreground"}`}>{name}</p>
+                              <VerifiedBadge tier={other?.verifiedTier} size="sm" />
+                            </div>
+                            {c.lastMessage && (
+                              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                                {c.lastMessage.mine ? "You: " : ""}{c.lastMessage.body}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Message thread */}
+            <div className="flex flex-col bg-background">
+              {!activeConvoId ? (
+                <div className="flex-1 flex items-center justify-center text-center p-8">
+                  <div>
+                    <p className="text-muted-foreground text-sm">Select a conversation</p>
+                    <p className="text-xs text-muted-foreground mt-1">or message a creator from Discover</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Thread header */}
+                  <div className="p-4 border-b border-border flex items-center gap-3">
+                    {activeConvo?.other && (
+                      <>
+                        <div className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0">
+                          {activeConvo.other.avatarUrl ? (
+                            <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                              {(activeConvo.other.name ?? activeConvo.other.username ?? "?").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-semibold text-foreground">
+                            {activeConvo.other.name ?? activeConvo.other.username}
+                          </p>
+                          <VerifiedBadge tier={activeConvo.other.verifiedTier} size="sm" />
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Messages */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 max-h-96">
+                    {messages.length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center mt-8">Start the conversation ↓</p>
+                    )}
+                    {messages.map((m) => {
+                      const mine = m.senderId === myUserId;
+                      return (
+                        <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
+                            mine
+                              ? "bg-foreground text-background rounded-br-sm"
+                              : "bg-muted text-foreground rounded-bl-sm"
+                          }`}>
+                            {m.body}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Input */}
+                  <div className="p-4 border-t border-border flex gap-2">
+                    <input
+                      type="text"
+                      value={msgInput}
+                      onChange={(e) => setMsgInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                      placeholder="Type a message…"
+                      className="flex-1 border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <button
+                      type="button"
+                      onClick={sendMessage}
+                      disabled={!msgInput.trim() || sendingMsg}
+                      className="h-10 px-5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-40"
+                    >
+                      {sendingMsg ? "…" : "Send"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
