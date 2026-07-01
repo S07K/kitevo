@@ -20,6 +20,7 @@ export default function ProfilePage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSentTo, setDeleteSentTo] = useState<string | null>(null);
+  const [deleteDevCode, setDeleteDevCode] = useState<string | null>(null);
 
   // Instagram
   const [instagramConnected, setInstagramConnected] = useState(false);
@@ -334,6 +335,7 @@ export default function ProfilePage() {
                     const data = await res.json();
                     if (!res.ok) { setDeleteError(data.error ?? "Failed to send code"); return; }
                     setDeleteSentTo(data.email);
+                    setDeleteDevCode(data.devCode ?? null);
                     setDeleteStep("sent");
                   } finally {
                     setDeleteLoading(false);
@@ -351,6 +353,11 @@ export default function ProfilePage() {
               <p className="text-sm text-foreground">
                 We sent a 6-digit code to <strong>{deleteSentTo}</strong>. Enter it below to confirm deletion.
               </p>
+              {deleteDevCode && (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 font-mono">
+                  <span className="font-sans font-semibold">Dev mode — email failed, code: </span>{deleteDevCode}
+                </div>
+              )}
               {deleteError && (
                 <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{deleteError}</p>
               )}
@@ -412,7 +419,11 @@ export default function ProfilePage() {
                       body: JSON.stringify({ action: "request" }),
                       credentials: "include",
                     });
-                    if (res.ok) setDeleteCode("");
+                    if (res.ok) {
+                      const d = await res.json();
+                      setDeleteCode("");
+                      setDeleteDevCode(d.devCode ?? null);
+                    }
                   } finally { setDeleteLoading(false); }
                 }}
                 className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"

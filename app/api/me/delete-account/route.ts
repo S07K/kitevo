@@ -36,7 +36,20 @@ export async function POST(req: Request) {
       data: { deleteAccountCode: code, deleteAccountCodeExpiresAt: expiresAt },
     });
 
-    await sendDeleteAccountCodeEmail(user.email, code);
+    try {
+      await sendDeleteAccountCodeEmail(user.email, code);
+    } catch (emailErr) {
+      const msg = emailErr instanceof Error ? emailErr.message : String(emailErr);
+      // In dev, log the code to the server console so you can test without email
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(`[delete-account] Email failed (${msg}). Code for ${user.email}: ${code}`);
+        return NextResponse.json({ ok: true, email: user.email, devCode: code });
+      }
+      return NextResponse.json(
+        { error: `Failed to send confirmation email: ${msg}` },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({ ok: true, email: user.email });
   }

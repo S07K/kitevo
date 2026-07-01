@@ -77,8 +77,8 @@ export async function sendViewMilestoneEmail({
   });
 }
 
-export async function sendDeleteAccountCodeEmail(email: string, code: string) {
-  await resend.emails.send({
+export async function sendDeleteAccountCodeEmail(email: string, code: string): Promise<void> {
+  const { error } = await resend.emails.send({
     from: FROM,
     to: email,
     subject: "Your account deletion code — Kitevo",
@@ -90,6 +90,7 @@ export async function sendDeleteAccountCodeEmail(email: string, code: string) {
       footer: "This code was requested from the account settings page. Do not share it with anyone.",
     }),
   });
+  if (error) throw new Error(error.message);
 }
 
 export async function sendPasswordResetEmail(email: string, token: string) {
