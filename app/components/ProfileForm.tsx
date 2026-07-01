@@ -69,6 +69,7 @@ export function ProfileForm({
   const [links, setLinks] = useState<ProfileLink[]>(profile.links?.length ? [...profile.links] : [{ label: "", url: "" }]);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -155,9 +156,19 @@ export function ProfileForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setUsernameError(null);
+    const cleanUsername = username.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!cleanUsername) {
+      setUsernameError("Username is required");
+      return;
+    }
+    if (!/^[a-z0-9-]+$/.test(cleanUsername)) {
+      setUsernameError("Only letters, numbers, and hyphens allowed");
+      return;
+    }
     const payload: ProfilePayload = {
       name: name.trim() || null,
-      username: username.trim().toLowerCase().replace(/\s+/g, "-") || null,
+      username: cleanUsername,
       bio: bio.trim() || null,
       avatarUrl: avatarUrl.trim() || null,
       links: links.filter((l) => l.label.trim() || l.url.trim()).map((l) => ({ label: l.label.trim(), url: l.url.trim() })),
@@ -253,16 +264,18 @@ export function ProfileForm({
                 <input
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => { setUsername(e.target.value); setUsernameError(null); }}
                   className={`w-full pl-7 pr-3 py-2.5 border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 transition ${
-                    externalError?.toLowerCase().includes("username")
+                    usernameError || externalError?.toLowerCase().includes("username")
                       ? "border-red-500 focus:ring-red-300"
                       : "border-border focus:ring-ring/30"
                   }`}
                   placeholder="yourname"
                 />
               </div>
-              {externalError?.toLowerCase().includes("username") ? (
+              {usernameError ? (
+                <p className="mt-1 text-xs text-red-500 font-medium">{usernameError}</p>
+              ) : externalError?.toLowerCase().includes("username") ? (
                 <p className="mt-1 text-xs text-red-500 font-medium">{externalError}</p>
               ) : username ? (
                 <p className="mt-1 text-xs text-muted-foreground">
