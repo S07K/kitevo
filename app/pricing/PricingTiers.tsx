@@ -2,8 +2,22 @@
 
 import { useState } from "react";
 import type { SubscriptionTier } from "@/config/subscriptions";
+import type { BillingInterval } from "@/config/subscriptions";
 
-function SubscribeButton({ tier, isHighlighted }: { tier: SubscriptionTier; isHighlighted?: boolean }) {
+const YEARLY_PRICES: Record<string, number> = {
+  starter: 7,
+  pro: 12,
+};
+
+function SubscribeButton({
+  tier,
+  isHighlighted,
+  billing,
+}: {
+  tier: SubscriptionTier;
+  isHighlighted?: boolean;
+  billing: BillingInterval;
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,12 +28,12 @@ function SubscribeButton({ tier, isHighlighted }: { tier: SubscriptionTier; isHi
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tierId: tier.id }),
+        body: JSON.stringify({ tierId: tier.id, billing }),
         credentials: "include",
       });
       const data = await res.json();
       if (res.status === 401) {
-        const callbackUrl = encodeURIComponent("/pricing");
+        const callbackUrl = encodeURIComponent(`/pricing?billing=${billing}`);
         window.location.href = `/login?callbackUrl=${callbackUrl}`;
         return;
       }
@@ -51,55 +65,108 @@ function SubscribeButton({ tier, isHighlighted }: { tier: SubscriptionTier; isHi
   );
 }
 
-export function PricingTiers({ tiers, highlightTierId }: { tiers: SubscriptionTier[]; highlightTierId?: string }) {
+export function PricingTiers({
+  tiers,
+  highlightTierId,
+  defaultBilling = "monthly",
+}: {
+  tiers: SubscriptionTier[];
+  highlightTierId?: string;
+  defaultBilling?: BillingInterval;
+}) {
+  const [billing, setBilling] = useState<BillingInterval>(defaultBilling);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
-      {tiers.map((tier) => {
-        const isHighlighted = highlightTierId ? tier.id === highlightTierId : tier.highlight;
-        return (
-        <div
-          key={tier.id}
-          className={`relative p-8 rounded-2xl border bg-background text-left transition-shadow ${
-            isHighlighted ? "border-foreground ring-2 ring-foreground shadow-lg" : "border-border"
-          }`}
-        >
-          {isHighlighted && (
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-foreground text-background text-xs font-medium rounded-full">
-              {highlightTierId ? "Selected plan" : "Most popular"}
+    <div className="mt-12 max-w-4xl mx-auto">
+      {/* Billing toggle */}
+      <div className="flex justify-center mb-8">
+        <div className="inline-flex items-center border border-border rounded-full p-1">
+          <button
+            type="button"
+            onClick={() => setBilling("monthly")}
+            className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
+              billing === "monthly" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            onClick={() => setBilling("yearly")}
+            className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-colors ${
+              billing === "yearly" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Yearly
+            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+              billing === "yearly" ? "bg-white/20 text-white" : "bg-green-100 text-green-700"
+            }`}>
+              −20%
             </span>
-          )}
-          <h2 className="font-display text-xl font-semibold text-foreground">{tier.name}</h2>
-          <div className="mt-2 flex items-baseline gap-1">
-            {tier.priceMonthly === 0 ? (
-              <span className="font-display text-3xl font-semibold text-foreground">Free</span>
-            ) : (
-              <>
-                <span className="font-display text-3xl font-semibold text-foreground">${tier.priceMonthly}</span>
-                <span className="text-muted-foreground">/month</span>
-              </>
-            )}
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">{tier.kitsAllowed} media kit{tier.kitsAllowed !== 1 ? "s" : ""}</p>
-          <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
-            {tier.features.map((feature, i) => (
-              <li key={i} className="flex items-center gap-2">
-                <span className="text-foreground">✓</span>
-                {feature}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-8">
-            {tier.priceMonthly === 0 ? (
-              <a href="/signup" className="block w-full px-6 py-3 text-center font-medium rounded-full border border-border text-foreground hover:bg-muted transition-colors text-sm">
-                Start for free
-              </a>
-            ) : (
-              <SubscribeButton tier={tier} isHighlighted={!!isHighlighted} />
-            )}
-          </div>
+          </button>
         </div>
-        );
-      })}
+      </div>
+
+      {/* Tier cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {tiers.map((tier) => {
+          const isHighlighted = highlightTierId ? tier.id === highlightTierId : tier.highlight;
+          const displayPrice = billing === "yearly" && tier.priceMonthly > 0
+            ? (YEARLY_PRICES[tier.id] ?? tier.priceMonthly)
+            : tier.priceMonthly;
+
+          return (
+            <div
+              key={tier.id}
+              className={`relative p-8 rounded-2xl border bg-background text-left transition-shadow ${
+                isHighlighted ? "border-foreground ring-2 ring-foreground shadow-lg" : "border-border"
+              }`}
+            >
+              {isHighlighted && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-foreground text-background text-xs font-medium rounded-full">
+                  {highlightTierId ? "Selected plan" : "Most popular"}
+                </span>
+              )}
+              <h2 className="font-display text-xl font-semibold text-foreground">{tier.name}</h2>
+              <div className="mt-2 flex items-baseline gap-1">
+                {tier.priceMonthly === 0 ? (
+                  <span className="font-display text-3xl font-semibold text-foreground">Free</span>
+                ) : (
+                  <>
+                    <span className="font-display text-3xl font-semibold text-foreground">${displayPrice}</span>
+                    <span className="text-muted-foreground text-sm">
+                      /mo{billing === "yearly" ? ", billed yearly" : ""}
+                    </span>
+                  </>
+                )}
+              </div>
+              {billing === "yearly" && tier.priceMonthly > 0 && (
+                <p className="mt-0.5 text-xs text-emerald-600 font-medium">
+                  Save ${(tier.priceMonthly - displayPrice) * 12}/yr vs monthly
+                </p>
+              )}
+              <p className="mt-1 text-xs text-muted-foreground">{tier.kitsAllowed} media kit{tier.kitsAllowed !== 1 ? "s" : ""}</p>
+              <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
+                {tier.features.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <span className="text-foreground">✓</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8">
+                {tier.priceMonthly === 0 ? (
+                  <a href="/signup" className="block w-full px-6 py-3 text-center font-medium rounded-full border border-border text-foreground hover:bg-muted transition-colors text-sm">
+                    Start for free
+                  </a>
+                ) : (
+                  <SubscribeButton tier={tier} isHighlighted={!!isHighlighted} billing={billing} />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { stripe } from "@/lib/stripe";
 import { authOptions } from "@/lib/auth";
-import { getPriceIdForTier } from "@/config/subscriptions";
+import { getPriceIdForTier, type BillingInterval } from "@/config/subscriptions";
 import { prisma } from "@/lib/prisma";
 
 async function hasPaidSubscription(userId: string): Promise<boolean> {
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { tierId, returnTo } = body as { tierId?: string; returnTo?: string };
+    const { tierId, returnTo, billing } = body as { tierId?: string; returnTo?: string; billing?: string };
 
     if (await hasPaidSubscription(authSession.user.id)) {
       return NextResponse.json(
@@ -33,11 +33,15 @@ export async function POST(req: Request) {
     }
 
     const tier = tierId && typeof tierId === "string" ? tierId : "starter";
-    const priceId = getPriceIdForTier(tier);
+    const interval: BillingInterval = billing === "yearly" ? "yearly" : "monthly";
+    const priceId = getPriceIdForTier(tier, interval);
 
     if (!priceId) {
+      const envKey = interval === "yearly"
+        ? `STRIPE_PRICE_ID_${tier.toUpperCase()}_YEARLY`
+        : `STRIPE_PRICE_ID_${tier.toUpperCase()}`;
       return NextResponse.json(
-        { error: `Stripe price not configured for tier: ${tier}. Set STRIPE_PRICE_ID_${tier.toUpperCase()} in env.` },
+        { error: `Stripe price not configured for ${tier} (${interval}). Set ${envKey} in env.` },
         { status: 500 }
       );
     }

@@ -60,18 +60,25 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
   },
 ];
 
-/** Resolve Stripe Price ID for a tier. Env: STRIPE_PRICE_ID_STARTER, STRIPE_PRICE_ID_PRO, etc. */
-export function getPriceIdForTier(tierId: string): string | null {
-  const key = `STRIPE_PRICE_ID_${tierId.toUpperCase().replace(/-/g, "_")}` as keyof typeof process.env;
+export type BillingInterval = "monthly" | "yearly";
+
+/** Resolve Stripe Price ID for a tier + interval.
+ *  Monthly env: STRIPE_PRICE_ID_STARTER, STRIPE_PRICE_ID_PRO
+ *  Yearly env:  STRIPE_PRICE_ID_STARTER_YEARLY, STRIPE_PRICE_ID_PRO_YEARLY
+ */
+export function getPriceIdForTier(tierId: string, interval: BillingInterval = "monthly"): string | null {
+  const suffix = interval === "yearly" ? "_YEARLY" : "";
+  const key = `STRIPE_PRICE_ID_${tierId.toUpperCase().replace(/-/g, "_")}${suffix}` as keyof typeof process.env;
   const value = process.env[key];
   return typeof value === "string" && value ? value : null;
 }
 
-/** Get tier by Stripe Price ID (for subscription-status, webhooks). */
+/** Get tier by Stripe Price ID — checks both monthly and yearly IDs. */
 export function getTierByPriceId(priceId: string | null): SubscriptionTier | null {
   if (!priceId) return null;
   for (const tier of SUBSCRIPTION_TIERS) {
-    if (getPriceIdForTier(tier.id) === priceId) return tier;
+    if (getPriceIdForTier(tier.id, "monthly") === priceId) return tier;
+    if (getPriceIdForTier(tier.id, "yearly") === priceId) return tier;
   }
   return null;
 }

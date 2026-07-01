@@ -74,7 +74,14 @@ export function PricingContent() {
   }
 
   const tiers = getPublicTiers();
-  return <PricingTiers tiers={tiers} highlightTierId={searchParams.get("plan") ?? undefined} />;
+  const billing = searchParams.get("billing") === "yearly" ? "yearly" : "monthly";
+  return (
+    <PricingTiers
+      tiers={tiers}
+      highlightTierId={searchParams.get("plan") ?? undefined}
+      defaultBilling={billing}
+    />
+  );
 }
 
 function ManageSubscriptionButton() {

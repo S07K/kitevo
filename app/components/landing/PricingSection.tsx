@@ -219,7 +219,11 @@ export function PricingSection(): ReactNode {
 
               {/* CTA */}
               <Link
-                href={plan.ctaHref}
+                href={
+                  plan.monthlyPrice === 0
+                    ? plan.ctaHref
+                    : `${plan.ctaHref}${yearly ? "&billing=yearly" : ""}`
+                }
                 className={cn(
                   "focus-ring mt-8 inline-flex h-12 items-center justify-center rounded-full text-sm font-medium transition-opacity hover:opacity-80",
                   plan.highlight
