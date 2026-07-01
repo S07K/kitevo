@@ -7,6 +7,7 @@ export type ProfileFormProfile = ProfilePayload & {
   email?: string;
   onboardingCompletedAt?: string | null;
   instagramConnected?: boolean;
+  accountType?: string;
 };
 
 /** Must stay under API limit (see app/api/me/avatar/route.ts) so Neon/pg updates don't time out. */
@@ -50,6 +51,7 @@ export function ProfileForm({
   externalError,
   formId,
   hideSubmitButton,
+  isBrand = false,
 }: {
   profile: ProfileFormProfile;
   onSave: (data: ProfilePayload) => Promise<void>;
@@ -61,6 +63,8 @@ export function ProfileForm({
   formId?: string;
   /** Hide the internal submit button (use when the parent provides its own submit button) */
   hideSubmitButton?: boolean;
+  /** Brand accounts don't need bio or social links */
+  isBrand?: boolean;
 }) {
   const [name, setName] = useState(profile.name ?? "");
   const [username, setUsername] = useState(profile.username ?? "");
@@ -338,53 +342,57 @@ export function ProfileForm({
         {/* Remaining fields */}
         <div className="space-y-4">
 
-          <div>
-            <label className="block text-sm font-medium text-foreground">Bio</label>
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={3}
-              className={inputCls}
-              placeholder="Short bio shown on your media kit"
-            />
-          </div>
+          {!isBrand && (
+            <div>
+              <label className="block text-sm font-medium text-foreground">Bio</label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                rows={3}
+                className={inputCls}
+                placeholder="Short bio shown on your media kit"
+              />
+            </div>
+          )}
 
-          <div>
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-foreground">Links</label>
-              <button type="button" onClick={addLink} className="text-sm text-muted-foreground hover:text-foreground transition-colors">+ Add link</button>
+          {!isBrand && (
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-foreground">Links</label>
+                <button type="button" onClick={addLink} className="text-sm text-muted-foreground hover:text-foreground transition-colors">+ Add link</button>
+              </div>
+              <div className="mt-2 space-y-2">
+                {links.map((l, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={l.label}
+                      onChange={(e) => updateLink(i, "label", e.target.value)}
+                      placeholder="Label"
+                      className="w-28 shrink-0 px-3 py-2 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition"
+                    />
+                    <input
+                      type="url"
+                      value={l.url}
+                      onChange={(e) => updateLink(i, "url", e.target.value)}
+                      placeholder="https://…"
+                      className="flex-1 min-w-0 px-3 py-2 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeLink(i)}
+                      className="shrink-0 p-2 text-muted-foreground hover:text-red-500 transition-colors rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20"
+                      aria-label="Remove link"
+                    >
+                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="mt-2 space-y-2">
-              {links.map((l, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={l.label}
-                    onChange={(e) => updateLink(i, "label", e.target.value)}
-                    placeholder="Label"
-                    className="w-28 shrink-0 px-3 py-2 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition"
-                  />
-                  <input
-                    type="url"
-                    value={l.url}
-                    onChange={(e) => updateLink(i, "url", e.target.value)}
-                    placeholder="https://…"
-                    className="flex-1 min-w-0 px-3 py-2 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeLink(i)}
-                    className="shrink-0 p-2 text-muted-foreground hover:text-red-500 transition-colors rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20"
-                    aria-label="Remove link"
-                  >
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
 
           {!hideSubmitButton && (
             <button

@@ -363,8 +363,12 @@ function OnboardingContent() {
                     onClick={() => chooseAccountType("creator")}
                     className="group relative text-left rounded-2xl border-2 border-border hover:border-foreground transition-all duration-150 p-6 space-y-3 disabled:opacity-60"
                   >
-                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white text-xl">
-                      ✦
+                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white">
+                      {/* Video camera — creator */}
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14"/>
+                        <rect x="3" y="8" width="12" height="8" rx="2"/>
+                      </svg>
                     </div>
                     <div>
                       <p className="font-semibold text-foreground text-base">Creator</p>
@@ -384,8 +388,14 @@ function OnboardingContent() {
                     onClick={() => chooseAccountType("brand")}
                     className="group relative text-left rounded-2xl border-2 border-border hover:border-foreground transition-all duration-150 p-6 space-y-3 disabled:opacity-60"
                   >
-                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-xl">
-                      ◈
+                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white">
+                      {/* Briefcase — brand */}
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <rect x="2" y="7" width="20" height="14" rx="2"/>
+                        <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+                        <line x1="12" y1="12" x2="12" y2="12.01"/>
+                        <path d="M2 12h8m4 0h8"/>
+                      </svg>
                     </div>
                     <div>
                       <p className="font-semibold text-foreground text-base">Brand</p>

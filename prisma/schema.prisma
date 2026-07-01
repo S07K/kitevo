@@ -55,6 +55,10 @@ model User {
   conversationsAsA ConversationParticipant[]
   sentMessages     Message[]
 
+  // Campaigns (Phase 2)
+  campaigns            Campaign[]               // brand creates campaigns
+  campaignApplications CampaignApplication[]    // creator applies to campaigns
+
   // Phase 11: Onboarding (redirect new users to /onboarding until they finish)
   onboardingCompletedAt DateTime?
 
@@ -174,6 +178,41 @@ model Message {
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+// Campaign brief posted by a brand
+model Campaign {
+  id          String   @id @default(cuid())
+  brandId     String
+  brand       User     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  niche       String?  // target creator niche
+  budget      String?  // display string e.g. "$500–$2k"
+  deadline    DateTime?
+  status      String   @default("open") // "open" | "closed" | "draft"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  applications CampaignApplication[]
+
+  @@index([brandId])
+  @@index([status, createdAt])
+}
+
+// Creator's application to a campaign
+model CampaignApplication {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creatorId  String
+  creator    User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  message    String?
+  status     String   @default("pending") // "pending" | "accepted" | "rejected"
+  createdAt  DateTime @default(now())
+
+  @@unique([campaignId, creatorId])
+  @@index([creatorId])
 }
 
 // OAuth accounts (Google, etc.) linked to a User

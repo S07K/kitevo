@@ -147,7 +147,7 @@ function CreatorCard({ creator, onMessage }: { creator: Creator; onMessage: (id:
 }
 
 export default function BrandDashboard() {
-  const [tab, setTab] = useState<"discover" | "inbox">("discover");
+  const [tab, setTab] = useState<"discover" | "campaigns" | "inbox">("discover");
   const [niche, setNiche] = useState("All");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -161,6 +161,35 @@ export default function BrandDashboard() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [myUserId, setMyUserId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Campaigns state
+  type Campaign = {
+    id: string;
+    title: string;
+    description: string;
+    niche: string | null;
+    budget: string | null;
+    deadline: string | null;
+    status: string;
+    createdAt: string;
+    _count: { applications: number };
+  };
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+  const [showCampaignForm, setShowCampaignForm] = useState(false);
+  const [campaignForm, setCampaignForm] = useState({ title: "", description: "", niche: "", budget: "", deadline: "" });
+  const [campaignSaving, setCampaignSaving] = useState(false);
+  const [campaignError, setCampaignError] = useState<string | null>(null);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  type Application = {
+    id: string;
+    message: string | null;
+    status: string;
+    createdAt: string;
+    creator: { id: string; name: string | null; username: string | null; avatarUrl: string | null; bio: string | null; niches: string[]; verifiedTier: string | null; kits: { slug: string }[] };
+  };
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loadingApplications, setLoadingApplications] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -225,6 +254,78 @@ export default function BrandDashboard() {
     return () => clearInterval(id);
   }, [activeConvoId]);
 
+  // Load campaigns
+  const loadCampaigns = useCallback(() => {
+    setLoadingCampaigns(true);
+    fetch("/api/social/campaigns", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => Array.isArray(d) && setCampaigns(d))
+      .catch(() => {})
+      .finally(() => setLoadingCampaigns(false));
+  }, []);
+
+  useEffect(() => {
+    if (tab !== "campaigns") return;
+    loadCampaigns();
+  }, [tab, loadCampaigns]);
+
+  // Load applications for selected campaign
+  useEffect(() => {
+    if (!selectedCampaignId) { setApplications([]); return; }
+    setLoadingApplications(true);
+    fetch(`/api/social/campaigns/${selectedCampaignId}/applications`, { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => Array.isArray(d) && setApplications(d))
+      .catch(() => {})
+      .finally(() => setLoadingApplications(false));
+  }, [selectedCampaignId]);
+
+  async function createCampaign() {
+    setCampaignError(null);
+    if (!campaignForm.title.trim()) { setCampaignError("Title is required"); return; }
+    if (!campaignForm.description.trim()) { setCampaignError("Description is required"); return; }
+    setCampaignSaving(true);
+    try {
+      const res = await fetch("/api/social/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(campaignForm),
+        credentials: "include",
+      });
+      if (res.ok) {
+        setCampaignForm({ title: "", description: "", niche: "", budget: "", deadline: "" });
+        setShowCampaignForm(false);
+        loadCampaigns();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setCampaignError(d.error ?? "Failed to create campaign");
+      }
+    } finally {
+      setCampaignSaving(false);
+    }
+  }
+
+  async function toggleCampaignStatus(id: string, currentStatus: string) {
+    const next = currentStatus === "open" ? "closed" : "open";
+    await fetch(`/api/social/campaigns/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: next }),
+      credentials: "include",
+    });
+    loadCampaigns();
+  }
+
+  async function updateApplicationStatus(campaignId: string, applicationId: string, status: string) {
+    await fetch(`/api/social/campaigns/${campaignId}/applications`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ applicationId, status }),
+      credentials: "include",
+    });
+    setApplications((prev) => prev.map((a) => a.id === applicationId ? { ...a, status } : a));
+  }
+
   async function startConversation(creatorId: string) {
     const res = await fetch("/api/social/conversations", {
       method: "POST",
@@ -287,7 +388,7 @@ export default function BrandDashboard() {
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border mb-8">
-          {(["discover", "inbox"] as const).map((t) => (
+          {(["discover", "campaigns", "inbox"] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -354,6 +455,267 @@ export default function BrandDashboard() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Campaigns tab */}
+        {tab === "campaigns" && (
+          <div className="grid md:grid-cols-[1fr_380px] gap-6">
+            {/* Left: campaign list */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-foreground">Your campaigns</h2>
+                <button
+                  type="button"
+                  onClick={() => { setShowCampaignForm(true); setSelectedCampaignId(null); }}
+                  className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 transition-opacity"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  New campaign
+                </button>
+              </div>
+
+              {/* Create form */}
+              {showCampaignForm && (
+                <div className="mb-5 rounded-2xl border border-border bg-background p-5 space-y-4">
+                  <p className="text-sm font-semibold text-foreground">Create campaign</p>
+                  {campaignError && <p className="text-xs text-red-500">{campaignError}</p>}
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Campaign title *"
+                      value={campaignForm.title}
+                      onChange={(e) => setCampaignForm((f) => ({ ...f, title: e.target.value }))}
+                      className="w-full px-3 py-2.5 border border-border rounded-xl bg-muted/30 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+                    />
+                    <textarea
+                      placeholder="What are you looking for? Describe the campaign, deliverables, and goals. *"
+                      value={campaignForm.description}
+                      onChange={(e) => setCampaignForm((f) => ({ ...f, description: e.target.value }))}
+                      rows={4}
+                      className="w-full px-3 py-2.5 border border-border rounded-xl bg-muted/30 text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 resize-none"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <select
+                        value={campaignForm.niche}
+                        onChange={(e) => setCampaignForm((f) => ({ ...f, niche: e.target.value }))}
+                        className="px-3 py-2.5 border border-border rounded-xl bg-muted/30 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+                      >
+                        <option value="">Niche (any)</option>
+                        {NICHES.filter((n) => n !== "All").map((n) => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                      <select
+                        value={campaignForm.budget}
+                        onChange={(e) => setCampaignForm((f) => ({ ...f, budget: e.target.value }))}
+                        className="px-3 py-2.5 border border-border rounded-xl bg-muted/30 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+                      >
+                        <option value="">Budget (optional)</option>
+                        {Object.keys(BUDGET_ICONS).map((b) => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1">Application deadline (optional)</label>
+                      <input
+                        type="date"
+                        value={campaignForm.deadline}
+                        onChange={(e) => setCampaignForm((f) => ({ ...f, deadline: e.target.value }))}
+                        className="px-3 py-2.5 border border-border rounded-xl bg-muted/30 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={createCampaign}
+                      disabled={campaignSaving}
+                      className="h-9 px-5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
+                    >
+                      {campaignSaving ? "Publishing…" : "Publish campaign"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowCampaignForm(false); setCampaignError(null); }}
+                      className="h-9 px-4 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {loadingCampaigns ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-20 rounded-2xl border border-border bg-muted animate-pulse" />)}
+                </div>
+              ) : campaigns.length === 0 ? (
+                <div className="text-center py-20 border border-dashed border-border rounded-2xl">
+                  <p className="text-muted-foreground text-sm">No campaigns yet.</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowCampaignForm(true)}
+                    className="mt-3 text-sm text-foreground underline underline-offset-4"
+                  >
+                    Create your first campaign →
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {campaigns.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setSelectedCampaignId(c.id === selectedCampaignId ? null : c.id)}
+                      className={`w-full text-left rounded-2xl border p-4 transition-all hover:shadow-sm ${
+                        selectedCampaignId === c.id ? "border-foreground bg-background" : "border-border bg-background hover:border-foreground/40"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`inline-block h-2 w-2 rounded-full ${c.status === "open" ? "bg-green-500" : "bg-muted-foreground"}`} />
+                            <p className="text-sm font-semibold text-foreground truncate">{c.title}</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-2">{c.description}</p>
+                          <div className="flex gap-3 mt-2 flex-wrap">
+                            {c.niche && <span className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{c.niche}</span>}
+                            {c.budget && <span className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{c.budget}</span>}
+                            {c.deadline && <span className="text-[10px] text-muted-foreground">Deadline: {new Date(c.deadline).toLocaleDateString()}</span>}
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-lg font-bold text-foreground">{c._count.applications}</p>
+                          <p className="text-[10px] text-muted-foreground">applicant{c._count.applications !== 1 ? "s" : ""}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); toggleCampaignStatus(c.id, c.status); }}
+                          className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                            c.status === "open"
+                              ? "border-yellow-300 text-yellow-700 hover:bg-yellow-50 dark:hover:bg-yellow-950/20"
+                              : "border-green-300 text-green-700 hover:bg-green-50 dark:hover:bg-green-950/20"
+                          }`}
+                        >
+                          {c.status === "open" ? "Close" : "Reopen"}
+                        </button>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right: applicants panel */}
+            <div className="rounded-2xl border border-border bg-background overflow-hidden self-start">
+              <div className="p-4 border-b border-border">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                  {selectedCampaignId
+                    ? `Applicants — ${campaigns.find((c) => c.id === selectedCampaignId)?.title ?? ""}`
+                    : "Applicants"}
+                </p>
+              </div>
+              {!selectedCampaignId ? (
+                <div className="p-6 text-center">
+                  <p className="text-xs text-muted-foreground">Select a campaign to see applicants.</p>
+                </div>
+              ) : loadingApplications ? (
+                <div className="p-4 space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />)}
+                </div>
+              ) : applications.length === 0 ? (
+                <div className="p-6 text-center">
+                  <p className="text-xs text-muted-foreground">No applications yet.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {applications.map((a) => {
+                    const niches: string[] = typeof a.creator.niches === "string"
+                      ? JSON.parse(a.creator.niches)
+                      : (a.creator.niches ?? []);
+                    const kit = a.creator.kits[0];
+                    return (
+                      <div key={a.id} className="p-4 space-y-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-9 w-9 rounded-full overflow-hidden bg-muted border border-border shrink-0">
+                            {a.creator.avatarUrl ? (
+                              <img src={a.creator.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                                {(a.creator.name ?? a.creator.username ?? "?").charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-semibold text-foreground truncate">
+                                {a.creator.name ?? a.creator.username ?? "Unknown"}
+                              </p>
+                              <VerifiedBadge tier={a.creator.verifiedTier} size="sm" />
+                            </div>
+                            {a.creator.username && (
+                              <p className="text-xs text-muted-foreground">@{a.creator.username}</p>
+                            )}
+                          </div>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                            a.status === "accepted" ? "border-green-400 text-green-700 bg-green-50 dark:bg-green-950/20" :
+                            a.status === "rejected" ? "border-red-400 text-red-600 bg-red-50 dark:bg-red-950/20" :
+                            "border-yellow-300 text-yellow-700 bg-yellow-50 dark:bg-yellow-950/20"
+                          }`}>{a.status}</span>
+                        </div>
+                        {a.message && (
+                          <p className="text-xs text-muted-foreground bg-muted/40 rounded-xl px-3 py-2">{a.message}</p>
+                        )}
+                        {niches.length > 0 && (
+                          <div className="flex gap-1 flex-wrap">
+                            {niches.slice(0, 3).map((n) => (
+                              <span key={n} className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{n}</span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex gap-2 flex-wrap pt-1">
+                          {kit && (
+                            <Link href={`/kit/${kit.slug}`} target="_blank" className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
+                              View kit →
+                            </Link>
+                          )}
+                          {a.creator.username && (
+                            <Link href={`/${a.creator.username}`} target="_blank" className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
+                              Profile →
+                            </Link>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => startConversation(a.creator.id)}
+                            className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                          >
+                            Message →
+                          </button>
+                        </div>
+                        {a.status === "pending" && (
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => updateApplicationStatus(selectedCampaignId!, a.id, "accepted")}
+                              className="h-7 px-3 rounded-full bg-green-600 text-white text-[11px] font-medium hover:bg-green-700 transition-colors"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateApplicationStatus(selectedCampaignId!, a.id, "rejected")}
+                              className="h-7 px-3 rounded-full border border-red-300 text-red-600 text-[11px] font-medium hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

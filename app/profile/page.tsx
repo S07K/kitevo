@@ -200,6 +200,7 @@ export default function ProfilePage() {
             <ProfileForm
               profile={profile}
               externalError={saveError}
+              isBrand={profile.accountType === "brand"}
               onAvatarUrlChange={(url) => setProfile((p) => (p ? { ...p, avatarUrl: url } : null))}
               onSave={handleSave}
               saving={saving}
@@ -212,46 +213,64 @@ export default function ProfilePage() {
 
         {/* Instagram + Plan row */}
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          {/* Instagram */}
-          <div className="bg-background border-border rounded-2xl border p-6">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
+          {/* Instagram (creators only) OR Brand settings card */}
+          {profile?.accountType === "brand" ? (
+            <div className="bg-background border-border rounded-2xl border p-6">
+              <div className="flex items-center gap-2 mb-3">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                  <rect width="20" height="20" x="2" y="2" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                  <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
                 </svg>
-                <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Instagram</p>
+                <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Brand profile</p>
               </div>
-              {instagramConnected && (
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
-                  <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                  Connected
-                </span>
+              <p className="text-muted-foreground text-sm mb-3">Update your company info, industry, and campaign budget range.</p>
+              <a
+                href="/brand?tab=settings"
+                className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
+              >
+                Edit brand profile →
+              </a>
+            </div>
+          ) : (
+            <div className="bg-background border-border rounded-2xl border p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                    <rect width="20" height="20" x="2" y="2" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                  </svg>
+                  <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Instagram</p>
+                </div>
+                {instagramConnected && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                    Connected
+                  </span>
+                )}
+              </div>
+              {instagramConnected ? (
+                <div className="flex items-center justify-between">
+                  <p className="text-muted-foreground text-sm">Your stats are live on your kit.</p>
+                  <button
+                    type="button"
+                    onClick={handleDisconnect}
+                    disabled={disconnecting}
+                    className="text-muted-foreground hover:text-foreground text-xs transition-colors disabled:opacity-50"
+                  >
+                    {disconnecting ? "Disconnecting…" : "Disconnect"}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-muted-foreground text-sm">Connect to pull live stats into your kit.</p>
+                  <a
+                    href="/api/instagram/connect"
+                    className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
+                  >
+                    Connect Instagram →
+                  </a>
+                </div>
               )}
             </div>
-            {instagramConnected ? (
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground text-sm">Your stats are live on your kit.</p>
-                <button
-                  type="button"
-                  onClick={handleDisconnect}
-                  disabled={disconnecting}
-                  className="text-muted-foreground hover:text-foreground text-xs transition-colors disabled:opacity-50"
-                >
-                  {disconnecting ? "Disconnecting…" : "Disconnect"}
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-muted-foreground text-sm">Connect to pull live stats into your kit.</p>
-                <a
-                  href="/api/instagram/connect"
-                  className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
-                >
-                  Connect Instagram →
-                </a>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Plan */}
           <div className="bg-background border-border rounded-2xl border p-6">
