@@ -23,7 +23,7 @@ export function AppNav({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <nav className="bg-background/95 border-border fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b px-5 backdrop-blur-md sm:px-8" style={{ height: 57 }}>
+    <nav className="bg-background/95 border-border fixed left-0 right-0 top-0 z-50 flex items-center gap-8 border-b px-5 backdrop-blur-md sm:px-8" style={{ height: 57 }}>
       <Link
         href="/"
         className="font-display text-foreground shrink-0 text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
@@ -32,9 +32,9 @@ export function AppNav({
         Kitevo
       </Link>
 
-      {/* Centre tabs */}
+      {/* Tabs — left-aligned after logo */}
       {tabs && tabs.length > 0 && (
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-1 md:flex">
+        <div className="hidden items-center gap-1 md:flex">
           {tabs.map((t) => (
             <button
               key={t.key}
@@ -57,8 +57,8 @@ export function AppNav({
         </div>
       )}
 
-      {/* Desktop links */}
-      <div className="hidden items-center gap-2 md:flex">
+      {/* Desktop links — pushed to the right */}
+      <div className="hidden items-center gap-2 md:flex ml-auto">
         {links.map((link) => {
           const key = `${link.href}-${link.label}`;
           const base = link.primary
