@@ -77,6 +77,21 @@ export async function sendViewMilestoneEmail({
   });
 }
 
+export async function sendDeleteAccountCodeEmail(email: string, code: string) {
+  await resend.emails.send({
+    from: FROM,
+    to: email,
+    subject: "Your account deletion code — Kitevo",
+    html: emailHtml({
+      heading: "Confirm account deletion",
+      body: `Your 6-digit confirmation code is:<br><br><span style="font-size:32px;font-weight:700;letter-spacing:0.12em;color:#111110">${code}</span><br><br>Enter this code to permanently delete your account. It expires in <strong>15 minutes</strong>.<br><br>If you did not request this, your account is safe — just ignore this email.`,
+      ctaLabel: "Go to Kitevo",
+      ctaUrl: APP_URL,
+      footer: "This code was requested from the account settings page. Do not share it with anyone.",
+    }),
+  });
+}
+
 export async function sendPasswordResetEmail(email: string, token: string) {
   const url = `${APP_URL}/reset-password?token=${token}`;
   await resend.emails.send({

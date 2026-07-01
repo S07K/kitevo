@@ -67,6 +67,10 @@ model User {
   resetPasswordToken          String?   @unique
   resetPasswordTokenExpiresAt DateTime?
 
+  // Account deletion confirmation code (6-digit, expires in 15 min)
+  deleteAccountCode           String?
+  deleteAccountCodeExpiresAt  DateTime?
+
   // OAuth accounts (Google etc.)
   accounts Account[]
 
