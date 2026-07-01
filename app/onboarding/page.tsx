@@ -533,6 +533,8 @@ function OnboardingContent() {
                 <p className="text-muted-foreground text-sm">Loading…</p>
               ) : (
                 <ProfileForm
+                  formId="onboarding-profile-form"
+                  hideSubmitButton
                   profile={profile ?? emptyProfile}
                   externalError={profileSaveError}
                   onAvatarUrlChange={(url) =>
@@ -840,6 +842,16 @@ function OnboardingContent() {
               className="bg-foreground text-background inline-flex h-11 items-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
             >
               {finishing ? "Taking you there…" : "Go to Dashboard →"}
+            </button>
+          ) : currentStep === 0 ? (
+            // Profile step — button submits the form (triggers validation + save)
+            <button
+              type="submit"
+              form="onboarding-profile-form"
+              disabled={profileSaving}
+              className="bg-foreground text-background inline-flex h-11 items-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              {profileSaving ? "Saving…" : "Next →"}
             </button>
           ) : (
             <button

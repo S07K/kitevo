@@ -48,15 +48,19 @@ export function ProfileForm({
   submitLabel = "Save profile",
   onAvatarUrlChange,
   externalError,
+  formId,
+  hideSubmitButton,
 }: {
   profile: ProfileFormProfile;
   onSave: (data: ProfilePayload) => Promise<void>;
   saving: boolean;
   submitLabel?: string;
-  /** Called after upload or Instagram sync so parent can refresh local profile state. */
   onAvatarUrlChange?: (avatarUrl: string | null) => void;
-  /** Error from the parent (e.g. "Username is already taken") shown inline. */
   externalError?: string | null;
+  /** id attribute on the <form> so an external button can submit it via form={formId} */
+  formId?: string;
+  /** Hide the internal submit button (use when the parent provides its own submit button) */
+  hideSubmitButton?: boolean;
 }) {
   const [name, setName] = useState(profile.name ?? "");
   const [username, setUsername] = useState(profile.username ?? "");
@@ -169,7 +173,7 @@ export function ProfileForm({
   const inputCls = "mt-1 w-full px-3 py-2.5 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition";
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form id={formId} onSubmit={handleSubmit}>
       <div className="flex flex-col gap-6">
 
         {/* External error (non-username) */}
@@ -320,13 +324,15 @@ export function ProfileForm({
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={saving || avatarBusy}
-            className="h-10 rounded-full bg-foreground text-background px-8 text-sm font-medium hover:opacity-80 disabled:opacity-50 transition-opacity"
-          >
-            {saving ? "Saving…" : submitLabel}
-          </button>
+          {!hideSubmitButton && (
+            <button
+              type="submit"
+              disabled={saving || avatarBusy}
+              className="h-10 rounded-full bg-foreground text-background px-8 text-sm font-medium hover:opacity-80 disabled:opacity-50 transition-opacity"
+            >
+              {saving ? "Saving…" : submitLabel}
+            </button>
+          )}
         </div>
       </div>
     </form>
