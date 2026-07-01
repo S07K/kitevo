@@ -70,6 +70,8 @@ export function ProfileForm({
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -79,6 +81,33 @@ export function ProfileForm({
     setAvatarUrl(profile.avatarUrl ?? "");
     setLinks(profile.links?.length ? [...profile.links] : [{ label: "", url: "" }]);
   }, [profile]);
+
+  // Debounced username availability check
+  useEffect(() => {
+    const clean = username.trim().toLowerCase().replace(/\s+/g, "-");
+    // If same as saved username, skip the check — it's their own
+    if (!clean || clean === (profile.username ?? "")) {
+      setUsernameAvailable(null);
+      setUsernameError(null);
+      setUsernameChecking(false);
+      return;
+    }
+    setUsernameChecking(true);
+    setUsernameAvailable(null);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/me/username-check?username=${encodeURIComponent(clean)}`, { credentials: "include" });
+        const data = await res.json() as { available: boolean; error?: string };
+        setUsernameAvailable(data.available);
+        setUsernameError(data.available ? null : (data.error ?? "Not available"));
+      } catch {
+        setUsernameAvailable(null);
+      } finally {
+        setUsernameChecking(false);
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [username, profile.username]);
 
   const notifyAvatar = (url: string | null) => {
     setAvatarUrl(url ?? "");
@@ -156,7 +185,6 @@ export function ProfileForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setUsernameError(null);
     const cleanUsername = username.trim().toLowerCase().replace(/\s+/g, "-");
     if (!cleanUsername) {
       setUsernameError("Username is required");
@@ -166,6 +194,8 @@ export function ProfileForm({
       setUsernameError("Only letters, numbers, and hyphens allowed");
       return;
     }
+    if (usernameChecking) return; // wait for check to finish
+    if (usernameAvailable === false) return; // already showing the error
     const payload: ProfilePayload = {
       name: name.trim() || null,
       username: cleanUsername,
@@ -265,20 +295,39 @@ export function ProfileForm({
                   type="text"
                   value={username}
                   onChange={(e) => { setUsername(e.target.value); setUsernameError(null); }}
-                  className={`w-full pl-7 pr-3 py-2.5 border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 transition ${
+                  className={`w-full pl-7 pr-8 py-2.5 border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 transition ${
                     usernameError || externalError?.toLowerCase().includes("username")
                       ? "border-red-500 focus:ring-red-300"
-                      : "border-border focus:ring-ring/30"
+                      : usernameAvailable === true
+                        ? "border-green-500 focus:ring-green-300"
+                        : "border-border focus:ring-ring/30"
                   }`}
                   placeholder="yourname"
                 />
+                {/* Status icon inside input */}
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                  {usernameChecking ? (
+                    <svg className="animate-spin h-3.5 w-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                    </svg>
+                  ) : usernameAvailable === true ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  ) : usernameError ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  ) : null}
+                </span>
               </div>
               {usernameError ? (
                 <p className="mt-1 text-xs text-red-500 font-medium">{usernameError}</p>
               ) : externalError?.toLowerCase().includes("username") ? (
                 <p className="mt-1 text-xs text-red-500 font-medium">{externalError}</p>
               ) : username ? (
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className={`mt-1 text-xs ${usernameAvailable === true ? "text-green-600" : "text-muted-foreground"}`}>
                   kitevo.com/{username.trim().toLowerCase().replace(/\s+/g, "-")}
                 </p>
               ) : null}
