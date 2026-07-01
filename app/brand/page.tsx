@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
+import { DatePicker } from "@/app/components/DatePicker";
 import { signOut } from "next-auth/react";
 
 const NICHES = [
@@ -493,11 +494,10 @@ export default function BrandDashboard() {
                     </div>
                     <div>
                       <label className="block text-xs text-muted-foreground mb-1">Application deadline (optional)</label>
-                      <input
-                        type="date"
+                      <DatePicker
                         value={campaignForm.deadline}
-                        onChange={(e) => setCampaignForm((f) => ({ ...f, deadline: e.target.value }))}
-                        className="px-3 py-2.5 border border-border rounded-xl bg-muted/30 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+                        onChange={(v) => setCampaignForm((f) => ({ ...f, deadline: v }))}
+                        placeholder="Pick a deadline"
                       />
                     </div>
                   </div>
