@@ -194,14 +194,22 @@ function OnboardingContent() {
     }
   }, [searchParams, router]);
 
-  // Load account type (check if user already chose)
+  // Restore role only if the user explicitly filled a brand profile already
+  // (i.e. they refreshed mid-onboarding after choosing Brand).
+  // Never restore "creator" from the DB default — always show the picker for new users.
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/me/account-type", { credentials: "include" })
+    fetch("/api/brand/profile", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (!cancelled && data?.accountType) {
-          setAccountType(data.accountType as AccountType);
+        if (!cancelled && data?.companyName) {
+          setAccountType("brand");
+          setBrandStep(1);
+          setBrandCompany(data.companyName ?? "");
+          setBrandIndustry(data.industry ?? "");
+          setBrandBudget(data.budgetRange ?? "");
+          setBrandWebsite(data.website ?? "");
+          setBrandDescription(data.description ?? "");
         }
       })
       .finally(() => { if (!cancelled) setAccountTypeLoading(false); });
