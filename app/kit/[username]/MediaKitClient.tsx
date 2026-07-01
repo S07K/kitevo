@@ -281,7 +281,7 @@ export function MediaKitClient({
   instagramPosts = [],
 }: MediaKitClientProps) {
   const sectionVisibility = initialSectionVisibility ?? DEFAULT_SECTION_VISIBILITY;
-  const showConnectInstagramOverlay = !isDemoKit && !instagramConnected;
+  const showConnectInstagramOverlay = !isDemoKit && !instagramConnected && isOwner;
   const [selectedPost, setSelectedPost] = useState<FetchedPost | null>(null);
   const [youtubeEmbedId, setYoutubeEmbedId] = useState<string | null>(null);
   const appearance = appearanceProp ?? DEFAULT_KIT_APPEARANCE;
@@ -409,6 +409,14 @@ export function MediaKitClient({
             )}
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href={`/${creator.username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-[#fafaf9]/60 hover:text-[#fafaf9] transition-colors hidden sm:inline"
+            >
+              Profile →
+            </Link>
             <Link
               href="/dashboard#activity"
               className="text-xs font-medium text-[#fafaf9]/60 hover:text-[#fafaf9] transition-colors hidden sm:inline"
@@ -705,7 +713,7 @@ export function MediaKitClient({
           )}
 
           {/* 6. Growth chart */}
-          {sectionVisibility.growthChart && (
+          {sectionVisibility.growthChart && (instagramConnected || isDemoKit || isOwner) && (
             <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
               <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
                 <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Follower growth</p>
@@ -727,7 +735,7 @@ export function MediaKitClient({
           )}
 
           {/* 7. Audience demographics */}
-          {sectionVisibility.audience && (
+          {sectionVisibility.audience && (instagramConnected || isDemoKit || isOwner) && (
             <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
               <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
                 <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Audience demographics</p>

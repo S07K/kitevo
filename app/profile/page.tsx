@@ -168,7 +168,19 @@ export default function ProfilePage() {
 
         {/* Profile form */}
         <div className="bg-background border-border mt-6 rounded-2xl border p-6">
-          <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-4">Profile</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Profile</p>
+            {profile?.username && (
+              <Link
+                href={`/${profile.username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+              >
+                View public profile →
+              </Link>
+            )}
+          </div>
           {loading ? (
             <div className="space-y-4 animate-pulse">
               <div className="h-20 w-20 rounded-full bg-muted" />

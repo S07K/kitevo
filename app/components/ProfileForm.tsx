@@ -235,15 +235,20 @@ export function ProfileForm({
             <div>
               <label className="block text-sm font-medium text-foreground">Username</label>
               <div className="relative mt-1">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">/k/</span>
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">@</span>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition"
+                  className="w-full pl-7 pr-3 py-2.5 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition"
                   placeholder="yourname"
                 />
               </div>
+              {username && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  kitevo.com/{username.trim().toLowerCase().replace(/\s+/g, "-")}
+                </p>
+              )}
             </div>
           </div>
         </div>
