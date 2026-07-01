@@ -539,11 +539,10 @@ export default function BrandDashboard() {
               ) : (
                 <div className="space-y-3">
                   {campaigns.map((c) => (
-                    <button
+                    <div
                       key={c.id}
-                      type="button"
                       onClick={() => setSelectedCampaignId(c.id === selectedCampaignId ? null : c.id)}
-                      className={`w-full text-left rounded-2xl border p-4 transition-all hover:shadow-sm ${
+                      className={`w-full text-left rounded-2xl border p-4 transition-all hover:shadow-sm cursor-pointer ${
                         selectedCampaignId === c.id ? "border-foreground bg-background" : "border-border bg-background hover:border-foreground/40"
                       }`}
                     >
@@ -578,7 +577,7 @@ export default function BrandDashboard() {
                           {c.status === "open" ? "Close" : "Reopen"}
                         </button>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}
