@@ -134,7 +134,7 @@ export default function BrandCampaigns() {
   return (
     <div className="min-h-screen bg-background">
       <AppNav
-        links={[{ href: "/profile", label: "Settings" }]}
+        links={[{ href: "/brand/settings", label: "Settings" }]}
         onLogout={async () => {
           await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
           signOut({ callbackUrl: "/" });
@@ -144,6 +144,7 @@ export default function BrandCampaigns() {
         { href: "/brand", label: "Discover" },
         { href: "/brand/campaigns", label: "Campaigns" },
         { href: "/brand/inbox", label: "Inbox" },
+        { href: "/brand/settings", label: "Settings" },
       ]} />
 
       <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">

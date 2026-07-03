@@ -105,12 +105,13 @@ export default function BrandInbox() {
     { href: "/brand", label: "Discover" },
     { href: "/brand/campaigns", label: "Campaigns" },
     { href: "/brand/inbox", label: "Inbox", badge: unreadCount },
+    { href: "/brand/settings", label: "Settings" },
   ];
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <AppNav
-        links={[{ href: "/profile", label: "Settings" }]}
+        links={[{ href: "/brand/settings", label: "Settings" }]}
         onLogout={async () => {
           await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
           signOut({ callbackUrl: "/" });
