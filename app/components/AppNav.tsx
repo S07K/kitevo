@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
+import { NavAvatar } from "./NavAvatar";
 
 type NavLink = { href: string; label: string; primary?: boolean; external?: boolean };
 
@@ -54,6 +55,7 @@ export function AppNav({
             Log out
           </button>
         )}
+        <NavAvatar />
         <ThemeToggle />
       </div>
 
