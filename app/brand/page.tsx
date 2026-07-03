@@ -72,7 +72,7 @@ function CreatorCard({ creator, onMessage }: { creator: Creator; onMessage: (id:
             ))}
           </div>
         )}
-        {creator.location && <p className="mt-2 text-xs text-muted-foreground">📍 {creator.location}</p>}
+        {creator.location && <p className="mt-2 text-xs text-muted-foreground">{creator.location}</p>}
         <div className="mt-4 flex gap-2">
           <button
             type="button"

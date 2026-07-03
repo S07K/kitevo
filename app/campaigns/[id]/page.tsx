@@ -170,7 +170,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
               )}
               {campaign.budget && (
                 <span className="inline-flex items-center text-xs font-medium bg-muted text-foreground px-3 py-1.5 rounded-full border border-border">
-                  💰 {campaign.budget}
+                  {campaign.budget}
                 </span>
               )}
               {daysLeft !== null && (
@@ -179,7 +179,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
                     ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800"
                     : "bg-muted text-foreground border-border"
                 }`}>
-                  📅 {daysLeft > 0 ? `${daysLeft}d left` : "Closing soon"}
+                  {daysLeft > 0 ? `${daysLeft}d left` : "Closing soon"}
                 </span>
               )}
               <span className="inline-flex items-center text-xs text-muted-foreground px-3 py-1.5 rounded-full border border-border">
