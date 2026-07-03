@@ -101,8 +101,8 @@ export default function CampaignDetailPage() {
         }}
       />
       <AppSidebar tabs={[
-        { href: "/social/inbox", label: "Inbox" },
         { href: "/social/campaigns", label: "Campaigns" },
+        { href: "/social/inbox", label: "Inbox" },
       ]} />
 
       <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-20 sm:px-8">

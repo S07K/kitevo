@@ -99,8 +99,8 @@ export default function CreatorInbox() {
   const activeConvo = conversations.find((c) => c.id === activeId);
 
   const sidebarTabs = [
-    { href: "/social/inbox", label: "Inbox", badge: unreadCount },
     { href: "/social/campaigns", label: "Campaigns" },
+    { href: "/social/inbox", label: "Inbox", badge: unreadCount },
   ];
 
   return (
