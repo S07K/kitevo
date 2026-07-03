@@ -13,6 +13,7 @@ type Conversation = {
   other: { id: string; name: string | null; username: string | null; avatarUrl: string | null; verifiedTier: string | null } | null;
   lastMessage: { body: string; at: string; mine: boolean } | null;
   unread: boolean;
+  lastReadAt: string | null;
 };
 
 type Message = {
@@ -29,12 +30,18 @@ export default function BrandInbox() {
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(searchParams.get("convo"));
   const [messages, setMessages] = useState<Message[]>([]);
+  const [firstUnreadId, setFirstUnreadId] = useState<string | null>(null);
   const [msgInput, setMsgInput] = useState("");
   const [sending, setSending] = useState(false);
   const [myUserId, setMyUserId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const activeIdRef = useRef<string | null>(null);
+  const conversationsRef = useRef<Conversation[]>([]);
+  const myUserIdRef = useRef<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   activeIdRef.current = activeId;
+  conversationsRef.current = conversations;
+  myUserIdRef.current = myUserId;
 
   useEffect(() => {
     fetch("/api/me/profile", { credentials: "include" })
@@ -65,12 +72,28 @@ export default function BrandInbox() {
   // Initial load
   useEffect(() => { loadConvos(); }, [loadConvos]);
   useEffect(() => {
-    if (!activeId) return;
+    if (!activeId) { setFirstUnreadId(null); return; }
     fetch(`/api/social/conversations/${activeId}`, { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (Array.isArray(d)) { setMessages(d); loadConvos(); } })
+      .then((d) => {
+        if (!Array.isArray(d)) return;
+        setMessages(d);
+        const convo = conversationsRef.current.find((c) => c.id === activeId);
+        if (convo?.unread && convo.lastReadAt) {
+          const lastRead = new Date(convo.lastReadAt);
+          const first = d.find((m: Message) => new Date(m.createdAt) > lastRead && m.senderId !== myUserIdRef.current);
+          setFirstUnreadId(first?.id ?? null);
+        } else {
+          setFirstUnreadId(null);
+        }
+        loadConvos();
+      })
       .catch(() => {});
   }, [activeId, loadConvos]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   // SSE replaces all polling
   useRealtimeStream({
@@ -237,28 +260,38 @@ export default function BrandInbox() {
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 min-h-0">
-                  {messages.length === 0 && <p className="text-xs text-muted-foreground text-center mt-12">Start the conversation ↓</p>}
+                  {messages.length === 0 && <p className="text-xs text-muted-foreground text-center mt-12">Start the conversation</p>}
                   {messages.map((m) => {
                     const mine = m.senderId === myUserId;
                     return (
-                      <div key={m.id} className={`flex items-end gap-2.5 ${mine ? "justify-end" : "justify-start"}`}>
-                        {!mine && activeConvo?.other && (
-                          <div className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5">
-                            {activeConvo.other.avatarUrl ? (
-                              <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                                {(activeConvo.other.name ?? "?").charAt(0).toUpperCase()}
-                              </div>
-                            )}
+                      <div key={m.id}>
+                        {m.id === firstUnreadId && (
+                          <div className="flex items-center gap-3 py-3">
+                            <div className="flex-1 h-px bg-border" />
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">New messages</span>
+                            <div className="flex-1 h-px bg-border" />
                           </div>
                         )}
-                        <div className={`max-w-[68%] px-4 py-2.5 text-sm leading-relaxed ${mine ? "bg-foreground text-background rounded-2xl rounded-br-md" : "bg-muted text-foreground rounded-2xl rounded-bl-md"}`}>
-                          {m.body}
+                        <div className={`flex items-end gap-2.5 ${mine ? "justify-end" : "justify-start"}`}>
+                          {!mine && activeConvo?.other && (
+                            <div className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5">
+                              {activeConvo.other.avatarUrl ? (
+                                <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                                  {(activeConvo.other.name ?? "?").charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div className={`max-w-[68%] px-4 py-2.5 text-sm leading-relaxed ${mine ? "bg-foreground text-background rounded-2xl rounded-br-md" : "bg-muted text-foreground rounded-2xl rounded-bl-md"}`}>
+                            {m.body}
+                          </div>
                         </div>
                       </div>
                     );
                   })}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Compose */}

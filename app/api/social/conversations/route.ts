@@ -49,6 +49,7 @@ export async function GET() {
       other,
       lastMessage: lastMsg ? { body: lastMsg.body, at: lastMsg.createdAt, mine: lastMsg.senderId === session.user.id } : null,
       unread: !!unread,
+      lastReadAt: p.lastReadAt ?? null,
       updatedAt: p.conversation.updatedAt,
     };
   });
