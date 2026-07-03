@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
+import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { DatePicker } from "@/app/components/DatePicker";
 import { signOut } from "next-auth/react";
@@ -138,14 +139,15 @@ export default function BrandCampaigns() {
           await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
           signOut({ callbackUrl: "/" });
         }}
-        tabs={[
-          { href: "/brand", label: "Discover" },
-          { href: "/brand/campaigns", label: "Campaigns" },
-          { href: "/brand/inbox", label: "Inbox" },
-        ]}
       />
+      <AppSidebar tabs={[
+        { href: "/brand", label: "Discover" },
+        { href: "/brand/campaigns", label: "Campaigns" },
+        { href: "/brand/inbox", label: "Inbox" },
+      ]} />
 
-      <main className="mx-auto max-w-3xl px-5 pt-24 pb-16 sm:px-8">
+      <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
+        <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -406,6 +408,7 @@ export default function BrandCampaigns() {
             })}
           </div>
         )}
+        </div>
       </main>
     </div>
   );

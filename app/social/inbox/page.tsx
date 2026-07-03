@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { AppNav } from "@/app/components/AppNav";
+import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { signOut } from "next-auth/react";
 
@@ -97,6 +98,11 @@ export default function CreatorInbox() {
 
   const activeConvo = conversations.find((c) => c.id === activeId);
 
+  const sidebarTabs = [
+    { href: "/social/inbox", label: "Inbox", badge: unreadCount },
+    { href: "/social/campaigns", label: "Campaigns" },
+  ];
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <AppNav
@@ -105,13 +111,10 @@ export default function CreatorInbox() {
           await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
           signOut({ callbackUrl: "/" });
         }}
-        tabs={[
-          { href: "/social/inbox", label: "Inbox", badge: unreadCount },
-          { href: "/social/campaigns", label: "Campaigns" },
-        ]}
       />
+      <AppSidebar tabs={sidebarTabs} />
 
-      <div className="flex-1 overflow-hidden mt-[57px]">
+      <div className="flex-1 overflow-hidden mt-[57px] md:ml-52 pb-[52px] md:pb-0">
         <div className="flex h-full border-t border-border">
           {/* Sidebar */}
           <div className={`${activeId ? "hidden md:flex" : "flex"} flex-col w-full md:w-72 md:shrink-0 border-r border-border`}>

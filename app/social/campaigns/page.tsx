@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
+import { AppSidebar } from "@/app/components/AppSidebar";
 import { signOut } from "next-auth/react";
 
 const NICHES = ["All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
@@ -50,6 +51,11 @@ export default function CreatorCampaigns() {
       .finally(() => setLoading(false));
   }, [niche]);
 
+  const sidebarTabs = [
+    { href: "/social/inbox", label: "Inbox", badge: unreadCount },
+    { href: "/social/campaigns", label: "Campaigns" },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <AppNav
@@ -58,13 +64,11 @@ export default function CreatorCampaigns() {
           await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
           signOut({ callbackUrl: "/" });
         }}
-        tabs={[
-          { href: "/social/inbox", label: "Inbox", badge: unreadCount },
-          { href: "/social/campaigns", label: "Campaigns" },
-        ]}
       />
+      <AppSidebar tabs={sidebarTabs} />
 
-      <main className="mx-auto max-w-3xl px-5 pt-24 pb-16 sm:px-8">
+      <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
+        <div className="mx-auto max-w-2xl">
         <div className="mb-6">
           <h1 className="text-lg font-semibold text-foreground">Open Campaigns</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Browse brand briefs and apply with your pitch.</p>
@@ -163,6 +167,7 @@ export default function CreatorCampaigns() {
             })}
           </div>
         )}
+        </div>
       </main>
     </div>
   );

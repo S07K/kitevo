@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
+import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { signOut } from "next-auth/react";
 
@@ -144,14 +145,15 @@ export default function BrandDiscover() {
           await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
           signOut({ callbackUrl: "/" });
         }}
-        tabs={[
-          { href: "/brand", label: "Discover" },
-          { href: "/brand/campaigns", label: "Campaigns" },
-          { href: "/brand/inbox", label: "Inbox" },
-        ]}
       />
+      <AppSidebar tabs={[
+        { href: "/brand", label: "Discover" },
+        { href: "/brand/campaigns", label: "Campaigns" },
+        { href: "/brand/inbox", label: "Inbox" },
+      ]} />
 
-      <main className="mx-auto max-w-6xl px-5 pt-24 pb-16 sm:px-8">
+      <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
+        <div className="mx-auto max-w-5xl">
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <input
             type="text"
@@ -189,6 +191,7 @@ export default function BrandDiscover() {
             {creators.map((c) => <CreatorCard key={c.id} creator={c} onMessage={startConversation} />)}
           </div>
         )}
+        </div>
       </main>
     </div>
   );

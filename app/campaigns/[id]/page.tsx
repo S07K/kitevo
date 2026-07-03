@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { AppNav } from "@/app/components/AppNav";
+import { AppSidebar } from "@/app/components/AppSidebar";
 
 type Campaign = {
   id: string;
@@ -94,17 +95,18 @@ export default function CampaignDetailPage() {
     <div className="min-h-screen bg-background">
       <AppNav
         links={[{ href: "/dashboard", label: "Dashboard" }]}
-        tabs={[
-          { href: "/social/inbox", label: "Inbox" },
-          { href: "/social/campaigns", label: "Campaigns" },
-        ]}
         onLogout={async () => {
           await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
           signOut({ callbackUrl: "/" });
         }}
       />
+      <AppSidebar tabs={[
+        { href: "/social/inbox", label: "Inbox" },
+        { href: "/social/campaigns", label: "Campaigns" },
+      ]} />
 
-      <main className="mx-auto max-w-3xl px-5 pt-24 pb-20 sm:px-8">
+      <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-20 sm:px-8">
+        <div className="mx-auto max-w-2xl">
         {loading ? (
           <div className="space-y-4 animate-pulse">
             <div className="h-5 w-32 bg-muted rounded-full" />
@@ -301,6 +303,7 @@ export default function CampaignDetailPage() {
             )}
           </div>
         ) : null}
+        </div>
       </main>
     </div>
   );
