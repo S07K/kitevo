@@ -7,7 +7,7 @@ type SidebarTab = { href: string; label: string; badge?: number };
 
 export function AppSidebar({ tabs }: { tabs: SidebarTab[] }) {
   const pathname = usePathname();
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  const isActive = (href: string) => pathname === href;
 
   return (
     <>
