@@ -1,14 +1,113 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 type Props = {
   campaignId: string;
-  initialStatus: string | null; // null = not applied
+  initialStatus: string | null;
+  appliedAt: string | null;
+  reviewedAt: string | null;
+  hasConversation: boolean;
 };
 
-export function ApplySection({ campaignId, initialStatus }: Props) {
+function fmt(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+type Step = {
+  key: string;
+  label: string;
+  sublabel?: string;
+  date?: string;
+  state: "done" | "active" | "pending";
+  variant?: "success" | "danger" | "warning";
+};
+
+function buildSteps(
+  status: string | null,
+  appliedAt: string | null,
+  reviewedAt: string | null,
+  hasConversation: boolean,
+): Step[] {
+  if (!status) return [];
+
+  const isReviewed = status !== "pending" || hasConversation;
+  const isDecided = status === "accepted" || status === "rejected";
+
+  const steps: Step[] = [
+    {
+      key: "applied",
+      label: "Application submitted",
+      sublabel: "Your pitch is on the brand's radar.",
+      date: appliedAt ?? undefined,
+      state: "done",
+    },
+    {
+      key: "review",
+      label: "Under review",
+      sublabel: isReviewed ? "The brand has seen your application." : "Waiting for the brand to review.",
+      date: isReviewed && reviewedAt ? reviewedAt : undefined,
+      state: isReviewed ? "done" : "active",
+    },
+  ];
+
+  if (hasConversation) {
+    steps.push({
+      key: "reached",
+      label: "Brand reached out",
+      sublabel: "You have a message from the brand.",
+      state: "done",
+    });
+  }
+
+  if (isDecided) {
+    steps.push({
+      key: "decision",
+      label: status === "accepted" ? "Application accepted" : "Not shortlisted",
+      sublabel:
+        status === "accepted"
+          ? "Congrats! Check your inbox — the brand may reach out."
+          : "This one wasn't a fit. Keep applying to other campaigns.",
+      date: reviewedAt ?? undefined,
+      state: "done",
+      variant: status === "accepted" ? "success" : "danger",
+    });
+  } else {
+    steps.push({
+      key: "decision",
+      label: "Decision pending",
+      sublabel: "The brand will accept or decline your application.",
+      state: isReviewed ? "active" : "pending",
+      variant: "warning",
+    });
+  }
+
+  return steps;
+}
+
+const dotColors: Record<string, string> = {
+  done_success: "bg-green-500",
+  done_danger:  "bg-red-500",
+  done_warning: "bg-amber-500",
+  done:         "bg-foreground",
+  active:       "bg-blue-500 ring-4 ring-blue-500/20",
+  pending:      "bg-border",
+};
+
+const labelColors: Record<string, string> = {
+  success: "text-green-600 dark:text-green-400",
+  danger:  "text-red-500 dark:text-red-400",
+  warning: "text-amber-600 dark:text-amber-400",
+};
+
+export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt, hasConversation }: Props) {
   const [status, setStatus] = useState<string | null>(initialStatus);
+  const [localAppliedAt, setLocalAppliedAt] = useState<string | null>(appliedAt);
   const [showForm, setShowForm] = useState(false);
   const [pitch, setPitch] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -26,6 +125,7 @@ export function ApplySection({ campaignId, initialStatus }: Props) {
       });
       if (res.ok) {
         setStatus("pending");
+        setLocalAppliedAt(new Date().toISOString());
         setShowForm(false);
         setPitch("");
       } else {
@@ -37,33 +137,91 @@ export function ApplySection({ campaignId, initialStatus }: Props) {
     }
   }
 
+  // Timeline view — shown once applied
   if (status) {
+    const steps = buildSteps(status, localAppliedAt, reviewedAt, hasConversation);
+    const lastStep = steps[steps.length - 1];
+    const isAccepted = status === "accepted";
+
     return (
-      <div className={`rounded-2xl border p-5 ${
-        status === "accepted"
-          ? "border-green-300 bg-green-50 dark:bg-green-950/20"
-          : status === "rejected"
-          ? "border-red-200 bg-red-50 dark:bg-red-950/20"
-          : "border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20"
-      }`}>
-        <div className="flex items-center gap-2">
-          <span className={`h-2 w-2 rounded-full ${
-            status === "accepted" ? "bg-green-500" :
-            status === "rejected" ? "bg-red-500" : "bg-yellow-500"
-          }`} />
-          <p className="text-sm font-semibold text-foreground capitalize">Application {status}</p>
+      <div className="space-y-5">
+        <div>
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
+            Application timeline
+          </h2>
+
+          <div className="relative space-y-0">
+            {steps.map((step, i) => {
+              const isLast = i === steps.length - 1;
+              const dotKey = step.state === "done"
+                ? `done_${step.variant ?? ""}`
+                : step.state;
+              const dotClass = dotColors[dotKey] || dotColors[step.state];
+
+              return (
+                <div key={step.key} className="flex gap-4">
+                  {/* Column: dot + line */}
+                  <div className="flex flex-col items-center">
+                    <div className={`h-3 w-3 rounded-full shrink-0 mt-1 transition-all ${dotClass}`} />
+                    {!isLast && <div className="w-px flex-1 bg-border mt-1.5 mb-1.5 min-h-[28px]" />}
+                  </div>
+
+                  {/* Content */}
+                  <div className={`pb-5 min-w-0 ${isLast ? "pb-0" : ""}`}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={`text-sm font-semibold ${
+                        step.variant && step.state === "done"
+                          ? labelColors[step.variant]
+                          : step.state === "active"
+                          ? "text-blue-600 dark:text-blue-400"
+                          : step.state === "pending"
+                          ? "text-muted-foreground"
+                          : "text-foreground"
+                      }`}>
+                        {step.label}
+                      </p>
+                      {step.date && (
+                        <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                          {fmt(step.date)}
+                        </span>
+                      )}
+                    </div>
+                    {step.sublabel && (
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{step.sublabel}</p>
+                    )}
+                    {step.key === "reached" && (
+                      <Link
+                        href="/social/inbox"
+                        className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
+                      >
+                        Open inbox
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                      </Link>
+                    )}
+                    {step.key === "decision" && isAccepted && (
+                      <Link
+                        href="/social/inbox"
+                        className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline mt-1"
+                      >
+                        Check inbox
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          {status === "accepted"
-            ? "Congrats! Check your inbox — the brand may reach out."
-            : status === "rejected"
-            ? "This one wasn't a fit. Keep applying to other campaigns."
-            : "Your application is under review. The brand will respond soon."}
-        </p>
       </div>
     );
   }
 
+  // Pitch form
   if (showForm) {
     return (
       <div className="rounded-2xl border border-border bg-muted/20 p-5 space-y-4">

@@ -6,8 +6,8 @@ import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
+import { Badge } from "@/app/components/Badge";
 import { DatePicker } from "@/app/components/DatePicker";
-import { signOut } from "next-auth/react";
 
 const NICHES = ["Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 const BUDGET_OPTIONS = ["< $500", "$500–$2k", "$2k–$10k", "$10k–$50k", "$50k+"];
@@ -133,18 +133,11 @@ export default function BrandCampaigns() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppNav
-        links={[{ href: "/brand/settings", label: "Settings" }]}
-        onLogout={async () => {
-          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
-          signOut({ callbackUrl: "/" });
-        }}
-      />
+      <AppNav />
       <AppSidebar tabs={[
         { href: "/brand", label: "Discover" },
         { href: "/brand/campaigns", label: "Campaigns" },
         { href: "/brand/inbox", label: "Inbox" },
-        { href: "/brand/settings", label: "Settings" },
       ]} />
 
       <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
@@ -272,29 +265,24 @@ export default function BrandCampaigns() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2.5 mb-2">
-                          <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
-                            c.status === "open" ? "border-green-300 text-green-700 bg-green-50 dark:bg-green-950/20" : "border-border text-muted-foreground bg-muted"
-                          }`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${c.status === "open" ? "bg-green-500" : "bg-muted-foreground"}`} />
+                          <Badge variant={c.status === "open" ? "open" : "closed"} dot={c.status === "open"}>
                             {c.status === "open" ? "Open" : "Closed"}
-                          </span>
+                          </Badge>
                           {daysLeft !== null && daysLeft <= 5 && (
-                            <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
-                              daysLeft <= 2 ? "border-red-200 text-red-600 bg-red-50 dark:bg-red-950/20" : "border-yellow-200 text-yellow-700 bg-yellow-50 dark:bg-yellow-950/20"
-                            }`}>
+                            <Badge variant={daysLeft <= 2 ? "danger" : "warning"}>
                               {daysLeft > 0 ? `${daysLeft}d left` : "Closing today"}
-                            </span>
+                            </Badge>
                           )}
                         </div>
                         <h3 className="text-lg font-semibold text-foreground leading-snug mb-1.5">{c.title}</h3>
                         <p className={`text-sm text-muted-foreground leading-relaxed ${isOpen ? "" : "line-clamp-2"}`}>{c.description}</p>
                         <div className="flex flex-wrap gap-2 mt-4">
-                          {c.niche && <span className="text-xs font-medium bg-muted border border-border text-foreground px-3 py-1 rounded-full">{c.niche}</span>}
-                          {c.budget && <span className="text-xs font-medium bg-muted border border-border text-foreground px-3 py-1 rounded-full">{c.budget}</span>}
+                          {c.niche && <Badge variant="default">{c.niche}</Badge>}
+                          {c.budget && <Badge variant="accent">{c.budget}</Badge>}
                           {c.deadline && (
-                            <span className="text-xs text-muted-foreground bg-muted border border-border px-3 py-1 rounded-full">
+                            <Badge variant="warning">
                               Due {new Date(c.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-                            </span>
+                            </Badge>
                           )}
                         </div>
                       </div>
@@ -368,15 +356,13 @@ export default function BrandCampaigns() {
                                         <VerifiedBadge tier={a.creator.verifiedTier} size="sm" />
                                         {a.creator.username && <p className="text-xs text-muted-foreground">@{a.creator.username}</p>}
                                       </div>
-                                      <span className={`shrink-0 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
-                                        a.status === "accepted" ? "border-green-300 text-green-700 bg-green-50 dark:bg-green-950/20" :
-                                        a.status === "rejected" ? "border-red-300 text-red-600 bg-red-50 dark:bg-red-950/20" :
-                                        "border-yellow-200 text-yellow-700 bg-yellow-50 dark:bg-yellow-950/20"
-                                      }`}>{a.status}</span>
+                                      <Badge variant={a.status === "accepted" ? "success" : a.status === "rejected" ? "danger" : "warning"} dot>
+                                        {a.status}
+                                      </Badge>
                                     </div>
                                     {niches.length > 0 && (
                                       <div className="flex gap-1 flex-wrap mb-2">
-                                        {niches.slice(0, 4).map((n) => <span key={n} className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{n}</span>)}
+                                        {niches.slice(0, 4).map((n) => <Badge key={n} variant="default">{n}</Badge>)}
                                       </div>
                                     )}
                                     {a.message && (

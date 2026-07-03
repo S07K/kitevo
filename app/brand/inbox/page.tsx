@@ -6,7 +6,6 @@ import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { useRealtimeStream } from "@/app/hooks/useRealtimeStream";
-import { signOut } from "next-auth/react";
 
 type Conversation = {
   id: string;
@@ -136,18 +135,11 @@ export default function BrandInbox() {
     { href: "/brand", label: "Discover" },
     { href: "/brand/campaigns", label: "Campaigns" },
     { href: "/brand/inbox", label: "Inbox", badge: unreadCount },
-    { href: "/brand/settings", label: "Settings" },
   ];
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
-      <AppNav
-        links={[{ href: "/brand/settings", label: "Settings" }]}
-        onLogout={async () => {
-          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
-          signOut({ callbackUrl: "/" });
-        }}
-      />
+      <AppNav />
       <AppSidebar tabs={sidebarTabs} />
 
       <div className="flex-1 overflow-hidden mt-[57px] md:ml-52 pb-[52px] md:pb-0">

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
-import { signOut } from "next-auth/react";
+import { Badge } from "@/app/components/Badge";
 
 const NICHES = ["All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 
@@ -58,13 +58,7 @@ export default function CreatorCampaigns() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppNav
-        links={[{ href: "/dashboard", label: "Dashboard" }]}
-        onLogout={async () => {
-          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
-          signOut({ callbackUrl: "/" });
-        }}
-      />
+      <AppNav />
       <AppSidebar tabs={sidebarTabs} />
 
       <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
@@ -132,7 +126,7 @@ export default function CreatorCampaigns() {
                     </div>
                     <p className="text-xs text-muted-foreground">{company}</p>
                     {brand.brandProfile?.industry && (
-                      <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{brand.brandProfile.industry}</span>
+                      <Badge variant="accent">{brand.brandProfile.industry}</Badge>
                     )}
                   </div>
 
@@ -141,23 +135,21 @@ export default function CreatorCampaigns() {
 
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      {c.niche && <span className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{c.niche}</span>}
-                      {c.budget && <span className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded-full text-muted-foreground">{c.budget}</span>}
+                      {c.niche && <Badge variant="default">{c.niche}</Badge>}
+                      {c.budget && <Badge variant="accent">{c.budget}</Badge>}
                       {daysLeft !== null && (
-                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${daysLeft <= 3 ? "text-red-600 bg-red-50 dark:bg-red-950/20" : "text-muted-foreground bg-muted"}`}>
+                        <Badge variant={daysLeft <= 3 ? "danger" : "warning"}>
                           {daysLeft > 0 ? `${daysLeft}d left` : "Closing soon"}
-                        </span>
+                        </Badge>
                       )}
                     </div>
                     {applied ? (
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2.5 py-1 rounded-full border ${
-                        appStatus === "accepted" ? "border-green-300 text-green-700 bg-green-50 dark:bg-green-950/20" :
-                        appStatus === "rejected" ? "border-red-300 text-red-600 bg-red-50 dark:bg-red-950/20" :
-                        "border-yellow-200 text-yellow-700 bg-yellow-50 dark:bg-yellow-950/20"
-                      }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${appStatus === "accepted" ? "bg-green-500" : appStatus === "rejected" ? "bg-red-500" : "bg-yellow-500"}`} />
+                      <Badge
+                        variant={appStatus === "accepted" ? "success" : appStatus === "rejected" ? "danger" : "warning"}
+                        dot
+                      >
                         {appStatus}
-                      </span>
+                      </Badge>
                     ) : (
                       <span className="text-[10px] font-medium text-muted-foreground">View & apply →</span>
                     )}

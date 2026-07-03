@@ -5,7 +5,6 @@ import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { useRealtimeStream } from "@/app/hooks/useRealtimeStream";
-import { signOut } from "next-auth/react";
 
 type Conversation = {
   id: string;
@@ -149,13 +148,7 @@ export default function CreatorInbox() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
-      <AppNav
-        links={[{ href: "/dashboard", label: "Dashboard" }]}
-        onLogout={async () => {
-          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
-          signOut({ callbackUrl: "/" });
-        }}
-      />
+      <AppNav />
       <AppSidebar tabs={sidebarTabs} />
 
       <div className="flex-1 overflow-hidden mt-[57px] md:ml-52 pb-[52px] md:pb-0">

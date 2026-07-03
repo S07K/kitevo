@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
-import { signOut } from "next-auth/react";
 
 const INDUSTRIES = [
   "Tech & SaaS", "Fashion", "Beauty", "Food & Beverage", "Health & Wellness",
@@ -82,23 +81,14 @@ export default function BrandSettings() {
     }
   }
 
-  const sidebarTabs = [
-    { href: "/brand", label: "Discover" },
-    { href: "/brand/campaigns", label: "Campaigns" },
-    { href: "/brand/inbox", label: "Inbox" },
-    { href: "/brand/settings", label: "Settings" },
-  ];
-
   return (
     <div className="min-h-screen bg-background">
-      <AppNav
-        links={[]}
-        onLogout={async () => {
-          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
-          signOut({ callbackUrl: "/" });
-        }}
-      />
-      <AppSidebar tabs={sidebarTabs} />
+      <AppNav />
+      <AppSidebar tabs={[
+        { href: "/brand", label: "Discover" },
+        { href: "/brand/campaigns", label: "Campaigns" },
+        { href: "/brand/inbox", label: "Inbox" },
+      ]} />
 
       <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
         <div className="mx-auto max-w-xl py-6 space-y-8">

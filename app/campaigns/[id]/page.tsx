@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { ApplySection } from "./ApplySection";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { AppNav } from "@/app/components/AppNav";
+import { Badge } from "@/app/components/Badge";
 
 type Params = { id: string };
 
@@ -81,14 +82,25 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
 
   if (!campaign) notFound();
 
-  // Check if the logged-in user already applied
-  let myApplicationStatus: string | null = null;
+  // Check if the logged-in creator already applied + conversation with brand
+  let myApplication: { status: string; createdAt: Date } | null = null;
+  let hasConversation = false;
   if (session?.user?.id) {
-    const app = await prisma.campaignApplication.findFirst({
-      where: { campaignId: id, creatorId: session.user.id },
-      select: { status: true },
-    });
-    myApplicationStatus = app?.status ?? null;
+    const [app, convo] = await Promise.all([
+      prisma.campaignApplication.findFirst({
+        where: { campaignId: id, creatorId: session.user.id },
+        select: { status: true, createdAt: true },
+      }),
+      prisma.conversation.findFirst({
+        where: {
+          participants: { some: { userId: session.user.id } },
+          AND: [{ participants: { some: { userId: campaign.brand.id } } }],
+        },
+        select: { id: true },
+      }),
+    ]);
+    myApplication = app ?? null;
+    hasConversation = !!convo;
   }
 
   const company =
@@ -162,29 +174,14 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
               {campaign.title}
             </h1>
             <div className="flex flex-wrap gap-2">
-              {campaign.niche && (
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-muted text-foreground px-3 py-1.5 rounded-full border border-border">
-                  <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                  {campaign.niche}
-                </span>
-              )}
-              {campaign.budget && (
-                <span className="inline-flex items-center text-xs font-medium bg-muted text-foreground px-3 py-1.5 rounded-full border border-border">
-                  {campaign.budget}
-                </span>
-              )}
+              {campaign.niche && <Badge variant="default">{campaign.niche}</Badge>}
+              {campaign.budget && <Badge variant="accent">{campaign.budget}</Badge>}
               {daysLeft !== null && (
-                <span className={`inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-full border ${
-                  daysLeft <= 3
-                    ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800"
-                    : "bg-muted text-foreground border-border"
-                }`}>
+                <Badge variant={daysLeft <= 3 ? "danger" : "warning"}>
                   {daysLeft > 0 ? `${daysLeft}d left` : "Closing soon"}
-                </span>
+                </Badge>
               )}
-              <span className="inline-flex items-center text-xs text-muted-foreground px-3 py-1.5 rounded-full border border-border">
-                {campaign._count.applications} applicant{campaign._count.applications !== 1 ? "s" : ""}
-              </span>
+              <Badge variant="default">{campaign._count.applications} applicant{campaign._count.applications !== 1 ? "s" : ""}</Badge>
             </div>
           </div>
 
@@ -215,7 +212,13 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
 
           {/* Apply — client component handles interactivity */}
           {session?.user ? (
-            <ApplySection campaignId={id} initialStatus={myApplicationStatus} />
+            <ApplySection
+              campaignId={id}
+              initialStatus={myApplication?.status ?? null}
+              appliedAt={myApplication?.createdAt?.toISOString() ?? null}
+              reviewedAt={null}
+              hasConversation={hasConversation}
+            />
           ) : (
             <div className="rounded-2xl border border-border bg-muted/20 p-5">
               <p className="text-sm font-semibold text-foreground mb-1">Want to apply?</p>

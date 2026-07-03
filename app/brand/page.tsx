@@ -6,7 +6,6 @@ import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { signOut } from "next-auth/react";
 
 const NICHES = [
   "All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel",
@@ -139,18 +138,11 @@ export default function BrandDiscover() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppNav
-        links={[{ href: "/brand/settings", label: "Settings" }]}
-        onLogout={async () => {
-          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
-          signOut({ callbackUrl: "/" });
-        }}
-      />
+      <AppNav />
       <AppSidebar tabs={[
         { href: "/brand", label: "Discover" },
         { href: "/brand/campaigns", label: "Campaigns" },
         { href: "/brand/inbox", label: "Inbox" },
-        { href: "/brand/settings", label: "Settings" },
       ]} />
 
       <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
