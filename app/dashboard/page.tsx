@@ -1010,7 +1010,7 @@ function DashboardContent() {
       <AppNav
         links={[
           { href: "/pricing", label: "Pricing" },
-          { href: "/social/inbox", label: "Inbox" },
+          { href: "/social/inbox", label: "Social" },
           { href: kits[0] ? `/kit/${kits[0].slug}` : "/kit/demo", label: "View Kit", external: true },
         ]}
         onLogout={async () => {
