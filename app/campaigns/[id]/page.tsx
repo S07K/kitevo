@@ -93,7 +93,11 @@ export default function CampaignDetailPage() {
   return (
     <div className="min-h-screen bg-background">
       <AppNav
-        links={[{ href: "/social/inbox?tab=campaigns", label: "All Campaigns" }]}
+        links={[{ href: "/dashboard", label: "Dashboard" }]}
+        tabs={[
+          { href: "/social/inbox", label: "Inbox" },
+          { href: "/social/campaigns", label: "Campaigns" },
+        ]}
         onLogout={async () => {
           await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
           signOut({ callbackUrl: "/" });
@@ -112,7 +116,7 @@ export default function CampaignDetailPage() {
           <div className="text-center py-24">
             <p className="text-lg font-semibold text-foreground mb-2">Campaign not found</p>
             <p className="text-sm text-muted-foreground mb-6">It may have been closed or removed.</p>
-            <Link href="/social/inbox?tab=campaigns" className="text-sm font-medium text-foreground underline underline-offset-4">
+            <Link href="/social/campaigns" className="text-sm font-medium text-foreground underline underline-offset-4">
               Browse open campaigns
             </Link>
           </div>

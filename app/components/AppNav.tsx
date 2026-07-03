@@ -1,29 +1,29 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 
 type NavLink = { href: string; label: string; primary?: boolean; external?: boolean };
-type NavTab = { key: string; label: string; badge?: number };
+type NavTab = { href: string; label: string; badge?: number };
 
 export function AppNav({
   links,
   onLogout,
   tabs,
-  activeTab,
-  onTabChange,
 }: {
   links: NavLink[];
   onLogout?: () => void;
   tabs?: NavTab[];
-  activeTab?: string;
-  onTabChange?: (key: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isTabActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <nav className="bg-background/95 border-border fixed left-0 right-0 top-0 z-50 flex items-center gap-8 border-b px-5 backdrop-blur-md sm:px-8" style={{ height: 57 }}>
+    <nav className="bg-background/95 border-border fixed left-0 right-0 top-0 z-50 flex items-center gap-6 border-b px-5 backdrop-blur-md sm:px-8" style={{ height: 57 }}>
       <Link
         href="/"
         className="font-display text-foreground shrink-0 text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
@@ -32,16 +32,15 @@ export function AppNav({
         Kitevo
       </Link>
 
-      {/* Tabs — left-aligned after logo */}
+      {/* Tabs — left-aligned after logo, desktop only */}
       {tabs && tabs.length > 0 && (
         <div className="hidden items-center gap-1 md:flex">
           {tabs.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => onTabChange?.(t.key)}
+            <Link
+              key={t.href}
+              href={t.href}
               className={`relative h-9 rounded-full px-4 text-sm font-medium transition-colors ${
-                activeTab === t.key
+                isTabActive(t.href)
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
@@ -52,7 +51,7 @@ export function AppNav({
                   {t.badge > 9 ? "9+" : t.badge}
                 </span>
               ) : null}
-            </button>
+            </Link>
           ))}
         </div>
       )}
@@ -120,12 +119,12 @@ export function AppNav({
             {tabs && tabs.length > 0 && (
               <>
                 {tabs.map((t) => (
-                  <button
-                    key={t.key}
-                    type="button"
-                    onClick={() => { setMenuOpen(false); onTabChange?.(t.key); }}
+                  <Link
+                    key={t.href}
+                    href={t.href}
+                    onClick={() => setMenuOpen(false)}
                     className={`flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
-                      activeTab === t.key ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      isTabActive(t.href) ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >
                     {t.label}
@@ -134,7 +133,7 @@ export function AppNav({
                         {t.badge > 9 ? "9+" : t.badge}
                       </span>
                     ) : null}
-                  </button>
+                  </Link>
                 ))}
                 <div className="my-1 border-t border-border" />
               </>
