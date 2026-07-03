@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
+import { useRealtimeStream } from "@/app/hooks/useRealtimeStream";
 import { signOut } from "next-auth/react";
 
 type Conversation = {
@@ -32,6 +33,8 @@ export default function BrandInbox() {
   const [sending, setSending] = useState(false);
   const [myUserId, setMyUserId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const activeIdRef = useRef<string | null>(null);
+  activeIdRef.current = activeId;
 
   useEffect(() => {
     fetch("/api/me/profile", { credentials: "include" })
@@ -53,24 +56,30 @@ export default function BrandInbox() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    loadConvos();
-    const id = setInterval(loadConvos, 3000);
-    return () => clearInterval(id);
-  }, [loadConvos]);
-
+  // Initial load
+  useEffect(() => { loadConvos(); }, [loadConvos]);
   useEffect(() => {
     if (!activeId) return;
-    const load = () => {
-      fetch(`/api/social/conversations/${activeId}`, { credentials: "include" })
-        .then((r) => r.ok ? r.json() : null)
-        .then((d) => Array.isArray(d) && setMessages(d))
-        .catch(() => {});
-    };
-    load();
-    const id = setInterval(load, 3000);
-    return () => clearInterval(id);
+    fetch(`/api/social/conversations/${activeId}`, { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => Array.isArray(d) && setMessages(d))
+      .catch(() => {});
   }, [activeId]);
+
+  // SSE replaces all polling
+  useRealtimeStream({
+    onMessages: (conversationId, newMsgs) => {
+      if (conversationId === activeIdRef.current) {
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const fresh = (newMsgs as Message[]).filter((m) => !existingIds.has(m.id));
+          return fresh.length ? [...prev, ...fresh] : prev;
+        });
+      }
+      loadConvos();
+    },
+    onConversationsUpdated: loadConvos,
+  });
 
   async function sendMessage() {
     if (!msgInput.trim() || !activeId) return;
