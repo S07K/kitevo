@@ -56,6 +56,12 @@ export default function BrandInbox() {
       .finally(() => setLoading(false));
   }, []);
 
+  const markRead = useCallback((id: string) => {
+    fetch(`/api/social/conversations/${id}`, { credentials: "include" })
+      .then(() => loadConvos())
+      .catch(() => {});
+  }, [loadConvos]);
+
   // Initial load
   useEffect(() => { loadConvos(); }, [loadConvos]);
   useEffect(() => {
@@ -75,8 +81,10 @@ export default function BrandInbox() {
           const fresh = (newMsgs as Message[]).filter((m) => !existingIds.has(m.id));
           return fresh.length ? [...prev, ...fresh] : prev;
         });
+        markRead(conversationId);
+      } else {
+        loadConvos();
       }
-      loadConvos();
     },
     onConversationsUpdated: loadConvos,
   });

@@ -62,6 +62,12 @@ export default function CreatorInbox() {
       .finally(() => setLoading(false));
   }, []);
 
+  const markRead = useCallback((id: string) => {
+    fetch(`/api/social/conversations/${id}`, { credentials: "include" })
+      .then(() => loadConvos())
+      .catch(() => {});
+  }, [loadConvos]);
+
   // Initial load of conversations and messages
   useEffect(() => { loadConvos(); }, [loadConvos]);
   useEffect(() => {
@@ -81,9 +87,11 @@ export default function CreatorInbox() {
           const fresh = (newMsgs as Message[]).filter((m) => !existingIds.has(m.id));
           return fresh.length ? [...prev, ...fresh] : prev;
         });
+        // Conversation is open — mark read immediately so badge doesn't flash
+        markRead(conversationId);
+      } else {
+        loadConvos();
       }
-      // Always refresh convo list when any message arrives (updates unread + last message)
-      loadConvos();
     },
     onConversationsUpdated: loadConvos,
   });
