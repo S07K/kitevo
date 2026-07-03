@@ -68,9 +68,9 @@ export default function CreatorInbox() {
     if (!activeId) return;
     fetch(`/api/social/conversations/${activeId}`, { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
-      .then((d) => Array.isArray(d) && setMessages(d))
+      .then((d) => { if (Array.isArray(d)) { setMessages(d); loadConvos(); } })
       .catch(() => {});
-  }, [activeId]);
+  }, [activeId, loadConvos]);
 
   // SSE replaces all polling
   useRealtimeStream({
