@@ -168,7 +168,7 @@ export function Hero(): ReactNode {
       {/* Content */}
       <motion.div
         style={{ y: prefersReducedMotion ? 0 : scrollY, opacity: scrollFade }}
-        className="relative z-10 flex max-w-3xl flex-col items-center px-6 pt-28 pb-20 text-center"
+        className="relative z-10 flex max-w-3xl flex-col items-center px-6 pt-20 pb-16 text-center sm:pt-28 sm:pb-20"
       >
         <motion.p
           initial={{ opacity: 0, y: 12 }}
@@ -179,7 +179,7 @@ export function Hero(): ReactNode {
           For Creators · Built to Win Brand Deals
         </motion.p>
 
-        <h1 className="text-foreground text-[clamp(40px,7vw,80px)] leading-[1.04] font-medium tracking-tight text-balance">
+        <h1 className="text-foreground text-[clamp(32px,7vw,80px)] leading-[1.04] font-medium tracking-tight text-balance">
           {prefersReducedMotion ? (
             HEADLINE
           ) : (
@@ -222,17 +222,17 @@ export function Hero(): ReactNode {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: softEase, delay: 0.7 }}
-          className="mt-10 flex flex-wrap items-center justify-center gap-3"
+          className="mt-10 flex w-full flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:w-auto"
         >
           <Link
             href="/signup"
-            className="focus-ring bg-foreground text-background inline-flex h-13 items-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80"
+            className="focus-ring bg-foreground text-background inline-flex h-13 w-full items-center justify-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80 sm:w-auto"
           >
             Start building for free
           </Link>
           <a
             href="#how-it-works"
-            className="focus-ring border-border text-foreground hover:bg-muted inline-flex h-13 items-center rounded-full border px-8 text-sm font-medium transition-colors"
+            className="focus-ring border-border text-foreground hover:bg-muted inline-flex h-13 w-full items-center justify-center rounded-full border px-8 text-sm font-medium transition-colors sm:w-auto"
           >
             See how it works
           </a>

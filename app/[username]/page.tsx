@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { parseKitAppearance } from "@/lib/kit-appearance";
+import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 
 const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://kitevo.com").replace(/\/$/, "");
 
@@ -34,6 +35,7 @@ async function getCreatorProfile(username: string) {
       bio: true,
       avatarUrl: true,
       links: true,
+      verifiedTier: true,
       kits: {
         select: {
           id: true,
@@ -148,9 +150,12 @@ export default async function CreatorProfilePage({
           </div>
 
           <div className="flex-1 min-w-0">
-            <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
-              {user.name ?? username}
-            </h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
+                {user.name ?? username}
+              </h1>
+              <VerifiedBadge tier={user.verifiedTier} size="lg" />
+            </div>
             <p className="text-sm text-muted-foreground mt-0.5">@{username}</p>
             {user.bio && (
               <p className="mt-3 text-sm text-foreground/80 leading-relaxed max-w-lg">{user.bio}</p>

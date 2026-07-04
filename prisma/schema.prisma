@@ -38,6 +38,27 @@ model User {
   youtubeRefreshToken       String?
   youtubeTokenExpiresAt     DateTime?
 
+  // Social platform — account type
+  accountType   String  @default("creator") // "creator" | "brand"
+  niches        String? // JSON string[] — creator topics / brand interests
+  openToCollab  Boolean @default(true)
+  location      String?
+
+  // Verification ticks (like X's blue/gold tick)
+  // null = no tick, "creator_pro" = blue (Pro subscriber), "top_creator" = gold (manually granted)
+  verifiedTier  String?
+
+  // Brand profile (non-null when accountType = "brand")
+  brandProfile  BrandProfile?
+
+  // Conversations (social DMs)
+  conversationsAsA ConversationParticipant[]
+  sentMessages     Message[]
+
+  // Campaigns (Phase 2)
+  campaigns            Campaign[]               // brand creates campaigns
+  campaignApplications CampaignApplication[]    // creator applies to campaigns
+
   // Phase 11: Onboarding (redirect new users to /onboarding until they finish)
   onboardingCompletedAt DateTime?
 
@@ -49,6 +70,10 @@ model User {
   // Password reset
   resetPasswordToken          String?   @unique
   resetPasswordTokenExpiresAt DateTime?
+
+  // Account deletion confirmation code (6-digit, expires in 15 min)
+  deleteAccountCode           String?
+  deleteAccountCodeExpiresAt  DateTime?
 
   // OAuth accounts (Google etc.)
   accounts Account[]
@@ -105,6 +130,90 @@ model Inquiry {
 
   @@index([kitId])
   @@index([createdAt])
+}
+
+// Brand identity (one per brand account)
+model BrandProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String
+  industry    String
+  budgetRange String  // e.g. "$500–$2k", "$2k–$10k", "$10k+"
+  website     String?
+  logoUrl     String?
+  description String? // brand bio / what they're looking for
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// DM conversations between a brand and a creator (exactly 2 participants)
+model Conversation {
+  id           String                    @id @default(cuid())
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt     DateTime?
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// Campaign brief posted by a brand
+model Campaign {
+  id          String   @id @default(cuid())
+  brandId     String
+  brand       User     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  niche       String?  // target creator niche
+  budget      String?  // display string e.g. "$500–$2k"
+  deadline    DateTime?
+  status      String   @default("open") // "open" | "closed" | "draft"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  applications CampaignApplication[]
+
+  @@index([brandId])
+  @@index([status, createdAt])
+}
+
+// Creator's application to a campaign
+model CampaignApplication {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creatorId  String
+  creator    User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  message    String?
+  status     String   @default("pending") // "pending" | "accepted" | "rejected"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([campaignId, creatorId])
+  @@index([creatorId])
 }
 
 // OAuth accounts (Google, etc.) linked to a User
