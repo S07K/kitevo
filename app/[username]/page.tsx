@@ -212,7 +212,7 @@ export default async function CreatorProfilePage({
                     ? new Date(c.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
                     : null;
                   return (
-                    <div key={c.id} className="rounded-2xl border border-border bg-background p-5">
+                    <Link key={c.id} href={`/campaigns/${c.id}`} className="block rounded-2xl border border-border bg-background p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -242,7 +242,7 @@ export default async function CreatorProfilePage({
                           </span>
                         )}
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
