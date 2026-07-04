@@ -39,14 +39,14 @@ async function getCreatorProfile(username: string) {
       verifiedTier: true,
       brandProfile: { select: { companyName: true, logoUrl: true, description: true } },
       kits: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          appearance: true,
-          passwordHash: true,
-        },
+        select: { id: true, name: true, slug: true, appearance: true, passwordHash: true },
         orderBy: { createdAt: "asc" },
+      },
+      campaigns: {
+        where: { status: "open" },
+        select: { id: true, title: true, description: true, niche: true, budget: true, deadline: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 10,
       },
     },
   });
@@ -195,55 +195,107 @@ export default async function CreatorProfilePage({
           </div>
         </div>
 
-        {/* Kits */}
-        {publicKits.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-            <p className="text-muted-foreground text-sm">No public kits yet.</p>
-          </div>
-        ) : (
-          <>
-            <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-4">
-              Media kits
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {publicKits.map((kit) => {
-                const appearance = parseKitAppearance(kit.appearance);
-                const vibe = appearance.preset ? VIBE_COLORS[appearance.preset] : null;
-                return (
-                  <Link
-                    key={kit.id}
-                    href={`/kit/${kit.slug}`}
-                    className="group relative overflow-hidden rounded-2xl border border-border bg-background hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
-                  >
-                    {/* Vibe colour strip */}
-                    <div
-                      className="h-24 w-full flex items-center justify-center"
-                      style={{ backgroundColor: vibe?.bg ?? "var(--color-muted)" }}
-                    >
-                      {user.avatarUrl && (
-                        <img
-                          src={user.avatarUrl}
-                          alt=""
-                          className="h-12 w-12 rounded-full object-cover border-2 opacity-90"
-                          style={{ borderColor: vibe?.accent ?? "#fff" }}
-                          width={48}
-                          height={48}
-                          referrerPolicy="no-referrer"
-                        />
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <p className="text-sm font-semibold text-foreground truncate">{kit.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">kitevo.com/kit/{kit.slug}</p>
-                      <p className="mt-3 text-xs font-medium text-foreground group-hover:underline">
-                        View kit →
-                      </p>
-                    </div>
-                  </Link>
-                );
-              })}
+        {/* Brand: open campaigns */}
+        {isBrand ? (
+          user.campaigns.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border p-12 text-center">
+              <p className="text-muted-foreground text-sm">No open campaigns right now.</p>
             </div>
-          </>
+          ) : (
+            <>
+              <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-4">
+                Open campaigns
+              </p>
+              <div className="space-y-3">
+                {user.campaigns.map((c) => {
+                  const deadlineStr = c.deadline
+                    ? new Date(c.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                    : null;
+                  return (
+                    <div key={c.id} className="rounded-2xl border border-border bg-background p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold text-foreground">{c.title}</p>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 rounded-full px-2 py-0.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />
+                              Open
+                            </span>
+                          </div>
+                          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed line-clamp-2">{c.description}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                        {c.niche && (
+                          <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full px-2.5 py-0.5">{c.niche}</span>
+                        )}
+                        {c.budget && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                            {c.budget}
+                          </span>
+                        )}
+                        {deadlineStr && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            Deadline {deadlineStr}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )
+        ) : (
+          /* Creator: media kits */
+          publicKits.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border p-12 text-center">
+              <p className="text-muted-foreground text-sm">No public kits yet.</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-4">
+                Media kits
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {publicKits.map((kit) => {
+                  const appearance = parseKitAppearance(kit.appearance);
+                  const vibe = appearance.preset ? VIBE_COLORS[appearance.preset] : null;
+                  return (
+                    <Link
+                      key={kit.id}
+                      href={`/kit/${kit.slug}`}
+                      className="group relative overflow-hidden rounded-2xl border border-border bg-background hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+                    >
+                      <div
+                        className="h-24 w-full flex items-center justify-center"
+                        style={{ backgroundColor: vibe?.bg ?? "var(--color-muted)" }}
+                      >
+                        {avatarUrl && (
+                          <img
+                            src={avatarUrl}
+                            alt=""
+                            className="h-12 w-12 rounded-full object-cover border-2 opacity-90"
+                            style={{ borderColor: vibe?.accent ?? "#fff" }}
+                            width={48}
+                            height={48}
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <p className="text-sm font-semibold text-foreground truncate">{kit.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">kitevo.com/kit/{kit.slug}</p>
+                        <p className="mt-3 text-xs font-medium text-foreground group-hover:underline">View kit →</p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </>
+          )
         )}
 
         {/* Footer */}
