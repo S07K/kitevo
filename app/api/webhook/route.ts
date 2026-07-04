@@ -40,9 +40,9 @@ export async function POST(req: Request) {
         try {
           await prisma.user.update({
             where: { id: userId },
-            data: { stripeCustomerId: customerId },
+            data: { stripeCustomerId: customerId, verifiedTier: "creator_pro" },
           });
-          console.log(`[Webhook] Linked customer ${customerId} to user ${userId}`);
+          console.log(`[Webhook] Linked customer ${customerId} to user ${userId}, granted creator_pro`);
         } catch (e) {
           console.error("[Webhook] Failed to set stripeCustomerId:", e);
         }
@@ -59,13 +59,42 @@ export async function POST(req: Request) {
     }
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription;
-      console.log(
-        `[Webhook] Subscription updated: ${subscription.id} status=${subscription.status}`
-      );
+      const status = subscription.status;
+      if (subscription.customer) {
+        try {
+          const user = await prisma.user.findFirst({
+            where: { stripeCustomerId: subscription.customer as string },
+            select: { id: true },
+          });
+          if (user) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { verifiedTier: status === "active" ? "creator_pro" : null },
+            });
+            console.log(`[Webhook] Subscription ${status} — verifiedTier ${status === "active" ? "set" : "cleared"} for user ${user.id}`);
+          }
+        } catch (e) {
+          console.error("[Webhook] Failed to update verifiedTier on subscription update:", e);
+        }
+      }
       break;
     }
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
+      if (subscription.customer) {
+        try {
+          const user = await prisma.user.findFirst({
+            where: { stripeCustomerId: subscription.customer as string },
+            select: { id: true },
+          });
+          if (user) {
+            await prisma.user.update({ where: { id: user.id }, data: { verifiedTier: null } });
+            console.log(`[Webhook] Subscription canceled — verifiedTier cleared for user ${user.id}`);
+          }
+        } catch (e) {
+          console.error("[Webhook] Failed to clear verifiedTier on cancellation:", e);
+        }
+      }
       console.log(`[Webhook] Subscription canceled: ${subscription.id}`);
       break;
     }

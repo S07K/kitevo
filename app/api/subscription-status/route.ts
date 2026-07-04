@@ -55,7 +55,7 @@ export async function POST(req: Request) {
         try {
           await prisma.user.update({
             where: { id: userId },
-            data: { stripeCustomerId: customerId },
+            data: { stripeCustomerId: customerId, verifiedTier: "creator_pro" },
           });
         } catch {
           // ignore if user not found or already set
@@ -98,6 +98,11 @@ export async function POST(req: Request) {
       const customerId = user?.stripeCustomerId ?? null;
       if (customerId) {
         const payload = await getSubscriptionPayload(customerId);
+        // Sync verifiedTier with active subscription state
+        await prisma.user.update({
+          where: { id: authSession.user.id },
+          data: { verifiedTier: payload.hasSubscription ? "creator_pro" : null },
+        }).catch(() => {});
         // Fall back to free tier if no active paid subscription
         const effective = payload.hasSubscription ? payload : {
           hasSubscription: false,
