@@ -34,8 +34,10 @@ async function getCreatorProfile(username: string) {
       username: true,
       bio: true,
       avatarUrl: true,
+      accountType: true,
       links: true,
       verifiedTier: true,
+      brandProfile: { select: { companyName: true, logoUrl: true, description: true } },
       kits: {
         select: {
           id: true,
@@ -63,10 +65,19 @@ export async function generateMetadata({
     const user = await getCreatorProfile(username);
     if (!user) return { title: "Not Found" };
 
-    const title = `${user.name ?? username} — Kitevo`;
-    const description = user.bio ?? `View ${user.name ?? username}'s media kits on Kitevo.`;
+    const resolvedName = user.accountType === "brand"
+      ? (user.brandProfile?.companyName ?? user.name ?? username)
+      : (user.name ?? username);
+    const resolvedBio = user.accountType === "brand"
+      ? (user.brandProfile?.description ?? user.bio)
+      : user.bio;
+    const resolvedAvatar = user.accountType === "brand"
+      ? (user.brandProfile?.logoUrl ?? user.avatarUrl)
+      : user.avatarUrl;
+    const title = `${resolvedName} — Kitevo`;
+    const description = resolvedBio ?? `View ${resolvedName}'s media kits on Kitevo.`;
     const url = `${BASE_URL}/${username}`;
-    const image = user.avatarUrl ?? `${BASE_URL}/og-default.png`;
+    const image = resolvedAvatar ?? `${BASE_URL}/og-default.png`;
 
     return {
       title,
@@ -114,6 +125,12 @@ export default async function CreatorProfilePage({
 
   const links = parseLinks(user.links);
   const publicKits = user.kits.filter((k) => !k.passwordHash);
+  const isBrand = user.accountType === "brand";
+  const displayName = isBrand
+    ? (user.brandProfile?.companyName ?? user.name ?? username)
+    : (user.name ?? username);
+  const avatarUrl = isBrand ? (user.brandProfile?.logoUrl ?? user.avatarUrl) : user.avatarUrl;
+  const bio = isBrand ? (user.brandProfile?.description ?? user.bio) : user.bio;
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,10 +150,10 @@ export default async function CreatorProfilePage({
         {/* Profile header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-12">
           <div className="h-24 w-24 shrink-0 rounded-full overflow-hidden border-2 border-border bg-muted shadow-sm">
-            {user.avatarUrl ? (
+            {avatarUrl ? (
               <img
-                src={user.avatarUrl}
-                alt={user.name ?? username}
+                src={avatarUrl}
+                alt={displayName}
                 className="h-full w-full object-cover"
                 width={96}
                 height={96}
@@ -144,7 +161,7 @@ export default async function CreatorProfilePage({
               />
             ) : (
               <div className="h-full w-full flex items-center justify-center text-3xl font-display text-muted-foreground">
-                {(user.name ?? username).charAt(0).toUpperCase()}
+                {displayName.charAt(0).toUpperCase()}
               </div>
             )}
           </div>
@@ -152,13 +169,13 @@ export default async function CreatorProfilePage({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
-                {user.name ?? username}
+                {displayName}
               </h1>
               <VerifiedBadge tier={user.verifiedTier} size="lg" />
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">@{username}</p>
-            {user.bio && (
-              <p className="mt-3 text-sm text-foreground/80 leading-relaxed max-w-lg">{user.bio}</p>
+            {bio && (
+              <p className="mt-3 text-sm text-foreground/80 leading-relaxed max-w-lg">{bio}</p>
             )}
             {links.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-3">
