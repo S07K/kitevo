@@ -27,6 +27,10 @@ export default function ProfilePage() {
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
 
+  // YouTube
+  const [youtubeConnected, setYoutubeConnected] = useState(false);
+  const [youtubeDisconnecting, setYoutubeDisconnecting] = useState(false);
+
   // Plan
   const [tierName, setTierName] = useState<string | null>(null);
   const [tierId, setTierId] = useState<string | null>(null);
@@ -43,6 +47,11 @@ export default function ProfilePage() {
     fetch("/api/instagram/status", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => { if (data) setInstagramConnected(data.connected === true); })
+      .catch(() => {});
+
+    fetch("/api/youtube/status", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data) setYoutubeConnected(data.connected === true); })
       .catch(() => {});
 
     fetch("/api/subscription-status", {
@@ -93,6 +102,16 @@ export default function ProfilePage() {
       if (res.ok) setInstagramConnected(false);
     } finally {
       setDisconnecting(false);
+    }
+  };
+
+  const handleYoutubeDisconnect = async () => {
+    setYoutubeDisconnecting(true);
+    try {
+      const res = await fetch("/api/youtube/disconnect", { method: "POST", credentials: "include" });
+      if (res.ok) setYoutubeConnected(false);
+    } finally {
+      setYoutubeDisconnecting(false);
     }
   };
 
@@ -215,9 +234,9 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Instagram + Plan row */}
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          {/* Instagram (creators only) OR Brand settings card */}
+        {/* Connections + Plan row */}
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Instagram / Brand settings */}
           {profile?.accountType === "brand" ? (
             <div className="bg-background border-border rounded-2xl border p-6">
               <div className="flex items-center gap-2 mb-3">
@@ -270,6 +289,50 @@ export default function ProfilePage() {
                     className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
                   >
                     Connect Instagram →
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* YouTube (creators only) */}
+          {profile?.accountType !== "brand" && (
+            <div className="bg-background border-border rounded-2xl border p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/>
+                    <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/>
+                  </svg>
+                  <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">YouTube</p>
+                </div>
+                {youtubeConnected && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                    Connected
+                  </span>
+                )}
+              </div>
+              {youtubeConnected ? (
+                <div className="flex items-center justify-between">
+                  <p className="text-muted-foreground text-sm">Your stats are live on your kit.</p>
+                  <button
+                    type="button"
+                    onClick={handleYoutubeDisconnect}
+                    disabled={youtubeDisconnecting}
+                    className="text-muted-foreground hover:text-foreground text-xs transition-colors disabled:opacity-50"
+                  >
+                    {youtubeDisconnecting ? "Disconnecting…" : "Disconnect"}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-muted-foreground text-sm">Connect to pull live stats into your kit.</p>
+                  <a
+                    href="/api/youtube/connect"
+                    className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
+                  >
+                    Connect YouTube →
                   </a>
                 </div>
               )}
