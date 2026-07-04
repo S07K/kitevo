@@ -9,10 +9,7 @@ type Params = { username: string };
 
 async function getCreator(username: string) {
   return prisma.user.findFirst({
-    where: {
-      username,
-      accountType: "creator",
-    },
+    where: { username },
     select: {
       id: true,
       name: true,
@@ -23,6 +20,8 @@ async function getCreator(username: string) {
       niches: true,
       openToCollab: true,
       verifiedTier: true,
+      accountType: true,
+      brandProfile: { select: { companyName: true, logoUrl: true, description: true } },
       kits: {
         select: { id: true, slug: true, name: true },
         take: 1,
@@ -36,9 +35,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const creator = await getCreator(username);
   if (!creator) return { title: "Creator not found" };
 
-  const displayName = creator.name ?? `@${creator.username}`;
+  const isBrandMeta = creator.accountType === "brand";
+  const displayName = isBrandMeta
+    ? (creator.brandProfile?.companyName ?? creator.name ?? `@${creator.username}`)
+    : (creator.name ?? `@${creator.username}`);
   const niches: string[] = creator.niches ? JSON.parse(creator.niches) : [];
-  const description = creator.bio ?? `${displayName} is a creator on Kitevo${niches.length ? ` in ${niches.slice(0, 2).join(" & ")}` : ""}.`;
+  const description = (isBrandMeta ? creator.brandProfile?.description : creator.bio) ?? `${displayName} is a creator on Kitevo${niches.length ? ` in ${niches.slice(0, 2).join(" & ")}` : ""}.`;
 
   return {
     title: `${displayName} — Kitevo`,
@@ -63,8 +65,17 @@ export default async function CreatorProfilePage({ params }: { params: Promise<P
   const creator = await getCreator(username);
   if (!creator) notFound();
 
+  const isBrand = creator.accountType === "brand";
   const niches: string[] = creator.niches ? JSON.parse(creator.niches) : [];
-  const displayName = creator.name ?? `@${creator.username}`;
+  const displayName = isBrand
+    ? (creator.brandProfile?.companyName ?? creator.name ?? `@${creator.username}`)
+    : (creator.name ?? `@${creator.username}`);
+  const avatarUrl = isBrand
+    ? (creator.brandProfile?.logoUrl ?? creator.avatarUrl)
+    : creator.avatarUrl;
+  const bio = isBrand
+    ? (creator.brandProfile?.description ?? creator.bio)
+    : creator.bio;
   const kit = creator.kits[0];
 
   return (
@@ -75,9 +86,9 @@ export default async function CreatorProfilePage({ params }: { params: Promise<P
         {/* Profile header */}
         <div className="flex items-start gap-5">
           <div className="h-20 w-20 shrink-0 rounded-2xl overflow-hidden bg-muted border border-border">
-            {creator.avatarUrl ? (
+            {avatarUrl ? (
               <img
-                src={creator.avatarUrl}
+                src={avatarUrl}
                 alt={displayName}
                 className="h-full w-full object-cover"
                 referrerPolicy="no-referrer"
@@ -117,8 +128,8 @@ export default async function CreatorProfilePage({ params }: { params: Promise<P
         </div>
 
         {/* Bio */}
-        {creator.bio && (
-          <p className="mt-6 text-sm text-foreground leading-relaxed">{creator.bio}</p>
+        {bio && (
+          <p className="mt-6 text-sm text-foreground leading-relaxed">{bio}</p>
         )}
 
         {/* Niches */}
