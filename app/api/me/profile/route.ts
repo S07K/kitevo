@@ -12,6 +12,7 @@ export type ProfilePayload = {
   avatarUrl: string | null;
   verifiedTier?: string | null;
   links: ProfileLink[];
+  niches?: string[];
 };
 
 function parseLinks(linksJson: string | null): ProfileLink[] {
@@ -43,24 +44,35 @@ export async function GET() {
       bio: true,
       avatarUrl: true,
       links: true,
+      niches: true,
       email: true,
       onboardingCompletedAt: true,
       instagramUserId: true,
       accountType: true,
       verifiedTier: true,
+      brandProfile: { select: { companyName: true, logoUrl: true } },
     },
   });
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
+  const displayName = user.accountType === "brand" && user.brandProfile?.companyName
+    ? user.brandProfile.companyName
+    : user.name;
+
+  const avatarUrl = user.accountType === "brand"
+    ? (user.brandProfile?.logoUrl ?? user.avatarUrl)
+    : user.avatarUrl;
+
   return NextResponse.json({
     id: user.id,
-    name: user.name,
+    name: displayName,
     username: user.username,
     bio: user.bio,
-    avatarUrl: user.avatarUrl,
+    avatarUrl,
     email: user.email,
     links: parseLinks(user.links),
+    niches: user.niches ? (JSON.parse(user.niches) as string[]) : [],
     onboardingCompletedAt: user.onboardingCompletedAt?.toISOString() ?? null,
     instagramConnected: !!user.instagramUserId,
     accountType: user.accountType,
@@ -92,6 +104,11 @@ export async function PUT(req: Request) {
           .map((x) => ({ label: x.label, url: x.url }))
       )
     : undefined;
+  const nichesJson =
+    Array.isArray(body.niches)
+      ? JSON.stringify(body.niches.filter((n): n is string => typeof n === "string").slice(0, 5))
+      : undefined;
+
   const user = await prisma.user.update({
     where: { id: session.user.id },
     data: {
@@ -100,6 +117,7 @@ export async function PUT(req: Request) {
       ...(typeof body.bio === "string" && { bio: body.bio.trim() || null }),
       ...(typeof body.avatarUrl === "string" && { avatarUrl: body.avatarUrl.trim() || null }),
       ...(linksJson !== undefined && { links: linksJson }),
+      ...(nichesJson !== undefined && { niches: nichesJson }),
     },
     select: { name: true, username: true, bio: true, avatarUrl: true, links: true },
   });

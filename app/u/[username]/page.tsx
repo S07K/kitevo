@@ -125,7 +125,7 @@ export default async function CreatorProfilePage({ params }: { params: Promise<P
         {niches.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-5">
             {niches.map((n) => (
-              <span key={n} className="text-xs font-medium bg-muted text-foreground px-3 py-1.5 rounded-full border border-border">
+              <span key={n} className="text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full">
                 {n}
               </span>
             ))}

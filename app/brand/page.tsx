@@ -67,8 +67,11 @@ function CreatorCard({ creator, onMessage }: { creator: Creator; onMessage: (id:
         {creator.niches.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {creator.niches.slice(0, 3).map((n) => (
-              <span key={n} className="text-[10px] font-medium bg-muted text-muted-foreground rounded-full px-2 py-0.5">{n}</span>
+              <span key={n} className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full px-2.5 py-0.5">{n}</span>
             ))}
+            {creator.niches.length > 3 && (
+              <span className="text-[10px] font-medium bg-muted text-muted-foreground rounded-full px-2.5 py-0.5">+{creator.niches.length - 3}</span>
+            )}
           </div>
         )}
         {creator.location && <p className="mt-2 text-xs text-muted-foreground">{creator.location}</p>}

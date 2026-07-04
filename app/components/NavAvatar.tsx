@@ -27,6 +27,15 @@ export function NavAvatar() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    function handleAvatarUpdate(e: Event) {
+      const url = (e as CustomEvent<{ avatarUrl: string }>).detail?.avatarUrl;
+      setProfile((p) => p ? { ...p, avatarUrl: url ?? p.avatarUrl } : p);
+    }
+    window.addEventListener("kitevo:avatar-updated", handleAvatarUpdate);
+    return () => window.removeEventListener("kitevo:avatar-updated", handleAvatarUpdate);
+  }, []);
+
   // Close on outside click
   useEffect(() => {
     if (!open) return;

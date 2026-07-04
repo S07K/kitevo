@@ -1,8 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
+
+async function resizeToJpegDataUrl(file: File, maxPx = 400): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.88));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
 
 const INDUSTRIES = [
   "Tech & SaaS", "Fashion", "Beauty", "Food & Beverage", "Health & Wellness",
@@ -34,6 +53,53 @@ export default function BrandSettings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setLogoError("Choose an image file."); return; }
+    if (file.size > 8 * 1024 * 1024) { setLogoError("Image is too large (max 8MB)."); return; }
+    setLogoError(null);
+    setLogoUploading(true);
+    try {
+      const dataUrl = await resizeToJpegDataUrl(file);
+      const res = await fetch("/api/brand/logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ logoDataUrl: dataUrl }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { setLogoError(json.error ?? "Upload failed"); return; }
+      const newLogoUrl = json.logoUrl ?? "";
+      setForm((f) => ({ ...f, logoUrl: newLogoUrl }));
+      window.dispatchEvent(new CustomEvent("kitevo:avatar-updated", { detail: { avatarUrl: newLogoUrl } }));
+    } catch {
+      setLogoError("Could not process image.");
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
+  async function removeLogo() {
+    setLogoUploading(true);
+    try {
+      await fetch("/api/brand/logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ logoDataUrl: null }),
+      });
+      setForm((f) => ({ ...f, logoUrl: "" }));
+      window.dispatchEvent(new CustomEvent("kitevo:avatar-updated", { detail: { avatarUrl: "" } }));
+    } finally {
+      setLogoUploading(false);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/brand/profile", { credentials: "include" })
@@ -161,21 +227,53 @@ export default function BrandSettings() {
                 />
               </div>
 
-              {/* Logo URL */}
+              {/* Logo upload */}
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Logo URL</label>
-                <input
-                  type="url"
-                  value={form.logoUrl}
-                  onChange={(e) => set("logoUrl", e.target.value)}
-                  placeholder="https://..."
-                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-                />
-                {form.logoUrl && (
-                  <div className="mt-2 h-12 w-12 rounded-xl overflow-hidden border border-border bg-muted">
-                    <img src={form.logoUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                <label className="block text-xs font-medium text-muted-foreground mb-2">Company logo</label>
+                <input ref={logoInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleLogoFile} />
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={logoUploading}
+                    className="relative h-16 w-16 rounded-2xl border-2 border-dashed border-border bg-muted hover:bg-muted/80 transition-colors flex items-center justify-center overflow-hidden shrink-0 disabled:opacity-50"
+                  >
+                    {form.logoUrl ? (
+                      <img src={form.logoUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                    ) : logoUploading ? (
+                      <svg className="animate-spin h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3V0a12 12 0 100 24v-4l-3 3 3 3v4A12 12 0 014 12z"/>
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                    )}
+                  </button>
+                  <div className="space-y-1.5">
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={logoUploading}
+                      className="inline-flex h-8 items-center rounded-full border border-border px-3 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                    >
+                      {logoUploading ? "Uploading…" : form.logoUrl ? "Change logo" : "Upload logo"}
+                    </button>
+                    {form.logoUrl && (
+                      <button
+                        type="button"
+                        onClick={removeLogo}
+                        disabled={logoUploading}
+                        className="block text-xs text-muted-foreground hover:text-red-500 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    )}
+                    <p className="text-[11px] text-muted-foreground">JPEG, PNG or WebP · max 8MB</p>
                   </div>
-                )}
+                </div>
+                {logoError && <p className="mt-1.5 text-xs text-red-500">{logoError}</p>}
               </div>
 
               {/* Description */}

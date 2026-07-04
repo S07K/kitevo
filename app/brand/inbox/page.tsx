@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
@@ -233,15 +234,27 @@ export default function BrandInbox() {
                   </button>
                   {activeConvo?.other && (
                     <>
-                      <div className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0">
-                        {activeConvo.other.avatarUrl ? (
-                          <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
-                            {(activeConvo.other.name ?? activeConvo.other.username ?? "?").charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
+                      {activeConvo.other.username ? (
+                        <Link href={`/${activeConvo.other.username}`} target="_blank" className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0 hover:opacity-80 transition-opacity">
+                          {activeConvo.other.avatarUrl ? (
+                            <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                              {(activeConvo.other.name ?? activeConvo.other.username ?? "?").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </Link>
+                      ) : (
+                        <div className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0">
+                          {activeConvo.other.avatarUrl ? (
+                            <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                              {(activeConvo.other.name ?? activeConvo.other.username ?? "?").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div className="flex items-center gap-1.5">
                         <p className="text-sm font-semibold text-foreground">{activeConvo.other.name ?? activeConvo.other.username}</p>
                         <VerifiedBadge tier={activeConvo.other.verifiedTier} size="sm" />
@@ -266,15 +279,27 @@ export default function BrandInbox() {
                         )}
                         <div className={`flex items-end gap-2.5 ${mine ? "justify-end" : "justify-start"}`}>
                           {!mine && activeConvo?.other && (
-                            <div className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5">
-                              {activeConvo.other.avatarUrl ? (
-                                <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                              ) : (
-                                <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                                  {(activeConvo.other.name ?? "?").charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                            </div>
+                            activeConvo.other.username ? (
+                              <Link href={`/${activeConvo.other.username}`} target="_blank" className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5 hover:opacity-80 transition-opacity">
+                                {activeConvo.other.avatarUrl ? (
+                                  <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                                    {(activeConvo.other.name ?? "?").charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                              </Link>
+                            ) : (
+                              <div className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5">
+                                {activeConvo.other.avatarUrl ? (
+                                  <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                                    {(activeConvo.other.name ?? "?").charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                              </div>
+                            )
                           )}
                           <div className={`max-w-[68%] px-4 py-2.5 text-sm leading-relaxed ${mine ? "bg-foreground text-background rounded-2xl rounded-br-md" : "bg-muted text-foreground rounded-2xl rounded-bl-md"}`}>
                             {m.body}

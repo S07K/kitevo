@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
@@ -242,17 +243,27 @@ export default function CreatorInbox() {
                     const other = activeConvo.other;
                     const displayName = other.brandProfile?.companyName ?? other.name ?? other.username ?? "Unknown";
                     const avatar = other.brandProfile?.logoUrl ?? other.avatarUrl;
+                    const profileHref = other.username ? `/${other.username}` : null;
+                    const avatarEl = (
+                      <div className="h-full w-full">
+                        {avatar ? (
+                          <img src={avatar} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                            {displayName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                    );
                     return (
                       <>
-                        <div className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0">
-                          {avatar ? (
-                            <img src={avatar} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
-                              {displayName.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
+                        {profileHref ? (
+                          <Link href={profileHref} target="_blank" className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0 hover:opacity-80 transition-opacity">
+                            {avatarEl}
+                          </Link>
+                        ) : (
+                          <div className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0">{avatarEl}</div>
+                        )}
                         <p className="text-sm font-semibold text-foreground">{displayName}</p>
                       </>
                     );
@@ -273,17 +284,24 @@ export default function CreatorInbox() {
                           </div>
                         )}
                         <div className={`flex items-end gap-2.5 ${mine ? "justify-end" : "justify-start"}`}>
-                          {!mine && (
-                            <div className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5">
-                              {m.sender.avatarUrl ? (
-                                <img src={m.sender.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                              ) : (
-                                <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                                  {(m.sender.name ?? "?").charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                          {!mine && activeConvo?.other && (() => {
+                            const other = activeConvo.other;
+                            const profileHref = other.username ? `/${other.username}` : null;
+                            const inner = m.sender.avatarUrl ? (
+                              <img src={m.sender.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                                {(m.sender.name ?? "?").charAt(0).toUpperCase()}
+                              </div>
+                            );
+                            return profileHref ? (
+                              <Link href={profileHref} target="_blank" className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5 hover:opacity-80 transition-opacity">
+                                {inner}
+                              </Link>
+                            ) : (
+                              <div className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5">{inner}</div>
+                            );
+                          })()}
                           <div className={`max-w-[68%] px-4 py-2.5 text-sm leading-relaxed ${mine ? "bg-foreground text-background rounded-2xl rounded-br-md" : "bg-muted text-foreground rounded-2xl rounded-bl-md"}`}>
                             {m.body}
                           </div>

@@ -10,6 +10,15 @@ export type ProfileFormProfile = ProfilePayload & {
   accountType?: string;
 };
 
+const CREATOR_NICHES = [
+  "Fashion", "Beauty", "Food", "Tech", "Health", "Travel",
+  "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance",
+  "Education", "Photography", "Music", "Sports", "Comedy",
+  "DIY", "Art", "Pets", "Business",
+];
+
+const MAX_NICHES = 5;
+
 /** Must stay under API limit (see app/api/me/avatar/route.ts) so Neon/pg updates don't time out. */
 const MAX_AVATAR_DATA_URL_CHARS = 180_000;
 
@@ -70,6 +79,7 @@ export function ProfileForm({
   const [username, setUsername] = useState(profile.username ?? "");
   const [bio, setBio] = useState(profile.bio ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? "");
+  const [niches, setNiches] = useState<string[]>(profile.niches ?? []);
   const [links, setLinks] = useState<ProfileLink[]>(profile.links?.length ? [...profile.links] : [{ label: "", url: "" }]);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -206,6 +216,7 @@ export function ProfileForm({
       bio: bio.trim() || null,
       avatarUrl: avatarUrl.trim() || null,
       links: links.filter((l) => l.label.trim() || l.url.trim()).map((l) => ({ label: l.label.trim(), url: l.url.trim() })),
+      niches,
     };
     onSave(payload);
   };
@@ -352,6 +363,50 @@ export function ProfileForm({
                 className={inputCls}
                 placeholder="Short bio shown on your media kit"
               />
+            </div>
+          )}
+
+          {!isBrand && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-foreground">Content niches</label>
+                <span className="text-xs text-muted-foreground">{niches.length}/{MAX_NICHES}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {CREATOR_NICHES.map((n) => {
+                  const selected = niches.includes(n);
+                  const maxed = !selected && niches.length >= MAX_NICHES;
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      disabled={maxed}
+                      onClick={() =>
+                        setNiches((prev) =>
+                          selected ? prev.filter((x) => x !== n) : [...prev, n]
+                        )
+                      }
+                      className={`inline-flex items-center h-7 px-3 rounded-full text-xs font-medium transition-all ${
+                        selected
+                          ? "bg-foreground text-background"
+                          : maxed
+                          ? "bg-muted text-muted-foreground/40 cursor-not-allowed"
+                          : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {selected && (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 shrink-0">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+              {niches.length >= MAX_NICHES && (
+                <p className="mt-1.5 text-xs text-muted-foreground">Maximum {MAX_NICHES} niches selected. Remove one to add another.</p>
+              )}
             </div>
           )}
 

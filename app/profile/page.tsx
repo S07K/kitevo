@@ -234,145 +234,156 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Connections + Plan row */}
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Instagram / Brand settings */}
-          {profile?.accountType === "brand" ? (
-            <div className="bg-background border-border rounded-2xl border p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                  <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
-                </svg>
-                <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Brand profile</p>
-              </div>
-              <p className="text-muted-foreground text-sm mb-3">Update your company info, industry, and campaign budget range.</p>
-              <a
-                href="/brand?tab=settings"
-                className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
-              >
-                Edit brand profile →
-              </a>
+        {/* Connections — creators only */}
+        {profile?.accountType !== "brand" && (
+          <div className="mt-4 bg-background border-border rounded-2xl border overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+              <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Connections</p>
             </div>
-          ) : (
-            <div className="bg-background border-border rounded-2xl border p-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+
+            {/* Instagram row */}
+            <div className="px-6 py-4 flex items-center justify-between border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
                     <rect width="20" height="20" x="2" y="2" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
                   </svg>
-                  <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Instagram</p>
                 </div>
-                {instagramConnected && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
-                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                    Connected
-                  </span>
-                )}
+                <div>
+                  <p className="text-sm font-medium text-foreground">Instagram</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {instagramConnected ? "Stats are live on your kit" : "Pull live follower and engagement stats"}
+                  </p>
+                </div>
               </div>
-              {instagramConnected ? (
-                <div className="flex items-center justify-between">
-                  <p className="text-muted-foreground text-sm">Your stats are live on your kit.</p>
-                  <button
-                    type="button"
-                    onClick={handleDisconnect}
-                    disabled={disconnecting}
-                    className="text-muted-foreground hover:text-foreground text-xs transition-colors disabled:opacity-50"
-                  >
-                    {disconnecting ? "Disconnecting…" : "Disconnect"}
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-muted-foreground text-sm">Connect to pull live stats into your kit.</p>
+              <div className="shrink-0 ml-4">
+                {instagramConnected ? (
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                      Connected
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleDisconnect}
+                      disabled={disconnecting}
+                      className="text-xs text-muted-foreground hover:text-red-500 transition-colors disabled:opacity-50"
+                    >
+                      {disconnecting ? "Disconnecting…" : "Disconnect"}
+                    </button>
+                  </div>
+                ) : (
                   <a
                     href="/api/instagram/connect"
-                    className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
+                    className="inline-flex h-8 items-center rounded-full border border-border px-3 text-xs font-medium text-foreground hover:bg-muted transition-colors"
                   >
-                    Connect Instagram →
+                    Connect
                   </a>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          )}
 
-          {/* YouTube (creators only) */}
-          {profile?.accountType !== "brand" && (
-            <div className="bg-background border-border rounded-2xl border p-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+            {/* YouTube row */}
+            <div className="px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
                     <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/>
                     <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/>
                   </svg>
-                  <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">YouTube</p>
                 </div>
-                {youtubeConnected && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
-                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                    Connected
-                  </span>
-                )}
+                <div>
+                  <p className="text-sm font-medium text-foreground">YouTube</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {youtubeConnected ? "Stats are live on your kit" : "Pull live subscriber and view counts"}
+                  </p>
+                </div>
               </div>
-              {youtubeConnected ? (
-                <div className="flex items-center justify-between">
-                  <p className="text-muted-foreground text-sm">Your stats are live on your kit.</p>
-                  <button
-                    type="button"
-                    onClick={handleYoutubeDisconnect}
-                    disabled={youtubeDisconnecting}
-                    className="text-muted-foreground hover:text-foreground text-xs transition-colors disabled:opacity-50"
-                  >
-                    {youtubeDisconnecting ? "Disconnecting…" : "Disconnect"}
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-muted-foreground text-sm">Connect to pull live stats into your kit.</p>
+              <div className="shrink-0 ml-4">
+                {youtubeConnected ? (
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                      Connected
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleYoutubeDisconnect}
+                      disabled={youtubeDisconnecting}
+                      className="text-xs text-muted-foreground hover:text-red-500 transition-colors disabled:opacity-50"
+                    >
+                      {youtubeDisconnecting ? "Disconnecting…" : "Disconnect"}
+                    </button>
+                  </div>
+                ) : (
                   <a
                     href="/api/youtube/connect"
-                    className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
+                    className="inline-flex h-8 items-center rounded-full border border-border px-3 text-xs font-medium text-foreground hover:bg-muted transition-colors"
                   >
-                    Connect YouTube →
+                    Connect
                   </a>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Plan */}
-          <div className="bg-background border-border rounded-2xl border p-6">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-                <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Plan</p>
+                )}
               </div>
-              {tierName && (
-                <span className="bg-foreground text-background rounded-full px-2.5 py-0.5 text-[11px] font-semibold">{tierName}</span>
-              )}
             </div>
-            <p className="text-muted-foreground text-sm mb-4">{allowedKits} kit{allowedKits !== 1 ? "s" : ""} included on your plan.</p>
-            <div className="flex flex-wrap gap-2">
-              {tierId === "starter" && (
-                <button
-                  type="button"
-                  onClick={upgradeToPro}
-                  disabled={upgradeLoading}
-                  className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
-                >
-                  {upgradeLoading ? "Upgrading…" : "Upgrade to Pro"}
-                </button>
-              )}
+          </div>
+        )}
+
+        {/* Brand profile shortcut (brands only) */}
+        {profile?.accountType === "brand" && (
+          <div className="mt-4 bg-background border-border rounded-2xl border p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+              </svg>
+              <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Brand profile</p>
+            </div>
+            <p className="text-muted-foreground text-sm mb-3">Update your company info, industry, and campaign budget range.</p>
+            <a
+              href="/brand?tab=settings"
+              className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
+            >
+              Edit brand profile →
+            </a>
+          </div>
+        )}
+
+        {/* Plan */}
+        <div className="mt-4 bg-background border-border rounded-2xl border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Plan</p>
+            </div>
+            {tierName && (
+              <span className="bg-foreground text-background rounded-full px-2.5 py-0.5 text-[11px] font-semibold">{tierName}</span>
+            )}
+          </div>
+          <p className="text-muted-foreground text-sm mb-4">{allowedKits} kit{allowedKits !== 1 ? "s" : ""} included on your plan.</p>
+          <div className="flex flex-wrap gap-2">
+            {tierId === "starter" && (
               <button
                 type="button"
-                onClick={openPortal}
-                disabled={portalLoading}
-                className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors disabled:opacity-50"
+                onClick={upgradeToPro}
+                disabled={upgradeLoading}
+                className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
               >
-                {portalLoading ? "Opening…" : "Manage billing"}
+                {upgradeLoading ? "Upgrading…" : "Upgrade to Pro"}
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={openPortal}
+              disabled={portalLoading}
+              className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {portalLoading ? "Opening…" : "Manage billing"}
+            </button>
           </div>
         </div>
 
