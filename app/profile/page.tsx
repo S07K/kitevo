@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppNav } from "../components/AppNav";
 import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm";
+import { VerifiedBadge } from "../components/VerifiedBadge";
 import { signOut } from "next-auth/react";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
 
@@ -177,7 +178,10 @@ export default function ProfilePage() {
         {/* Profile form */}
         <div className="bg-background border-border mt-6 rounded-2xl border p-6">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Profile</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Profile</p>
+              <VerifiedBadge tier={profile?.verifiedTier} size="sm" />
+            </div>
             {profile?.username && (
               <Link
                 href={`/${profile.username}`}

@@ -10,6 +10,7 @@ export type ProfilePayload = {
   username: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  verifiedTier?: string | null;
   links: ProfileLink[];
 };
 

@@ -53,6 +53,7 @@ export type PublicCreator = {
   username: string;
   bio: string;
   avatarUrl?: string;
+  verifiedTier?: string | null;
   links: { label: string; url: string }[];
 };
 
@@ -63,7 +64,7 @@ export async function getKitBySlug(slug: string): Promise<KitBySlugResult> {
     where: { slug },
     include: {
       user: {
-        select: { name: true, username: true, bio: true, avatarUrl: true, links: true },
+        select: { name: true, username: true, bio: true, avatarUrl: true, verifiedTier: true, links: true },
       },
     },
   });
@@ -74,6 +75,7 @@ export async function getKitBySlug(slug: string): Promise<KitBySlugResult> {
     username: kit.user.username ?? kit.slug,
     bio: kit.user.bio ?? "",
     avatarUrl: kit.user.avatarUrl ?? undefined,
+    verifiedTier: kit.user.verifiedTier ?? null,
     links: parseLinks(kit.user.links),
   };
 

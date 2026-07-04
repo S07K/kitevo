@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
 import { CountUp } from "@/app/components/Skeleton";
+import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import type { PlatformId, PlatformStatsWithCharts } from "@/lib/platforms";
 import { getPlatformMeta } from "@/lib/platforms";
 import type { KitRates, BrandPartner } from "@/lib/mock-data";
@@ -46,7 +47,7 @@ const AudienceBarChart = dynamic(
 
 interface MediaKitClientProps {
   username: string;
-  creator: { name: string; username: string; bio: string; avatarUrl?: string | null };
+  creator: { name: string; username: string; bio: string; avatarUrl?: string | null; verifiedTier?: string | null };
   links: { label: string; url: string }[];
   platformStats: Record<string, PlatformStatsWithCharts>;
   enabledPlatformIds: PlatformId[];
@@ -481,9 +482,12 @@ export function MediaKitClient({
                 <p className="text-[var(--mk-bg)]/50 text-[11px] font-semibold tracking-[0.16em] uppercase mb-0.5">
                   Creator Media Kit
                 </p>
-                <h1 className="font-display text-xl font-semibold text-[var(--mk-bg)] leading-none tracking-tight">
-                  {creator.name}
-                </h1>
+                <div className="flex items-center gap-1.5">
+                  <h1 className="font-display text-xl font-semibold text-[var(--mk-bg)] leading-none tracking-tight">
+                    {creator.name}
+                  </h1>
+                  <VerifiedBadge tier={creator.verifiedTier} size="md" />
+                </div>
                 <p className="text-[var(--mk-bg)]/50 text-xs font-medium tracking-wide mt-0.5">
                   @{creator.username}
                 </p>

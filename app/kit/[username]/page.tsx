@@ -197,6 +197,7 @@ export default async function MediaKitPage({
           username: result.creator.username,
           bio: result.creator.bio,
           avatarUrl: result.creator.avatarUrl,
+          verifiedTier: result.creator.verifiedTier,
         }}
         links={result.creator.links}
         platformStats={platformStats}

@@ -30,6 +30,7 @@ interface KitViewRecord {
 }
 
 import { DealPipeline, type InquiryRecord, type DealStatus } from "../components/DealPipeline";
+import { VerifiedBadge } from "../components/VerifiedBadge";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1128,7 +1129,10 @@ function DashboardContent() {
                 {/* Name + subtitle */}
                 <div className="min-w-0 flex-1">
                   <p className="text-white/50 text-[10px] font-semibold tracking-[0.18em] uppercase leading-none mb-0.5">Welcome back</p>
-                  <p className="font-display text-base font-semibold text-white leading-none truncate">{firstName}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-display text-base font-semibold text-white leading-none truncate">{firstName}</p>
+                    <VerifiedBadge tier={profile?.verifiedTier} size="sm" />
+                  </div>
                 </div>
 
                 {/* Actions — right side */}
