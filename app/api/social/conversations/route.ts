@@ -82,6 +82,29 @@ export async function POST(req: Request) {
 
   if (existing) return NextResponse.json({ conversationId: existing.id });
 
+  // Cold-messaging gate: a free brand may only start a NEW conversation with a creator
+  // who has applied to one of its campaigns. Messaging any creator directly is a Brand Pro
+  // feature. (Replies to existing conversations are already allowed above.)
+  const me = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { accountType: true, verifiedTier: true },
+  });
+  if (me?.accountType === "brand" && me.verifiedTier !== "brand_verified") {
+    const related = await prisma.campaignApplication.findFirst({
+      where: { creatorId: otherUserId, campaign: { brandId: session.user.id } },
+      select: { id: true },
+    });
+    if (!related) {
+      return NextResponse.json(
+        {
+          error: "Upgrade to Brand Pro to message creators who haven't applied to your campaigns.",
+          code: "cold_message_locked",
+        },
+        { status: 403 }
+      );
+    }
+  }
+
   const convo = await prisma.conversation.create({
     data: {
       participants: {

@@ -108,6 +108,7 @@ export default function BrandDiscover() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(false);
+  const [coldMessageLocked, setColdMessageLocked] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 400);
@@ -127,12 +128,21 @@ export default function BrandDiscover() {
   }, [niche, debouncedSearch]);
 
   async function startConversation(creatorId: string) {
+    setColdMessageLocked(false);
     const res = await fetch("/api/social/conversations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ otherUserId: creatorId }),
       credentials: "include",
     });
+    if (res.status === 403) {
+      const d = await res.json().catch(() => ({}));
+      if (d.code === "cold_message_locked") {
+        setColdMessageLocked(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return;
+    }
     if (res.ok) {
       const d = await res.json();
       router.push(`/brand/inbox?convo=${d.conversationId}`);
@@ -150,6 +160,23 @@ export default function BrandDiscover() {
 
       <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
         <div className="mx-auto max-w-5xl">
+        {coldMessageLocked && (
+          <div className="mb-6 rounded-2xl border border-[#7c3aed]/40 bg-[#7c3aed]/5 px-5 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <VerifiedBadge tier="brand_verified" size="md" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Messaging creators directly is a Brand Pro feature</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Upgrade to reach any creator — not just those who applied to your campaigns.</p>
+              </div>
+            </div>
+            <Link
+              href="/brand/settings"
+              className="shrink-0 h-9 px-4 inline-flex items-center rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity"
+            >
+              Upgrade
+            </Link>
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <input
             type="text"
