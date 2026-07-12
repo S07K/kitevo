@@ -10,6 +10,8 @@ export interface SubscriptionTier {
   name: string;
   /** Display price in USD per month */
   priceMonthly: number;
+  /** Display price in USD per year (optional; for a monthly/yearly toggle). */
+  priceYearly?: number;
   /** Max media kits allowed on this tier */
   kitsAllowed: number;
   /** Short feature list for pricing page */
@@ -72,6 +74,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     id: "brand",
     name: "Brand Pro",
     priceMonthly: 29,
+    priceYearly: 290,
     kitsAllowed: 0,
     audience: "brand",
     verifiedTier: "brand_verified",
