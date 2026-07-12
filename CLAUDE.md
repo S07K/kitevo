@@ -14,7 +14,7 @@ Stack: Next.js 15 App Router, Prisma + Neon (Postgres), NextAuth, Stripe, Tailwi
 
 - **Tailwind v4**: Use `@import "tailwindcss"` — `neutral` color unreliable, use `bg-muted`/CSS vars instead. Dark mode requires `@variant dark (&:where(.dark, .dark *));` in globals.css (class-based, not OS media query)
 - **Prisma**: Run `prisma generate` after schema changes. For NOT NULL columns on existing rows, use raw SQL `ALTER TABLE` via `prisma db execute --stdin` before `db push`
-- **Avatar/logo uploads**: Stored as base64 data URLs in DB (resized client-side before upload). Max ~200k chars. Pattern: resize in browser → POST data URL → store in DB
+- **Avatar/logo uploads**: Stored as base64 data URLs in DB (resized client-side before upload). Max ~200k chars. Pattern: resize in browser → POST data URL → store in DB. **Instagram photo import** downloads the image server-side to base64 (`lib/image-to-data-url.ts`) — never stores the expiring `fbcdn` CDN URL. Render avatars via `AvatarImg` (falls back to initials on load error). Backfill: `scripts/backfill-instagram-avatars.ts`
 - **Dark mode**: Managed via `next-themes`, class applied to `<html>`. ThemeToggle lives in NavAvatar popup only.
 
 ---
@@ -33,7 +33,7 @@ Stack: Next.js 15 App Router, Prisma + Neon (Postgres), NextAuth, Stripe, Tailwi
 - Public profile: `/{username}` — shows open campaigns (NOT kits)
 - Display name = `brandProfile.companyName` (NOT `user.name`) everywhere
 - Avatar = `brandProfile.logoUrl` (NOT `user.avatarUrl`) everywhere
-- No brand monetization tier yet — planned (see Pending section)
+- **Brand Pro** tier (`brand_verified`, purple tick): unlimited open campaigns, cold-message any creator, featured placement (see Brand Monetization below)
 
 ---
 
@@ -62,6 +62,16 @@ Stack: Next.js 15 App Router, Prisma + Neon (Postgres), NextAuth, Stripe, Tailwi
 - Inbox / DM system between brands and creators (realtime via SSE)
 - Brand settings: companyName, industry, budgetRange, website, description, **logo upload** (click-to-upload, no URL paste)
 - Brand public profile (`/{username}`): shows company name, logo, description, open campaigns as clickable cards → `/campaigns/[id]`
+
+### Brand Monetization — Brand Pro (`brand_verified`)
+- **Brand Pro plan**: $29/mo (`STRIPE_PRICE_ID_BRAND`) / $290/yr (`STRIPE_PRICE_ID_BRAND_YEARLY`) — `brand` tier in `config/subscriptions.ts` (`audience: "brand"`, `verifiedTier: "brand_verified"`)
+- **Purchasable**: `BrandPlanCard` on `/brand/settings` — monthly/yearly toggle (yearly shown as small monthly figure + savings), Upgrade → checkout (`tierId: "brand"`); shows verified state + "Manage billing" (portal) when active
+- **Tier derived from price**: `getVerifiedTierForPriceId()` — creator plans → `creator_pro`, brand plan → `brand_verified` (webhook + subscription-status; no more hardcoded `creator_pro`)
+- **Free brands capped at 1 open campaign** (POST + reopen PATCH); Brand Pro = unlimited. Cap error links to upgrade
+- **Purple tick** shown on creator-facing campaign cards + campaign detail (task done)
+- **Cold-message gate**: free brands can only message their own applicants; messaging any creator directly requires Brand Pro (`403 cold_message_locked` → upgrade prompt on discover)
+- **Priority placement**: `brand_verified` campaigns pinned above others in creator feed (`/social/campaigns`), with purple "Featured" tag
+- `getPublicTiers(audience)` filters by audience (defaults to creator) so Brand Pro stays off creator pricing/onboarding pages
 
 ### UI / UX
 - `AppNav`: logo + NavAvatar only (no tabs). Tabs moved to `AppSidebar`
@@ -92,23 +102,19 @@ Stack: Next.js 15 App Router, Prisma + Neon (Postgres), NextAuth, Stripe, Tailwi
 
 ## Pending / Next Up
 
-### Brand Revenue Model (discussed, not built)
-Phase 1 — gate + monetize:
-- Cap free brands at 1 active campaign (check in campaign creation API)
-- Wire `brand_verified` Stripe plan → sets `User.verifiedTier = "brand_verified"` (purple tick)
-- Show purple tick on brand cards in creator discover + campaign cards
+### Brand Revenue Model
+**Phase 1 — gate + monetize: ✅ DONE** (cap free brands at 1 open campaign, `brand_verified` Stripe plan wired, purple tick on creator-facing surfaces — see Brand Monetization above)
 
 Phase 2 — Pro unlock features:
-- Direct cold-message any creator (currently only applicants can be messaged)
+- ✅ Direct cold-message any creator (gated behind Brand Pro)
+- ✅ Featured campaign placement (Brand Pro campaigns pinned above free)
 - Shortlist/save creators (`SavedCreator` table)
 - Advanced discover filters (follower range, engagement rate)
 - Campaign analytics (views, application rate, acceptance rate)
-- Featured campaign placement (pinned above free campaigns)
 - Export applicants CSV
 
 Phase 3 — Business tier:
 - Team seats (`BrandMember` table, invite by email)
-- Priority placement in creator discover
 
 ### Other Pending
 - Supabase Storage migration (avatars/logos currently stored as base64 in DB — works but not ideal for scale)
@@ -116,7 +122,7 @@ Phase 3 — Business tier:
 - Email notifications for campaign events (apply/accept/reject)
 - DB indexes for scale
 - Report/block between users
-- Stripe tier enforcement: free plan caps (kit count, campaign count)
+- Stripe tier enforcement: creator kit-count cap (campaign-count cap for brands ✅ done)
 - Wire `CampaignApplication.updatedAt` back into timeline once confirmed regenerated
 
 ---
@@ -134,16 +140,26 @@ Phase 3 — Business tier:
 | `app/[username]/page.tsx` | Public profile — brand-aware (campaigns for brands, kits for creators) |
 | `app/u/[username]/page.tsx` | Same, alternate route |
 | `app/profile/page.tsx` | Creator settings: profile form + Connections section + Plan card |
-| `app/brand/settings/page.tsx` | Brand settings with logo upload |
-| `app/brand/page.tsx` | Creator discover (brand side) |
-| `app/campaigns/[id]/page.tsx` | Campaign detail + ApplySection timeline |
+| `app/brand/settings/page.tsx` | Brand settings with logo upload + `BrandPlanCard` |
+| `app/brand/BrandPlanCard.tsx` | Brand Pro plan status + upgrade CTA (monthly/yearly checkout, manage billing) |
+| `app/brand/page.tsx` | Creator discover (brand side) — Message gated by Brand Pro |
+| `app/components/AvatarImg.tsx` | Avatar `<img>` with initials fallback on load error |
+| `app/campaigns/[id]/page.tsx` | Campaign detail + ApplySection timeline (brand verified tick) |
 | `app/campaigns/[id]/ApplySection.tsx` | Application timeline UI |
+| `app/social/campaigns/page.tsx` | Creator campaign feed — brand tick + "Featured" tag |
+| `config/subscriptions.ts` | Tier definitions (incl. `brand`), price/tier/verifiedTier resolvers |
+| `app/api/social/campaigns/route.ts` | Campaigns GET/POST — free-brand cap, priority placement sort |
+| `app/api/social/conversations/route.ts` | Conversations — cold-message Brand Pro gate |
+| `app/api/create-checkout-session/route.ts` | Checkout (creator + brand); `returnTo` routing |
+| `app/api/create-portal-session/route.ts` | Stripe billing portal; `returnTo` routing |
 | `app/api/me/profile/route.ts` | GET/PUT creator profile — returns companyName/logoUrl for brands |
 | `app/api/me/avatar/route.ts` | Base64 avatar upload |
+| `app/api/me/profile/use-instagram-photo/route.ts` | Import IG photo → durable base64 |
+| `lib/image-to-data-url.ts` | Fetch remote image → base64 data URL (durable avatar/logo storage) |
 | `app/api/brand/logo/route.ts` | Base64 logo upload (upsert) |
 | `app/api/brand/profile/route.ts` | Brand profile GET/PUT |
-| `app/api/webhook/route.ts` | Stripe webhooks → verifiedTier sync |
-| `app/api/subscription-status/route.ts` | Auto-syncs verifiedTier on load |
+| `app/api/webhook/route.ts` | Stripe webhooks → verifiedTier sync (price-derived tier) |
+| `app/api/subscription-status/route.ts` | Auto-syncs verifiedTier on load (price-derived) |
 | `lib/get-kit-by-slug.ts` | Kit loader with verifiedTier |
 | `prisma/schema.prisma` | Full DB schema |
 | `app/globals.css` | Tailwind v4 dark mode fix + cursor-pointer globals |
