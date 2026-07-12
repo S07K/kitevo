@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+/** Free brands may keep at most this many campaigns "open" at once. Paid (brand_verified) brands are uncapped. */
+const FREE_BRAND_OPEN_CAMPAIGN_LIMIT = 1;
+
 /** GET /api/social/campaigns — list open campaigns (creators) or own campaigns (brands) */
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -60,7 +63,7 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { accountType: true },
+    select: { accountType: true, verifiedTier: true },
   });
   if (user?.accountType !== "brand") return NextResponse.json({ error: "Brands only" }, { status: 403 });
 
@@ -76,6 +79,25 @@ export async function POST(req: Request) {
   if (!body.title?.trim()) return NextResponse.json({ error: "Title is required" }, { status: 400 });
   if (!body.description?.trim()) return NextResponse.json({ error: "Description is required" }, { status: 400 });
 
+  const status = body.status === "draft" ? "draft" : "open";
+
+  // Gate: free brands may only have a limited number of open campaigns at once. Drafts are unlimited.
+  const isPaidBrand = user.verifiedTier === "brand_verified";
+  if (status === "open" && !isPaidBrand) {
+    const openCount = await prisma.campaign.count({
+      where: { brandId: session.user.id, status: "open" },
+    });
+    if (openCount >= FREE_BRAND_OPEN_CAMPAIGN_LIMIT) {
+      return NextResponse.json(
+        {
+          error: `Free accounts can have ${FREE_BRAND_OPEN_CAMPAIGN_LIMIT} open campaign at a time. Close an existing campaign or upgrade to run more.`,
+          code: "campaign_limit_reached",
+        },
+        { status: 403 },
+      );
+    }
+  }
+
   const campaign = await prisma.campaign.create({
     data: {
       brandId: session.user.id,
@@ -84,7 +106,7 @@ export async function POST(req: Request) {
       niche: body.niche?.trim() || null,
       budget: body.budget?.trim() || null,
       deadline: body.deadline ? new Date(body.deadline) : null,
-      status: body.status === "draft" ? "draft" : "open",
+      status,
     },
   });
 

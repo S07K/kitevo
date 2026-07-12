@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+/** Free brands may keep at most this many campaigns "open" at once. Paid (brand_verified) brands are uncapped. */
+const FREE_BRAND_OPEN_CAMPAIGN_LIMIT = 1;
+
 /** GET /api/social/campaigns/[id] — public campaign detail */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,11 +33,34 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const campaign = await prisma.campaign.findUnique({ where: { id }, select: { brandId: true } });
+  const campaign = await prisma.campaign.findUnique({ where: { id }, select: { brandId: true, status: true } });
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (campaign.brandId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json().catch(() => ({})) as { status?: string };
+
+  // Gate: reopening a campaign counts toward a free brand's open-campaign limit.
+  if (body.status === "open" && campaign.status !== "open") {
+    const brand = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { verifiedTier: true },
+    });
+    if (brand?.verifiedTier !== "brand_verified") {
+      const openCount = await prisma.campaign.count({
+        where: { brandId: session.user.id, status: "open" },
+      });
+      if (openCount >= FREE_BRAND_OPEN_CAMPAIGN_LIMIT) {
+        return NextResponse.json(
+          {
+            error: `Free accounts can have ${FREE_BRAND_OPEN_CAMPAIGN_LIMIT} open campaign at a time. Close an existing campaign or upgrade to run more.`,
+            code: "campaign_limit_reached",
+          },
+          { status: 403 },
+        );
+      }
+    }
+  }
+
   const updated = await prisma.campaign.update({
     where: { id },
     data: { status: body.status ?? undefined },

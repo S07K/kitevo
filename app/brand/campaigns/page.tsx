@@ -48,6 +48,7 @@ export default function BrandCampaigns() {
   const [form, setForm] = useState({ title: "", description: "", niche: "", budget: "", deadline: "" });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loadingApps, setLoadingApps] = useState(false);
@@ -99,12 +100,18 @@ export default function BrandCampaigns() {
   }
 
   async function toggleStatus(id: string, current: string) {
-    await fetch(`/api/social/campaigns/${id}`, {
+    setActionError(null);
+    const res = await fetch(`/api/social/campaigns/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: current === "open" ? "closed" : "open" }),
       credentials: "include",
     });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setActionError(d.error ?? "Failed to update campaign");
+      return;
+    }
     loadCampaigns();
   }
 
@@ -159,6 +166,12 @@ export default function BrandCampaigns() {
             New campaign
           </button>
         </div>
+
+        {actionError && (
+          <div className="mb-4 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/20 px-4 py-3">
+            <p className="text-sm text-red-600 dark:text-red-400">{actionError}</p>
+          </div>
+        )}
 
         {/* Create form */}
         {showForm && (
