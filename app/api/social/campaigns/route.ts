@@ -54,6 +54,14 @@ export async function GET(req: Request) {
     },
   });
 
+  // Brand Pro "priority placement": verified brands' campaigns are pinned above the rest.
+  // Array.sort is stable, so newest-first order (from the query) is preserved within each group.
+  campaigns.sort((a, b) => {
+    const ap = a.brand?.verifiedTier === "brand_verified" ? 1 : 0;
+    const bp = b.brand?.verifiedTier === "brand_verified" ? 1 : 0;
+    return bp - ap;
+  });
+
   return NextResponse.json(campaigns);
 }
 

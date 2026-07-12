@@ -128,6 +128,9 @@ export default function CreatorCampaigns() {
                     </div>
                     <p className="text-xs text-muted-foreground">{company}</p>
                     <VerifiedBadge tier={brand.verifiedTier} size="sm" />
+                    {brand.verifiedTier === "brand_verified" && (
+                      <span className="text-[10px] font-semibold text-[#7c3aed] bg-[#7c3aed]/10 rounded-full px-2 py-0.5">Featured</span>
+                    )}
                     {brand.brandProfile?.industry && (
                       <Badge variant="accent">{brand.brandProfile.industry}</Badge>
                     )}
