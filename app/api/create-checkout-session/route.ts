@@ -47,11 +47,17 @@ export async function POST(req: Request) {
     }
 
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
-    const goToOnboarding = returnTo === "onboarding";
-    const successUrl = goToOnboarding
-      ? `${baseUrl}/onboarding?success=true&session_id={CHECKOUT_SESSION_ID}`
-      : `${baseUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = goToOnboarding ? `${baseUrl}/onboarding?canceled=true` : `${baseUrl}/pricing?canceled=true`;
+    // Where to land after checkout, per entry point.
+    const returnBase =
+      returnTo === "onboarding" ? "/onboarding" :
+      returnTo === "brand" ? "/brand/settings" :
+      "/dashboard";
+    const cancelBase =
+      returnTo === "onboarding" ? "/onboarding" :
+      returnTo === "brand" ? "/brand/settings" :
+      "/pricing";
+    const successUrl = `${baseUrl}${returnBase}?success=true&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${baseUrl}${cancelBase}?canceled=true`;
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",

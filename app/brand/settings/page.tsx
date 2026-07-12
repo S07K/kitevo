@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
+import { BrandPlanCard } from "@/app/brand/BrandPlanCard";
 
 async function resizeToJpegDataUrl(file: File, maxPx = 400): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -162,6 +163,9 @@ export default function BrandSettings() {
             <h1 className="text-lg font-semibold text-foreground">Brand settings</h1>
             <p className="text-xs text-muted-foreground mt-0.5">This is what creators see when they view your campaigns.</p>
           </div>
+
+          {/* Plan / upgrade */}
+          <BrandPlanCard />
 
           {loading ? (
             <div className="space-y-4 animate-pulse">

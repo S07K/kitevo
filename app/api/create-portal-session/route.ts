@@ -12,6 +12,8 @@ export async function POST(req: Request) {
     const cookieHeader = req.headers.get("cookie");
     const body = await req.json().catch(() => ({}));
     const sessionId = body.session_id as string | undefined;
+    const returnTo = body.returnTo as string | undefined;
+    const returnUrl = `${BASE_URL}${returnTo === "brand" ? "/brand/settings" : "/dashboard"}`;
     const authSession = await getServerSession(authOptions);
 
     let customerId: string | null = null;
@@ -38,7 +40,7 @@ export async function POST(req: Request) {
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${BASE_URL}/dashboard`,
+      return_url: returnUrl,
     });
 
     return NextResponse.json({ url: portalSession.url });

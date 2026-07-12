@@ -169,7 +169,12 @@ export default function BrandCampaigns() {
 
         {actionError && (
           <div className="mb-4 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/20 px-4 py-3">
-            <p className="text-sm text-red-600 dark:text-red-400">{actionError}</p>
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {actionError}
+              {actionError.includes("upgrade to run more") && (
+                <Link href="/brand/settings" className="ml-1 font-semibold underline hover:no-underline">Upgrade to Brand Pro →</Link>
+              )}
+            </p>
           </div>
         )}
 
@@ -180,7 +185,14 @@ export default function BrandCampaigns() {
               <p className="text-base font-semibold text-foreground">Create a campaign</p>
               <p className="text-xs text-muted-foreground mt-0.5">Creators will see this and apply with a pitch.</p>
             </div>
-            {formError && <p className="text-xs text-red-500">{formError}</p>}
+            {formError && (
+              <div className="text-xs text-red-500">
+                {formError}
+                {formError.includes("upgrade to run more") && (
+                  <Link href="/brand/settings" className="ml-1 font-semibold underline hover:no-underline">Upgrade to Brand Pro →</Link>
+                )}
+              </div>
+            )}
             <div className="space-y-3">
               <input
                 type="text"
