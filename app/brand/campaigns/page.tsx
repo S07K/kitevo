@@ -52,6 +52,28 @@ export default function BrandCampaigns() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loadingApps, setLoadingApps] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+  const [showCapNotice, setShowCapNotice] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/me/account-type", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d && setIsPro(d.verifiedTier === "brand_verified"))
+      .catch(() => {});
+  }, []);
+
+  const openCampaignCount = campaigns.filter((c) => c.status === "open").length;
+  const capReached = !isPro && openCampaignCount >= 1;
+
+  function handleNewCampaign() {
+    if (capReached) {
+      setShowForm(false);
+      setShowCapNotice(true);
+      return;
+    }
+    setShowCapNotice(false);
+    setShowForm((v) => !v);
+  }
 
   const loadCampaigns = useCallback(() => {
     setLoading(true);
@@ -157,7 +179,7 @@ export default function BrandCampaigns() {
           </div>
           <button
             type="button"
-            onClick={() => setShowForm((v) => !v)}
+            onClick={handleNewCampaign}
             className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 transition-opacity"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -178,8 +200,31 @@ export default function BrandCampaigns() {
           </div>
         )}
 
+        {/* Free-plan cap reached — upgrade prompt instead of the create form */}
+        {capReached && showCapNotice && (
+          <div className="mb-6 rounded-2xl border border-[#7c3aed]/40 bg-[#7c3aed]/5 p-6">
+            <div className="flex items-start gap-3">
+              <VerifiedBadge tier="brand_verified" size="md" />
+              <div className="flex-1">
+                <p className="text-base font-semibold text-foreground">You&apos;ve reached the free plan limit</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Free brands can keep <strong>1 campaign open</strong> at a time. Close your current campaign to post a new one, or upgrade to Brand Pro for unlimited open campaigns.
+                </p>
+                <div className="flex items-center gap-2 mt-4">
+                  <Link href="/brand/settings" className="h-9 px-4 inline-flex items-center rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity">
+                    Upgrade to Brand Pro
+                  </Link>
+                  <button type="button" onClick={() => setShowCapNotice(false)} className="h-9 px-4 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Create form */}
-        {showForm && (
+        {showForm && !capReached && (
           <div className="mb-6 rounded-2xl border border-border bg-muted/20 p-6 space-y-4">
             <div>
               <p className="text-base font-semibold text-foreground">Create a campaign</p>
