@@ -42,6 +42,7 @@ export async function GET(req: Request) {
           id: true,
           name: true,
           avatarUrl: true,
+          verifiedTier: true,
           brandProfile: { select: { companyName: true, industry: true, logoUrl: true } },
         },
       },

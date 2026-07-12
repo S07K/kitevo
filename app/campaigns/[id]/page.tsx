@@ -8,6 +8,7 @@ import { ApplySection } from "./ApplySection";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { AppNav } from "@/app/components/AppNav";
 import { Badge } from "@/app/components/Badge";
+import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 
 type Params = { id: string };
 
@@ -29,6 +30,7 @@ async function getCampaign(id: string) {
           id: true,
           name: true,
           avatarUrl: true,
+          verifiedTier: true,
           brandProfile: {
             select: {
               companyName: true,
@@ -146,7 +148,10 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
               )}
             </div>
             <div>
-              <p className="text-base font-semibold text-foreground">{company}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-base font-semibold text-foreground">{company}</p>
+                <VerifiedBadge tier={campaign.brand.verifiedTier} size="md" />
+              </div>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 {campaign.brand.brandProfile?.industry && (
                   <span className="text-xs text-muted-foreground">{campaign.brand.brandProfile.industry}</span>

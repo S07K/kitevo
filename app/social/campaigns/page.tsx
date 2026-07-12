@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { Badge } from "@/app/components/Badge";
+import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 
 const NICHES = ["All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 
@@ -21,6 +22,7 @@ type Campaign = {
     id: string;
     name: string | null;
     avatarUrl: string | null;
+    verifiedTier: string | null;
     brandProfile: { companyName: string; industry: string; logoUrl: string | null } | null;
   };
   _count: { applications: number };
@@ -125,6 +127,7 @@ export default function CreatorCampaigns() {
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">{company}</p>
+                    <VerifiedBadge tier={brand.verifiedTier} size="sm" />
                     {brand.brandProfile?.industry && (
                       <Badge variant="accent">{brand.brandProfile.industry}</Badge>
                     )}
