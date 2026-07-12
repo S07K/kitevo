@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { getVerifiedTierForPriceId } from "@/config/subscriptions";
 import Stripe from "stripe";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -36,30 +37,38 @@ export async function POST(req: Request) {
         (session.client_reference_id as string) ||
         (session.metadata?.userId as string) ||
         null;
-      if (customerId && userId) {
-        try {
-          await prisma.user.update({
-            where: { id: userId },
-            data: { stripeCustomerId: customerId, verifiedTier: "creator_pro" },
-          });
-          console.log(`[Webhook] Linked customer ${customerId} to user ${userId}, granted creator_pro`);
-        } catch (e) {
-          console.error("[Webhook] Failed to set stripeCustomerId:", e);
-        }
-      }
+
+      // Derive the badge tier from the purchased plan's price (creator_pro vs brand_verified).
+      let verifiedTier: string | null = null;
       if (session.subscription) {
         const subscription = await stripe.subscriptions.retrieve(
           session.subscription as string
         );
+        const priceId = subscription.items?.data?.[0]?.price?.id ?? null;
+        verifiedTier = getVerifiedTierForPriceId(priceId);
         console.log(
-          `[Webhook] Subscription created: ${subscription.id} for customer ${customerId}`
+          `[Webhook] Subscription created: ${subscription.id} for customer ${customerId} (tier ${verifiedTier ?? "none"})`
         );
+      }
+
+      if (customerId && userId) {
+        try {
+          await prisma.user.update({
+            where: { id: userId },
+            data: { stripeCustomerId: customerId, verifiedTier },
+          });
+          console.log(`[Webhook] Linked customer ${customerId} to user ${userId}, granted ${verifiedTier ?? "no"} tier`);
+        } catch (e) {
+          console.error("[Webhook] Failed to set stripeCustomerId:", e);
+        }
       }
       break;
     }
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription;
       const status = subscription.status;
+      const priceId = subscription.items?.data?.[0]?.price?.id ?? null;
+      const tier = status === "active" ? getVerifiedTierForPriceId(priceId) : null;
       if (subscription.customer) {
         try {
           const user = await prisma.user.findFirst({
@@ -69,9 +78,9 @@ export async function POST(req: Request) {
           if (user) {
             await prisma.user.update({
               where: { id: user.id },
-              data: { verifiedTier: status === "active" ? "creator_pro" : null },
+              data: { verifiedTier: tier },
             });
-            console.log(`[Webhook] Subscription ${status} — verifiedTier ${status === "active" ? "set" : "cleared"} for user ${user.id}`);
+            console.log(`[Webhook] Subscription ${status} — verifiedTier ${tier ? `set to ${tier}` : "cleared"} for user ${user.id}`);
           }
         } catch (e) {
           console.error("[Webhook] Failed to update verifiedTier on subscription update:", e);

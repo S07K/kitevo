@@ -5,6 +5,7 @@
 
 export {
   getKitsAllowedForPriceId,
+  getVerifiedTierForPriceId,
   getTierByPriceId,
   getPriceIdForTier,
   getPublicTiers,

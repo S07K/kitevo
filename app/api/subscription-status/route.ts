@@ -8,7 +8,7 @@ import {
   getSubscriptionCustomerId,
   clearSubscriptionCookie,
 } from "@/lib/subscription-cookie";
-import { getKitsAllowedForPriceId, getTierByPriceId } from "@/lib/subscription-tiers";
+import { getKitsAllowedForPriceId, getTierByPriceId, getVerifiedTierForPriceId } from "@/lib/subscription-tiers";
 
 async function getSubscriptionPayload(customerId: string) {
   const subscriptions = await stripe.subscriptions.list({
@@ -29,6 +29,7 @@ async function getSubscriptionPayload(customerId: string) {
     allowedKits,
     tierId: tier?.id ?? null,
     tierName: tier?.name ?? null,
+    verifiedTier: hasSubscription ? getVerifiedTierForPriceId(priceId) : null,
   };
 }
 
@@ -51,16 +52,6 @@ export async function POST(req: Request) {
 
       const userId =
         (session.client_reference_id as string) || (session.metadata?.userId as string) || null;
-      if (userId) {
-        try {
-          await prisma.user.update({
-            where: { id: userId },
-            data: { stripeCustomerId: customerId, verifiedTier: "creator_pro" },
-          });
-        } catch {
-          // ignore if user not found or already set
-        }
-      }
 
       const subscription = session.subscription;
       let status = "inactive";
@@ -77,6 +68,20 @@ export async function POST(req: Request) {
       const hasSubscription = status === "active" || status === "trialing";
       const tier = getTierByPriceId(priceId);
       const allowedKits = hasSubscription ? getKitsAllowedForPriceId(priceId) : 0;
+
+      if (userId) {
+        try {
+          await prisma.user.update({
+            where: { id: userId },
+            data: {
+              stripeCustomerId: customerId,
+              verifiedTier: hasSubscription ? getVerifiedTierForPriceId(priceId) : null,
+            },
+          });
+        } catch {
+          // ignore if user not found or already set
+        }
+      }
 
       const res = NextResponse.json({
         hasSubscription,
@@ -98,10 +103,10 @@ export async function POST(req: Request) {
       const customerId = user?.stripeCustomerId ?? null;
       if (customerId) {
         const payload = await getSubscriptionPayload(customerId);
-        // Sync verifiedTier with active subscription state
+        // Sync verifiedTier with active subscription state (creator_pro / brand_verified / null)
         await prisma.user.update({
           where: { id: authSession.user.id },
-          data: { verifiedTier: payload.hasSubscription ? "creator_pro" : null },
+          data: { verifiedTier: payload.hasSubscription ? payload.verifiedTier : null },
         }).catch(() => {});
         // Fall back to free tier if no active paid subscription
         const effective = payload.hasSubscription ? payload : {

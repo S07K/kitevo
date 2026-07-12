@@ -16,6 +16,10 @@ export interface SubscriptionTier {
   features: string[];
   /** Optional: "popular" badge, order, etc. */
   highlight?: boolean;
+  /** Which side of the marketplace this plan is for. Defaults to "creator". */
+  audience?: "creator" | "brand";
+  /** verifiedTier granted on User while this plan is active. null = no badge. */
+  verifiedTier?: string | null;
 }
 
 /** All tiers in display order. Change prices and limits here; add new tiers by appending. */
@@ -25,6 +29,8 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     name: "Free",
     priceMonthly: 0,
     kitsAllowed: 1,
+    audience: "creator",
+    verifiedTier: null,
     features: [
       "1 media kit",
       "Shareable link",
@@ -37,6 +43,8 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     name: "Starter",
     priceMonthly: 9,
     kitsAllowed: 1,
+    audience: "creator",
+    verifiedTier: "creator_pro",
     features: [
       "1 media kit",
       "Professional shareable link",
@@ -50,6 +58,8 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     name: "Pro",
     priceMonthly: 15,
     kitsAllowed: 3,
+    audience: "creator",
+    verifiedTier: "creator_pro",
     features: [
       "3 media kits",
       "Everything in Starter",
@@ -57,6 +67,20 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
       "Ideal for multi-brand pitches",
     ],
     highlight: true,
+  },
+  {
+    id: "brand",
+    name: "Brand Pro",
+    priceMonthly: 29,
+    kitsAllowed: 0,
+    audience: "brand",
+    verifiedTier: "brand_verified",
+    features: [
+      "Verified brand badge",
+      "Unlimited open campaigns",
+      "Message any creator directly",
+      "Priority placement in discovery",
+    ],
   },
 ];
 
@@ -89,7 +113,12 @@ export function getKitsAllowedForPriceId(priceId: string | null): number {
   return tier?.kitsAllowed ?? 0;
 }
 
-/** Public tier list for pricing page (no secrets). */
-export function getPublicTiers(): SubscriptionTier[] {
-  return SUBSCRIPTION_TIERS;
+/** verifiedTier (badge) granted by a given Price ID's plan. Null if none / unknown. */
+export function getVerifiedTierForPriceId(priceId: string | null): string | null {
+  return getTierByPriceId(priceId)?.verifiedTier ?? null;
+}
+
+/** Public tier list for a given audience (no secrets). Defaults to creator plans. */
+export function getPublicTiers(audience: "creator" | "brand" = "creator"): SubscriptionTier[] {
+  return SUBSCRIPTION_TIERS.filter((t) => (t.audience ?? "creator") === audience);
 }
