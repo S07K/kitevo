@@ -31,6 +31,7 @@ interface KitViewRecord {
 
 import { DealPipeline, type InquiryRecord, type DealStatus } from "../components/DealPipeline";
 import { VerifiedBadge } from "../components/VerifiedBadge";
+import { AvatarImg } from "../components/AvatarImg";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1112,18 +1113,16 @@ function DashboardContent() {
               <div className="flex items-center gap-3">
                 {/* Avatar */}
                 <Link href="/profile" className="shrink-0 group relative">
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt={profile?.name ?? "Avatar"}
-                      className="h-10 w-10 rounded-full object-cover transition-opacity group-hover:opacity-75"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center transition-opacity group-hover:opacity-75">
-                      <span className="font-display text-sm font-semibold text-white/80">{avatarInitials}</span>
-                    </div>
-                  )}
+                  <AvatarImg
+                    src={avatarUrl}
+                    alt={profile?.name ?? "Avatar"}
+                    className="h-10 w-10 rounded-full object-cover transition-opacity group-hover:opacity-75"
+                    fallback={
+                      <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center transition-opacity group-hover:opacity-75">
+                        <span className="font-display text-sm font-semibold text-white/80">{avatarInitials}</span>
+                      </div>
+                    }
+                  />
                 </Link>
 
                 {/* Name + subtitle */}

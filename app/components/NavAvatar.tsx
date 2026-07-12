@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
+import { AvatarImg } from "./AvatarImg";
 
 type Profile = {
   name: string | null;
@@ -66,11 +67,12 @@ export function NavAvatar() {
         className="h-8 w-8 rounded-full overflow-hidden border border-border bg-muted hover:opacity-80 transition-opacity shrink-0 flex items-center justify-center"
         aria-label="Account menu"
       >
-        {profile.avatarUrl ? (
-          <img src={profile.avatarUrl} alt={profile.name ?? ""} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-        ) : (
-          <span className="text-xs font-semibold text-foreground">{initials}</span>
-        )}
+        <AvatarImg
+          src={profile.avatarUrl}
+          alt={profile.name ?? ""}
+          className="h-full w-full object-cover"
+          fallback={<span className="text-xs font-semibold text-foreground">{initials}</span>}
+        />
       </button>
 
       {open && (
