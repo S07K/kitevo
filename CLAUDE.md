@@ -111,7 +111,7 @@ Phase 2 — Pro unlock features:
 - ✅ Featured campaign placement (Brand Pro campaigns pinned above free)
 - ✅ Shortlist/save creators (`SavedCreator` table) — available to all brands
 - Advanced discover filters (follower range, engagement rate) — **blocked**: follower/engagement not stored; needs a stats-cache layer on `User` (refresh from IG/YT periodically) before filtering is possible
-- Campaign analytics (views, application rate, acceptance rate) — acceptance rate computable now; views/application-rate need campaign view tracking
+- ✅ Campaign analytics — `CampaignView` tracking (`lib/campaign-views.ts`, recorded on campaign detail, owner excluded); brand campaigns show views, applied, apply rate, acceptance rate
 - ✅ Export applicants CSV (`/api/social/campaigns/[id]/applications/export`) — button on brand campaigns applicants panel
 
 Phase 3 — Business tier:
@@ -178,6 +178,7 @@ Phase 3 — Business tier:
 - `CampaignApplication.status` — `"pending"` | `"accepted"` | `"rejected"`
 - `CampaignApplication.updatedAt` — added but may need `prisma generate` confirmation
 - `SavedCreator` — brand↔creator shortlist join (`@@unique([brandId, creatorId])`, named relations `BrandSaved`/`SavedByBrand`)
+- `CampaignView` — campaign view events (`campaignId`, nullable `viewerId`, `referrer`); owner views not recorded
 - **Schema sync is `db push`, not migrations** (`scripts/vercel-build.cjs` runs `prisma db push --accept-data-loss`); no `prisma/migrations` dir
 
 ---
