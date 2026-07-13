@@ -112,7 +112,7 @@ Phase 2 — Pro unlock features:
 - ✅ Shortlist/save creators (`SavedCreator` table) — available to all brands
 - Advanced discover filters (follower range, engagement rate) — **blocked**: follower/engagement not stored; needs a stats-cache layer on `User` (refresh from IG/YT periodically) before filtering is possible
 - Campaign analytics (views, application rate, acceptance rate) — acceptance rate computable now; views/application-rate need campaign view tracking
-- Export applicants CSV
+- ✅ Export applicants CSV (`/api/social/campaigns/[id]/applications/export`) — button on brand campaigns applicants panel
 
 Phase 3 — Business tier:
 - Team seats (`BrandMember` table, invite by email)
