@@ -80,6 +80,10 @@ model User {
 
   // Relations for Phase 8 (kits)
   kits      Kit[]
+
+  // Shortlist / save creators (brand saves creators)
+  savedCreators SavedCreator[] @relation("BrandSaved")   // as brand: creators I saved
+  savedByBrands SavedCreator[] @relation("SavedByBrand") // as creator: brands that saved me
 }
 
 
@@ -213,6 +217,19 @@ model CampaignApplication {
   updatedAt  DateTime @updatedAt
 
   @@unique([campaignId, creatorId])
+  @@index([creatorId])
+}
+
+model SavedCreator {
+  id        String   @id @default(cuid())
+  brandId   String
+  brand     User     @relation("BrandSaved", fields: [brandId], references: [id], onDelete: Cascade)
+  creatorId String
+  creator   User     @relation("SavedByBrand", fields: [creatorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([brandId, creatorId])
+  @@index([brandId])
   @@index([creatorId])
 }
 

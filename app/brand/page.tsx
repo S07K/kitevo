@@ -26,10 +26,25 @@ type Creator = {
   kit: { id: string; slug: string; name: string } | null;
 };
 
-function CreatorCard({ creator, onMessage }: { creator: Creator; onMessage: (id: string) => void }) {
+function CreatorCard({ creator, onMessage, isSaved, onToggleSave }: { creator: Creator; onMessage: (id: string) => void; isSaved: boolean; onToggleSave: (id: string) => void }) {
   const initials = (creator.name ?? creator.username ?? "?").charAt(0).toUpperCase();
   return (
-    <div className="bg-background border border-border rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
+    <div className="relative bg-background border border-border rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
+      <button
+        type="button"
+        onClick={() => onToggleSave(creator.id)}
+        aria-label={isSaved ? "Remove from shortlist" : "Save to shortlist"}
+        title={isSaved ? "Saved — click to remove" : "Save to shortlist"}
+        className={`absolute top-2.5 right-2.5 z-10 h-8 w-8 inline-flex items-center justify-center rounded-full border transition-colors ${
+          isSaved
+            ? "bg-foreground text-background border-foreground"
+            : "bg-background/80 backdrop-blur border-border text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+        </svg>
+      </button>
       <div className="h-16 bg-gradient-to-r from-foreground/5 to-foreground/10" />
       <div className="px-5 pb-5 -mt-8">
         <div className="relative mb-3 inline-block">
@@ -109,6 +124,55 @@ export default function BrandDiscover() {
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(false);
   const [coldMessageLocked, setColdMessageLocked] = useState(false);
+  const [savedItems, setSavedItems] = useState<Creator[]>([]);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/social/saved", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d?.items) {
+          setSavedItems(d.items);
+          setSavedIds(new Set(d.items.map((c: Creator) => c.id)));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  async function toggleSave(creatorId: string) {
+    const currentlySaved = savedIds.has(creatorId);
+    // Optimistic update
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      if (currentlySaved) next.delete(creatorId); else next.add(creatorId);
+      return next;
+    });
+    const res = await fetch("/api/social/saved", {
+      method: currentlySaved ? "DELETE" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ creatorId }),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      // Revert on failure
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        if (currentlySaved) next.add(creatorId); else next.delete(creatorId);
+        return next;
+      });
+      return;
+    }
+    // Keep the saved list in sync for the "Saved" view
+    if (currentlySaved) {
+      setSavedItems((prev) => prev.filter((c) => c.id !== creatorId));
+    } else {
+      const creator = creators.find((c) => c.id === creatorId);
+      if (creator && !savedItems.some((c) => c.id === creatorId)) {
+        setSavedItems((prev) => [creator, ...prev]);
+      }
+    }
+  }
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 400);
@@ -185,23 +249,48 @@ export default function BrandDiscover() {
             placeholder="Search creators by name, handle, or bio…"
             className="flex-1 border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
+          <button
+            type="button"
+            onClick={() => setShowSavedOnly((v) => !v)}
+            className={`shrink-0 inline-flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors ${
+              showSavedOnly ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={showSavedOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+            Saved{savedIds.size > 0 ? ` (${savedIds.size})` : ""}
+          </button>
         </div>
-        <div className="flex gap-2 flex-wrap mb-8">
-          {NICHES.map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setNiche(n)}
-              className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                niche === n ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/40"
-              }`}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
+        {!showSavedOnly && (
+          <div className="flex gap-2 flex-wrap mb-8">
+            {NICHES.map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setNiche(n)}
+                className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                  niche === n ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/40"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {loading ? (
+        {showSavedOnly ? (
+          savedItems.length === 0 ? (
+            <div className="text-center py-24">
+              <p className="text-muted-foreground text-sm">No saved creators yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">Tap the bookmark on a creator to build your shortlist.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {savedItems.map((c) => <CreatorCard key={c.id} creator={c} onMessage={startConversation} isSaved={savedIds.has(c.id)} onToggleSave={toggleSave} />)}
+            </div>
+          )
+        ) : loading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-64 rounded-2xl border border-border bg-muted animate-pulse" />)}
           </div>
@@ -211,7 +300,7 @@ export default function BrandDiscover() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {creators.map((c) => <CreatorCard key={c.id} creator={c} onMessage={startConversation} />)}
+            {creators.map((c) => <CreatorCard key={c.id} creator={c} onMessage={startConversation} isSaved={savedIds.has(c.id)} onToggleSave={toggleSave} />)}
           </div>
         )}
         </div>
