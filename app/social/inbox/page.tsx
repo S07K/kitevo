@@ -196,7 +196,10 @@ export default function CreatorInbox() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-1 mb-0.5">
-                            <p className={`text-sm truncate ${c.unread ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>{displayName}</p>
+                            <div className="flex items-center gap-1 min-w-0">
+                              <p className={`text-sm truncate ${c.unread ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>{displayName}</p>
+                              <VerifiedBadge tier={other?.verifiedTier} size="sm" />
+                            </div>
                             {c.lastMessage?.at && (
                               <p className="text-[10px] text-muted-foreground shrink-0">
                                 {new Date(c.lastMessage.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
@@ -264,7 +267,10 @@ export default function CreatorInbox() {
                         ) : (
                           <div className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0">{avatarEl}</div>
                         )}
-                        <p className="text-sm font-semibold text-foreground">{displayName}</p>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
+                          <VerifiedBadge tier={other.verifiedTier} size="sm" />
+                        </div>
                       </>
                     );
                   })()}
