@@ -12,6 +12,7 @@ import {
   insightPayloadToAudienceBuckets,
   type InsightDemographicsPayload,
 } from "@/lib/instagram-demographics";
+import { writeInstagramStatsCache } from "@/lib/creator-stats-cache";
 
 const GRAPH = "https://graph.facebook.com/v18.0";
 /** Demographic insights — use a recent Graph version; param name is often `breakdown` (singular), not `breakdowns`. */
@@ -236,6 +237,9 @@ export async function getStatsForUser(userId: string): Promise<PlatformStatsWith
       } catch {
         // Demographics require 100+ followers / engagements for many accounts; ignore
       }
+
+      // Opportunistically refresh the discover cache with these live numbers.
+      writeInstagramStatsCache(userId, followers, avgEngagement).catch(() => {});
 
       return {
         followers,

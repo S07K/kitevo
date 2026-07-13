@@ -48,6 +48,11 @@ model User {
   // null = no tick, "creator_pro" = blue (Pro subscriber), "top_creator" = gold (manually granted)
   verifiedTier  String?
 
+  // Cached creator stats for discover filtering (refreshed from IG/YT; see lib/creator-stats-cache.ts)
+  followerCount  Int?      // primary audience size (IG followers, else YT subscribers)
+  engagementRate Float?    // IG avg engagement %
+  statsUpdatedAt DateTime? // when the cache was last refreshed
+
   // Brand profile (non-null when accountType = "brand")
   brandProfile  BrandProfile?
 

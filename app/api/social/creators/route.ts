@@ -13,6 +13,14 @@ export async function GET(req: Request) {
   const cursor = searchParams.get("cursor");
   const limit = 24;
 
+  // Advanced filters (follower/engagement range) are a Brand Pro feature — only applied for verified brands.
+  const me = await prisma.user.findUnique({ where: { id: session.user.id }, select: { verifiedTier: true } });
+  const isPro = me?.verifiedTier === "brand_verified";
+  const minFollowers = isPro ? Number.parseInt(searchParams.get("minFollowers") ?? "", 10) : NaN;
+  const maxFollowers = isPro ? Number.parseInt(searchParams.get("maxFollowers") ?? "", 10) : NaN;
+  const minEngagement = isPro ? Number.parseFloat(searchParams.get("minEngagement") ?? "") : NaN;
+  const hasFollowerFilter = Number.isFinite(minFollowers) || Number.isFinite(maxFollowers);
+
   const users = await prisma.user.findMany({
     where: {
       accountType: "creator",
@@ -30,6 +38,13 @@ export async function GET(req: Request) {
           { bio: { contains: search, mode: "insensitive" } },
         ],
       }),
+      ...(hasFollowerFilter && {
+        followerCount: {
+          ...(Number.isFinite(minFollowers) ? { gte: minFollowers } : {}),
+          ...(Number.isFinite(maxFollowers) ? { lte: maxFollowers } : {}),
+        },
+      }),
+      ...(Number.isFinite(minEngagement) && { engagementRate: { gte: minEngagement } }),
       ...(cursor && { id: { lt: cursor } }),
     },
     select: {
@@ -43,6 +58,8 @@ export async function GET(req: Request) {
       location: true,
       verifiedTier: true,
       instagramUserId: true,
+      followerCount: true,
+      engagementRate: true,
       kits: {
         where: { passwordHash: null },
         select: { id: true, slug: true, name: true },
@@ -65,6 +82,8 @@ export async function GET(req: Request) {
     location: u.location,
     verifiedTier: u.verifiedTier,
     hasInstagram: !!u.instagramUserId,
+    followerCount: u.followerCount,
+    engagementRate: u.engagementRate,
     kit: u.kits[0] ?? null,
   }));
 

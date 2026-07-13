@@ -12,6 +12,28 @@ const NICHES = [
   "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education",
 ];
 
+const FOLLOWER_BUCKETS = [
+  { label: "Any size", min: "", max: "" },
+  { label: "1K–10K", min: "1000", max: "10000" },
+  { label: "10K–50K", min: "10000", max: "50000" },
+  { label: "50K–100K", min: "50000", max: "100000" },
+  { label: "100K–500K", min: "100000", max: "500000" },
+  { label: "500K+", min: "500000", max: "" },
+];
+
+const ENGAGEMENT_OPTS = [
+  { label: "Any engagement", value: "" },
+  { label: "1%+", value: "1" },
+  { label: "3%+", value: "3" },
+  { label: "5%+", value: "5" },
+];
+
+function formatFollowers(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  return String(n);
+}
+
 type Creator = {
   id: string;
   name: string | null;
@@ -23,6 +45,8 @@ type Creator = {
   location: string | null;
   verifiedTier: string | null;
   hasInstagram: boolean;
+  followerCount: number | null;
+  engagementRate: number | null;
   kit: { id: string; slug: string; name: string } | null;
 };
 
@@ -89,6 +113,16 @@ function CreatorCard({ creator, onMessage, isSaved, onToggleSave }: { creator: C
             )}
           </div>
         )}
+        {(creator.followerCount != null || creator.engagementRate != null) && (
+          <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+            {creator.followerCount != null && (
+              <span><strong className="text-foreground tabular-nums">{formatFollowers(creator.followerCount)}</strong> followers</span>
+            )}
+            {creator.engagementRate != null && creator.engagementRate > 0 && (
+              <span><strong className="text-foreground tabular-nums">{creator.engagementRate.toFixed(1)}%</strong> engagement</span>
+            )}
+          </div>
+        )}
         {creator.location && <p className="mt-2 text-xs text-muted-foreground">{creator.location}</p>}
         <div className="mt-4 flex gap-2">
           <button
@@ -127,6 +161,16 @@ export default function BrandDiscover() {
   const [savedItems, setSavedItems] = useState<Creator[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+  const [followerBucket, setFollowerBucket] = useState(0);
+  const [minEngagement, setMinEngagement] = useState("");
+
+  useEffect(() => {
+    fetch("/api/me/account-type", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d && setIsPro(d.verifiedTier === "brand_verified"))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/social/saved", { credentials: "include" })
@@ -184,12 +228,18 @@ export default function BrandDiscover() {
     const params = new URLSearchParams();
     if (niche !== "All") params.set("niche", niche);
     if (debouncedSearch) params.set("q", debouncedSearch);
+    if (isPro) {
+      const b = FOLLOWER_BUCKETS[followerBucket];
+      if (b.min) params.set("minFollowers", b.min);
+      if (b.max) params.set("maxFollowers", b.max);
+      if (minEngagement) params.set("minEngagement", minEngagement);
+    }
     fetch(`/api/social/creators?${params}`, { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => d && setCreators(d.items ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [niche, debouncedSearch]);
+  }, [niche, debouncedSearch, isPro, followerBucket, minEngagement]);
 
   async function startConversation(creatorId: string) {
     setColdMessageLocked(false);
@@ -262,6 +312,40 @@ export default function BrandDiscover() {
             Saved{savedIds.size > 0 ? ` (${savedIds.size})` : ""}
           </button>
         </div>
+        {!showSavedOnly && (
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {isPro ? (
+              <>
+                <span className="text-xs text-muted-foreground mr-0.5">Filter:</span>
+                <select
+                  value={followerBucket}
+                  onChange={(e) => setFollowerBucket(Number(e.target.value))}
+                  className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {FOLLOWER_BUCKETS.map((b, i) => <option key={b.label} value={i}>{b.label}</option>)}
+                </select>
+                <select
+                  value={minEngagement}
+                  onChange={(e) => setMinEngagement(e.target.value)}
+                  className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {ENGAGEMENT_OPTS.map((o) => <option key={o.label} value={o.value}>{o.label}</option>)}
+                </select>
+              </>
+            ) : (
+              <Link
+                href="/brand/settings"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#7c3aed]/40 bg-[#7c3aed]/5 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-[#7c3aed]/10 transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                Filter by followers &amp; engagement · Brand Pro
+              </Link>
+            )}
+          </div>
+        )}
+
         {!showSavedOnly && (
           <div className="flex gap-2 flex-wrap mb-8">
             {NICHES.map((n) => (

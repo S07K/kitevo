@@ -15,6 +15,8 @@ const creatorSelect = {
   location: true,
   verifiedTier: true,
   instagramUserId: true,
+  followerCount: true,
+  engagementRate: true,
   kits: {
     where: { passwordHash: null },
     select: { id: true, slug: true, name: true },
@@ -26,6 +28,7 @@ type CreatorRow = {
   id: string; name: string | null; username: string | null; bio: string | null;
   avatarUrl: string | null; niches: string | null; openToCollab: boolean;
   location: string | null; verifiedTier: string | null; instagramUserId: string | null;
+  followerCount: number | null; engagementRate: number | null;
   kits: { id: string; slug: string; name: string }[];
 };
 
@@ -41,6 +44,8 @@ function serialize(u: CreatorRow) {
     location: u.location,
     verifiedTier: u.verifiedTier,
     hasInstagram: !!u.instagramUserId,
+    followerCount: u.followerCount,
+    engagementRate: u.engagementRate,
     kit: u.kits[0] ?? null,
   };
 }
