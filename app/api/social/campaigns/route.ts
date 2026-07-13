@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCampaignViewCounts } from "@/lib/campaign-views";
 
 /** Free brands may keep at most this many campaigns "open" at once. Paid (brand_verified) brands are uncapped. */
 const FREE_BRAND_OPEN_CAMPAIGN_LIMIT = 1;
@@ -20,13 +21,31 @@ export async function GET(req: Request) {
   });
 
   if (user?.accountType === "brand") {
-    // Brand sees their own campaigns
+    // Brand sees their own campaigns, enriched with view + acceptance analytics.
     const campaigns = await prisma.campaign.findMany({
       where: { brandId: session.user.id },
       orderBy: { createdAt: "desc" },
       include: { _count: { select: { applications: true } } },
     });
-    return NextResponse.json(campaigns);
+    const ids = campaigns.map((c) => c.id);
+    const [{ total, unique }, statusRows] = await Promise.all([
+      getCampaignViewCounts(ids),
+      prisma.campaignApplication.groupBy({
+        by: ["campaignId", "status"],
+        where: { campaignId: { in: ids }, status: "accepted" },
+        _count: { id: true },
+      }),
+    ]);
+    const acceptedByCampaign: Record<string, number> = {};
+    for (const r of statusRows) acceptedByCampaign[r.campaignId] = r._count.id;
+
+    const withStats = campaigns.map((c) => ({
+      ...c,
+      views: total[c.id] ?? 0,
+      uniqueViewers: unique[c.id] ?? 0,
+      acceptedCount: acceptedByCampaign[c.id] ?? 0,
+    }));
+    return NextResponse.json(withStats);
   }
 
   // Creators see open campaigns from all brands

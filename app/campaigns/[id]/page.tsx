@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { recordCampaignView } from "@/lib/campaign-views";
 import { ApplySection } from "./ApplySection";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { AppNav } from "@/app/components/AppNav";
@@ -83,6 +85,12 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
   ]);
 
   if (!campaign) notFound();
+
+  // Record a view (exclude the brand viewing its own campaign).
+  if (session?.user?.id !== campaign.brand.id) {
+    const referrer = (await headers()).get("referer") ?? undefined;
+    await recordCampaignView(campaign.id, { viewerId: session?.user?.id ?? null, referrer });
+  }
 
   // Check if the logged-in creator already applied + conversation with brand
   let myApplication: { status: string; createdAt: Date } | null = null;

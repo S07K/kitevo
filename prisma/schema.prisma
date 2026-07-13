@@ -199,9 +199,22 @@ model Campaign {
   updatedAt   DateTime @updatedAt
 
   applications CampaignApplication[]
+  views        CampaignView[]
 
   @@index([brandId])
   @@index([status, createdAt])
+}
+
+model CampaignView {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  viewerId   String?  // logged-in viewer (null for anonymous); owner views are not recorded
+  viewedAt   DateTime @default(now())
+  referrer   String?
+
+  @@index([campaignId])
+  @@index([viewedAt])
 }
 
 // Creator's application to a campaign

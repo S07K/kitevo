@@ -22,6 +22,9 @@ type Campaign = {
   status: string;
   createdAt: string;
   _count: { applications: number };
+  views: number;
+  uniqueViewers: number;
+  acceptedCount: number;
 };
 
 type Application = {
@@ -367,6 +370,19 @@ export default function BrandCampaigns() {
                         </svg>
                       </div>
                     </div>
+
+                    {/* Analytics strip */}
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-4 text-xs text-muted-foreground">
+                      <span><strong className="text-foreground tabular-nums">{c.views}</strong> view{c.views !== 1 ? "s" : ""}</span>
+                      <span><strong className="text-foreground tabular-nums">{c._count.applications}</strong> applied</span>
+                      {c.views > 0 && (
+                        <span><strong className="text-foreground tabular-nums">{Math.round((c._count.applications / c.views) * 100)}%</strong> apply rate</span>
+                      )}
+                      {c._count.applications > 0 && (
+                        <span><strong className="text-foreground tabular-nums">{Math.round((c.acceptedCount / c._count.applications) * 100)}%</strong> accepted</span>
+                      )}
+                    </div>
+
                     <div className="flex items-center gap-2 mt-5 pt-4 border-t border-border">
                       <button
                         type="button"
