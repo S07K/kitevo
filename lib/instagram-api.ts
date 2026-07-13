@@ -169,37 +169,45 @@ export async function getStatsForUser(userId: string): Promise<PlatformStatsWith
       );
       const followers = profile.followers_count ?? 0;
       const mediaCount = profile.media_count ?? 0;
-      // Optional: fetch insights for growth (follower_count with period=day); may be restricted for small accounts
+      // Optional: fetch insights for growth (follower_count with period=day); may be restricted for small accounts.
+      // Meta returns at most ~30 days of daily values, so label points with real dates —
+      // never fake month names — and only chart when there's at least a week of data.
       let growthDataPoints: { month: string; followers: number }[] = [];
       try {
         const since = new Date();
-        since.setDate(since.getDate() - 180);
+        since.setDate(since.getDate() - 30);
         const until = new Date();
-        const insightsRes = await metaGet<{ data?: Array<{ values?: Array<{ value: number }> }> }>(
+        const insightsRes = await metaGet<{ data?: Array<{ values?: Array<{ value: number; end_time?: string }> }> }>(
           `/${user.instagramUserId}/insights?metric=follower_count&period=day&since=${Math.floor(since.getTime() / 1000)}&until=${Math.floor(until.getTime() / 1000)}`,
           user.instagramAccessToken
         );
-        if (insightsRes.data?.[0]?.values?.length) {
-          const values = insightsRes.data[0].values;
-          growthDataPoints = values.slice(-6).map((v, i) => ({
-            month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"][i] || String(i),
-            followers: typeof v.value === "number" ? v.value : 0,
+        const values = insightsRes.data?.[0]?.values ?? [];
+        if (values.length >= 7) {
+          // follower_count is NEW followers per day, not the running total. Rebuild the
+          // cumulative total by walking backwards from today's real follower count, so the
+          // chart shows "followers over the last 30 days" and ends exactly at `followers`.
+          const deltas = values.map((v) => (typeof v.value === "number" ? v.value : 0));
+          let running = followers;
+          const totals: number[] = new Array(deltas.length);
+          for (let i = deltas.length - 1; i >= 0; i--) {
+            totals[i] = running;
+            running -= deltas[i];
+          }
+          growthDataPoints = values.map((v, i) => ({
+            month: v.end_time
+              ? new Date(v.end_time).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+              : "",
+            followers: Math.max(0, totals[i]),
           }));
         }
       } catch {
-        // Insights not available (e.g. < 100 followers); use simple placeholder
-        growthDataPoints = [
-          { month: "Jan", followers: Math.max(0, followers - 2000) },
-          { month: "Feb", followers: Math.max(0, followers - 1500) },
-          { month: "Mar", followers: Math.max(0, followers - 1000) },
-          { month: "Apr", followers: Math.max(0, followers - 500) },
-          { month: "May", followers: followers },
-          { month: "Jun", followers: followers },
-        ];
+        // Insights not available (e.g. < 100 followers). Leave growthDataPoints empty —
+        // the kit page shows an honest "data will appear once available" state instead.
+        // Never fabricate a curve: the product's promise is verified live stats.
       }
-      // growthThisMonth: from insights (daily follower_count) or placeholder; placeholder often yields 0% for small accounts
-      const prevMonth = growthDataPoints.length >= 2 ? growthDataPoints[growthDataPoints.length - 2].followers : followers;
-      const growthThisMonth = prevMonth > 0 ? ((followers - prevMonth) / prevMonth) * 100 : 0;
+      // growthThisMonth: change across the ~30-day insights window; 0 when no real data.
+      const windowStart = growthDataPoints.length >= 2 ? growthDataPoints[0].followers : followers;
+      const growthThisMonth = windowStart > 0 ? ((followers - windowStart) / windowStart) * 100 : 0;
 
       // avgEngagement: not on profile; compute from recent media insights (engagement/reach) when available
       let avgEngagement = 0;

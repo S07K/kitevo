@@ -47,7 +47,7 @@ const AudienceBarChart = dynamic(
 
 interface MediaKitClientProps {
   username: string;
-  creator: { name: string; username: string; bio: string; avatarUrl?: string | null; verifiedTier?: string | null };
+  creator: { name: string; username: string; bio: string; avatarUrl?: string | null; verifiedTier?: string | null; niches?: string[]; location?: string | null };
   links: { label: string; url: string }[];
   platformStats: Record<string, PlatformStatsWithCharts>;
   enabledPlatformIds: PlatformId[];
@@ -110,7 +110,7 @@ function InquiryForm({ kitId, creatorName }: { kitId: string; creatorName: strin
     "w-full px-4 py-3 rounded-xl border border-[var(--mk-border)] bg-[var(--mk-surface)] text-[var(--mk-text)] placeholder:text-[var(--mk-text-soft)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mk-text)]/30 font-sans transition";
 
   return (
-    <section className="mt-24 sm:mt-28">
+    <section className="mt-12 sm:mt-14 rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] px-6 py-10 sm:px-10">
       <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight text-center">
         Work together
       </h2>
@@ -459,42 +459,59 @@ export function MediaKitClient({
       <main className="relative pb-24 max-w-4xl mx-auto px-5 sm:px-8 pt-14">
         <div className="pt-6 space-y-4">
 
-          {/* 1. Hero banner — dark inverted card, avatar + name + bio */}
-          <div className="rounded-2xl bg-[var(--mk-text)] px-6 py-6">
-            <div className="flex items-center gap-4">
+          {/* 1. Hero banner — dark inverted card: avatar, name, niches, location, bio */}
+          <div className="rounded-2xl bg-[var(--mk-text)] px-6 py-7 sm:px-8">
+            <div className="flex items-center gap-5">
               {/* Avatar */}
               {creator.avatarUrl ? (
                 <img
                   src={creator.avatarUrl}
                   alt=""
-                  className="h-12 w-12 rounded-full object-cover shrink-0 ring-2 ring-[var(--mk-bg)]/20"
-                  width={48} height={48}
+                  className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover shrink-0 ring-2 ring-[var(--mk-bg)]/20"
+                  width={80} height={80}
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="h-12 w-12 rounded-full bg-[var(--mk-bg)]/10 flex items-center justify-center shrink-0">
-                  <span className="font-display text-base font-semibold text-[var(--mk-bg)]/70">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-[var(--mk-bg)]/10 flex items-center justify-center shrink-0">
+                  <span className="font-display text-2xl font-semibold text-[var(--mk-bg)]/70">
                     {creator.name.charAt(0)}
                   </span>
                 </div>
               )}
-              <div>
-                <p className="text-[var(--mk-bg)]/50 text-[11px] font-semibold tracking-[0.16em] uppercase mb-0.5">
+              <div className="min-w-0">
+                <p className="text-[var(--mk-bg)]/50 text-[11px] font-semibold tracking-[0.16em] uppercase mb-1">
                   Creator Media Kit
                 </p>
-                <div className="flex items-center gap-1.5">
-                  <h1 className="font-display text-xl font-semibold text-[var(--mk-bg)] leading-none tracking-tight">
+                <div className="flex items-center gap-2">
+                  <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--mk-bg)] leading-none tracking-tight">
                     {creator.name}
                   </h1>
                   <VerifiedBadge tier={creator.verifiedTier} size="md" />
                 </div>
-                <p className="text-[var(--mk-bg)]/50 text-xs font-medium tracking-wide mt-0.5">
-                  @{creator.username}
-                </p>
+                <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                  <p className="text-[var(--mk-bg)]/50 text-xs font-medium tracking-wide">
+                    @{creator.username}
+                  </p>
+                  {creator.location && (
+                    <>
+                      <span className="text-[var(--mk-bg)]/25 text-xs">·</span>
+                      <p className="text-[var(--mk-bg)]/50 text-xs font-medium">{creator.location}</p>
+                    </>
+                  )}
+                </div>
+                {(creator.niches?.length ?? 0) > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {creator.niches!.slice(0, 5).map((n) => (
+                      <span key={n} className="text-[10px] font-semibold tracking-wide uppercase rounded-full border border-[var(--mk-bg)]/25 text-[var(--mk-bg)]/70 px-2.5 py-1">
+                        {n}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             {creator.bio && (
-              <p className="mt-4 text-[var(--mk-bg)]/60 text-sm leading-relaxed font-sans max-w-2xl text-pretty border-t border-[var(--mk-bg)]/10 pt-4">
+              <p className="mt-5 text-[var(--mk-bg)]/60 text-sm leading-relaxed font-sans max-w-2xl text-pretty border-t border-[var(--mk-bg)]/10 pt-5">
                 {creator.bio}
               </p>
             )}
@@ -522,20 +539,26 @@ export function MediaKitClient({
                 const igStats = platformStats["instagram"];
                 if (!igStats) return null;
                 const posts = igStats.extra && typeof igStats.extra.posts === "number" ? igStats.extra.posts : null;
+                // Only show stats that have real values — a rendered "0.0%" reads as
+                // "nobody engages", when it usually means the API couldn't compute it.
+                const cells: { label: string; node: React.ReactNode }[] = [
+                  { label: "Followers", node: <CountUp value={igStats.followers} duration={1400} /> },
+                ];
+                if (igStats.avgEngagement > 0) {
+                  cells.push({ label: "Engagement", node: <CountUp value={igStats.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
+                }
+                if (posts != null && posts > 0) {
+                  cells.push({ label: "Posts", node: <CountUp value={posts} duration={1100} /> });
+                }
+                const gridCols = cells.length === 3 ? "grid-cols-3" : cells.length === 2 ? "grid-cols-2" : "grid-cols-1";
                 return (
-                  <div className="grid grid-cols-3 divide-x divide-[var(--mk-border)] border-b border-[var(--mk-border)]">
-                    <div className="px-5 py-4">
-                      <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1">Followers</p>
-                      <p className="font-display text-[var(--mk-text)] text-xl font-semibold tabular-nums"><CountUp value={igStats.followers} duration={1400} /></p>
-                    </div>
-                    <div className="px-5 py-4">
-                      <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1">Engagement</p>
-                      <p className="font-display text-[var(--mk-text)] text-xl font-semibold tabular-nums"><CountUp value={igStats.avgEngagement} decimals={1} suffix="%" duration={1000} /></p>
-                    </div>
-                    <div className="px-5 py-4">
-                      <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1">Posts</p>
-                      <p className="font-display text-[var(--mk-text)] text-xl font-semibold tabular-nums">{posts != null ? <CountUp value={posts} duration={1100} /> : "—"}</p>
-                    </div>
+                  <div className={`grid ${gridCols} divide-x divide-[var(--mk-border)] border-b border-[var(--mk-border)]`}>
+                    {cells.map((cell) => (
+                      <div key={cell.label} className="px-5 py-4">
+                        <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1">{cell.label}</p>
+                        <p className="font-display text-[var(--mk-text)] text-xl font-semibold tabular-nums">{cell.node}</p>
+                      </div>
+                    ))}
                   </div>
                 );
               })()}
@@ -786,9 +809,14 @@ export function MediaKitClient({
             <InquiryForm kitId={kitId} creatorName={creator.name} />
           )}
 
-          {/* 10. Footer */}
+          {/* 10. Footer — links home so every shared kit is an acquisition channel */}
           <div className="pt-6 pb-2 text-center">
-            <p className="text-xs text-[var(--mk-text-soft)] font-sans">Made with Kitevo</p>
+            <Link
+              href="/"
+              className="text-xs text-[var(--mk-text-soft)] font-sans hover:text-[var(--mk-text)] transition-colors"
+            >
+              Made with <span className="font-semibold">Kitevo</span> — create your own media kit →
+            </Link>
           </div>
 
         </div>

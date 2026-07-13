@@ -127,6 +127,8 @@ export function GrowthAreaChart({
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 11, fill: "var(--mk-text-muted)" }}
+            interval="preserveStartEnd"
+            minTickGap={28}
           />
           <YAxis
             axisLine={false}
