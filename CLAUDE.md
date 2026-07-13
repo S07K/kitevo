@@ -68,10 +68,11 @@ Stack: Next.js 15 App Router, Prisma + Neon (Postgres), NextAuth, Stripe, Tailwi
 - **Purchasable**: `BrandPlanCard` on `/brand/settings` — monthly/yearly toggle (yearly shown as small monthly figure + savings), Upgrade → checkout (`tierId: "brand"`); shows verified state + "Manage billing" (portal) when active
 - **Tier derived from price**: `getVerifiedTierForPriceId()` — creator plans → `creator_pro`, brand plan → `brand_verified` (webhook + subscription-status; no more hardcoded `creator_pro`)
 - **Free brands capped at 1 open campaign** (POST + reopen PATCH); Brand Pro = unlimited. Cap error links to upgrade
-- **Purple tick** shown on creator-facing campaign cards + campaign detail (task done)
+- **Purple tick** shown across creator discover cards, campaign cards, campaign detail, and both inboxes (creator + brand)
 - **Cold-message gate**: free brands can only message their own applicants; messaging any creator directly requires Brand Pro (`403 cold_message_locked` → upgrade prompt on discover)
 - **Priority placement**: `brand_verified` campaigns pinned above others in creator feed (`/social/campaigns`), with purple "Featured" tag
 - `getPublicTiers(audience)` filters by audience (defaults to creator) so Brand Pro stays off creator pricing/onboarding pages
+- **Shortlist/save creators**: `SavedCreator` table; bookmark toggle + "Saved" filter on brand discover (`/api/social/saved`). Available to all brands
 
 ### UI / UX
 - `AppNav`: logo + NavAvatar only (no tabs). Tabs moved to `AppSidebar`
@@ -108,9 +109,9 @@ Stack: Next.js 15 App Router, Prisma + Neon (Postgres), NextAuth, Stripe, Tailwi
 Phase 2 — Pro unlock features:
 - ✅ Direct cold-message any creator (gated behind Brand Pro)
 - ✅ Featured campaign placement (Brand Pro campaigns pinned above free)
-- Shortlist/save creators (`SavedCreator` table)
-- Advanced discover filters (follower range, engagement rate)
-- Campaign analytics (views, application rate, acceptance rate)
+- ✅ Shortlist/save creators (`SavedCreator` table) — available to all brands
+- Advanced discover filters (follower range, engagement rate) — **blocked**: follower/engagement not stored; needs a stats-cache layer on `User` (refresh from IG/YT periodically) before filtering is possible
+- Campaign analytics (views, application rate, acceptance rate) — acceptance rate computable now; views/application-rate need campaign view tracking
 - Export applicants CSV
 
 Phase 3 — Business tier:
@@ -150,6 +151,7 @@ Phase 3 — Business tier:
 | `config/subscriptions.ts` | Tier definitions (incl. `brand`), price/tier/verifiedTier resolvers |
 | `app/api/social/campaigns/route.ts` | Campaigns GET/POST — free-brand cap, priority placement sort |
 | `app/api/social/conversations/route.ts` | Conversations — cold-message Brand Pro gate |
+| `app/api/social/saved/route.ts` | Shortlist — GET/POST/DELETE saved creators (brands) |
 | `app/api/create-checkout-session/route.ts` | Checkout (creator + brand); `returnTo` routing |
 | `app/api/create-portal-session/route.ts` | Stripe billing portal; `returnTo` routing |
 | `app/api/me/profile/route.ts` | GET/PUT creator profile — returns companyName/logoUrl for brands |
@@ -175,6 +177,8 @@ Phase 3 — Business tier:
 - `Campaign.status` — `"open"` | `"closed"` | `"draft"`
 - `CampaignApplication.status` — `"pending"` | `"accepted"` | `"rejected"`
 - `CampaignApplication.updatedAt` — added but may need `prisma generate` confirmation
+- `SavedCreator` — brand↔creator shortlist join (`@@unique([brandId, creatorId])`, named relations `BrandSaved`/`SavedByBrand`)
+- **Schema sync is `db push`, not migrations** (`scripts/vercel-build.cjs` runs `prisma db push --accept-data-loss`); no `prisma/migrations` dir
 
 ---
 
