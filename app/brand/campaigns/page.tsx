@@ -402,6 +402,19 @@ export default function BrandCampaigns() {
                           <p className="text-xs text-muted-foreground mt-1">Share the campaign link to get more visibility.</p>
                         </div>
                       ) : (
+                        <>
+                        <div className="flex items-center justify-between px-5 pt-4 pb-1">
+                          <p className="text-xs font-medium text-muted-foreground">{applications.length} applicant{applications.length !== 1 ? "s" : ""}</p>
+                          <a
+                            href={`/api/social/campaigns/${c.id}/applications/export`}
+                            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Export CSV
+                          </a>
+                        </div>
                         <div className="divide-y divide-border">
                           {applications.map((a) => {
                             const niches: string[] = typeof a.creator.niches === "string" ? JSON.parse(a.creator.niches) : (a.creator.niches ?? []);
@@ -457,6 +470,7 @@ export default function BrandCampaigns() {
                             );
                           })}
                         </div>
+                        </>
                       )}
                     </div>
                   )}
