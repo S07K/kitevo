@@ -16,6 +16,7 @@ Stack: Next.js 15 App Router, Prisma + Neon (Postgres), NextAuth, Stripe, Tailwi
 - **Prisma**: Run `prisma generate` after schema changes. For NOT NULL columns on existing rows, use raw SQL `ALTER TABLE` via `prisma db execute --stdin` before `db push`
 - **Avatar/logo uploads**: Stored as base64 data URLs in DB (resized client-side before upload). Max ~200k chars. Pattern: resize in browser → POST data URL → store in DB. **Instagram photo import** downloads the image server-side to base64 (`lib/image-to-data-url.ts`) — never stores the expiring `fbcdn` CDN URL. Render avatars via `AvatarImg` (falls back to initials on load error). Backfill: `scripts/backfill-instagram-avatars.ts`
 - **Dark mode**: Managed via `next-themes`, class applied to `<html>`. ThemeToggle lives in NavAvatar popup only.
+- **Kit page honesty rules**: never render fabricated stats. No placeholder growth curves (empty state instead), hide stats that are 0/unavailable (e.g. engagement), growth chart = cumulative followers over last 30 days rebuilt from Meta's daily `follower_count` deltas (needs ≥7 days). Hero shows niches + location from profile.
 
 ---
 
