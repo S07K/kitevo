@@ -147,48 +147,81 @@ export function AnalyticsChart({
         </ResponsiveContainer>
       </div>
 
-      {/* Conversion funnel */}
-      <div className="bg-background border-border rounded-2xl border p-6">
-        <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-5">
-          Conversion funnel
-        </p>
-        <div className="flex items-center gap-0 mb-5">
-          {[
-            { label: "Views",     value: total,        sub: null },
-            { label: "Inquiries", value: inquiryCount, sub: `${conversionRate}% of views` },
-            { label: "Won",       value: wonCount,     sub: `${winRate}% of inquiries` },
-          ].map((step, i) => (
-            <div key={step.label} className="flex items-center flex-1 min-w-0">
-              {i > 0 && (
-                <svg className="text-border shrink-0" width="14" height="28" viewBox="0 0 14 28" fill="none">
-                  <path d="M0 0 L14 14 L0 28" stroke="currentColor" strokeWidth="1" />
-                </svg>
-              )}
-              <div className="flex-1 min-w-0 px-3">
-                <p className="text-foreground text-xl font-semibold tabular-nums">{step.value.toLocaleString()}</p>
-                <p className="text-foreground text-xs font-medium mt-0.5">{step.label}</p>
-                {step.sub && <p className="text-muted-foreground text-[10px] mt-0.5">{step.sub}</p>}
+      {/* Conversion funnel + Traffic sources — one box, split by a divider */}
+      <div className="bg-background border-border rounded-2xl border overflow-hidden">
+        <div className={`grid ${referrers.length > 0 ? "md:grid-cols-2" : ""} divide-y md:divide-y-0 md:divide-x divide-border`}>
+          {/* Conversion funnel */}
+          <div className="p-6">
+            <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-5">
+              Conversion funnel
+            </p>
+            <div className="flex items-center gap-0 mb-5">
+              {[
+                { label: "Views",     value: total,        sub: null },
+                { label: "Inquiries", value: inquiryCount, sub: `${conversionRate}% of views` },
+                { label: "Won",       value: wonCount,     sub: `${winRate}% of inquiries` },
+              ].map((step, i) => (
+                <div key={step.label} className="flex items-center flex-1 min-w-0">
+                  {i > 0 && (
+                    <svg className="text-border shrink-0" width="14" height="28" viewBox="0 0 14 28" fill="none">
+                      <path d="M0 0 L14 14 L0 28" stroke="currentColor" strokeWidth="1" />
+                    </svg>
+                  )}
+                  <div className="flex-1 min-w-0 px-3">
+                    <p className="text-foreground text-xl font-semibold tabular-nums">{step.value.toLocaleString()}</p>
+                    <p className="text-foreground text-xs font-medium mt-0.5">{step.label}</p>
+                    {step.sub && <p className="text-muted-foreground text-[10px] mt-0.5">{step.sub}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2">
+              {[
+                { label: "Views",     value: total,        pct: 100 },
+                { label: "Inquiries", value: inquiryCount, pct: total > 0 ? (inquiryCount / total) * 100 : 0 },
+                { label: "Won",       value: wonCount,     pct: total > 0 ? (wonCount / total) * 100 : 0 },
+              ].map((row) => (
+                <div key={row.label} className="flex items-center gap-3">
+                  <span className="text-muted-foreground text-[10px] w-16 shrink-0">{row.label}</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-foreground/70 transition-all duration-700"
+                      style={{ width: `${Math.max(row.pct, row.value > 0 ? 2 : 0)}%` }}
+                    />
+                  </div>
+                  <span className="text-muted-foreground text-[10px] tabular-nums w-6 text-right">{row.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Traffic sources */}
+          {referrers.length > 0 && (
+            <div className="p-6">
+              <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-5">
+                Traffic sources
+              </p>
+              <div className="space-y-3">
+                {referrers.map((r) => {
+                  const pct = total > 0 ? Math.round((r.count / total) * 100) : 0;
+                  return (
+                    <div key={r.source}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-foreground text-sm font-medium truncate max-w-[70%]">{r.source}</span>
+                        <span className="text-muted-foreground text-xs tabular-nums">{r.count} · {pct}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-foreground/60 transition-all duration-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          ))}
-        </div>
-        <div className="space-y-2">
-          {[
-            { label: "Views",     value: total,        pct: 100 },
-            { label: "Inquiries", value: inquiryCount, pct: total > 0 ? (inquiryCount / total) * 100 : 0 },
-            { label: "Won",       value: wonCount,     pct: total > 0 ? (wonCount / total) * 100 : 0 },
-          ].map((row) => (
-            <div key={row.label} className="flex items-center gap-3">
-              <span className="text-muted-foreground text-[10px] w-16 shrink-0">{row.label}</span>
-              <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-foreground/70 transition-all duration-700"
-                  style={{ width: `${Math.max(row.pct, row.value > 0 ? 2 : 0)}%` }}
-                />
-              </div>
-              <span className="text-muted-foreground text-[10px] tabular-nums w-6 text-right">{row.value}</span>
-            </div>
-          ))}
+          )}
         </div>
       </div>
 
@@ -228,34 +261,6 @@ export function AnalyticsChart({
                     />
                   </div>
                 </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Traffic sources */}
-      {referrers.length > 0 && (
-        <div className="bg-background border-border rounded-2xl border p-6">
-          <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground mb-4">
-            Traffic sources
-          </p>
-          <div className="space-y-3">
-            {referrers.map((r) => {
-              const pct = total > 0 ? Math.round((r.count / total) * 100) : 0;
-              return (
-                <div key={r.source}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-foreground text-sm font-medium truncate max-w-[70%]">{r.source}</span>
-                    <span className="text-muted-foreground text-xs tabular-nums">{r.count} · {pct}%</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-foreground/60 transition-all duration-500"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
               );
             })}
           </div>
