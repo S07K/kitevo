@@ -11,12 +11,18 @@ import {
   Area,
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
 import type { AudienceBucket } from "@/lib/platforms/types";
+
+/** Monochrome shades of the theme accent, largest bracket = most opaque. */
+const DONUT_SHADES = [1, 0.78, 0.6, 0.45, 0.33, 0.24];
 
 export type GrowthPoint = { month: string; followers: number };
 
@@ -146,6 +152,48 @@ export function GrowthAreaChart({
           />
         </AreaChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function AudienceDonutChart({ data, stroke }: { data: AudienceBucket[]; stroke: string }) {
+  // Slices ordered by share so the donut and legend read largest-first.
+  const sorted = [...data].sort((a, b) => b.pct - a.pct);
+  return (
+    <div className="flex flex-col sm:flex-row items-center gap-5 h-full">
+      <div className="h-[180px] w-[180px] shrink-0">
+        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 180, height: 180 }}>
+          <PieChart>
+            <Pie
+              data={sorted}
+              dataKey="pct"
+              nameKey="age"
+              innerRadius={52}
+              outerRadius={82}
+              paddingAngle={2}
+              stroke="none"
+              startAngle={90}
+              endAngle={-270}
+            >
+              {sorted.map((_, i) => (
+                <Cell key={i} fill={stroke} fillOpacity={DONUT_SHADES[i % DONUT_SHADES.length]} />
+              ))}
+            </Pie>
+            <Tooltip content={AudienceDemographicsTooltipContent} filterNull={false} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <ul className="flex-1 w-full space-y-2">
+        {sorted.map((d, i) => (
+          <li key={d.age} className="flex items-center justify-between gap-2 text-sm">
+            <span className="flex items-center gap-2 text-[var(--mk-text)]">
+              <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: stroke, opacity: DONUT_SHADES[i % DONUT_SHADES.length] }} />
+              Age {d.age}
+            </span>
+            <span className="tabular-nums font-semibold text-[var(--mk-text-soft)]">{d.pct}%</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

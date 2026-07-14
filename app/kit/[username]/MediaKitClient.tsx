@@ -32,13 +32,13 @@ const GrowthAreaChart = dynamic(
   }
 );
 
-const AudienceBarChart = dynamic(
-  () => import("./MediaKitRecharts").then((m) => m.AudienceBarChart),
+const AudienceDonutChart = dynamic(
+  () => import("./MediaKitRecharts").then((m) => m.AudienceDonutChart),
   {
     ssr: false,
     loading: () => (
       <div
-        className="h-40 min-h-[160px] w-full animate-pulse rounded-lg bg-[var(--mk-border)]/25"
+        className="h-[180px] min-h-[180px] w-full animate-pulse rounded-lg bg-[var(--mk-border)]/25"
         aria-hidden
       />
     ),
@@ -323,6 +323,18 @@ export function MediaKitClient({
   // Charts sit side-by-side on desktop when both are present; full-width when only one.
   const showGrowthChart = sectionVisibility.growthChart && (instagramConnected || isDemoKit || isOwner);
   const showAudienceChart = sectionVisibility.audience && (instagramConnected || isDemoKit || isOwner);
+
+  // Per-post averages — derived from the recent posts we already fetched (no extra API).
+  const avg = (nums: number[]) => (nums.length ? Math.round(nums.reduce((s, n) => s + n, 0) / nums.length) : null);
+  const avgLikes = avg(instagramPosts.map((p) => p.likes).filter((n): n is number => typeof n === "number"));
+  const avgComments = avg(instagramPosts.map((p) => p.comments).filter((n): n is number => typeof n === "number"));
+  const avgReach = avg(instagramPosts.map((p) => p.reach).filter((n): n is number => typeof n === "number"));
+  const perPostCells = [
+    avgLikes != null && avgLikes > 0 ? { label: "Avg likes", value: avgLikes } : null,
+    avgComments != null && avgComments > 0 ? { label: "Avg comments", value: avgComments } : null,
+    avgReach != null && avgReach > 0 ? { label: "Avg reach", value: avgReach } : null,
+  ].filter((c): c is { label: string; value: number } => c !== null);
+  const showPerPost = (instagramConnected || isDemoKit) && perPostCells.length > 0;
 
   return (
     <div
@@ -783,22 +795,41 @@ export function MediaKitClient({
             </div>
           )}
 
-          {/* 6 + 7. Charts — side-by-side on desktop, stacked on mobile */}
+          {/* 5b. Per-post averages — typical performance a brand can expect */}
+          {showPerPost && (
+            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+              <div className="px-5 pt-4 pb-3 border-b border-[var(--mk-border)]">
+                <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Typical post performance</p>
+              </div>
+              <div className={`grid grid-cols-1 ${perPostCells.length === 3 ? "sm:grid-cols-3" : perPostCells.length === 2 ? "sm:grid-cols-2" : ""} divide-y sm:divide-y-0 sm:divide-x divide-[var(--mk-border)]`}>
+                {perPostCells.map((cell) => (
+                  <div key={cell.label} className="px-6 py-5">
+                    <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1.5">{cell.label}</p>
+                    <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums leading-none">
+                      <CountUp value={cell.value} duration={1100} />
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 6 + 7. Charts — side-by-side on desktop, stacked on mobile, equal height */}
           {(showGrowthChart || showAudienceChart) && (
-            <div className={`grid gap-4 items-start ${showGrowthChart && showAudienceChart ? "md:grid-cols-2" : ""}`}>
+            <div className={`grid gap-4 items-stretch ${showGrowthChart && showAudienceChart ? "md:grid-cols-2" : ""}`}>
               {/* Growth chart */}
               {showGrowthChart && (
-                <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
                   <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
                     <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Follower growth</p>
                   </div>
-                  <div className="relative p-5 min-h-[260px]">
+                  <div className="relative flex-1 flex items-center p-5 min-h-[240px]">
                     {(isDemoKit || instagramConnected) && growthData.length > 0 ? (
                       <GrowthAreaChart data={growthData} preset={preset} stroke={chartColors.stroke} fillOpacity={chartColors.fillOpacity} />
                     ) : showConnectInstagramOverlay ? (
                       <ConnectInstagramOverlay title="Connect Instagram to show follower growth" />
                     ) : (isDemoKit || instagramConnected) && growthData.length === 0 ? (
-                      <div className="flex min-h-[200px] flex-col items-center justify-center text-center">
+                      <div className="flex w-full flex-col items-center justify-center text-center">
                         <p className="text-sm text-[var(--mk-text-muted)] max-w-sm font-sans">
                           Follower data will appear here once available from Instagram.
                         </p>
@@ -810,17 +841,17 @@ export function MediaKitClient({
 
               {/* Audience demographics */}
               {showAudienceChart && (
-                <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
                   <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
-                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Audience demographics</p>
+                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Audience age</p>
                   </div>
-                  <div className="relative p-5 min-h-[200px]">
+                  <div className="relative flex-1 flex items-center p-5 min-h-[240px]">
                     {(isDemoKit || instagramConnected) && audience.length > 0 ? (
-                      <AudienceBarChart data={audience} stroke={chartColors.stroke} />
+                      <AudienceDonutChart data={audience} stroke={chartColors.stroke} />
                     ) : showConnectInstagramOverlay ? (
                       <ConnectInstagramOverlay title="Connect Instagram to show audience demographics" />
                     ) : (isDemoKit || instagramConnected) && audience.length === 0 ? (
-                      <div className="flex min-h-[160px] flex-col items-center justify-center text-center">
+                      <div className="flex w-full flex-col items-center justify-center text-center">
                         <p className="font-sans text-sm text-[var(--mk-text-muted)] max-w-sm">
                           Instagram didn&apos;t return age demographics yet. This can take up to 48 hours.
                         </p>
