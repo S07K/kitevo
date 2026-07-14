@@ -652,7 +652,7 @@ function DashboardContent() {
   const [youtubeStats, setYoutubeStats] = useState<{ subscriberCount: number; viewCount: number; videoCount: number; channelTitle: string } | null>(null);
   const [disconnectingYoutube, setDisconnectingYoutube] = useState(false);
   const [activeTab, setActiveTab] = useState<"inbox" | "activity">(() =>
-    typeof window !== "undefined" && window.location.hash === "#activity" ? "activity" : "inbox"
+    typeof window !== "undefined" && window.location.hash === "#inbox" ? "inbox" : "activity"
   );
   const [urlCopied, setUrlCopied] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
