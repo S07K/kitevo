@@ -35,6 +35,19 @@ export interface AudienceBucket {
   pct: number;
 }
 
+/** Gender split slice (Men / Women / Other). */
+export interface AudienceGenderSlice {
+  gender: string;
+  pct: number;
+}
+
+/** Top audience country. `code` is the ISO-3166 alpha-2 (for the flag emoji). */
+export interface AudienceCountrySlice {
+  code: string;
+  country: string;
+  pct: number;
+}
+
 /**
  * Extended stats for platforms that support growth chart + demographics (e.g. Instagram).
  * Other platforms can return only PlatformStats.
@@ -42,4 +55,6 @@ export interface AudienceBucket {
 export interface PlatformStatsWithCharts extends PlatformStats {
   growthDataPoints?: GrowthDataPoint[];
   audienceDemographics?: AudienceBucket[];
+  audienceGender?: AudienceGenderSlice[];
+  audienceCountries?: AudienceCountrySlice[];
 }

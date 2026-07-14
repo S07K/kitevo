@@ -324,6 +324,16 @@ export function MediaKitClient({
   const showGrowthChart = sectionVisibility.growthChart && (instagramConnected || isDemoKit || isOwner);
   const showAudienceChart = sectionVisibility.audience && (instagramConnected || isDemoKit || isOwner);
 
+  // Gender split + top countries (Instagram audience insights).
+  const genderData = platformStats["instagram"]?.audienceGender ?? [];
+  const countryData = platformStats["instagram"]?.audienceCountries ?? [];
+  const showGender = sectionVisibility.audience && (instagramConnected || isDemoKit) && genderData.length > 0;
+  const showCountries = sectionVisibility.audience && (instagramConnected || isDemoKit) && countryData.length > 0;
+  const flagEmoji = (code: string) =>
+    code.length === 2
+      ? code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
+      : "";
+
   // Per-post averages — derived from the recent posts we already fetched (no extra API).
   const avg = (nums: number[]) => (nums.length ? Math.round(nums.reduce((s, n) => s + n, 0) / nums.length) : null);
   const avgLikes = avg(instagramPosts.map((p) => p.likes).filter((n): n is number => typeof n === "number"));
@@ -677,6 +687,64 @@ export function MediaKitClient({
                         </p>
                       </div>
                     ) : null}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Gender split + top countries — distinct visual styles from the charts above */}
+          {(showGender || showCountries) && (
+            <div className={`grid gap-4 items-stretch ${showGender && showCountries ? "md:grid-cols-2" : ""}`}>
+              {/* Gender — segmented split bar */}
+              {showGender && (
+                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+                  <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
+                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Audience gender</p>
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center p-5">
+                    <div className="flex h-4 w-full rounded-full overflow-hidden">
+                      {genderData.map((g, i) => (
+                        <div
+                          key={g.gender}
+                          style={{ width: `${g.pct}%`, backgroundColor: chartColors.stroke, opacity: [1, 0.55, 0.3][i] ?? 0.3 }}
+                          title={`${g.gender} ${g.pct}%`}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+                      {genderData.map((g, i) => (
+                        <div key={g.gender} className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: chartColors.stroke, opacity: [1, 0.55, 0.3][i] ?? 0.3 }} />
+                          <span className="text-sm text-[var(--mk-text)]">{g.gender}</span>
+                          <span className="text-sm font-semibold tabular-nums text-[var(--mk-text-soft)]">{g.pct}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Top countries — ranked flag + progress bar */}
+              {showCountries && (
+                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+                  <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
+                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Top locations</p>
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center p-5 space-y-3">
+                    {countryData.map((c) => {
+                      const max = countryData[0]?.pct || 1;
+                      return (
+                        <div key={c.code} className="flex items-center gap-3">
+                          <span className="text-base leading-none w-6 text-center shrink-0" aria-hidden>{flagEmoji(c.code)}</span>
+                          <span className="text-sm text-[var(--mk-text)] w-28 truncate shrink-0">{c.country}</span>
+                          <div className="flex-1 h-2 rounded-full bg-[var(--mk-border)] overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${(c.pct / max) * 100}%`, backgroundColor: chartColors.stroke }} />
+                          </div>
+                          <span className="text-sm font-semibold tabular-nums text-[var(--mk-text-soft)] w-12 text-right shrink-0">{c.pct}%</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

@@ -3,7 +3,7 @@
  * engaged_audience_demographics with breakdowns=age). See Meta IG User insights docs.
  */
 
-import type { AudienceBucket } from "@/lib/platforms/types";
+import type { AudienceBucket, AudienceGenderSlice, AudienceCountrySlice } from "@/lib/platforms/types";
 
 export type InsightDemographicsPayload = {
   data?: Array<{
@@ -113,4 +113,79 @@ export function insightPayloadToAudienceBuckets(
   const counts = parseAgeDemographicsInsight(payload);
   if (!counts?.length) return undefined;
   return countsToAudienceBuckets(counts);
+}
+
+/** Generic: sum insight rows into `dimensionValue → count` for any single breakdown dimension. */
+function parseBreakdownCounts(
+  payload: InsightDemographicsPayload | null | undefined,
+  dimKey: string
+): { key: string; count: number }[] | undefined {
+  const breakdowns = payload?.data?.[0]?.total_value?.breakdowns;
+  if (!breakdowns?.length) return undefined;
+
+  const buckets = new Map<string, number>();
+  for (const block of breakdowns) {
+    const keys = (block.dimension_keys ?? []).map((k) => k.toLowerCase());
+    const idx = keys.indexOf(dimKey);
+    if (idx < 0) continue;
+    for (const row of block.results ?? []) {
+      const raw = (row.dimension_values ?? [])[idx];
+      if (raw == null || raw === "" || raw === "U" || raw === "UNKNOWN") continue;
+      const v = typeof row.value === "number" ? row.value : 0;
+      if (v <= 0) continue;
+      buckets.set(raw, (buckets.get(raw) ?? 0) + v);
+    }
+  }
+  if (buckets.size === 0) return undefined;
+  return [...buckets.entries()].map(([key, count]) => ({ key, count }));
+}
+
+function pct1(n: number): number {
+  return Math.round(n * 1000) / 10;
+}
+
+const GENDER_LABELS: Record<string, string> = { M: "Men", F: "Women", U: "Other" };
+
+/** Gender split (Men / Women / Other), largest first, summing to ~100%. */
+export function parseGenderInsight(
+  payload: InsightDemographicsPayload | null | undefined
+): AudienceGenderSlice[] | undefined {
+  const counts = parseBreakdownCounts(payload, "gender");
+  if (!counts?.length) return undefined;
+  const total = counts.reduce((s, c) => s + c.count, 0);
+  if (total <= 0) return undefined;
+  return counts
+    .map((c) => ({ gender: GENDER_LABELS[c.key] ?? c.key, pct: pct1(c.count / total) }))
+    .sort((a, b) => b.pct - a.pct);
+}
+
+/** Top audience countries (ISO code → display name via Intl), largest first, max 5. */
+export function parseCountryInsight(
+  payload: InsightDemographicsPayload | null | undefined
+): AudienceCountrySlice[] | undefined {
+  const counts = parseBreakdownCounts(payload, "country");
+  if (!counts?.length) return undefined;
+  const total = counts.reduce((s, c) => s + c.count, 0);
+  if (total <= 0) return undefined;
+
+  let regionNames: Intl.DisplayNames | null = null;
+  try {
+    regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+  } catch {
+    regionNames = null;
+  }
+
+  return counts
+    .map((c) => {
+      const code = c.key.toUpperCase();
+      let name = code;
+      try {
+        name = regionNames?.of(code) ?? code;
+      } catch {
+        name = code;
+      }
+      return { code, country: name, pct: pct1(c.count / total) };
+    })
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 5);
 }

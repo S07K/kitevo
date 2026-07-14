@@ -10,6 +10,8 @@ import type { AudienceBucket, PlatformStatsWithCharts } from "@/lib/platforms/ty
 import type { FetchedPost } from "@/lib/platforms/instagram";
 import {
   insightPayloadToAudienceBuckets,
+  parseGenderInsight,
+  parseCountryInsight,
   type InsightDemographicsPayload,
 } from "@/lib/instagram-demographics";
 import { writeInstagramStatsCache } from "@/lib/creator-stats-cache";
@@ -46,51 +48,59 @@ async function metaGet<T>(
 }
 
 /**
- * Follower / engaged audience age breakdown (requires instagram_manage_insights + professional account).
- * Tries follower_demographics first, then engaged_audience_demographics; multiple timeframes and query shapes for API compatibility.
+ * Fetch a single audience breakdown (age | gender | country) as a raw insight payload.
+ * Tries follower_demographics then engaged_audience_demographics across timeframes and the
+ * `breakdown` / `breakdowns` query shapes Meta accepts across Graph versions.
+ * (Requires instagram_manage_insights + a professional account with enough audience.)
  */
-async function fetchInstagramAudienceDemographics(
+async function fetchBreakdownPayload(
   igUserId: string,
-  accessToken: string
-): Promise<AudienceBucket[] | undefined> {
+  accessToken: string,
+  breakdown: "age" | "gender" | "country"
+): Promise<InsightDemographicsPayload | null> {
   const metrics = ["follower_demographics", "engaged_audience_demographics"] as const;
   const timeframes = ["last_90_days", "this_month"] as const;
-
-  // Meta returns (#100) "A breakdown parameter must be inputted..." if `breakdown` / `breakdowns` is missing or wrong.
-  // IG User insights expect `breakdown=age` (singular) for demographic metrics in many Graph versions.
-  const breakdownParams = [
-    "breakdown=age",
-    "breakdowns=age",
-    "breakdown=age,gender",
-    "breakdowns=age,gender",
-  ];
+  const shapes = [`breakdown=${breakdown}`, `breakdowns=${breakdown}`];
 
   for (const metric of metrics) {
     for (const timeframe of timeframes) {
-      const queryPaths = breakdownParams.map(
-        (bd) =>
-          `/${igUserId}/insights?metric=${metric}&period=lifetime&timeframe=${timeframe}&metric_type=total_value&${bd}`
-      );
-      for (const path of queryPaths) {
+      for (const shape of shapes) {
+        const path = `/${igUserId}/insights?metric=${metric}&period=lifetime&timeframe=${timeframe}&metric_type=total_value&${shape}`;
         try {
           const res = await metaGet<InsightDemographicsPayload>(path, accessToken, {
             baseUrl: GRAPH_INSIGHTS_DEMOGRAPHICS,
           });
-          const buckets = insightPayloadToAudienceBuckets(res);
-          if (buckets?.length) return buckets;
+          if (res?.data?.[0]?.total_value?.breakdowns?.length) return res;
         } catch (e) {
           if (process.env.NODE_ENV === "development") {
-            console.warn(
-              `[instagram demographics] skip ${metric} ${timeframe}:`,
-              e instanceof Error ? e.message : e
-            );
+            console.warn(`[ig demographics] skip ${breakdown}/${metric}/${timeframe}:`, e instanceof Error ? e.message : e);
           }
         }
       }
     }
   }
+  return null;
+}
 
-  return undefined;
+/** Age / gender / top-country audience breakdowns, fetched in parallel. Any may be undefined. */
+async function fetchInstagramAudienceDemographics(
+  igUserId: string,
+  accessToken: string
+): Promise<{
+  age?: AudienceBucket[];
+  gender?: import("@/lib/platforms/types").AudienceGenderSlice[];
+  countries?: import("@/lib/platforms/types").AudienceCountrySlice[];
+}> {
+  const [agePayload, genderPayload, countryPayload] = await Promise.all([
+    fetchBreakdownPayload(igUserId, accessToken, "age"),
+    fetchBreakdownPayload(igUserId, accessToken, "gender"),
+    fetchBreakdownPayload(igUserId, accessToken, "country"),
+  ]);
+  return {
+    age: insightPayloadToAudienceBuckets(agePayload),
+    gender: parseGenderInsight(genderPayload),
+    countries: parseCountryInsight(countryPayload),
+  };
 }
 
 /** Refresh long-lived token if it expires within 14 days. New token gets a new 60-day window. */
@@ -237,9 +247,9 @@ export async function getStatsForUser(userId: string): Promise<PlatformStatsWith
         // Media insights not available or rate limited; keep 0
       }
 
-      let audienceDemographics: AudienceBucket[] | undefined;
+      let demographics: Awaited<ReturnType<typeof fetchInstagramAudienceDemographics>> = {};
       try {
-        audienceDemographics = await fetchInstagramAudienceDemographics(
+        demographics = await fetchInstagramAudienceDemographics(
           user.instagramUserId,
           user.instagramAccessToken
         );
@@ -256,7 +266,9 @@ export async function getStatsForUser(userId: string): Promise<PlatformStatsWith
         growthThisMonth,
         extra: { posts: mediaCount, ...(igUsername ? { username: igUsername } : {}) },
         growthDataPoints: growthDataPoints.length ? growthDataPoints : undefined,
-        audienceDemographics,
+        audienceDemographics: demographics.age,
+        audienceGender: demographics.gender,
+        audienceCountries: demographics.countries,
       };
     } catch (e) {
       if (e instanceof MetaApiError && e.code === 190) {
