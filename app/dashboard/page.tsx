@@ -1109,17 +1109,17 @@ function DashboardContent() {
           /* ── Subscribed dashboard ── */
           <div className="space-y-6">
             {/* ── Welcome banner ── */}
-            <div className="bg-[#111110] dark:bg-[#1c1c1a] dark:border dark:border-[#2a2a28] rounded-2xl px-5 py-4 sm:px-6 sm:py-5">
-              <div className="flex items-center gap-3">
+            <div className="bg-[#111110] dark:bg-[#1c1c1a] dark:border dark:border-[#2a2a28] rounded-2xl px-6 py-5 sm:px-7 sm:py-6">
+              <div className="flex items-center gap-4">
                 {/* Avatar */}
                 <Link href="/profile" className="shrink-0 group relative">
                   <AvatarImg
                     src={avatarUrl}
                     alt={profile?.name ?? "Avatar"}
-                    className="h-10 w-10 rounded-full object-cover transition-opacity group-hover:opacity-75"
+                    className="h-14 w-14 rounded-full object-cover ring-2 ring-white/10 transition-opacity group-hover:opacity-75"
                     fallback={
-                      <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center transition-opacity group-hover:opacity-75">
-                        <span className="font-display text-sm font-semibold text-white/80">{avatarInitials}</span>
+                      <div className="h-14 w-14 rounded-full bg-white/10 ring-2 ring-white/10 flex items-center justify-center transition-opacity group-hover:opacity-75">
+                        <span className="font-display text-lg font-semibold text-white/80">{avatarInitials}</span>
                       </div>
                     }
                   />
@@ -1127,10 +1127,10 @@ function DashboardContent() {
 
                 {/* Name + subtitle */}
                 <div className="min-w-0 flex-1">
-                  <p className="text-white/50 text-[10px] font-semibold tracking-[0.18em] uppercase leading-none mb-0.5">Welcome back</p>
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-display text-base font-semibold text-white leading-none truncate">{firstName}</p>
-                    <VerifiedBadge tier={profile?.verifiedTier} size="sm" />
+                  <p className="text-white/40 text-[10px] font-semibold tracking-[0.2em] uppercase leading-none mb-1.5">Welcome back</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-display text-2xl font-semibold text-white leading-none tracking-tight truncate">{firstName}</p>
+                    <VerifiedBadge tier={profile?.verifiedTier} size="md" />
                   </div>
                 </div>
 
@@ -1175,77 +1175,48 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* ── Metrics bar ── */}
-            <div className="bg-background border-border rounded-2xl border">
-              <div className="grid grid-cols-2 divide-x divide-border sm:grid-cols-4">
-                {/* Followers */}
-                <div className="px-6 py-5">
-                  <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Followers</p>
-                  {!platformStats ? (
-                    <div className="h-8 w-20 bg-muted animate-pulse rounded-full" />
-                  ) : instagramStats ? (
-                    <p className="font-display text-foreground text-2xl font-semibold tabular-nums">
-                      <CountUp value={instagramStats.followers} duration={1400} />
-                    </p>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">—</p>
-                  )}
-                  <p className="text-muted-foreground text-xs mt-0.5">{youtubeConnected && youtubeStats ? "Instagram" : "Instagram"}</p>
-                </div>
+            {/* ── Metrics bar — tiles built dynamically so there are no orphaned cells ── */}
+            {(() => {
+              const skel = (w: string) => <span className={`inline-block h-7 ${w} align-middle bg-muted animate-pulse rounded-full`} />;
+              type Tile = { key: string; label: string; sub: string; node: React.ReactNode };
+              const tiles: Tile[] = [];
 
-                {/* YouTube subscribers */}
-                {youtubeConnected && youtubeStats && (
-                  <div className="px-6 py-5 border-l border-border">
-                    <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Subscribers</p>
-                    <p className="font-display text-foreground text-2xl font-semibold tabular-nums">
-                      <CountUp value={youtubeStats.subscriberCount} duration={1400} />
-                    </p>
-                    <p className="text-muted-foreground text-xs mt-0.5">YouTube</p>
+              tiles.push({
+                key: "followers", label: "Followers", sub: "Instagram",
+                node: !platformStats ? skel("w-20") : instagramStats ? <CountUp value={instagramStats.followers} duration={1400} /> : <span className="text-muted-foreground text-base">—</span>,
+              });
+              if (youtubeConnected && youtubeStats) {
+                tiles.push({ key: "subs", label: "Subscribers", sub: "YouTube", node: <CountUp value={youtubeStats.subscriberCount} duration={1400} /> });
+              }
+              // Only show engagement when it's a real, non-zero rate (0.0% reads as "no engagement").
+              if (instagramStats && instagramStats.avgEngagement > 0) {
+                tiles.push({ key: "eng", label: "Engagement", sub: "avg rate", node: <CountUp value={instagramStats.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
+              }
+              tiles.push({
+                key: "week", label: "Views this week", sub: "kit page visits",
+                node: !kitViewsLoaded ? skel("w-12") : <CountUp value={kitViewsThisWeek} duration={1000} />,
+              });
+              tiles.push({
+                key: "all", label: "All time views", sub: "across all kits",
+                node: !kitViewsLoaded ? skel("w-14") : <CountUp value={totalViews} duration={1200} />,
+              });
+
+              const n = tiles.length;
+              const cols = n >= 5 ? "lg:grid-cols-5" : n === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3";
+              return (
+                <div className="bg-background border-border rounded-2xl border overflow-hidden">
+                  <div className={`grid grid-cols-2 ${cols} divide-x divide-y lg:divide-y-0 divide-border`}>
+                    {tiles.map((t) => (
+                      <div key={t.key} className="px-6 py-5">
+                        <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">{t.label}</p>
+                        <div className="font-display text-foreground text-2xl font-semibold tabular-nums tracking-tight leading-none">{t.node}</div>
+                        <p className="text-muted-foreground text-xs mt-1.5">{t.sub}</p>
+                      </div>
+                    ))}
                   </div>
-                )}
-
-                {/* Engagement */}
-                <div className="px-6 py-5">
-                  <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Engagement</p>
-                  {!platformStats ? (
-                    <div className="h-8 w-16 bg-muted animate-pulse rounded-full" />
-                  ) : instagramStats ? (
-                    <p className="font-display text-foreground text-2xl font-semibold tabular-nums">
-                      <CountUp value={instagramStats.avgEngagement} decimals={1} suffix="%" duration={1000} />
-                    </p>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">—</p>
-                  )}
-                  <p className="text-muted-foreground text-xs mt-0.5">avg rate</p>
                 </div>
-
-                {/* Views this week */}
-                <div className="px-6 py-5">
-                  <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">Views this week</p>
-                  {!kitViewsLoaded ? (
-                    <div className="h-8 w-12 bg-muted animate-pulse rounded-full" />
-                  ) : (
-                    <p className="font-display text-foreground text-2xl font-semibold tabular-nums">
-                      <CountUp value={kitViewsThisWeek} duration={1000} />
-                    </p>
-                  )}
-                  <p className="text-muted-foreground text-xs mt-0.5">kit page visits</p>
-                </div>
-
-                {/* All time views */}
-                <div className="px-6 py-5">
-                  <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">All time views</p>
-                  {!kitViewsLoaded ? (
-                    <div className="h-8 w-14 bg-muted animate-pulse rounded-full" />
-                  ) : (
-                    <p className="font-display text-foreground text-2xl font-semibold tabular-nums">
-                      <CountUp value={totalViews} duration={1200} />
-                    </p>
-                  )}
-                  <p className="text-muted-foreground text-xs mt-0.5">across all kits</p>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* ── Pipeline / Activity ── */}
             {(kitViewsLoaded && kits.length > 0) || (tierId && tierId !== "free") ? (

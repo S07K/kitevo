@@ -31,6 +31,19 @@ const MOCK_AUDIENCE = [
   { age: "45+", pct: 8 },
 ];
 
+const MOCK_GENDER = [
+  { gender: "Women", pct: 58 },
+  { gender: "Men", pct: 42 },
+];
+
+const MOCK_COUNTRIES = [
+  { code: "US", country: "United States", pct: 38.4 },
+  { code: "GB", country: "United Kingdom", pct: 14.2 },
+  { code: "CA", country: "Canada", pct: 9.7 },
+  { code: "AU", country: "Australia", pct: 7.1 },
+  { code: "IN", country: "India", pct: 5.9 },
+];
+
 export function getInstagramMeta(): PlatformMeta {
   return META;
 }
@@ -50,6 +63,8 @@ export async function getInstagramStats(_handle?: string): Promise<PlatformStats
     extra: { following: 892, posts: 342 },
     growthDataPoints: MOCK_GROWTH,
     audienceDemographics: MOCK_AUDIENCE,
+    audienceGender: MOCK_GENDER,
+    audienceCountries: MOCK_COUNTRIES,
   };
 }
 
