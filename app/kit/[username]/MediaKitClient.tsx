@@ -535,52 +535,153 @@ export function MediaKitClient({
             )}
           </div>
 
-          {/* ── Headline stat band — the numbers a brand scans for, up top ── */}
+          {/* ── Combined stats — every platform's headline numbers, up top ── */}
           {(() => {
             const ig = platformStats["instagram"];
             const yt = platformStats["youtube"];
-            const primary = ig ?? yt;
-            if (!primary) return null;
-            const isIg = !!ig;
-            const posts = isIg && ig!.extra && typeof ig!.extra.posts === "number" ? ig!.extra.posts : null;
-            const cells: { label: string; node: React.ReactNode }[] = [
-              { label: isIg ? "Followers" : "Subscribers", node: <CountUp value={primary.followers} duration={1400} /> },
-            ];
-            if (isIg && ig!.avgEngagement > 0) {
-              cells.push({ label: "Engagement", node: <CountUp value={ig!.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
+            if (!ig && !yt) return null;
+
+            const igIcon = (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#E1306C" aria-hidden className="shrink-0">
+                <path d="M12 2.2c3.2 0 3.6 0 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07s-3.58-.01-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92C2.14 15.6 2.13 15.2 2.13 12s.01-3.58.07-4.85C2.35 3.92 3.87 2.4 7.12 2.27 8.4 2.2 8.8 2.2 12 2.2Zm0 3.64a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32Zm0 10.16a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88Z"/>
+              </svg>
+            );
+            const ytIcon = (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#FF0000" aria-hidden className="shrink-0">
+                <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.2C0 8.07 0 12 0 12s0 3.93.5 5.81a3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14C24 15.93 24 12 24 12s0-3.93-.5-5.81ZM9.55 15.57V8.43L15.82 12l-6.27 3.57Z"/>
+              </svg>
+            );
+
+            type Cell = { key: string; label: string; node: React.ReactNode; icon: React.ReactNode };
+            const cells: Cell[] = [];
+
+            if (ig) {
+              cells.push({ key: "ig-foll", icon: igIcon, label: "Followers", node: <CountUp value={ig.followers} duration={1400} /> });
+              if (ig.avgEngagement > 0) cells.push({ key: "ig-eng", icon: igIcon, label: "Engagement", node: <CountUp value={ig.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
+              if (ig.growthThisMonth > 0) cells.push({ key: "ig-gr", icon: igIcon, label: "Growth · 30d", node: <span>+<CountUp value={ig.growthThisMonth} decimals={1} suffix="%" duration={1200} /></span> });
             }
-            if (isIg && ig!.growthThisMonth > 0) {
-              cells.push({ label: "Growth · 30d", node: <span>+<CountUp value={ig!.growthThisMonth} decimals={1} suffix="%" duration={1200} /></span> });
+            if (yt) {
+              cells.push({ key: "yt-sub", icon: ytIcon, label: "Subscribers", node: <CountUp value={yt.followers} duration={1400} /> });
+              const totalViews = typeof yt.extra?.totalViews === "number" ? yt.extra.totalViews : null;
+              if (totalViews) cells.push({ key: "yt-views", icon: ytIcon, label: "Total views", node: <CountUp value={totalViews} duration={1600} /> });
+              let avgViews: number | null = null;
+              try {
+                const vids = yt.extra?.recentVideosJson ? (JSON.parse(String(yt.extra.recentVideosJson)) as Array<{ viewCount?: number }>) : [];
+                const vv = vids.map((v) => v.viewCount).filter((n): n is number => typeof n === "number");
+                avgViews = vv.length ? Math.round(vv.reduce((s, n) => s + n, 0) / vv.length) : null;
+              } catch { /* ignore malformed */ }
+              if (avgViews && cells.filter((c) => c.key.startsWith("yt")).length < 3) {
+                cells.push({ key: "yt-avg", icon: ytIcon, label: "Avg views / video", node: <CountUp value={avgViews} duration={1200} /> });
+              }
             }
-            if (cells.length < 4 && posts != null && posts > 0) {
-              cells.push({ label: "Posts", node: <CountUp value={posts} duration={1100} /> });
-            }
-            const cols = cells.length >= 4 ? "sm:grid-cols-4" : cells.length === 3 ? "sm:grid-cols-3" : cells.length === 2 ? "sm:grid-cols-2" : "";
+
+            const bothPlatforms = !!ig && !!yt;
+            const totalAudience = (ig?.followers ?? 0) + (yt?.followers ?? 0);
+            const cols = cells.length >= 5 ? "sm:grid-cols-3" : cells.length === 4 ? "sm:grid-cols-4" : cells.length === 3 ? "sm:grid-cols-3" : cells.length === 2 ? "sm:grid-cols-2" : "";
+            const liveLabel = bothPlatforms ? "Live — synced from Instagram & YouTube" : ig ? "Live — synced from Instagram" : "Live — synced from YouTube";
+
             return (
               <div>
-                <div className={`grid grid-cols-1 ${cols} rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] divide-y sm:divide-y-0 sm:divide-x divide-[var(--mk-border)] overflow-hidden`}>
-                  {cells.map((cell) => (
-                    <div key={cell.label} className="px-6 py-6">
-                      <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.16em] uppercase mb-2">{cell.label}</p>
-                      <p className="font-display text-[var(--mk-text)] text-3xl sm:text-4xl font-semibold tabular-nums leading-none">{cell.node}</p>
+                <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+                  {/* Total audience headline — the single number that frames everything (only when multi-platform) */}
+                  {bothPlatforms && (
+                    <div className="px-6 py-5 border-b border-[var(--mk-border)] flex items-baseline gap-2 flex-wrap">
+                      <span className="font-display text-[var(--mk-text)] text-4xl font-semibold tabular-nums leading-none">
+                        <CountUp value={totalAudience} duration={1600} />
+                      </span>
+                      <span className="text-sm text-[var(--mk-text-muted)] font-sans">total audience across Instagram &amp; YouTube</span>
                     </div>
-                  ))}
+                  )}
+                  <div className={`grid grid-cols-1 ${cols} divide-y sm:divide-y-0 sm:divide-x divide-[var(--mk-border)]`}>
+                    {cells.map((cell) => (
+                      <div key={cell.key} className="px-6 py-6">
+                        <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.16em] uppercase mb-2 flex items-center gap-1.5">
+                          {cell.icon}{cell.label}
+                        </p>
+                        <p className="font-display text-[var(--mk-text)] text-3xl sm:text-4xl font-semibold tabular-nums leading-none">{cell.node}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                {/* Live indicator — only claim "live" when the numbers are really synced (not demo) */}
-                {instagramConnected && !isDemoKit && (
+                {/* Live indicator — only claim "live" for real synced kits (not demo) */}
+                {!isDemoKit && (ig || yt) && (
                   <div className="mt-2.5 flex items-center justify-center gap-1.5">
                     <span className="relative flex h-2 w-2">
                       <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                     </span>
-                    <span className="text-[11px] font-medium text-[var(--mk-text-soft)] tracking-wide">
-                      Live — synced from Instagram
-                    </span>
+                    <span className="text-[11px] font-medium text-[var(--mk-text-soft)] tracking-wide">{liveLabel}</span>
                   </div>
                 )}
               </div>
             );
           })()}
+
+          {/* Per-post averages — typical performance a brand can expect */}
+          {showPerPost && (
+            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+              <div className="px-5 pt-4 pb-3 border-b border-[var(--mk-border)]">
+                <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Typical post performance</p>
+              </div>
+              <div className={`grid grid-cols-1 ${perPostCells.length === 3 ? "sm:grid-cols-3" : perPostCells.length === 2 ? "sm:grid-cols-2" : ""} divide-y sm:divide-y-0 sm:divide-x divide-[var(--mk-border)]`}>
+                {perPostCells.map((cell) => (
+                  <div key={cell.label} className="px-6 py-5">
+                    <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1.5">{cell.label}</p>
+                    <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums leading-none">
+                      <CountUp value={cell.value} duration={1100} />
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Charts — side-by-side on desktop, stacked on mobile, equal height */}
+          {(showGrowthChart || showAudienceChart) && (
+            <div className={`grid gap-4 items-stretch ${showGrowthChart && showAudienceChart ? "md:grid-cols-2" : ""}`}>
+              {showGrowthChart && (
+                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+                  <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
+                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Follower growth</p>
+                  </div>
+                  <div className="relative flex-1 flex items-center p-5 min-h-[240px]">
+                    {(isDemoKit || instagramConnected) && growthData.length > 0 ? (
+                      <GrowthAreaChart data={growthData} preset={preset} stroke={chartColors.stroke} fillOpacity={chartColors.fillOpacity} />
+                    ) : showConnectInstagramOverlay ? (
+                      <ConnectInstagramOverlay title="Connect Instagram to show follower growth" />
+                    ) : (isDemoKit || instagramConnected) && growthData.length === 0 ? (
+                      <div className="flex w-full flex-col items-center justify-center text-center">
+                        <p className="text-sm text-[var(--mk-text-muted)] max-w-sm font-sans">
+                          Follower data will appear here once available from Instagram.
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+
+              {showAudienceChart && (
+                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+                  <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
+                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Audience age</p>
+                  </div>
+                  <div className="relative flex-1 flex items-center p-5 min-h-[240px]">
+                    {(isDemoKit || instagramConnected) && audience.length > 0 ? (
+                      <AudienceDonutChart data={audience} stroke={chartColors.stroke} />
+                    ) : showConnectInstagramOverlay ? (
+                      <ConnectInstagramOverlay title="Connect Instagram to show audience demographics" />
+                    ) : (isDemoKit || instagramConnected) && audience.length === 0 ? (
+                      <div className="flex w-full flex-col items-center justify-center text-center">
+                        <p className="font-sans text-sm text-[var(--mk-text-muted)] max-w-sm">
+                          Instagram didn&apos;t return age demographics yet. This can take up to 48 hours.
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* ── Instagram Section ── */}
           {(instagramConnected || isDemoKit) && (
@@ -795,73 +896,6 @@ export function MediaKitClient({
             </div>
           )}
 
-          {/* 5b. Per-post averages — typical performance a brand can expect */}
-          {showPerPost && (
-            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
-              <div className="px-5 pt-4 pb-3 border-b border-[var(--mk-border)]">
-                <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Typical post performance</p>
-              </div>
-              <div className={`grid grid-cols-1 ${perPostCells.length === 3 ? "sm:grid-cols-3" : perPostCells.length === 2 ? "sm:grid-cols-2" : ""} divide-y sm:divide-y-0 sm:divide-x divide-[var(--mk-border)]`}>
-                {perPostCells.map((cell) => (
-                  <div key={cell.label} className="px-6 py-5">
-                    <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1.5">{cell.label}</p>
-                    <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums leading-none">
-                      <CountUp value={cell.value} duration={1100} />
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 6 + 7. Charts — side-by-side on desktop, stacked on mobile, equal height */}
-          {(showGrowthChart || showAudienceChart) && (
-            <div className={`grid gap-4 items-stretch ${showGrowthChart && showAudienceChart ? "md:grid-cols-2" : ""}`}>
-              {/* Growth chart */}
-              {showGrowthChart && (
-                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
-                  <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
-                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Follower growth</p>
-                  </div>
-                  <div className="relative flex-1 flex items-center p-5 min-h-[240px]">
-                    {(isDemoKit || instagramConnected) && growthData.length > 0 ? (
-                      <GrowthAreaChart data={growthData} preset={preset} stroke={chartColors.stroke} fillOpacity={chartColors.fillOpacity} />
-                    ) : showConnectInstagramOverlay ? (
-                      <ConnectInstagramOverlay title="Connect Instagram to show follower growth" />
-                    ) : (isDemoKit || instagramConnected) && growthData.length === 0 ? (
-                      <div className="flex w-full flex-col items-center justify-center text-center">
-                        <p className="text-sm text-[var(--mk-text-muted)] max-w-sm font-sans">
-                          Follower data will appear here once available from Instagram.
-                        </p>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-
-              {/* Audience demographics */}
-              {showAudienceChart && (
-                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
-                  <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
-                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Audience age</p>
-                  </div>
-                  <div className="relative flex-1 flex items-center p-5 min-h-[240px]">
-                    {(isDemoKit || instagramConnected) && audience.length > 0 ? (
-                      <AudienceDonutChart data={audience} stroke={chartColors.stroke} />
-                    ) : showConnectInstagramOverlay ? (
-                      <ConnectInstagramOverlay title="Connect Instagram to show audience demographics" />
-                    ) : (isDemoKit || instagramConnected) && audience.length === 0 ? (
-                      <div className="flex w-full flex-col items-center justify-center text-center">
-                        <p className="font-sans text-sm text-[var(--mk-text-muted)] max-w-sm">
-                          Instagram didn&apos;t return age demographics yet. This can take up to 48 hours.
-                        </p>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* 8. Links */}
           {sectionVisibility.links && links.length > 0 && (

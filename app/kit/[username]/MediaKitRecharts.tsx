@@ -161,27 +161,27 @@ export function AudienceDonutChart({ data, stroke }: { data: AudienceBucket[]; s
   const sorted = [...data].sort((a, b) => b.pct - a.pct);
   return (
     <div className="flex flex-col sm:flex-row items-center gap-5 h-full">
+      {/* Fixed size — ResponsiveContainer can measure 0 inside flex/align-center parents */}
       <div className="h-[180px] w-[180px] shrink-0">
-        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 180, height: 180 }}>
-          <PieChart>
-            <Pie
-              data={sorted}
-              dataKey="pct"
-              nameKey="age"
-              innerRadius={52}
-              outerRadius={82}
-              paddingAngle={2}
-              stroke="none"
-              startAngle={90}
-              endAngle={-270}
-            >
-              {sorted.map((_, i) => (
-                <Cell key={i} fill={stroke} fillOpacity={DONUT_SHADES[i % DONUT_SHADES.length]} />
-              ))}
-            </Pie>
-            <Tooltip content={AudienceDemographicsTooltipContent} filterNull={false} />
-          </PieChart>
-        </ResponsiveContainer>
+        <PieChart width={180} height={180}>
+          <Pie
+            data={sorted}
+            dataKey="pct"
+            nameKey="age"
+            innerRadius={52}
+            outerRadius={82}
+            paddingAngle={2}
+            stroke="none"
+            startAngle={90}
+            endAngle={-270}
+            isAnimationActive={false}
+          >
+            {sorted.map((_, i) => (
+              <Cell key={i} fill={stroke} fillOpacity={DONUT_SHADES[i % DONUT_SHADES.length]} />
+            ))}
+          </Pie>
+          <Tooltip content={AudienceDemographicsTooltipContent} filterNull={false} />
+        </PieChart>
       </div>
       <ul className="flex-1 w-full space-y-2">
         {sorted.map((d, i) => (
