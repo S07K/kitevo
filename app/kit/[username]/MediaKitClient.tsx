@@ -517,6 +517,39 @@ export function MediaKitClient({
             )}
           </div>
 
+          {/* ── Headline stat band — the numbers a brand scans for, up top ── */}
+          {(() => {
+            const ig = platformStats["instagram"];
+            const yt = platformStats["youtube"];
+            const primary = ig ?? yt;
+            if (!primary) return null;
+            const isIg = !!ig;
+            const posts = isIg && ig!.extra && typeof ig!.extra.posts === "number" ? ig!.extra.posts : null;
+            const cells: { label: string; node: React.ReactNode }[] = [
+              { label: isIg ? "Followers" : "Subscribers", node: <CountUp value={primary.followers} duration={1400} /> },
+            ];
+            if (isIg && ig!.avgEngagement > 0) {
+              cells.push({ label: "Engagement", node: <CountUp value={ig!.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
+            }
+            if (isIg && ig!.growthThisMonth > 0) {
+              cells.push({ label: "Growth · 30d", node: <span>+<CountUp value={ig!.growthThisMonth} decimals={1} suffix="%" duration={1200} /></span> });
+            }
+            if (cells.length < 4 && posts != null && posts > 0) {
+              cells.push({ label: "Posts", node: <CountUp value={posts} duration={1100} /> });
+            }
+            const cols = cells.length >= 4 ? "sm:grid-cols-4" : cells.length === 3 ? "sm:grid-cols-3" : cells.length === 2 ? "sm:grid-cols-2" : "";
+            return (
+              <div className={`grid grid-cols-1 ${cols} rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] divide-y sm:divide-y-0 sm:divide-x divide-[var(--mk-border)] overflow-hidden`}>
+                {cells.map((cell) => (
+                  <div key={cell.label} className="px-6 py-6">
+                    <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.16em] uppercase mb-2">{cell.label}</p>
+                    <p className="font-display text-[var(--mk-text)] text-3xl sm:text-4xl font-semibold tabular-nums leading-none">{cell.node}</p>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
           {/* ── Instagram Section ── */}
           {(instagramConnected || isDemoKit) && (
             <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden relative">
@@ -532,40 +565,12 @@ export function MediaKitClient({
                   </defs>
                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                 </svg>
-                <span className="font-display text-[var(--mk-text)] text-base font-semibold">Instagram</span>
+                <span className="font-display text-[var(--mk-text)] text-base font-semibold">Recent posts</span>
               </div>
-              {/* Stats row */}
-              {(() => {
-                const igStats = platformStats["instagram"];
-                if (!igStats) return null;
-                const posts = igStats.extra && typeof igStats.extra.posts === "number" ? igStats.extra.posts : null;
-                // Only show stats that have real values — a rendered "0.0%" reads as
-                // "nobody engages", when it usually means the API couldn't compute it.
-                const cells: { label: string; node: React.ReactNode }[] = [
-                  { label: "Followers", node: <CountUp value={igStats.followers} duration={1400} /> },
-                ];
-                if (igStats.avgEngagement > 0) {
-                  cells.push({ label: "Engagement", node: <CountUp value={igStats.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
-                }
-                if (posts != null && posts > 0) {
-                  cells.push({ label: "Posts", node: <CountUp value={posts} duration={1100} /> });
-                }
-                const gridCols = cells.length === 3 ? "grid-cols-3" : cells.length === 2 ? "grid-cols-2" : "grid-cols-1";
-                return (
-                  <div className={`grid ${gridCols} divide-x divide-[var(--mk-border)] border-b border-[var(--mk-border)]`}>
-                    {cells.map((cell) => (
-                      <div key={cell.label} className="px-5 py-4">
-                        <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1">{cell.label}</p>
-                        <p className="font-display text-[var(--mk-text)] text-xl font-semibold tabular-nums">{cell.node}</p>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-              {/* 9:16 posts grid */}
+              {/* 9:16 posts grid — one row */}
               {instagramPosts.length > 0 ? (
                 <div className="grid grid-cols-3 gap-[2px] p-[2px]">
-                  {instagramPosts.filter((p) => p.thumbnailUrl).slice(0, 6).map((post) => (
+                  {instagramPosts.filter((p) => p.thumbnailUrl).slice(0, 3).map((post) => (
                     <button
                       key={post.id}
                       type="button"
@@ -610,6 +615,22 @@ export function MediaKitClient({
                   <ConnectInstagramOverlay title="Connect Instagram to show your posts" />
                 </div>
               ) : null}
+              {/* See more — the grid shows a taste; link out for the full feed */}
+              {(() => {
+                const firstPermalink = instagramPosts.find((p) => p.permalink)?.permalink;
+                if (!firstPermalink) return null;
+                return (
+                  <a
+                    href={firstPermalink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 px-5 py-3.5 border-t border-[var(--mk-border)] text-sm font-medium text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors"
+                  >
+                    See more on Instagram
+                    <span aria-hidden>→</span>
+                  </a>
+                );
+              })()}
             </div>
           )}
 
