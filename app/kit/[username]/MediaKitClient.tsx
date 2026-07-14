@@ -615,13 +615,16 @@ export function MediaKitClient({
                   <ConnectInstagramOverlay title="Connect Instagram to show your posts" />
                 </div>
               ) : null}
-              {/* See more — the grid shows a taste; link out for the full feed */}
+              {/* See more — link to the IG profile (falls back to a post permalink if the handle is unknown) */}
               {(() => {
-                const firstPermalink = instagramPosts.find((p) => p.permalink)?.permalink;
-                if (!firstPermalink) return null;
+                const igHandle = platformStats["instagram"]?.extra?.username;
+                const profileUrl = typeof igHandle === "string" && igHandle
+                  ? `https://instagram.com/${igHandle}`
+                  : instagramPosts.find((p) => p.permalink)?.permalink;
+                if (!profileUrl) return null;
                 return (
                   <a
-                    href={firstPermalink}
+                    href={profileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-1.5 px-5 py-3.5 border-t border-[var(--mk-border)] text-sm font-medium text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors"

@@ -162,13 +162,14 @@ export async function getStatsForUser(userId: string): Promise<PlatformStatsWith
   });
   if (user?.instagramUserId && user?.instagramAccessToken) {
     try {
-      // followers_count, media_count from IG User node
-      const profile = await metaGet<{ followers_count?: number; media_count?: number }>(
-        `/${user.instagramUserId}?fields=followers_count,media_count`,
+      // followers_count, media_count, username (handle) from IG User node
+      const profile = await metaGet<{ followers_count?: number; media_count?: number; username?: string }>(
+        `/${user.instagramUserId}?fields=followers_count,media_count,username`,
         user.instagramAccessToken
       );
       const followers = profile.followers_count ?? 0;
       const mediaCount = profile.media_count ?? 0;
+      const igUsername = typeof profile.username === "string" ? profile.username : null;
       // Optional: fetch insights for growth (follower_count with period=day); may be restricted for small accounts.
       // Meta returns at most ~30 days of daily values, so label points with real dates —
       // never fake month names — and only chart when there's at least a week of data.
@@ -253,7 +254,7 @@ export async function getStatsForUser(userId: string): Promise<PlatformStatsWith
         followers,
         avgEngagement,
         growthThisMonth,
-        extra: { posts: mediaCount },
+        extra: { posts: mediaCount, ...(igUsername ? { username: igUsername } : {}) },
         growthDataPoints: growthDataPoints.length ? growthDataPoints : undefined,
         audienceDemographics,
       };
