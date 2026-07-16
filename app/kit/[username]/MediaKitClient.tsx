@@ -14,7 +14,6 @@ import { DEFAULT_SECTION_VISIBILITY, type SectionVisibility } from "@/lib/kit-st
 import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
 import {
   DEFAULT_KIT_APPEARANCE,
-  isDarkKitPreset,
   kitAppearanceToCssVars,
   kitAppearanceToCssVarsWithOverrides,
   kitChartColors,
@@ -432,11 +431,9 @@ export function MediaKitClient({
         <header className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between bg-[#111110] border-b border-white/[0.06] px-6 sm:px-10 h-14 text-[#fafaf9]">
           <div className="flex items-center gap-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            {appearance.logoUrl ? (
-              <img src={appearance.logoUrl} alt="Brand logo" className="h-5 w-auto object-contain brightness-0 invert" />
-            ) : (
-              <span className="text-sm font-medium text-[#fafaf9]/70 tracking-wide">Preview</span>
-            )}
+            {/* Custom brand logo is parked — see KitEditor. Kits with a saved logoUrl fall back
+                to the wordmark until the feature returns. */}
+            <span className="text-sm font-medium text-[#fafaf9]/70 tracking-wide">Preview</span>
           </div>
           {/* Only the two actions you can't do from here: edit this kit, or go back.
               (Analytics lived here too, but the dashboard opens on Activity now — same place.) */}
@@ -457,19 +454,10 @@ export function MediaKitClient({
         </header>
       ) : (
         <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-[var(--mk-bg)] border-b border-[var(--mk-border-hairline)] px-6 sm:px-10 h-14">
-          {appearance.logoUrl ? (
-            /* This slot replaces the Kitevo wordmark, so render the logo as a monochrome mark that
-               contrasts with the vibe. Without this a black logo on a dark vibe is invisible. */
-            <img
-              src={appearance.logoUrl}
-              alt="Brand logo"
-              className={`h-6 w-auto object-contain ${isDarkKitPreset(preset) ? "brightness-0 invert" : "brightness-0"}`}
-            />
-          ) : (
-            <span className="font-display text-sm tracking-wide text-[var(--mk-text-muted)] font-medium">
-              Kitevo
-            </span>
-          )}
+          {/* Custom brand logo is parked — see KitEditor. Always show the wordmark for now. */}
+          <span className="font-display text-sm tracking-wide text-[var(--mk-text-muted)] font-medium">
+            Kitevo
+          </span>
           <Link
             href="/"
             className="text-xs text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors font-medium tracking-wide"
@@ -954,15 +942,33 @@ export function MediaKitClient({
               <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-4">
                 Brands I&apos;ve worked with
               </p>
-              <div className="flex flex-wrap gap-2">
+              {/* Logo wall: uniform cell height with object-contain keeps every logo at its own
+                  aspect ratio. Logos sit on a light chip so dark marks stay legible on dark vibes. */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {brands.map((brand) => (
-                  <div key={brand.id} className="flex items-center gap-2 border border-[var(--mk-border)] rounded-full px-3.5 py-2">
-                    {brand.logoUrl && (
-                      <img src={brand.logoUrl} alt={brand.name} className="h-4 w-auto object-contain" />
+                  <div
+                    key={brand.id}
+                    className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[var(--mk-border)] bg-[var(--mk-bg-elevated)] px-3 py-4 text-center"
+                    title={brand.tagline ? `${brand.name} · ${brand.tagline}` : brand.name}
+                  >
+                    {brand.logoUrl ? (
+                      <span className="flex h-10 w-full items-center justify-center rounded-md bg-white/95 px-2">
+                        <img
+                          src={brand.logoUrl}
+                          alt={brand.name}
+                          className="max-h-7 max-w-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      </span>
+                    ) : (
+                      <span className="flex h-10 items-center text-sm font-semibold text-[var(--mk-text)]">
+                        {brand.name}
+                      </span>
                     )}
-                    <span className="text-sm font-medium text-[var(--mk-text)]">{brand.name}</span>
                     {brand.tagline && (
-                      <span className="text-xs text-[var(--mk-text-muted)]">· {brand.tagline}</span>
+                      <span className="text-[11px] leading-snug text-[var(--mk-text-muted)] line-clamp-2">
+                        {brand.tagline}
+                      </span>
                     )}
                   </div>
                 ))}
@@ -970,7 +976,11 @@ export function MediaKitClient({
             </div>
           )}
 
-          {/* 5. Rates — inverted CTA block */}
+          {/* 5. Rates — parked for now ──
+              Also removes the "Get in touch" CTA, which pointed at links[0] and silently did
+              nothing (href="#") whenever the creator had no links set. Rates data still
+              round-trips; re-enable here and in KitEditor, and give the CTA a real target
+              (the inquiry form) before bringing it back.
           {sectionVisibility.rates && rates.show && (
             <div className="rounded-2xl bg-[var(--mk-text)] px-6 py-6 flex items-center justify-between gap-4 flex-wrap">
               <div>
@@ -989,6 +999,7 @@ export function MediaKitClient({
               )}
             </div>
           )}
+          */}
 
 
           {/* 8. Links */}

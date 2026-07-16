@@ -390,7 +390,11 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
             )}
           </div>
 
-          {/* ── Logo URL (Pro) ── */}
+          {/* ── Logo URL (Pro) — parked for now ──
+              Shelved until we decide how a creator-supplied logo should behave on the kit
+              header (it has to stay legible across light and dark vibes). The data model
+              (appearance.logoUrl) still round-trips, so re-enabling is just uncommenting this
+              and the header render in MediaKitClient.
           {isPro && (
             <div>
               <p className="text-muted-foreground mb-2 text-[11px] font-semibold tracking-[0.16em] uppercase">
@@ -413,10 +417,15 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
               </p>
             </div>
           )}
+          */}
         </div>
       )}
 
-      {/* Rates */}
+      {/* Rates — parked for now ──
+          Hidden on the kit too (see MediaKitClient). The CTA it rendered pointed at
+          links[0] and did nothing when the creator had no links. Rates data still
+          round-trips, so re-enabling is just uncommenting both sides.
+
       <div className="p-6 border border-border rounded-2xl bg-background">
         <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
           Rates
@@ -487,6 +496,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
           )}
         </div>
       </div>
+      */}
 
       {/* Brands */}
       <div className="p-6 border border-border rounded-2xl bg-background">
@@ -494,35 +504,48 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
           Brands I&apos;ve worked with
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Add past partners for social proof.
+          Add past partners for social proof. Paste a logo URL to show the logo instead of the name.
         </p>
         <div className="mt-4 space-y-4">
           {brands.map((b) => (
-            <div
-              key={b.id}
-              className="p-4 rounded-2xl border border-border flex gap-3 flex-wrap"
-            >
-              <input
-                type="text"
-                placeholder="Brand name"
-                value={b.name}
-                onChange={(e) => updateBrand(b.id, { name: e.target.value })}
-                className="flex-1 min-w-[120px] px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <input
-                type="text"
-                placeholder="Tagline (e.g. Spring campaign • 2024)"
-                value={b.tagline ?? ""}
-                onChange={(e) => updateBrand(b.id, { tagline: e.target.value })}
-                className="flex-1 min-w-[120px] px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <button
-                type="button"
-                onClick={() => removeBrand(b.id)}
-                className="text-xs text-red-600 hover:underline self-center"
-              >
-                Remove
-              </button>
+            <div key={b.id} className="p-4 rounded-2xl border border-border space-y-3">
+              <div className="flex gap-3 flex-wrap">
+                <input
+                  type="text"
+                  placeholder="Brand name"
+                  value={b.name}
+                  onChange={(e) => updateBrand(b.id, { name: e.target.value })}
+                  className="flex-1 min-w-[120px] px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <input
+                  type="text"
+                  placeholder="Tagline (e.g. Spring campaign • 2024)"
+                  value={b.tagline ?? ""}
+                  onChange={(e) => updateBrand(b.id, { tagline: e.target.value })}
+                  className="flex-1 min-w-[120px] px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeBrand(b.id)}
+                  className="text-xs text-red-600 hover:underline self-center"
+                >
+                  Remove
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="url"
+                  placeholder="Logo URL (optional) — https://brand.com/logo.png"
+                  value={b.logoUrl ?? ""}
+                  onChange={(e) => updateBrand(b.id, { logoUrl: e.target.value || undefined })}
+                  className="flex-1 min-w-0 px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                {b.logoUrl && (
+                  <span className="shrink-0 h-10 w-16 rounded-lg border border-border bg-muted/40 flex items-center justify-center overflow-hidden">
+                    <img src={b.logoUrl} alt="" className="max-h-6 max-w-[52px] object-contain" />
+                  </span>
+                )}
+              </div>
             </div>
           ))}
           <button
