@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
+import { DiscoverIcon, CampaignsIcon, InboxIcon } from "@/app/components/NavIcons";
 
 const NICHES = [
   "All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel",
@@ -267,9 +268,9 @@ export default function BrandDiscover() {
     <div className="min-h-screen bg-background">
       <AppNav />
       <AppSidebar tabs={[
-        { href: "/brand", label: "Discover" },
-        { href: "/brand/campaigns", label: "Campaigns" },
-        { href: "/brand/inbox", label: "Inbox" },
+        { href: "/brand", label: "Discover", icon: <DiscoverIcon /> },
+        { href: "/brand/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
+        { href: "/brand/inbox", label: "Inbox", icon: <InboxIcon /> },
       ]} />
 
       <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">

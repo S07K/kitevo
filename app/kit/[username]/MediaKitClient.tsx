@@ -396,7 +396,7 @@ export function MediaKitClient({
               <div className="flex items-center justify-between">
                 {selectedPost.permalink ? (
                   <a href={selectedPost.permalink} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-pink-600 hover:text-pink-700 transition-colors">
-                    View on Instagram →
+                    View on Instagram
                   </a>
                 ) : <span />}
                 <button type="button" onClick={() => setSelectedPost(null)} className="text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">Close</button>
@@ -437,21 +437,9 @@ export function MediaKitClient({
               <span className="text-sm font-medium text-[#fafaf9]/70 tracking-wide">Preview</span>
             )}
           </div>
+          {/* Only the two actions you can't do from here: edit this kit, or go back.
+              (Analytics lived here too, but the dashboard opens on Activity now — same place.) */}
           <div className="flex items-center gap-3">
-            <Link
-              href={`/${creator.username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-medium text-[#fafaf9]/60 hover:text-[#fafaf9] transition-colors hidden sm:inline"
-            >
-              Profile →
-            </Link>
-            <Link
-              href="/dashboard#activity"
-              className="text-xs font-medium text-[#fafaf9]/60 hover:text-[#fafaf9] transition-colors hidden sm:inline"
-            >
-              Analytics →
-            </Link>
             <Link
               href={`/kit/edit?id=${kitId ?? ""}`}
               className="text-xs font-medium text-[#fafaf9]/60 hover:text-[#fafaf9] transition-colors"
@@ -462,7 +450,7 @@ export function MediaKitClient({
               href="/dashboard"
               className="inline-flex items-center gap-1.5 rounded-full bg-[#fafaf9]/10 px-3 py-1 text-xs font-medium text-[#fafaf9] hover:bg-[#fafaf9]/15 transition-colors"
             >
-              ← Dashboard
+              Dashboard
             </Link>
           </div>
         </header>
@@ -479,7 +467,7 @@ export function MediaKitClient({
             href="/"
             className="text-xs text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors font-medium tracking-wide"
           >
-            Create yours →
+            Create yours
           </Link>
         </header>
       )}
@@ -862,7 +850,7 @@ export function MediaKitClient({
                     className="flex items-center justify-center gap-1.5 px-5 py-3.5 border-t border-[var(--mk-border)] text-sm font-medium text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors"
                   >
                     See more on Instagram
-                    <span aria-hidden>→</span>
+                    <span aria-hidden></span>
                   </a>
                 );
               })()}
@@ -948,7 +936,7 @@ export function MediaKitClient({
                 href="/dashboard"
                 className="inline-flex h-8 items-center rounded-full bg-[var(--mk-text)] px-4 text-xs font-medium text-[var(--mk-bg)] hover:opacity-80 transition-opacity"
               >
-                Go to dashboard →
+                Go to dashboard
               </a>
             </div>
           )}
@@ -1010,7 +998,7 @@ export function MediaKitClient({
                     className="flex items-center justify-between w-full py-3 px-5 rounded-xl bg-[var(--mk-text)] text-[var(--mk-bg)] text-sm font-medium hover:opacity-90 transition-opacity"
                   >
                     {link.label}
-                    <span className="text-[var(--mk-text-soft)]">→</span>
+                    <span className="text-[var(--mk-text-soft)]"></span>
                   </a>
                 ))}
               </div>
@@ -1028,7 +1016,7 @@ export function MediaKitClient({
               href="/"
               className="text-xs text-[var(--mk-text-soft)] font-sans hover:text-[var(--mk-text)] transition-colors"
             >
-              Made with <span className="font-semibold">Kitevo</span> — create your own media kit →
+              Made with <span className="font-semibold">Kitevo</span> — create your own media kit
             </Link>
           </div>
 

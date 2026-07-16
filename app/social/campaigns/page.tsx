@@ -6,6 +6,7 @@ import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { Badge } from "@/app/components/Badge";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
+import { CampaignsIcon, InboxIcon } from "@/app/components/NavIcons";
 
 const NICHES = ["All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 
@@ -54,8 +55,8 @@ export default function CreatorCampaigns() {
   }, [niche]);
 
   const sidebarTabs = [
-    { href: "/social/campaigns", label: "Campaigns" },
-    { href: "/social/inbox", label: "Inbox", badge: unreadCount },
+    { href: "/social/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
+    { href: "/social/inbox", label: "Inbox", icon: <InboxIcon />, badge: unreadCount },
   ];
 
   return (
@@ -157,7 +158,7 @@ export default function CreatorCampaigns() {
                         {appStatus}
                       </Badge>
                     ) : (
-                      <span className="text-[10px] font-medium text-muted-foreground">View & apply →</span>
+                      <span className="text-[10px] font-medium text-muted-foreground">View & apply</span>
                     )}
                   </div>
                 </Link>

@@ -8,6 +8,7 @@ import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { Badge } from "@/app/components/Badge";
 import { DatePicker } from "@/app/components/DatePicker";
+import { DiscoverIcon, CampaignsIcon, InboxIcon } from "@/app/components/NavIcons";
 
 const NICHES = ["Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 const BUDGET_OPTIONS = ["< $500", "$500–$2k", "$2k–$10k", "$10k–$50k", "$50k+"];
@@ -167,9 +168,9 @@ export default function BrandCampaigns() {
     <div className="min-h-screen bg-background">
       <AppNav />
       <AppSidebar tabs={[
-        { href: "/brand", label: "Discover" },
-        { href: "/brand/campaigns", label: "Campaigns" },
-        { href: "/brand/inbox", label: "Inbox" },
+        { href: "/brand", label: "Discover", icon: <DiscoverIcon /> },
+        { href: "/brand/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
+        { href: "/brand/inbox", label: "Inbox", icon: <InboxIcon /> },
       ]} />
 
       <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
@@ -197,7 +198,7 @@ export default function BrandCampaigns() {
             <p className="text-sm text-red-600 dark:text-red-400">
               {actionError}
               {actionError.includes("upgrade to run more") && (
-                <Link href="/brand/settings" className="ml-1 font-semibold underline hover:no-underline">Upgrade to Brand Pro →</Link>
+                <Link href="/brand/settings" className="ml-1 font-semibold underline hover:no-underline">Upgrade to Brand Pro</Link>
               )}
             </p>
           </div>
@@ -237,7 +238,7 @@ export default function BrandCampaigns() {
               <div className="text-xs text-red-500">
                 {formError}
                 {formError.includes("upgrade to run more") && (
-                  <Link href="/brand/settings" className="ml-1 font-semibold underline hover:no-underline">Upgrade to Brand Pro →</Link>
+                  <Link href="/brand/settings" className="ml-1 font-semibold underline hover:no-underline">Upgrade to Brand Pro</Link>
                 )}
               </div>
             )}
@@ -477,8 +478,8 @@ export default function BrandCampaigns() {
                                           <span className="text-muted-foreground/30">·</span>
                                         </>
                                       )}
-                                      {kit && <Link href={`/kit/${kit.slug}`} target="_blank" className="text-xs text-muted-foreground hover:text-foreground transition-colors">View kit →</Link>}
-                                      <button type="button" onClick={() => startConversation(a.creator.id)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Message →</button>
+                                      {kit && <Link href={`/kit/${kit.slug}`} target="_blank" className="text-xs text-muted-foreground hover:text-foreground transition-colors">View kit</Link>}
+                                      <button type="button" onClick={() => startConversation(a.creator.id)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Message</button>
                                     </div>
                                   </div>
                                 </div>

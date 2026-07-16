@@ -182,7 +182,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
         </button>
       </div>
       <p className="text-[11px] text-muted-foreground -mt-6">
-        Save changes to refresh the live preview →
+        Save changes to refresh the live preview
       </p>
       {loadError && (
         <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-sm text-red-800">
@@ -246,7 +246,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
                 </button>
                 {locked && (
                   <a href="/pricing" className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors shrink-0">
-                    Upgrade →
+                    Upgrade
                   </a>
                 )}
               </div>
@@ -257,7 +257,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
           <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">Unlock live stats, growth charts & audience sections</p>
             <a href="/pricing" className="shrink-0 bg-foreground text-background rounded-full px-4 py-1.5 text-xs font-medium hover:opacity-80 transition-opacity">
-              Upgrade to Starter →
+              Upgrade to Starter
             </a>
           </div>
         )}
@@ -345,7 +345,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
                     href="/pricing"
                     className="bg-foreground text-background mt-4 inline-flex h-8 items-center rounded-full px-5 text-xs font-medium transition-opacity hover:opacity-80"
                   >
-                    Upgrade to Pro →
+                    Upgrade to Pro
                   </a>
                 </div>
               </div>

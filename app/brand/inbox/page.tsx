@@ -7,6 +7,7 @@ import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { useRealtimeStream } from "@/app/hooks/useRealtimeStream";
+import { DiscoverIcon, CampaignsIcon, InboxIcon } from "@/app/components/NavIcons";
 
 type Conversation = {
   id: string;
@@ -133,9 +134,9 @@ function BrandInboxContent() {
   const activeConvo = conversations.find((c) => c.id === activeId);
 
   const sidebarTabs = [
-    { href: "/brand", label: "Discover" },
-    { href: "/brand/campaigns", label: "Campaigns" },
-    { href: "/brand/inbox", label: "Inbox", badge: unreadCount },
+    { href: "/brand", label: "Discover", icon: <DiscoverIcon /> },
+    { href: "/brand/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
+    { href: "/brand/inbox", label: "Inbox", icon: <InboxIcon />, badge: unreadCount },
   ];
 
   return (

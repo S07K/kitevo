@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
-type SidebarTab = { href: string; label: string; badge?: number };
+type SidebarTab = { href: string; label: string; badge?: number; icon?: ReactNode };
 
 export function AppSidebar({ tabs }: { tabs: SidebarTab[] }) {
   const pathname = usePathname();
@@ -24,7 +25,10 @@ export function AppSidebar({ tabs }: { tabs: SidebarTab[] }) {
                   : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               }`}
             >
-              {t.label}
+              <span className="flex items-center gap-2.5 min-w-0">
+                {t.icon && <span className="shrink-0 opacity-80">{t.icon}</span>}
+                <span className="truncate">{t.label}</span>
+              </span>
               {t.badge && t.badge > 0 ? (
                 <span className="h-5 min-w-5 px-1 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
                   {t.badge > 9 ? "9+" : t.badge}
@@ -52,6 +56,7 @@ export function AppSidebar({ tabs }: { tabs: SidebarTab[] }) {
                   {t.badge > 9 ? "9+" : t.badge}
                 </span>
               ) : null}
+              {t.icon && <span className="shrink-0">{t.icon}</span>}
               <span>{t.label}</span>
               {active && <span className="h-0.5 w-5 rounded-full bg-foreground" />}
             </Link>

@@ -89,7 +89,7 @@ export function PasswordWall({
               disabled={loading || !password}
               className="w-full h-10 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 disabled:opacity-50 transition-opacity"
             >
-              {loading ? "Checking…" : "View kit →"}
+              {loading ? "Checking…" : "View kit"}
             </button>
           </form>
         </div>

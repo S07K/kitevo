@@ -1037,7 +1037,7 @@ function DashboardContent() {
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             <p>{instagramErrorMessages[instagramErrorParam] ?? `Instagram: ${instagramErrorParam}`}</p>
             <Link href="/help/instagram" className="mt-2 inline-block text-sm font-medium underline underline-offset-4 hover:no-underline">
-              See connection help →
+              See connection help
             </Link>
           </div>
         )}
@@ -1140,7 +1140,7 @@ function DashboardContent() {
                     href="/profile"
                     className="text-white/50 hover:text-white/80 text-xs transition-colors"
                   >
-                    Edit →
+                    Edit
                   </Link>
                   {primaryKitUrl && (
                     <>
@@ -1167,7 +1167,7 @@ function DashboardContent() {
                         rel="noopener noreferrer"
                         className="text-white/50 hover:text-white/80 text-xs font-medium transition-colors"
                       >
-                        View →
+                        View
                       </a>
                     </>
                   )}
@@ -1346,7 +1346,7 @@ function DashboardContent() {
                     href="/pricing"
                     className="mt-5 inline-flex h-10 items-center rounded-full bg-foreground px-6 text-sm font-medium text-background hover:opacity-80 transition-opacity"
                   >
-                    View plans →
+                    View plans
                   </Link>
                 </div>
               )}
@@ -1360,7 +1360,7 @@ function DashboardContent() {
                     <TextInput value={newKitName} onChange={setNewKitName} placeholder="Kit name (e.g. Fashion & Lifestyle)" />
                     <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
                     {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
-                    <PrimaryBtn onClick={createKit}>Create &amp; edit →</PrimaryBtn>
+                    <PrimaryBtn onClick={createKit}>Create &amp; edit</PrimaryBtn>
                   </div>
                 </div>
               )}
@@ -1392,7 +1392,7 @@ function DashboardContent() {
                   <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
                   {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
                   <div className="flex gap-2">
-                    <PrimaryBtn onClick={createKit}>Create &amp; edit →</PrimaryBtn>
+                    <PrimaryBtn onClick={createKit}>Create &amp; edit</PrimaryBtn>
                     <SecondaryBtn onClick={() => { setShowAddKit(false); setNewKitName(""); setNewKitSlug(""); }}>Cancel</SecondaryBtn>
                   </div>
                 </div>
@@ -1419,7 +1419,7 @@ function DashboardContent() {
                     href="/pricing?plan=starter"
                     className="shrink-0 bg-foreground text-background rounded-full px-5 py-2 text-sm font-medium hover:opacity-80 transition-opacity"
                   >
-                    Upgrade to Starter →
+                    Upgrade to Starter
                   </Link>
                 </div>
               )}
