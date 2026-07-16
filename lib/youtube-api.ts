@@ -44,40 +44,62 @@ async function refreshAccessToken(userId: string, refreshToken: string): Promise
   return data.access_token;
 }
 
-async function getRecentVideos(channelId: string, token: string): Promise<YouTubeVideo[]> {
-  // Search for recent uploads from the channel
-  const searchRes = await fetch(
-    `${YOUTUBE_API}/search?part=snippet&channelId=${channelId}&maxResults=6&order=date&type=video&access_token=${encodeURIComponent(token)}`
+/**
+ * Recent uploads from the channel's "uploads" playlist.
+ *
+ * Deliberately NOT search.list: that costs 100 quota units per call against a separate
+ * "Search Queries per day" limit, and we call this on every public kit view — roughly 100
+ * views exhausted the day's quota and videos silently disappeared for everyone.
+ * playlistItems costs 1 unit and returns the same uploads, newest first.
+ */
+async function getRecentVideos(uploadsPlaylistId: string, token: string): Promise<YouTubeVideo[]> {
+  const listRes = await fetch(
+    `${YOUTUBE_API}/playlistItems?part=snippet,contentDetails&playlistId=${uploadsPlaylistId}&maxResults=6&access_token=${encodeURIComponent(token)}`
   );
-  if (!searchRes.ok) return [];
+  if (!listRes.ok) {
+    console.error("[youtube] playlistItems failed:", listRes.status, (await listRes.text()).slice(0, 200));
+    return [];
+  }
 
-  const searchData = await searchRes.json() as {
-    items?: Array<{ id: { videoId: string }; snippet: { title: string; publishedAt: string; thumbnails: { medium?: { url: string }; high?: { url: string } } } }>;
+  const listData = (await listRes.json()) as {
+    items?: Array<{
+      contentDetails?: { videoId?: string };
+      snippet?: {
+        title?: string;
+        publishedAt?: string;
+        thumbnails?: { medium?: { url: string }; high?: { url: string } };
+      };
+    }>;
   };
 
-  const videoIds = (searchData.items ?? []).map((i) => i.id.videoId).filter(Boolean);
+  const items = (listData.items ?? []).filter((i) => i.contentDetails?.videoId);
+  const videoIds = items.map((i) => i.contentDetails!.videoId!);
   if (videoIds.length === 0) return [];
 
-  // Fetch stats for those videos
+  // Stats for those videos (1 unit).
   const statsRes = await fetch(
     `${YOUTUBE_API}/videos?part=statistics&id=${videoIds.join(",")}&access_token=${encodeURIComponent(token)}`
   );
+  if (!statsRes.ok) {
+    console.error("[youtube] video statistics failed:", statsRes.status);
+  }
   const statsData = statsRes.ok
-    ? await statsRes.json() as { items?: Array<{ id: string; statistics: { viewCount?: string; likeCount?: string } }> }
+    ? ((await statsRes.json()) as { items?: Array<{ id: string; statistics: { viewCount?: string; likeCount?: string } }> })
     : { items: [] };
 
   const statsMap = new Map((statsData.items ?? []).map((i) => [i.id, i.statistics]));
 
-  return (searchData.items ?? []).map((item) => {
-    const stats = statsMap.get(item.id.videoId) ?? {};
+  return items.map((item) => {
+    const id = item.contentDetails!.videoId!;
+    const stats = statsMap.get(id) ?? {};
     return {
-      id: item.id.videoId,
-      title: item.snippet.title,
-      thumbnailUrl: item.snippet.thumbnails.high?.url ?? item.snippet.thumbnails.medium?.url ?? "",
+      id,
+      title: item.snippet?.title ?? "",
+      thumbnailUrl: item.snippet?.thumbnails?.high?.url ?? item.snippet?.thumbnails?.medium?.url ?? "",
       viewCount: parseInt(stats.viewCount ?? "0", 10),
       likeCount: parseInt(stats.likeCount ?? "0", 10),
-      publishedAt: item.snippet.publishedAt,
-      url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+      publishedAt: item.snippet?.publishedAt ?? "",
+      url: `https://www.youtube.com/watch?v=${id}`,
     };
   });
 }
@@ -104,23 +126,31 @@ export async function getYouTubeStatsForUser(userId: string): Promise<YouTubeSta
     }
   }
 
-  const [channelRes, recentVideos] = await Promise.all([
-    fetch(`${YOUTUBE_API}/channels?part=statistics,snippet&id=${user.youtubeChannelId}&access_token=${encodeURIComponent(token)}`),
-    getRecentVideos(user.youtubeChannelId, token),
-  ]);
+  // One channels call gets stats AND the uploads playlist id (contentDetails is free here),
+  // which getRecentVideos then reads instead of the expensive search endpoint.
+  const channelRes = await fetch(
+    `${YOUTUBE_API}/channels?part=statistics,snippet,contentDetails&id=${user.youtubeChannelId}&access_token=${encodeURIComponent(token)}`
+  );
 
-  if (!channelRes.ok) return null;
+  if (!channelRes.ok) {
+    console.error("[youtube] channels failed:", channelRes.status, (await channelRes.text()).slice(0, 200));
+    return null;
+  }
 
   const data = await channelRes.json() as {
     items?: Array<{
       id: string;
       snippet: { title: string };
       statistics: { subscriberCount?: string; viewCount?: string; videoCount?: string };
+      contentDetails?: { relatedPlaylists?: { uploads?: string } };
     }>;
   };
 
   const channel = data.items?.[0];
   if (!channel) return null;
+
+  const uploadsPlaylistId = channel.contentDetails?.relatedPlaylists?.uploads;
+  const recentVideos = uploadsPlaylistId ? await getRecentVideos(uploadsPlaylistId, token) : [];
 
   return {
     channelId: channel.id,
