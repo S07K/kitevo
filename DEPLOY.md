@@ -69,6 +69,13 @@ The price ids are read dynamically as
 `STRIPE_PRICE_ID_${tierId.toUpperCase()}${suffix}` (`config/subscriptions.ts`),
 so a missing one fails at checkout, not at build. Set all six.
 
+`NEXT_PUBLIC_APP_URL` is guarded: `scripts/vercel-build.cjs` fails a **production**
+build if it is unset, not https, pointing at localhost, or carrying a trailing
+slash. Preview and local builds only warn. Without that guard the failure is
+silent rather than loud — `lib/app-url.ts` falls back to `http://localhost:3000`,
+which would publish "our website is located at localhost:3000" on the privacy
+page and point every OAuth redirect there.
+
 ## 4. Stripe live mode
 
 - Flip the dashboard to live mode and recreate the six prices (test prices do not
