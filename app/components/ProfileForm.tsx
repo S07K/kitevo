@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { ProfilePayload, ProfileLink } from "@/app/api/me/profile/route";
+import { APP_HOST } from "@/lib/app-url";
 
 export type ProfileFormProfile = ProfilePayload & {
   email?: string;
@@ -343,7 +344,7 @@ export function ProfileForm({
                 <p className="mt-1 text-xs text-red-500 font-medium">{externalError}</p>
               ) : username ? (
                 <p className={`mt-1 text-xs ${usernameAvailable === true ? "text-green-600" : "text-muted-foreground"}`}>
-                  kitevo.com/{username.trim().toLowerCase().replace(/\s+/g, "-")}
+                  {APP_HOST}/{username.trim().toLowerCase().replace(/\s+/g, "-")}
                 </p>
               ) : null}
             </div>

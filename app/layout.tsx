@@ -15,7 +15,7 @@ const dmSans = DM_Sans({
   subsets: ["latin"],
 });
 
-const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://kitevo.com").replace(/\/$/, "");
+const BASE_URL = APP_URL.replace(/\/$/, "");
 
 export const metadata: Metadata = {
   title: {
@@ -43,6 +43,7 @@ export const metadata: Metadata = {
 };
 
 import type { Viewport } from 'next'
+import { APP_URL } from "@/lib/app-url";
 
 export const viewport: Viewport = {
   width: 'device-width',

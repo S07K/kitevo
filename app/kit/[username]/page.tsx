@@ -20,10 +20,11 @@ import { MediaKitClient } from "./MediaKitClient";
 import { PasswordWall } from "./PasswordWall";
 import { DEFAULT_KIT_APPEARANCE } from "@/lib/kit-appearance";
 import { cookies } from "next/headers";
+import { APP_URL } from "@/lib/app-url";
 
 const DEMO_SLUGS = ["demo", "alexchen", "my-kit"];
 
-const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://kitevo.com").replace(/\/$/, "");
+const BASE_URL = APP_URL.replace(/\/$/, "");
 
 export async function generateMetadata({
   params,

@@ -450,7 +450,7 @@ function KitCard({
                 <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-2">Public link</p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 min-w-0 truncate text-xs text-foreground bg-muted rounded-lg px-3 py-2 font-mono">
-                    {typeof window !== "undefined" ? window.location.origin : "https://kitevo.com"}/kit/{kit.slug}
+                    {APP_HOST}/kit/{kit.slug}
                   </code>
                   <button
                     type="button"

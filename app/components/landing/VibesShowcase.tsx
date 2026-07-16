@@ -1,8 +1,8 @@
 "use client";
 
-import { InView } from "@/lib/motion";
+import { InView, useReducedMotion } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
 type Vibe = {
   id: string;
@@ -139,7 +139,25 @@ function KitPreview({ vibe }: { vibe: Vibe }): ReactNode {
 
 export function VibesShowcase(): ReactNode {
   const [active, setActive] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const vibe = VIBES[active]!;
+
+  // Below lg the selector list is hidden (it was a cramped horizontal scroll), so the
+  // preview auto-advances through the vibes instead. Desktop stays click-to-select.
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (isDesktop || prefersReducedMotion) return;
+    const id = setInterval(() => setActive((a) => (a + 1) % VIBES.length), 3800);
+    return () => clearInterval(id);
+  }, [isDesktop, prefersReducedMotion]);
 
   return (
     <section
@@ -162,8 +180,8 @@ export function VibesShowcase(): ReactNode {
       </InView>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.6fr] lg:gap-10">
-        {/* Vibe selector — left column */}
-        <div className="flex flex-row gap-3 overflow-x-auto pb-1 lg:flex-col lg:overflow-x-visible lg:pb-0">
+        {/* Vibe selector — desktop only; mobile auto-advances and shows a caption below */}
+        <div className="hidden gap-3 lg:flex lg:flex-col">
           {VIBES.map((v, i) => (
             <button
               key={v.id}
@@ -204,20 +222,48 @@ export function VibesShowcase(): ReactNode {
         </div>
 
         {/* Kit preview — right column */}
-        <div className="aspect-4/3 overflow-hidden rounded-3xl shadow-xl lg:aspect-auto lg:min-h-[420px]">
-          <div className="h-full">
-            <KitPreview vibe={vibe} />
+        <div>
+          <div className="aspect-4/3 overflow-hidden rounded-3xl shadow-xl lg:aspect-auto lg:min-h-[420px]">
+            <div className="h-full">
+              <KitPreview vibe={vibe} />
+            </div>
+          </div>
+
+          {/* Mobile caption — carries the name/tagline that used to live in the selector */}
+          <div className="mt-5 flex flex-col items-center gap-1.5 text-center lg:hidden">
+            <div className="flex items-center gap-2">
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10"
+                style={{ backgroundColor: vibe.bg }}
+              />
+              <span className="text-foreground text-sm font-semibold">{vibe.name}</span>
+            </div>
+            <p className="text-muted-foreground text-xs">{vibe.tagline}</p>
+            <p className="text-muted-foreground/70 text-[10px] font-medium tracking-wider uppercase">
+              {vibe.for}
+            </p>
+            <div className="mt-2 flex items-center gap-1.5" aria-hidden>
+              {VIBES.map((v, i) => (
+                <span
+                  key={v.id}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-500",
+                    i === active ? "bg-foreground w-5" : "bg-border w-1.5"
+                  )}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Pro badge */}
-      <InView className="mt-8 flex items-center gap-3">
-        <div className="bg-foreground text-background inline-flex items-center rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide">
+      {/* Pro badge — shrink-0 + nowrap, or the pill collapses and wraps to two lines */}
+      <InView className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+        <div className="bg-foreground text-background inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide">
           Pro feature
         </div>
-        <p className="text-muted-foreground text-sm">
-          Vibe customization is available on the Pro plan — plus color palette, fonts, logo upload, and inquiry form.
+        <p className="text-muted-foreground text-sm text-pretty">
+          Vibe customization comes with Pro, along with your own colour palette, fonts, logo, and a brand inquiry form.
         </p>
       </InView>
     </section>

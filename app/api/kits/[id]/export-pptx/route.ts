@@ -7,6 +7,7 @@ const PptxGenJS = require("pptxgenjs");
 import { parseKitAppearance } from "@/lib/kit-appearance";
 import { getStatsForUser } from "@/lib/instagram-api";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
+import { APP_URL, APP_HOST } from "@/lib/app-url";
 
 function pj<T>(raw: string, fallback: T): T {
   try { return (JSON.parse(raw) ?? fallback) as T; }
@@ -63,7 +64,7 @@ export async function GET(
   const creatorName = user.name ?? "Creator";
   const username = user.username ?? "";
   const bio = user.bio ?? "";
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://kitevo.com";
+  const appUrl = APP_URL;
   const kitUrl = `${appUrl}/kit/${kit.slug}`;
 
   let igStats: { followers: number; avgEngagement: number; growthThisMonth: number } | null = null;
@@ -247,7 +248,7 @@ export async function GET(
   }
 
   // Platform note bottom
-  s2.addText("Data via Instagram Graph API · kitevo.com", {
+  s2.addText(`Data via Instagram Graph API · ${APP_HOST}`, {
     x: MARGIN, y: H - 0.38, w: CW, h: 0.25,
     fontSize: 8, fontFace: "Calibri", color: "CCCCCC", margin: 0,
   });
@@ -396,7 +397,7 @@ export async function GET(
   });
 
   // Powered by
-  s4.addText("Created with Kitevo · kitevo.com", {
+  s4.addText(`Created with Kitevo · ${APP_HOST}`, {
     x: MARGIN, y: H - 0.4, w: CW, h: 0.25,
     fontSize: 8, fontFace: "Calibri", color: theme.coverMuted,
     align: "right", margin: 0,

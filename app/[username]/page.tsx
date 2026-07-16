@@ -4,8 +4,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { parseKitAppearance } from "@/lib/kit-appearance";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
+import { APP_URL, APP_HOST } from "@/lib/app-url";
 
-const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://kitevo.com").replace(/\/$/, "");
+const BASE_URL = APP_URL.replace(/\/$/, "");
 
 // Routes that must not be matched by [username]
 const RESERVED = new Set([
@@ -287,7 +288,7 @@ export default async function CreatorProfilePage({
                       </div>
                       <div className="p-4">
                         <p className="text-sm font-semibold text-foreground truncate">{kit.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">kitevo.com/kit/{kit.slug}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{APP_HOST}/kit/{kit.slug}</p>
                         <p className="mt-3 text-xs font-medium text-foreground group-hover:underline">View kit</p>
                       </div>
                     </Link>
