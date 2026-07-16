@@ -456,7 +456,13 @@ export function MediaKitClient({
       ) : (
         <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-[var(--mk-bg)] border-b border-[var(--mk-border-hairline)] px-6 sm:px-10 h-14">
           {/* Custom brand logo is parked — see KitEditor. Always show the wordmark for now. */}
-          <span className="font-display text-sm tracking-wide text-[var(--mk-text-muted)] font-medium">
+          {/*
+            Mono, like the footer: this is the creator's page and it goes to brands, so the
+            mark identifies without co-branding their pitch. `auto` takes currentColor, so
+            it rides --mk-text-muted across all five vibes.
+          */}
+          <span className="font-display text-sm tracking-wide text-[var(--mk-text-muted)] font-medium inline-flex items-center gap-1.5">
+            <LogoMark size={15} mono on="auto" />
             Kitevo
           </span>
           <Link
