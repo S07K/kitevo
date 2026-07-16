@@ -208,7 +208,7 @@ export default function ProfilePage() {
                 rel="noopener noreferrer"
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
               >
-                View public profile →
+                View public profile
               </Link>
             )}
           </div>
@@ -346,7 +346,7 @@ export default function ProfilePage() {
               href="/brand?tab=settings"
               className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
             >
-              Edit brand profile →
+              Edit brand profile
             </a>
           </div>
         )}
@@ -401,7 +401,7 @@ export default function ProfilePage() {
             }}
             className="text-red-500 hover:text-red-600 text-sm font-medium transition-colors"
           >
-            Sign out →
+            Sign out
           </button>
         </div>
 

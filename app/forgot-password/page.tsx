@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthLayout
       title="Forgot password"
-      subtitle={<><Link href="/login" className="text-foreground font-medium underline underline-offset-4 hover:no-underline">← Back to log in</Link></>}
+      subtitle={<><Link href="/login" className="text-foreground font-medium underline underline-offset-4 hover:no-underline">Back to log in</Link></>}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

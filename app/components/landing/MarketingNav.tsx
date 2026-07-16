@@ -181,7 +181,7 @@ export function MarketingNav(): ReactNode {
                     onClick={close}
                     className="shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    Dashboard →
+                    Dashboard
                   </Link>
                 </motion.div>
               )}
@@ -219,7 +219,7 @@ export function MarketingNav(): ReactNode {
                     onClick={close}
                     className="focus-ring bg-foreground text-background flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-opacity hover:opacity-80"
                   >
-                    Go to Dashboard →
+                    Go to Dashboard
                   </Link>
                 ) : (
                   <>

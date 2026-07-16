@@ -21,7 +21,7 @@ export default function InstagramHelpPage() {
           href="/dashboard"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
         >
-          ← Back to dashboard
+          Back to dashboard
         </Link>
 
         <h1 className="font-display text-3xl font-semibold text-foreground">
@@ -40,7 +40,7 @@ export default function InstagramHelpPage() {
           </p>
           <ol className="mt-4 list-decimal list-inside space-y-3 text-sm text-muted-foreground">
             <li>
-              <strong className="text-foreground">Switch to a Professional account</strong> — In the Instagram app: Settings → Account → Switch to professional account (Creator or Business).
+              <strong className="text-foreground">Switch to a Professional account</strong> — In the Instagram app: Settings Account Switch to professional account (Creator or Business).
             </li>
             <li>
               <strong className="text-foreground">Create or use a Facebook Page</strong> — You need a Facebook Page. Create one at{" "}
@@ -50,7 +50,7 @@ export default function InstagramHelpPage() {
               .
             </li>
             <li>
-              <strong className="text-foreground">Link Instagram to the Page</strong> — In the Instagram app: Settings → Account → Linked accounts → Facebook, and link to your Page. Or in Meta Business Suite / Facebook Page settings, connect your Instagram account to the Page.
+              <strong className="text-foreground">Link Instagram to the Page</strong> — In the Instagram app: Settings Account Linked accounts Facebook, and link to your Page. Or in Meta Business Suite / Facebook Page settings, connect your Instagram account to the Page.
             </li>
           </ol>
         </section>

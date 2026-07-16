@@ -246,6 +246,43 @@ export function Hero(): ReactNode {
         >
           Free plan available · No credit card required
         </motion.p>
+
+        {/* The floating cards are lg-only, which left the hero empty on phones. Show a compact
+            fan of the same vibes here so mobile still sees what Kitevo actually makes. */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: softEase, delay: 1 }}
+          className="mt-12 flex items-center justify-center lg:hidden"
+          aria-hidden
+        >
+          {KIT_CARDS.slice(0, 3).map((card, i) => (
+            <div
+              key={card.vibe}
+              style={{
+                backgroundColor: card.bg,
+                transform: `rotate(${card.rotate * 0.8}deg)`,
+                marginLeft: i === 0 ? 0 : -18,
+                zIndex: i,
+              }}
+              className="w-28 shrink-0 rounded-2xl p-3 shadow-xl sm:w-32"
+            >
+              <div className="mb-2.5 h-7 w-7 rounded-full" style={{ backgroundColor: card.accent, opacity: 0.9 }} />
+              <div className="space-y-1">
+                <div className="h-1.5 w-14 rounded-full opacity-70" style={{ backgroundColor: card.accent }} />
+                <div className="h-1 w-9 rounded-full opacity-40" style={{ backgroundColor: card.accent }} />
+              </div>
+              <div className="mt-2.5">
+                <span
+                  className="rounded-sm px-1.5 py-0.5 text-[9px] font-semibold tracking-wide"
+                  style={{ backgroundColor: card.accent, color: card.bg }}
+                >
+                  {card.vibe}
+                </span>
+              </div>
+            </div>
+          ))}
+        </motion.div>
       </motion.div>
     </section>
   );

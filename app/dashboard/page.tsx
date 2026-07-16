@@ -654,8 +654,6 @@ function DashboardContent() {
   const [activeTab, setActiveTab] = useState<"inbox" | "activity">(() =>
     typeof window !== "undefined" && window.location.hash === "#inbox" ? "inbox" : "activity"
   );
-  const [urlCopied, setUrlCopied] = useState(false);
-  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchParams = useSearchParams();
   const success = searchParams.get("success") === "true";
   const sessionId = searchParams.get("session_id") ?? null;
@@ -957,17 +955,6 @@ function DashboardContent() {
   const avatarInitials = profile?.name
     ? profile.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?";
-  const primaryKit = kits[0] ?? null;
-  const primaryKitUrl = primaryKit ? `${APP_HOST}/kit/${primaryKit.slug}` : null;
-
-  const handleCopyUrl = () => {
-    if (!primaryKit) return;
-    navigator.clipboard.writeText(`${APP_URL}/kit/${primaryKit.slug}`).catch(() => {});
-    setUrlCopied(true);
-    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
-    copyTimeoutRef.current = setTimeout(() => setUrlCopied(false), 2000);
-  };
-
   // Aggregate stats
   const instagramStats = platformStats?.["instagram"] ?? null;
   const totalViews = kits.reduce((sum, k) => sum + (k.viewCount ?? 0), 0);
@@ -1134,43 +1121,19 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                {/* Actions — right side */}
-                <div className="flex items-center gap-2 shrink-0">
+                {/* Actions — just edit-profile. Copy-link and view-kit live on each kit card below. */}
+                <div className="flex items-center shrink-0">
                   <Link
                     href="/profile"
-                    className="text-white/50 hover:text-white/80 text-xs transition-colors"
+                    aria-label="Edit profile"
+                    title="Edit profile"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors"
                   >
-                    Edit
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
                   </Link>
-                  {primaryKitUrl && (
-                    <>
-                      <span className="text-white/20 text-xs">·</span>
-                      <button
-                        type="button"
-                        onClick={handleCopyUrl}
-                        className="text-white/50 hover:text-white/80 transition-colors"
-                        aria-label="Copy kit URL"
-                      >
-                        {urlCopied ? (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        ) : (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                          </svg>
-                        )}
-                      </button>
-                      <a
-                        href={`/kit/${primaryKit!.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white/50 hover:text-white/80 text-xs font-medium transition-colors"
-                      >
-                        View
-                      </a>
-                    </>
-                  )}
                 </div>
               </div>
             </div>

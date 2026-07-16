@@ -130,7 +130,7 @@ function KitPreview({ vibe }: { vibe: Vibe }): ReactNode {
           className="flex h-8 items-center justify-center rounded-lg text-[10px] font-semibold tracking-wide"
           style={{ backgroundColor: vibe.accent, color: vibe.accentFg }}
         >
-          Collab with me →
+          Collab with me
         </div>
       </div>
     </div>

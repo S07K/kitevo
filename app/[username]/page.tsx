@@ -141,7 +141,7 @@ export default async function CreatorProfilePage({
             Kitevo
           </Link>
           <Link href="/signup" className="bg-foreground text-background rounded-full px-4 py-1.5 text-xs font-medium hover:opacity-80 transition-opacity">
-            Create your kit →
+            Create your kit
           </Link>
         </div>
       </header>
@@ -288,7 +288,7 @@ export default async function CreatorProfilePage({
                       <div className="p-4">
                         <p className="text-sm font-semibold text-foreground truncate">{kit.name}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">kitevo.com/kit/{kit.slug}</p>
-                        <p className="mt-3 text-xs font-medium text-foreground group-hover:underline">View kit →</p>
+                        <p className="mt-3 text-xs font-medium text-foreground group-hover:underline">View kit</p>
                       </div>
                     </Link>
                   );

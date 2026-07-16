@@ -21,7 +21,7 @@ const FAQS: QA[] = [
       <>
         We use the official Instagram Graph API. You authorize access through Meta&apos;s secure OAuth flow, and we pull your follower count, engagement rate, recent posts, and audience demographics (age, gender, top locations). We never see your password.{" "}
         <Link href="/help/instagram" className="underline underline-offset-4 hover:opacity-70 transition-opacity">
-          Connection troubleshooting guide →
+          Connection troubleshooting guide
         </Link>
       </>
     ),

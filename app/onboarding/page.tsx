@@ -377,7 +377,7 @@ function OnboardingContent() {
                       </p>
                     </div>
                     <p className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                      Get a kit →
+                      Get a kit
                     </p>
                   </button>
 
@@ -404,7 +404,7 @@ function OnboardingContent() {
                       </p>
                     </div>
                     <p className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                      Find creators →
+                      Find creators
                     </p>
                   </button>
                 </div>
@@ -488,7 +488,7 @@ function OnboardingContent() {
                 onClick={() => { setAccountType(null); setBrandStep(0); }}
                 className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
               >
-                ← Change role
+                Change role
               </button>
               <button
                 type="button"
@@ -496,7 +496,7 @@ function OnboardingContent() {
                 onClick={handleBrandFinish}
                 className="bg-foreground text-background inline-flex h-11 items-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50 ml-auto"
               >
-                {brandSaving ? "Saving…" : "Enter Kitevo →"}
+                {brandSaving ? "Saving…" : "Enter Kitevo"}
               </button>
             </div>
           </div>
@@ -579,7 +579,7 @@ function OnboardingContent() {
                     } finally { setProfileSaving(false); }
                   }}
                   saving={profileSaving}
-                  submitLabel="Save & continue →"
+                  submitLabel="Save & continue"
                 />
               )}
             </div>
@@ -778,7 +778,7 @@ function OnboardingContent() {
                     onClick={() => setCurrentStep(2)}
                     className="bg-foreground text-background inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
                   >
-                    ← Choose a plan
+                    Choose a plan
                   </button>
                 </div>
               ) : kits.length > 0 || kitCreated ? (
@@ -830,7 +830,7 @@ function OnboardingContent() {
                     }}
                     className="bg-foreground text-background inline-flex h-10 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
                   >
-                    {createKitLoading ? "Creating…" : "Create kit →"}
+                    {createKitLoading ? "Creating…" : "Create kit"}
                   </button>
                 </div>
               )}
@@ -859,7 +859,7 @@ function OnboardingContent() {
               disabled={finishing}
               className="bg-foreground text-background inline-flex h-11 items-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
             >
-              {finishing ? "Taking you there…" : "Go to Dashboard →"}
+              {finishing ? "Taking you there…" : "Go to Dashboard"}
             </button>
           ) : currentStep === 0 ? (
             // Profile step — button submits the form (triggers validation + save)
@@ -869,7 +869,7 @@ function OnboardingContent() {
               disabled={profileSaving}
               className="bg-foreground text-background inline-flex h-11 items-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
             >
-              {profileSaving ? "Saving…" : "Next →"}
+              {profileSaving ? "Saving…" : "Next"}
             </button>
           ) : (
             <button
@@ -877,7 +877,7 @@ function OnboardingContent() {
               onClick={() => setCurrentStep((s) => Math.min(totalSteps - 1, s + 1))}
               className="bg-foreground text-background inline-flex h-11 items-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80"
             >
-              {currentStep === 1 && !instagramConnected && !youtubeConnected ? "Skip for now →" : "Next →"}
+              {currentStep === 1 && !instagramConnected && !youtubeConnected ? "Skip for now" : "Next"}
             </button>
           )}
         </div>

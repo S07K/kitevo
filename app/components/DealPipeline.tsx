@@ -229,7 +229,7 @@ function DetailModal({ inq, onClose, onMove }: DetailModalProps) {
             href={`mailto:${inq.email}?subject=Re: collaboration inquiry`}
             className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
           >
-            Reply via email →
+            Reply via email
           </a>
           <button
             type="button"

@@ -53,7 +53,7 @@ export function MarketingFooter(): ReactNode {
             href="/signup"
             className="focus-ring bg-background text-foreground inline-flex h-12 shrink-0 items-center rounded-full px-7 text-sm font-medium transition-opacity hover:opacity-80"
           >
-            Start building free →
+            Start building free
           </Link>
         </div>
       </div>
