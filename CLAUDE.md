@@ -16,6 +16,7 @@ Stack: Next.js 15 App Router, Prisma + Neon (Postgres), NextAuth, Stripe, Tailwi
 - **Prisma**: Run `prisma generate` after schema changes. For NOT NULL columns on existing rows, use raw SQL `ALTER TABLE` via `prisma db execute --stdin` before `db push`
 - **Avatar/logo uploads**: Stored as base64 data URLs in DB (resized client-side before upload). Max ~200k chars. Pattern: resize in browser → POST data URL → store in DB. **Instagram photo import** downloads the image server-side to base64 (`lib/image-to-data-url.ts`) — never stores the expiring `fbcdn` CDN URL. Render avatars via `AvatarImg` (falls back to initials on load error). Backfill: `scripts/backfill-instagram-avatars.ts`
 - **Dark mode**: Managed via `next-themes`, class applied to `<html>`. ThemeToggle lives in NavAvatar popup only.
+- **Brand mark**: a bold K overprinted 3x, riso-style (indigo → terracotta → cream), from `lib/logo.ts`. The offset layers read as earlier impressions with the current one on top — that's the "evo" in Kit+evo (name = *the kit, evolved*; it is **not** "kite"). Never hand-edit the mark in a graphic; change `lib/logo.ts` and re-run the generate script. Below ~20px use the `mono` variant.
 - **Kit page honesty rules**: never render fabricated stats. No placeholder/synthetic growth curves on live kits (empty state instead; `buildSyntheticGrowthFromFollowers` is demo-only), hide stats that are 0/unavailable (e.g. engagement), growth chart = cumulative followers over last 30 days rebuilt from Meta's daily `follower_count` deltas (needs ≥7 days). "Live — synced from Instagram" indicator only shows for real connected kits.
 - **Kit page layout**: hero → combined stats block (total audience headline when IG+YT both connected; platform-tagged tiles — IG: followers/engagement/30d growth, YT: subscribers/total views/avg views-per-video) → typical post performance (avg likes/comments/reach) → growth chart + audience-age donut (2-col, equal height) → Instagram posts (one row of 3 + "See more" → profile via `stats.extra.username`) → YouTube videos → brands → rates → contact. Hero shows niches + location.
 - **Kit charts**: audience age uses a fixed-size `PieChart` (donut), NOT ResponsiveContainer (measures 0 inside flex/centered parents). Audience gender = CSS segmented split bar; top countries = CSS flag + progress-bar list (ISO code → name via `Intl.DisplayNames`, flag emoji from code). IG demographics fetch age/gender/country breakdowns in parallel (`fetchBreakdownPayload`). YouTube analytics from Data API: subscribers, total views, video count, per-video views/likes (demographics need the heavier YouTube Analytics API).
@@ -171,6 +172,9 @@ Phase 3 — Business tier:
 | `lib/get-kit-by-slug.ts` | Kit loader with verifiedTier |
 | `prisma/schema.prisma` | Full DB schema |
 | `app/globals.css` | Tailwind v4 dark mode fix + cursor-pointer globals |
+| `lib/logo.ts` | **Single source of truth for the mark** — K path, overprint offsets, colours. Framework-free so the app and the node render script share it |
+| `app/components/Logo.tsx` | `<LogoMark>` — the mark in React (`on="ink"/"cream"`, `mono` for tiny sizes) |
+| `scripts/generate-social-graphics.ts` | `npx tsx scripts/generate-social-graphics.ts` → regenerates `public/og-default.png`, `brand/social/*`, and `app/icon.svg` from `lib/logo.ts` |
 
 ---
 

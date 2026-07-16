@@ -3,6 +3,7 @@
 import { softEase, useReducedMotion } from "@/lib/motion";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
+import { LogoMark } from "@/app/components/Logo";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -65,8 +66,10 @@ export function MarketingNav(): ReactNode {
           {/* Logo */}
           <Link
             href="/"
-            className="focus-ring font-display text-foreground shrink-0 rounded-sm text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
+            className="focus-ring font-display text-foreground flex shrink-0 items-center gap-2 rounded-sm text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
           >
+            {/* `auto` = top impression inherits text-foreground, so it flips with the theme. */}
+            <LogoMark size={22} on="auto" />
             Kitevo
           </Link>
 

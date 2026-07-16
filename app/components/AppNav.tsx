@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { LogoMark } from "./Logo";
 import { NavAvatar } from "./NavAvatar";
 
 type NavLink = { href: string; label: string; primary?: boolean; external?: boolean };
@@ -19,9 +20,11 @@ export function AppNav({
     <nav className="bg-background/95 border-border fixed left-0 right-0 top-0 z-50 flex items-center gap-6 border-b px-5 backdrop-blur-md sm:px-8" style={{ height: 57 }}>
       <Link
         href="/"
-        className="font-display text-foreground shrink-0 text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
+        className="font-display text-foreground flex shrink-0 items-center gap-2 text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
         onClick={() => setMenuOpen(false)}
       >
+        {/* `auto` = top impression inherits text-foreground, so it flips with the theme. */}
+        <LogoMark size={22} on="auto" />
         Kitevo
       </Link>
 
