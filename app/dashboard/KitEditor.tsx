@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import {
   MOCK_RATES,
   MOCK_BRANDS,
+  BRAND_LOGO_RATIO_OPTIONS,
   type KitRates,
   type BrandPartner,
+  type BrandLogoRatio,
 } from "@/lib/mock-data";
 import {
   getKitContent,
@@ -546,6 +548,21 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
                   </span>
                 )}
               </div>
+              {b.logoUrl && (
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-muted-foreground shrink-0">Logo shape</label>
+                  <select
+                    value={b.logoRatio ?? "auto"}
+                    onChange={(e) => updateBrand(b.id, { logoRatio: e.target.value as BrandLogoRatio })}
+                    className="px-3 py-2 border border-border rounded-xl text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {BRAND_LOGO_RATIO_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">Match your image so it isn&apos;t boxed in.</p>
+                </div>
+              )}
             </div>
           ))}
           <button

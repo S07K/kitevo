@@ -15,6 +15,7 @@ import {
   type InsightDemographicsPayload,
 } from "@/lib/instagram-demographics";
 import { writeInstagramStatsCache } from "@/lib/creator-stats-cache";
+import { cachedPlatformCall } from "@/lib/platform-cache";
 
 const GRAPH = "https://graph.facebook.com/v18.0";
 /** Demographic insights — use a recent Graph version; param name is often `breakdown` (singular), not `breakdowns`. */
@@ -164,7 +165,7 @@ export async function getInstagramProfilePictureForUser(userId: string): Promise
 }
 
 /** Fetch Instagram stats for a user. Uses token from DB if set; else mock. Refreshes token when near expiry; on 190 falls back to mock. */
-export async function getStatsForUser(userId: string): Promise<PlatformStatsWithCharts> {
+async function fetchStatsForUser(userId: string): Promise<PlatformStatsWithCharts> {
   await refreshInstagramTokenIfNeeded(userId);
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -283,7 +284,7 @@ export async function getStatsForUser(userId: string): Promise<PlatformStatsWith
 }
 
 /** Fetch recent Instagram posts with engagement metrics. Falls back to mock if no token. */
-export async function getRecentPostsForUser(userId: string): Promise<FetchedPost[]> {
+async function fetchRecentPostsForUser(userId: string): Promise<FetchedPost[]> {
   await refreshInstagramTokenIfNeeded(userId);
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -362,4 +363,13 @@ export async function getRecentPostsForUser(userId: string): Promise<FetchedPost
   }
   const { getInstagramRecentPosts } = await import("@/lib/platforms/instagram");
   return getInstagramRecentPosts();
+}
+
+/** Cached wrappers — the kit page calls these on every public view. */
+export function getStatsForUser(userId: string): Promise<PlatformStatsWithCharts> {
+  return cachedPlatformCall(`ig-stats:${userId}`, () => fetchStatsForUser(userId));
+}
+
+export function getRecentPostsForUser(userId: string): Promise<FetchedPost[]> {
+  return cachedPlatformCall(`ig-posts:${userId}`, () => fetchRecentPostsForUser(userId));
 }

@@ -91,14 +91,37 @@ export const MOCK_RATES: KitRates = {
   ctaLabel: "Get in touch",
 };
 
+/**
+ * Shape of the logo's frame on the kit's brand board. Creators pick the one matching the
+ * image they uploaded, so a wide wordmark isn't boxed into a square (and vice versa).
+ */
+export type BrandLogoRatio = "auto" | "wide" | "square" | "tall";
+
 /** Past brand / case study for social proof. */
 export interface BrandPartner {
   id: string;
   name: string;
   logoUrl?: string;
+  /** Frame the logo is displayed in. Defaults to "auto" (a short, neutral strip). */
+  logoRatio?: BrandLogoRatio;
   /** Short line e.g. "Campaign • Q1 2024" */
   tagline?: string;
 }
+
+export const BRAND_LOGO_RATIO_OPTIONS: { value: BrandLogoRatio; label: string }[] = [
+  { value: "auto", label: "Auto" },
+  { value: "wide", label: "Wide / wordmark" },
+  { value: "square", label: "Square" },
+  { value: "tall", label: "Tall" },
+];
+
+/** Frame classes for the brand board, keyed by the creator's chosen ratio. */
+export const BRAND_LOGO_RATIO_CLASS: Record<BrandLogoRatio, string> = {
+  auto: "h-12",
+  wide: "aspect-[16/9]",
+  square: "aspect-square max-h-28",
+  tall: "aspect-[3/4] max-h-32",
+};
 
 export const MOCK_BRANDS: BrandPartner[] = [
   { id: "1", name: "Fashion Co", tagline: "Spring campaign • 2024" },

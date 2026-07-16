@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { invalidatePlatformCache } from "@/lib/platform-cache";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const YOUTUBE_API = "https://www.googleapis.com/youtube/v3";
@@ -85,6 +86,8 @@ export async function GET(req: NextRequest) {
       youtubeTokenExpiresAt: expiresAt,
     },
   });
+  // Drop cached platform data so the kit reflects the new connection immediately.
+  invalidatePlatformCache(userId);
 
   return NextResponse.redirect(`${baseRedirect}?youtube=connected`);
 }

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { cachedPlatformCall } from "@/lib/platform-cache";
 
 const YOUTUBE_API = "https://www.googleapis.com/youtube/v3";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -104,7 +105,7 @@ async function getRecentVideos(uploadsPlaylistId: string, token: string): Promis
   });
 }
 
-export async function getYouTubeStatsForUser(userId: string): Promise<YouTubeStats | null> {
+async function fetchYouTubeStatsForUser(userId: string): Promise<YouTubeStats | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -160,4 +161,9 @@ export async function getYouTubeStatsForUser(userId: string): Promise<YouTubeSta
     videoCount: parseInt(channel.statistics.videoCount ?? "0", 10),
     recentVideos,
   };
+}
+
+/** Cached wrapper — the kit page calls this on every public view. */
+export function getYouTubeStatsForUser(userId: string): Promise<YouTubeStats | null> {
+  return cachedPlatformCall(`yt-stats:${userId}`, () => fetchYouTubeStatsForUser(userId));
 }

@@ -8,7 +8,7 @@ import { CountUp } from "@/app/components/Skeleton";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import type { PlatformId, PlatformStatsWithCharts } from "@/lib/platforms";
 import { getPlatformMeta } from "@/lib/platforms";
-import type { KitRates, BrandPartner } from "@/lib/mock-data";
+import { BRAND_LOGO_RATIO_CLASS, type KitRates, type BrandPartner } from "@/lib/mock-data";
 import type { FetchedPost } from "@/lib/platforms/instagram";
 import { DEFAULT_SECTION_VISIBILITY, type SectionVisibility } from "@/lib/kit-storage";
 import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
@@ -952,16 +952,24 @@ export function MediaKitClient({
                     title={brand.tagline ? `${brand.name} · ${brand.tagline}` : brand.name}
                   >
                     {brand.logoUrl ? (
-                      <span className="flex h-10 w-full items-center justify-center rounded-md bg-white/95 px-2">
+                      /* Frame follows the ratio the creator picked for their image, so a wide
+                         wordmark isn't letterboxed into a square (and vice versa). */
+                      /* min-h-0: flex items default to min-height:auto, which lets the image's
+                         content height override the frame's aspect-ratio. */
+                      <span
+                        className={`flex w-full min-h-0 items-center justify-center overflow-hidden rounded-md bg-white/95 p-2 ${
+                          BRAND_LOGO_RATIO_CLASS[brand.logoRatio ?? "auto"]
+                        }`}
+                      >
                         <img
                           src={brand.logoUrl}
                           alt={brand.name}
-                          className="max-h-7 max-w-full object-contain"
+                          className="max-h-full max-w-full object-contain"
                           referrerPolicy="no-referrer"
                         />
                       </span>
                     ) : (
-                      <span className="flex h-10 items-center text-sm font-semibold text-[var(--mk-text)]">
+                      <span className="flex h-12 items-center text-sm font-semibold text-[var(--mk-text)]">
                         {brand.name}
                       </span>
                     )}

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createHmac, timingSafeEqual } from "crypto";
+import { invalidatePlatformCache } from "@/lib/platform-cache";
 
 const META_APP_ID = process.env.META_APP_ID;
 const META_APP_SECRET = process.env.META_APP_SECRET;
@@ -143,6 +144,8 @@ export async function GET(req: Request) {
         instagramTokenExpiresAt: tokenExpiresAt,
       },
     });
+    // Drop cached platform data so the kit reflects the new connection immediately.
+    invalidatePlatformCache(session.user.id);
 
     res.headers.set("Location", `${BASE_URL}${returnPath}?instagram_connected=1`);
   } catch (e) {
