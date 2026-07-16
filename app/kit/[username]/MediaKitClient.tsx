@@ -487,62 +487,79 @@ export function MediaKitClient({
       <main className="relative pb-24 max-w-4xl mx-auto px-5 sm:px-8 pt-14">
         <div className="pt-6 space-y-4">
 
-          {/* 1. Hero banner — dark inverted card: avatar, name, niches, location, bio */}
-          <div className="rounded-2xl bg-[var(--mk-text)] px-6 py-7 sm:px-8">
-            <div className="flex items-center gap-5">
-              {/* Avatar */}
-              {creator.avatarUrl ? (
-                <img
-                  src={creator.avatarUrl}
-                  alt=""
-                  className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover shrink-0 ring-2 ring-[var(--mk-bg)]/20"
-                  width={80} height={80}
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-[var(--mk-bg)]/10 flex items-center justify-center shrink-0">
-                  <span className="font-display text-2xl font-semibold text-[var(--mk-bg)]/70">
-                    {creator.name.charAt(0)}
-                  </span>
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="text-[var(--mk-bg)]/50 text-[11px] font-semibold tracking-[0.16em] uppercase mb-1">
-                  Creator Media Kit
-                </p>
-                <div className="flex items-center gap-2">
-                  <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--mk-bg)] leading-none tracking-tight">
-                    {creator.name}
-                  </h1>
-                  <VerifiedBadge tier={creator.verifiedTier} size="md" />
-                </div>
-                <div className="flex items-center gap-2 flex-wrap mt-1.5">
-                  <p className="text-[var(--mk-bg)]/50 text-xs font-medium tracking-wide">
-                    @{creator.username}
-                  </p>
-                  {creator.location && (
-                    <>
-                      <span className="text-[var(--mk-bg)]/25 text-xs">·</span>
-                      <p className="text-[var(--mk-bg)]/50 text-xs font-medium">{creator.location}</p>
-                    </>
-                  )}
-                </div>
-                {(creator.niches?.length ?? 0) > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {creator.niches!.slice(0, 5).map((n) => (
-                      <span key={n} className="text-[10px] font-semibold tracking-wide uppercase rounded-full border border-[var(--mk-bg)]/25 text-[var(--mk-bg)]/70 px-2.5 py-1">
-                        {n}
-                      </span>
-                    ))}
+          {/* 1. Profile card — cover banner with the avatar overlapping it, then identity + bio.
+                 The cover is built from the kit's accent so it changes with the chosen vibe. */}
+          <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+            {/* Cover */}
+            <div
+              className="relative h-24 sm:h-32"
+              style={{
+                backgroundImage: `linear-gradient(135deg, ${chartColors.stroke}66 0%, ${chartColors.stroke}22 45%, ${chartColors.stroke}0D 100%)`,
+              }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-t from-[var(--mk-surface)]/70 to-transparent" />
+              <span className="absolute top-3 right-4 text-[10px] font-semibold tracking-[0.16em] uppercase text-[var(--mk-text)]/45">
+                Creator Media Kit
+              </span>
+            </div>
+
+            <div className="px-5 pb-6 sm:px-7 sm:pb-7">
+              {/* Avatar — pulled up so it straddles the cover edge */}
+              <div className="-mt-10 sm:-mt-12 mb-3">
+                {creator.avatarUrl ? (
+                  <img
+                    src={creator.avatarUrl}
+                    alt=""
+                    className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover ring-4 ring-[var(--mk-surface)] shadow-sm"
+                    width={96} height={96}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full ring-4 ring-[var(--mk-surface)] bg-[var(--mk-border)] flex items-center justify-center">
+                    <span className="font-display text-2xl font-semibold text-[var(--mk-text)]/60">
+                      {creator.name.charAt(0)}
+                    </span>
                   </div>
                 )}
               </div>
+
+              {/* Identity */}
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--mk-text)] leading-none tracking-tight truncate">
+                  {creator.name}
+                </h1>
+                <VerifiedBadge tier={creator.verifiedTier} size="md" />
+              </div>
+              <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                <p className="text-[var(--mk-text-muted)] text-sm font-medium">@{creator.username}</p>
+                {creator.location && (
+                  <>
+                    <span className="text-[var(--mk-text-soft)] text-xs">·</span>
+                    <p className="text-[var(--mk-text-muted)] text-sm">{creator.location}</p>
+                  </>
+                )}
+              </div>
+
+              {creator.bio && (
+                <p className="mt-3 text-[var(--mk-text-muted)] text-sm leading-relaxed font-sans max-w-2xl text-pretty">
+                  {creator.bio}
+                </p>
+              )}
+
+              {(creator.niches?.length ?? 0) > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-4">
+                  {creator.niches!.slice(0, 5).map((n) => (
+                    <span
+                      key={n}
+                      className="text-[10px] font-semibold tracking-wide uppercase rounded-full px-2.5 py-1"
+                      style={{ backgroundColor: `${chartColors.stroke}1F`, color: "var(--mk-text)" }}
+                    >
+                      {n}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-            {creator.bio && (
-              <p className="mt-5 text-[var(--mk-bg)]/60 text-sm leading-relaxed font-sans max-w-2xl text-pretty border-t border-[var(--mk-bg)]/10 pt-5">
-                {creator.bio}
-              </p>
-            )}
           </div>
 
           {/* ── Combined stats — every platform's headline numbers, up top ── */}
