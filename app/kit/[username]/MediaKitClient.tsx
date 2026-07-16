@@ -490,32 +490,35 @@ export function MediaKitClient({
           {/* 1. Profile card — cover banner with the avatar overlapping it, then identity + bio.
                  The cover is built from the kit's accent so it changes with the chosen vibe. */}
           <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
-            {/* Cover */}
+            {/* Cover — solid accent gradient, strongest at the bottom-left where the avatar sits
+                 so its ring (card colour) visibly cuts the avatar out of the cover. Fading toward
+                 the surface here instead would make the ring disappear. */}
             <div
-              className="relative h-24 sm:h-32"
+              className="relative h-24 sm:h-28"
               style={{
-                backgroundImage: `linear-gradient(135deg, ${chartColors.stroke}66 0%, ${chartColors.stroke}22 45%, ${chartColors.stroke}0D 100%)`,
+                backgroundImage: `linear-gradient(to top right, ${chartColors.stroke}C4 0%, ${chartColors.stroke}82 50%, ${chartColors.stroke}38 100%)`,
               }}
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-[var(--mk-surface)]/70 to-transparent" />
-              <span className="absolute top-3 right-4 text-[10px] font-semibold tracking-[0.16em] uppercase text-[var(--mk-text)]/45">
+              <span className="absolute top-3 right-4 text-[10px] font-semibold tracking-[0.16em] uppercase text-[var(--mk-text)]/55">
                 Creator Media Kit
               </span>
             </div>
 
             <div className="px-5 pb-6 sm:px-7 sm:pb-7">
-              {/* Avatar — pulled up so it straddles the cover edge */}
-              <div className="-mt-10 sm:-mt-12 mb-3">
+              {/* Avatar — pulled up so it straddles the cover edge. `relative z-10` is required:
+                  the cover above is positioned, so without a stacking context of its own the
+                  cover paints over the avatar's overlapping half (and its ring). */}
+              <div className="relative z-10 -mt-10 sm:-mt-12 mb-3 w-fit">
                 {creator.avatarUrl ? (
                   <img
                     src={creator.avatarUrl}
                     alt=""
-                    className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover ring-4 ring-[var(--mk-surface)] shadow-sm"
+                    className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover ring-[5px] ring-[var(--mk-surface)] shadow-sm"
                     width={96} height={96}
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full ring-4 ring-[var(--mk-surface)] bg-[var(--mk-border)] flex items-center justify-center">
+                  <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full ring-[5px] ring-[var(--mk-surface)] bg-[var(--mk-border)] flex items-center justify-center">
                     <span className="font-display text-2xl font-semibold text-[var(--mk-text)]/60">
                       {creator.name.charAt(0)}
                     </span>
