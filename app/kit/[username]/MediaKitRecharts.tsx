@@ -160,7 +160,9 @@ export function AudienceDonutChart({ data, stroke }: { data: AudienceBucket[]; s
   // Slices ordered by share so the donut and legend read largest-first.
   const sorted = [...data].sort((a, b) => b.pct - a.pct);
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-5 h-full">
+    // w-full: the parent card body is a flex row (justify-start), so without this the chart
+    // only takes its content width and hugs the left edge, leaving dead space on the right.
+    <div className="flex flex-col sm:flex-row items-center gap-5 h-full w-full">
       {/* Fixed size — ResponsiveContainer can measure 0 inside flex/align-center parents */}
       <div className="h-[180px] w-[180px] shrink-0">
         <PieChart width={180} height={180}>
