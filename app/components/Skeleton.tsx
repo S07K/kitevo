@@ -39,10 +39,22 @@ export function CountUp({
   const [display, setDisplay] = useState(0);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef<number | null>(null);
+  const doneRef = useRef(false);
 
   useEffect(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     startRef.current = null;
+    doneRef.current = false;
+
+    // Respect reduced motion: show the real number immediately, no count-up.
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      setDisplay(value);
+      return;
+    }
 
     function ease(t: number) {
       // ease-out cubic
@@ -50,6 +62,7 @@ export function CountUp({
     }
 
     function tick(now: number) {
+      if (doneRef.current) return;
       if (!startRef.current) startRef.current = now;
       const elapsed = now - startRef.current;
       const progress = Math.min(elapsed / duration, 1);
@@ -57,13 +70,25 @@ export function CountUp({
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(tick);
       } else {
+        doneRef.current = true;
         setDisplay(value);
       }
     }
 
     rafRef.current = requestAnimationFrame(tick);
+
+    // Safety net: rAF is paused in background tabs and can be heavily throttled. Without this
+    // the number could sit at 0 — the worst possible failure for a kit selling real stats.
+    // Mark done + cancel the loop so a late frame can't rewind the value.
+    const fallback = setTimeout(() => {
+      doneRef.current = true;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      setDisplay(value);
+    }, duration + 200);
+
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      clearTimeout(fallback);
     };
   }, [value, decimals, duration]);
 
