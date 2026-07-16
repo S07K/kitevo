@@ -180,7 +180,6 @@ export function MarketingFooter(): ReactNode {
                 </svg>
               </a>
             ))}
-            <span className="text-muted-foreground ml-1 text-xs">@{SOCIAL_HANDLE}</span>
           </div>
 
           <div className="border-border mt-6 flex flex-col items-start justify-between gap-3 border-t pt-6 text-xs sm:flex-row sm:items-center">
