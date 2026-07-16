@@ -4,6 +4,7 @@ import type React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
+import { LogoMark } from "@/app/components/Logo";
 import { CountUp } from "@/app/components/Skeleton";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import type { PlatformId, PlatformStatsWithCharts } from "@/lib/platforms";
@@ -1040,9 +1041,16 @@ export function MediaKitClient({
           <div className="pt-6 pb-2 text-center">
             <Link
               href="/"
-              className="text-xs text-[var(--mk-text-soft)] font-sans hover:text-[var(--mk-text)] transition-colors"
+              className="text-xs text-[var(--mk-text-soft)] font-sans hover:text-[var(--mk-text)] transition-colors inline-flex items-center gap-1.5"
             >
-              Made with <span className="font-semibold">Kitevo</span> — create your own media kit
+              {/*
+                Mono, not the colour overprint: this page belongs to the creator and gets
+                sent to brands. A tri-colour mark here would co-brand their pitch. `auto`
+                takes currentColor, so it rides --mk-text-soft and the hover transition
+                across every kit vibe.
+              */}
+              <LogoMark size={14} mono on="auto" />
+              Made with <span className="font-semibold">Kitevo</span>. Create your own media kit
             </Link>
           </div>
 

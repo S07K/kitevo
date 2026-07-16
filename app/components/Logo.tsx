@@ -53,7 +53,12 @@ export function LogoMark({
       focusable="false"
     >
       {title && <title>{title}</title>}
-      <g transform={`translate(${LOGO_RECENTRE.x},${LOGO_RECENTRE.y})`}>
+      {/*
+        The recentre only applies to the overprint: it compensates for the ghost
+        impressions overshooting up-left. Mono draws the letter alone, which is already
+        centred, so applying it there would push it off centre instead.
+      */}
+      <g transform={mono ? undefined : `translate(${LOGO_RECENTRE.x},${LOGO_RECENTRE.y})`}>
         {/* A single impression when mono: the offsets would just fatten the letter. */}
         {(mono ? [0] : LOGO_LAYER_OFFSETS).map((o, i) => (
           <path key={o} transform={`translate(${o},${o})`} fill={fills[i]} d={LOGO_K_PATH} />
