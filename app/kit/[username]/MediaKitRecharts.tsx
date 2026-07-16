@@ -183,7 +183,9 @@ export function AudienceDonutChart({ data, stroke }: { data: AudienceBucket[]; s
           <Tooltip content={AudienceDemographicsTooltipContent} filterNull={false} />
         </PieChart>
       </div>
-      <ul className="flex-1 w-full space-y-2">
+      {/* Cap the legend width on mobile, otherwise justify-between flings the label and
+          the percentage to opposite edges of the card. */}
+      <ul className="flex-1 w-full max-w-[240px] sm:max-w-none mx-auto space-y-2">
         {sorted.map((d, i) => (
           <li key={d.age} className="flex items-center justify-between gap-2 text-sm">
             <span className="flex items-center gap-2 text-[var(--mk-text)]">

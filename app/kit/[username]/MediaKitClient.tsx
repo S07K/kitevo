@@ -590,25 +590,32 @@ export function MediaKitClient({
             const cols = cells.length >= 5 ? "sm:grid-cols-3" : cells.length === 4 ? "sm:grid-cols-4" : cells.length === 3 ? "sm:grid-cols-3" : cells.length === 2 ? "sm:grid-cols-2" : "";
             const liveLabel = bothPlatforms ? "Live — synced from Instagram & YouTube" : ig ? "Live — synced from Instagram" : "Live — synced from YouTube";
 
+            // 2-up on mobile so five stats don't become a tall column. An odd last cell spans
+            // the full row. Grid lines come from gap-px over a border-coloured background,
+            // which stays correct however the cells wrap (divide-x/-y does not).
+            const isOddCount = cells.length % 2 === 1;
             return (
               <div>
-                <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
+                <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-border)] overflow-hidden">
                   {/* Total audience headline — the single number that frames everything (only when multi-platform) */}
                   {bothPlatforms && (
-                    <div className="px-6 py-5 border-b border-[var(--mk-border)] flex items-baseline gap-2 flex-wrap">
-                      <span className="font-display text-[var(--mk-text)] text-4xl font-semibold tabular-nums leading-none">
+                    <div className="bg-[var(--mk-surface)] mb-px px-5 py-5 sm:px-6 flex items-baseline gap-x-2 gap-y-1 flex-wrap">
+                      <span className="font-display text-[var(--mk-text)] text-3xl sm:text-4xl font-semibold tabular-nums leading-none tracking-tight">
                         <CountUp value={totalAudience} duration={1600} />
                       </span>
                       <span className="text-sm text-[var(--mk-text-muted)] font-sans">total audience across Instagram &amp; YouTube</span>
                     </div>
                   )}
-                  <div className={`grid grid-cols-1 ${cols} divide-y sm:divide-y-0 sm:divide-x divide-[var(--mk-border)]`}>
-                    {cells.map((cell) => (
-                      <div key={cell.key} className="px-6 py-6">
-                        <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.16em] uppercase mb-2 flex items-center gap-1.5">
+                  <div className={`grid grid-cols-2 ${cols} gap-px`}>
+                    {cells.map((cell, i) => (
+                      <div
+                        key={cell.key}
+                        className={`bg-[var(--mk-surface)] px-5 py-5 sm:px-6 sm:py-6 ${isOddCount && i === cells.length - 1 ? "col-span-2 sm:col-span-1" : ""}`}
+                      >
+                        <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-2 flex items-center gap-1.5">
                           {cell.icon}{cell.label}
                         </p>
-                        <p className="font-display text-[var(--mk-text)] text-3xl sm:text-4xl font-semibold tabular-nums leading-none">{cell.node}</p>
+                        <p className="font-display text-[var(--mk-text)] text-2xl sm:text-4xl font-semibold tabular-nums leading-none tracking-tight">{cell.node}</p>
                       </div>
                     ))}
                   </div>
@@ -629,15 +636,18 @@ export function MediaKitClient({
 
           {/* Per-post averages — typical performance a brand can expect */}
           {showPerPost && (
-            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
-              <div className="px-5 pt-4 pb-3 border-b border-[var(--mk-border)]">
+            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-border)] overflow-hidden">
+              <div className="bg-[var(--mk-surface)] mb-px px-5 pt-4 pb-3">
                 <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Typical post performance</p>
               </div>
-              <div className={`grid grid-cols-1 ${perPostCells.length === 3 ? "sm:grid-cols-3" : perPostCells.length === 2 ? "sm:grid-cols-2" : ""} divide-y sm:divide-y-0 sm:divide-x divide-[var(--mk-border)]`}>
-                {perPostCells.map((cell) => (
-                  <div key={cell.label} className="px-6 py-5">
+              <div className={`grid grid-cols-2 ${perPostCells.length === 3 ? "sm:grid-cols-3" : perPostCells.length === 2 ? "sm:grid-cols-2" : ""} gap-px`}>
+                {perPostCells.map((cell, i) => (
+                  <div
+                    key={cell.label}
+                    className={`bg-[var(--mk-surface)] px-5 py-5 sm:px-6 ${perPostCells.length % 2 === 1 && i === perPostCells.length - 1 ? "col-span-2 sm:col-span-1" : ""}`}
+                  >
                     <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1.5">{cell.label}</p>
-                    <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums leading-none">
+                    <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums leading-none tracking-tight">
                       <CountUp value={cell.value} duration={1100} />
                     </p>
                   </div>
@@ -735,13 +745,13 @@ export function MediaKitClient({
                     {countryData.map((c) => {
                       const max = countryData[0]?.pct || 1;
                       return (
-                        <div key={c.code} className="flex items-center gap-3">
-                          <span className="text-base leading-none w-6 text-center shrink-0" aria-hidden>{flagEmoji(c.code)}</span>
-                          <span className="text-sm text-[var(--mk-text)] w-28 truncate shrink-0">{c.country}</span>
-                          <div className="flex-1 h-2 rounded-full bg-[var(--mk-border)] overflow-hidden">
+                        <div key={c.code} className="flex items-center gap-2.5 sm:gap-3">
+                          <span className="text-base leading-none w-5 text-center shrink-0" aria-hidden>{flagEmoji(c.code)}</span>
+                          <span className="text-sm text-[var(--mk-text)] w-20 sm:w-28 truncate shrink-0">{c.country}</span>
+                          <div className="flex-1 min-w-[40px] h-2 rounded-full bg-[var(--mk-border)] overflow-hidden">
                             <div className="h-full rounded-full" style={{ width: `${(c.pct / max) * 100}%`, backgroundColor: chartColors.stroke }} />
                           </div>
-                          <span className="text-sm font-semibold tabular-nums text-[var(--mk-text-soft)] w-12 text-right shrink-0">{c.pct}%</span>
+                          <span className="text-sm font-semibold tabular-nums text-[var(--mk-text-soft)] w-11 text-right shrink-0">{c.pct}%</span>
                         </div>
                       );
                     })}
