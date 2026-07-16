@@ -25,7 +25,17 @@ interface CountUpProps {
   suffix?: string;
   /** Prefix prepended before the number, e.g. "$" */
   prefix?: string;
+  /** Abbreviate large numbers: 15536 → "15.5K", 342900 → "342.9K", 1200000 → "1.2M". */
+  compact?: boolean;
   className?: string;
+}
+
+/** Short, scannable number formatting for stat tiles. */
+export function formatCompactNumber(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (abs >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  return Math.round(n).toLocaleString();
 }
 
 export function CountUp({
@@ -34,6 +44,7 @@ export function CountUp({
   duration = 1200,
   suffix = "",
   prefix = "",
+  compact = false,
   className = "",
 }: CountUpProps) {
   const [display, setDisplay] = useState(0);
@@ -92,8 +103,9 @@ export function CountUp({
     };
   }, [value, decimals, duration]);
 
-  const formatted =
-    decimals === 0
+  const formatted = compact
+    ? formatCompactNumber(display)
+    : decimals === 0
       ? display.toLocaleString()
       : display.toFixed(decimals);
 

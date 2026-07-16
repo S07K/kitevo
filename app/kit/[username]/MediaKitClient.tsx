@@ -566,14 +566,14 @@ export function MediaKitClient({
             const cells: Cell[] = [];
 
             if (ig) {
-              cells.push({ key: "ig-foll", icon: igIcon, label: "Followers", node: <CountUp value={ig.followers} duration={1400} /> });
+              cells.push({ key: "ig-foll", icon: igIcon, label: "Followers", node: <CountUp value={ig.followers} duration={1400} compact /> });
               if (ig.avgEngagement > 0) cells.push({ key: "ig-eng", icon: igIcon, label: "Engagement", node: <CountUp value={ig.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
               if (ig.growthThisMonth > 0) cells.push({ key: "ig-gr", icon: igIcon, label: "Growth · 30d", node: <span>+<CountUp value={ig.growthThisMonth} decimals={1} suffix="%" duration={1200} /></span> });
             }
             if (yt) {
-              cells.push({ key: "yt-sub", icon: ytIcon, label: "Subscribers", node: <CountUp value={yt.followers} duration={1400} /> });
+              cells.push({ key: "yt-sub", icon: ytIcon, label: "Subscribers", node: <CountUp value={yt.followers} duration={1400} compact /> });
               const totalViews = typeof yt.extra?.totalViews === "number" ? yt.extra.totalViews : null;
-              if (totalViews) cells.push({ key: "yt-views", icon: ytIcon, label: "Total views", node: <CountUp value={totalViews} duration={1600} /> });
+              if (totalViews) cells.push({ key: "yt-views", icon: ytIcon, label: "Total views", node: <CountUp value={totalViews} duration={1600} compact /> });
               let avgViews: number | null = null;
               try {
                 const vids = yt.extra?.recentVideosJson ? (JSON.parse(String(yt.extra.recentVideosJson)) as Array<{ viewCount?: number }>) : [];
@@ -581,19 +581,26 @@ export function MediaKitClient({
                 avgViews = vv.length ? Math.round(vv.reduce((s, n) => s + n, 0) / vv.length) : null;
               } catch { /* ignore malformed */ }
               if (avgViews && cells.filter((c) => c.key.startsWith("yt")).length < 3) {
-                cells.push({ key: "yt-avg", icon: ytIcon, label: "Avg views / video", node: <CountUp value={avgViews} duration={1200} /> });
+                cells.push({ key: "yt-avg", icon: ytIcon, label: "Avg views", node: <CountUp value={avgViews} duration={1200} compact /> });
               }
             }
 
             const bothPlatforms = !!ig && !!yt;
             const totalAudience = (ig?.followers ?? 0) + (yt?.followers ?? 0);
-            const cols = cells.length >= 5 ? "sm:grid-cols-3" : cells.length === 4 ? "sm:grid-cols-4" : cells.length === 3 ? "sm:grid-cols-3" : cells.length === 2 ? "sm:grid-cols-2" : "";
+            // Compact cells (number over label) let more fit per row: 3-up on mobile, all-in-one-row on desktop.
+            const cols = cells.length >= 5 ? "sm:grid-cols-5" : cells.length === 4 ? "sm:grid-cols-4" : cells.length === 3 ? "sm:grid-cols-3" : cells.length === 2 ? "sm:grid-cols-2" : "";
             const liveLabel = bothPlatforms ? "Live — synced from Instagram & YouTube" : ig ? "Live — synced from Instagram" : "Live — synced from YouTube";
 
-            // 2-up on mobile so five stats don't become a tall column. An odd last cell spans
-            // the full row. Grid lines come from gap-px over a border-coloured background,
-            // which stays correct however the cells wrap (divide-x/-y does not).
-            const isOddCount = cells.length % 2 === 1;
+            // Mobile is a 6-col grid so cells can divide evenly: normally 3-up (span 2 each), and a
+            // trailing row of 1 or 2 stretches to fill (span 6, or 3 each) — no leftover gaps.
+            // Grid lines come from gap-px over a border-coloured background, which stays correct
+            // however the cells wrap (divide-x/-y does not).
+            const remainder = cells.length % 3;
+            const spanFor = (i: number) => {
+              const inLastRow = remainder !== 0 && i >= cells.length - remainder;
+              if (!inLastRow) return "col-span-2 sm:col-span-1";
+              return remainder === 1 ? "col-span-6 sm:col-span-1" : "col-span-3 sm:col-span-1";
+            };
             return (
               <div>
                 <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-border)] overflow-hidden">
@@ -601,21 +608,18 @@ export function MediaKitClient({
                   {bothPlatforms && (
                     <div className="bg-[var(--mk-surface)] mb-px px-5 py-5 sm:px-6 flex items-baseline gap-x-2 gap-y-1 flex-wrap">
                       <span className="font-display text-[var(--mk-text)] text-3xl sm:text-4xl font-semibold tabular-nums leading-none tracking-tight">
-                        <CountUp value={totalAudience} duration={1600} />
+                        <CountUp value={totalAudience} duration={1600} compact />
                       </span>
                       <span className="text-sm text-[var(--mk-text-muted)] font-sans">total audience across Instagram &amp; YouTube</span>
                     </div>
                   )}
-                  <div className={`grid grid-cols-2 ${cols} gap-px`}>
+                  <div className={`grid grid-cols-6 ${cols} gap-px`}>
                     {cells.map((cell, i) => (
-                      <div
-                        key={cell.key}
-                        className={`bg-[var(--mk-surface)] px-5 py-5 sm:px-6 sm:py-6 ${isOddCount && i === cells.length - 1 ? "col-span-2 sm:col-span-1" : ""}`}
-                      >
-                        <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-2 flex items-center gap-1.5">
+                      <div key={cell.key} className={`bg-[var(--mk-surface)] px-2 py-4 sm:px-3 sm:py-5 text-center ${spanFor(i)}`}>
+                        <p className="font-display text-[var(--mk-text)] text-xl sm:text-2xl font-semibold tabular-nums leading-none tracking-tight">{cell.node}</p>
+                        <p className="text-[var(--mk-text-soft)] text-[11px] mt-1.5 flex items-center justify-center gap-1 truncate">
                           {cell.icon}{cell.label}
                         </p>
-                        <p className="font-display text-[var(--mk-text)] text-2xl sm:text-4xl font-semibold tabular-nums leading-none tracking-tight">{cell.node}</p>
                       </div>
                     ))}
                   </div>
@@ -640,16 +644,13 @@ export function MediaKitClient({
               <div className="bg-[var(--mk-surface)] mb-px px-5 pt-4 pb-3">
                 <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Typical post performance</p>
               </div>
-              <div className={`grid grid-cols-2 ${perPostCells.length === 3 ? "sm:grid-cols-3" : perPostCells.length === 2 ? "sm:grid-cols-2" : ""} gap-px`}>
-                {perPostCells.map((cell, i) => (
-                  <div
-                    key={cell.label}
-                    className={`bg-[var(--mk-surface)] px-5 py-5 sm:px-6 ${perPostCells.length % 2 === 1 && i === perPostCells.length - 1 ? "col-span-2 sm:col-span-1" : ""}`}
-                  >
-                    <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1.5">{cell.label}</p>
-                    <p className="font-display text-[var(--mk-text)] text-2xl font-semibold tabular-nums leading-none tracking-tight">
-                      <CountUp value={cell.value} duration={1100} />
+              <div className={`grid grid-cols-3 ${perPostCells.length === 3 ? "sm:grid-cols-3" : perPostCells.length === 2 ? "sm:grid-cols-2" : ""} gap-px`}>
+                {perPostCells.map((cell) => (
+                  <div key={cell.label} className="bg-[var(--mk-surface)] px-2 py-4 sm:px-3 sm:py-5 text-center">
+                    <p className="font-display text-[var(--mk-text)] text-xl sm:text-2xl font-semibold tabular-nums leading-none tracking-tight">
+                      <CountUp value={cell.value} duration={1100} compact />
                     </p>
+                    <p className="text-[var(--mk-text-soft)] text-[11px] mt-1.5 truncate">{cell.label}</p>
                   </div>
                 ))}
               </div>
