@@ -14,6 +14,7 @@ import { DEFAULT_SECTION_VISIBILITY, type SectionVisibility } from "@/lib/kit-st
 import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
 import {
   DEFAULT_KIT_APPEARANCE,
+  isDarkKitPreset,
   kitAppearanceToCssVars,
   kitAppearanceToCssVarsWithOverrides,
   kitChartColors,
@@ -457,7 +458,13 @@ export function MediaKitClient({
       ) : (
         <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-[var(--mk-bg)] border-b border-[var(--mk-border-hairline)] px-6 sm:px-10 h-14">
           {appearance.logoUrl ? (
-            <img src={appearance.logoUrl} alt="Brand logo" className="h-6 w-auto object-contain" />
+            /* This slot replaces the Kitevo wordmark, so render the logo as a monochrome mark that
+               contrasts with the vibe. Without this a black logo on a dark vibe is invisible. */
+            <img
+              src={appearance.logoUrl}
+              alt="Brand logo"
+              className={`h-6 w-auto object-contain ${isDarkKitPreset(preset) ? "brightness-0 invert" : "brightness-0"}`}
+            />
           ) : (
             <span className="font-display text-sm tracking-wide text-[var(--mk-text-muted)] font-medium">
               Kitevo

@@ -56,6 +56,22 @@ export function kitAppearanceToCssVars(appearance: KitAppearance | null | undefi
   return vars as unknown as CSSProperties;
 }
 
+/**
+ * True when the preset's page background is dark. Derived from the preset's own `--mk-bg`
+ * so it can't drift from the theme. Used to pick a contrasting treatment for the creator's
+ * uploaded logo — a black logo on a dark vibe (or white on a light one) is invisible.
+ */
+export function isDarkKitPreset(preset: KitAppearancePreset | undefined): boolean {
+  const vars = KIT_THEME_CSS_VARS[preset ?? "warm"] ?? KIT_THEME_CSS_VARS.warm;
+  const hex = (vars["--mk-bg"] ?? "#ffffff").replace("#", "");
+  if (hex.length !== 6) return false;
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
+  // Rec. 601 luma is plenty for a light/dark decision.
+  return 0.299 * r + 0.587 * g + 0.114 * b < 0.5;
+}
+
 const KIT_THEME_CSS_VARS: Record<KitAppearancePreset, Record<string, string>> = {
   // ── Brand Kit Vibes (Pro) ────────────────────────────────────────────────
   editorial: {
