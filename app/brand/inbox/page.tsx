@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
@@ -24,7 +24,7 @@ type Message = {
   sender: { name: string | null; avatarUrl: string | null };
 };
 
-export default function BrandInbox() {
+function BrandInboxContent() {
   const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -343,5 +343,19 @@ export default function BrandInbox() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BrandInbox() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <span className="text-muted-foreground text-sm">Loading…</span>
+        </div>
+      }
+    >
+      <BrandInboxContent />
+    </Suspense>
   );
 }

@@ -5,8 +5,9 @@ vi.mock("next-auth", () => ({
   getServerSession: vi.fn(),
 }));
 
-vi.mock("@/lib/subscription-for-request", () => ({
-  getAllowedKitsForUser: vi.fn(),
+// The route decides "already subscribed" via prisma (stripeCustomerId) + stripe.subscriptions.list.
+vi.mock("@/lib/prisma", () => ({
+  prisma: { user: { findUnique: vi.fn() } },
 }));
 
 vi.mock("@/lib/stripe", () => ({
@@ -16,6 +17,9 @@ vi.mock("@/lib/stripe", () => ({
         create: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/fake" }),
       },
     },
+    subscriptions: {
+      list: vi.fn().mockResolvedValue({ data: [] }),
+    },
   },
 }));
 
@@ -24,12 +28,14 @@ vi.mock("@/config/subscriptions", () => ({
 }));
 
 const { getServerSession } = await import("next-auth");
-const { getAllowedKitsForUser } = await import("@/lib/subscription-for-request");
+const { prisma } = await import("@/lib/prisma");
+const { stripe } = await import("@/lib/stripe");
 
 describe("POST /api/create-checkout-session", () => {
   beforeEach(() => {
     vi.mocked(getServerSession).mockResolvedValue(null);
-    vi.mocked(getAllowedKitsForUser).mockResolvedValue(0);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
+    vi.mocked(stripe.subscriptions.list).mockResolvedValue({ data: [] } as never);
   });
 
   it("returns 409 when logged-in user already has an active subscription", async () => {
@@ -37,7 +43,8 @@ describe("POST /api/create-checkout-session", () => {
       user: { id: "user-1", email: "subscribed@example.com" },
       expires: "",
     });
-    vi.mocked(getAllowedKitsForUser).mockResolvedValue(3);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ stripeCustomerId: "cus_1" } as never);
+    vi.mocked(stripe.subscriptions.list).mockResolvedValue({ data: [{ id: "sub_1" }] } as never);
 
     const res = await POST(
       new Request("http://x", {
@@ -52,12 +59,12 @@ describe("POST /api/create-checkout-session", () => {
     );
   });
 
-  it("allows checkout when logged in but not subscribed (allowedKits 0)", async () => {
+  it("allows checkout when logged in but not subscribed", async () => {
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: "user-1", email: "user@example.com" },
       expires: "",
     });
-    vi.mocked(getAllowedKitsForUser).mockResolvedValue(0);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ stripeCustomerId: null } as never);
 
     const res = await POST(
       new Request("http://x", {

@@ -22,13 +22,16 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  // Capture the id: narrowing on session.user.id is lost inside the upsert closure below.
+  const userId = session.user.id;
+
   const body = (await req.json().catch(() => ({}))) as { logoDataUrl?: unknown };
   const raw = body.logoDataUrl;
 
   if (raw === null || raw === "") {
     const bp = await prisma.brandProfile.upsert({
-      where: { userId: session.user.id },
-      create: { userId: session.user.id, logoUrl: null, companyName: "", industry: "", budgetRange: "" },
+      where: { userId },
+      create: { userId, logoUrl: null, companyName: "", industry: "", budgetRange: "" },
       update: { logoUrl: null },
       select: { logoUrl: true },
     });
@@ -47,8 +50,8 @@ export async function POST(req: Request) {
 
   const upsertLogo = () =>
     prisma.brandProfile.upsert({
-      where: { userId: session.user.id },
-      create: { userId: session.user.id, logoUrl: raw, companyName: "", industry: "", budgetRange: "" },
+      where: { userId },
+      create: { userId, logoUrl: raw, companyName: "", industry: "", budgetRange: "" },
       update: { logoUrl: raw },
       select: { logoUrl: true },
     });
