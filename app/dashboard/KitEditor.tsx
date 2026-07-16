@@ -7,7 +7,6 @@ import {
   BRAND_LOGO_RATIO_OPTIONS,
   type KitRates,
   type BrandPartner,
-  type BrandLogoRatio,
 } from "@/lib/mock-data";
 import {
   getKitContent,
@@ -506,63 +505,88 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
           Brands I&apos;ve worked with
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Add past partners for social proof. Paste a logo URL to show the logo instead of the name.
+          Add past partners for social proof. Add a logo URL to show the logo instead of the name,
+          and pick the shape that matches your image so it isn&apos;t boxed in.
         </p>
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-3">
           {brands.map((b) => (
-            <div key={b.id} className="p-4 rounded-2xl border border-border space-y-3">
-              <div className="flex gap-3 flex-wrap">
-                <input
-                  type="text"
-                  placeholder="Brand name"
-                  value={b.name}
-                  onChange={(e) => updateBrand(b.id, { name: e.target.value })}
-                  className="flex-1 min-w-[120px] px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <input
-                  type="text"
-                  placeholder="Tagline (e.g. Spring campaign • 2024)"
-                  value={b.tagline ?? ""}
-                  onChange={(e) => updateBrand(b.id, { tagline: e.target.value })}
-                  className="flex-1 min-w-[120px] px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
+            <div key={b.id} className="rounded-2xl border border-border p-4">
+              <div className="flex items-start gap-4">
+                {/* Live preview — anchors the row and shows exactly what the kit will render */}
+                <span className="mt-0.5 flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-white">
+                  {b.logoUrl ? (
+                    <img src={b.logoUrl} alt="" className="max-h-9 max-w-[44px] object-contain" />
+                  ) : (
+                    <span className="text-base font-semibold text-neutral-400">
+                      {(b.name || "?").charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </span>
+
+                <div className="min-w-0 flex-1 space-y-2.5">
+                  <div className="grid gap-2.5 sm:grid-cols-2">
+                    <input
+                      type="text"
+                      placeholder="Brand name"
+                      value={b.name}
+                      onChange={(e) => updateBrand(b.id, { name: e.target.value })}
+                      className="w-full min-w-0 px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Tagline (optional)"
+                      value={b.tagline ?? ""}
+                      onChange={(e) => updateBrand(b.id, { tagline: e.target.value })}
+                      className="w-full min-w-0 px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+
+                  <input
+                    type="url"
+                    placeholder="Logo URL (optional)"
+                    value={b.logoUrl ?? ""}
+                    onChange={(e) => updateBrand(b.id, { logoUrl: e.target.value || undefined })}
+                    className="w-full min-w-0 px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+
+                  {b.logoUrl && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Shape</span>
+                      <div className="inline-flex rounded-lg border border-border p-0.5">
+                        {BRAND_LOGO_RATIO_OPTIONS.map((o) => {
+                          const active = (b.logoRatio ?? "auto") === o.value;
+                          return (
+                            <button
+                              key={o.value}
+                              type="button"
+                              onClick={() => updateBrand(b.id, { logoRatio: o.value })}
+                              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                                active
+                                  ? "bg-foreground text-background"
+                                  : "text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {o.short}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={() => removeBrand(b.id)}
-                  className="text-xs text-red-600 hover:underline self-center"
+                  aria-label={`Remove ${b.name || "brand"}`}
+                  title="Remove"
+                  className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-red-600"
                 >
-                  Remove
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
-              <div className="flex items-center gap-3">
-                <input
-                  type="url"
-                  placeholder="Logo URL (optional) — https://brand.com/logo.png"
-                  value={b.logoUrl ?? ""}
-                  onChange={(e) => updateBrand(b.id, { logoUrl: e.target.value || undefined })}
-                  className="flex-1 min-w-0 px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                {b.logoUrl && (
-                  <span className="shrink-0 h-10 w-16 rounded-lg border border-border bg-muted/40 flex items-center justify-center overflow-hidden">
-                    <img src={b.logoUrl} alt="" className="max-h-6 max-w-[52px] object-contain" />
-                  </span>
-                )}
-              </div>
-              {b.logoUrl && (
-                <div className="flex items-center gap-3">
-                  <label className="text-xs text-muted-foreground shrink-0">Logo shape</label>
-                  <select
-                    value={b.logoRatio ?? "auto"}
-                    onChange={(e) => updateBrand(b.id, { logoRatio: e.target.value as BrandLogoRatio })}
-                    className="px-3 py-2 border border-border rounded-xl text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    {BRAND_LOGO_RATIO_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-muted-foreground">Match your image so it isn&apos;t boxed in.</p>
-                </div>
-              )}
             </div>
           ))}
           <button

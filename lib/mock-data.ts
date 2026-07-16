@@ -108,11 +108,12 @@ export interface BrandPartner {
   tagline?: string;
 }
 
-export const BRAND_LOGO_RATIO_OPTIONS: { value: BrandLogoRatio; label: string }[] = [
-  { value: "auto", label: "Auto" },
-  { value: "wide", label: "Wide / wordmark" },
-  { value: "square", label: "Square" },
-  { value: "tall", label: "Tall" },
+/** `short` is for the editor's segmented control; `label` for longer-form UI. */
+export const BRAND_LOGO_RATIO_OPTIONS: { value: BrandLogoRatio; label: string; short: string }[] = [
+  { value: "auto", label: "Auto", short: "Auto" },
+  { value: "wide", label: "Wide / wordmark", short: "Wide" },
+  { value: "square", label: "Square", short: "Square" },
+  { value: "tall", label: "Tall", short: "Tall" },
 ];
 
 /** Frame classes for the brand board, keyed by the creator's chosen ratio. */
