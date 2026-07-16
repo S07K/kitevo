@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { parseKitAppearance } from "@/lib/kit-appearance";
+import { LogoMark } from "@/app/components/Logo";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { APP_URL, APP_HOST } from "@/lib/app-url";
 
@@ -138,7 +139,8 @@ export default async function CreatorProfilePage({
       {/* Nav */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-5 sm:px-8">
-          <Link href="/" className="font-display text-foreground text-base font-semibold tracking-tight hover:opacity-70 transition-opacity">
+          <Link href="/" className="font-display text-foreground inline-flex items-center gap-2 text-base font-semibold tracking-tight hover:opacity-70 transition-opacity">
+            <LogoMark size={20} on="auto" />
             Kitevo
           </Link>
           <Link href="/signup" className="bg-foreground text-background rounded-full px-4 py-1.5 text-xs font-medium hover:opacity-80 transition-opacity">

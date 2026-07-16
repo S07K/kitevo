@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { useReducedMotion } from "@/lib/motion";
+import { LogoMark } from "@/app/components/Logo";
 
 const ORBS = [
   { x: "15%", y: "20%", size: 420, color: "rgba(99,102,241,0.18)", delay: 0 },
@@ -64,7 +65,8 @@ export function AuthLayout({ children, title, subtitle }: {
 
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between h-full p-10">
-          <Link href="/" className="font-display text-lg font-semibold text-white/90 tracking-tight hover:opacity-70 transition-opacity">
+          <Link href="/" className="font-display inline-flex items-center gap-2 text-lg font-semibold text-white/90 tracking-tight hover:opacity-70 transition-opacity">
+            <LogoMark size={22} on="auto" />
             Kitevo
           </Link>
           <div className="max-w-xs">
@@ -83,7 +85,8 @@ export function AuthLayout({ children, title, subtitle }: {
       <div className="flex-1 flex flex-col bg-background">
         {/* Mobile header */}
         <header className="lg:hidden border-b border-border bg-background/95 px-5 py-4 backdrop-blur-md">
-          <Link href="/" className="font-display text-foreground text-lg font-semibold tracking-tight hover:opacity-70 transition-opacity">
+          <Link href="/" className="font-display text-foreground inline-flex items-center gap-2 text-lg font-semibold tracking-tight hover:opacity-70 transition-opacity">
+            <LogoMark size={22} on="auto" />
             Kitevo
           </Link>
         </header>

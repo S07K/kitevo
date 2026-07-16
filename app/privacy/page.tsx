@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { LogoMark } from "@/app/components/Logo";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Kitevo",
@@ -12,8 +13,9 @@ export default function PrivacyPolicy() {
       <header className="border-border border-b px-5 py-5 sm:px-8 lg:px-10">
         <Link
           href="/"
-          className="font-display text-foreground text-lg font-semibold tracking-tight hover:opacity-70 transition-opacity"
+          className="font-display text-foreground inline-flex items-center gap-2 text-lg font-semibold tracking-tight hover:opacity-70 transition-opacity"
         >
+          <LogoMark size={22} on="auto" />
           Kitevo
         </Link>
       </header>
