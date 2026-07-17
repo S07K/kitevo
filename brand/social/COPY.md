@@ -15,9 +15,10 @@ Graphics for each platform are in this folder; regenerate them with
 - Say "Kit-evo" (kit + evolution), not "kite-vo".
 - Talk about the problem more than the product. Creators know the PDF pain; they don't
   know Kitevo.
-- **Do not paste a domain anywhere until one is bought.** `NEXT_PUBLIC_APP_URL` is still
-  undecided (see DEPLOY.md step 0). Every `{LINK}` below is a placeholder. Until it
-  resolves, either omit the link or point at the X profile.
+- **The domain is `getkitevo.com`** (bought July 2026). It matches the `@getkitevo` handle,
+  so one string covers every surface. `kitevo.com` is held by an investor at $997 on
+  Afternic; if it is ever bought, keep `getkitevo.com` renewed forever as a permanent
+  redirect, because kit links live in brands' inboxes and must not break.
 
 ---
 
@@ -68,7 +69,7 @@ affecting followers or posts.*
 version of a launch countdown.)*
 
 **Location:** India
-**Website:** `{LINK}` — leave blank until the domain is bought.
+**Website:** https://getkitevo.com
 
 ---
 
@@ -83,8 +84,7 @@ version of a launch countdown.)*
 > In development, building in public.
 
 **Category:** Software Company
-**Link:** `{LINK}` — until the domain exists, point this at the X profile so the tap goes
-somewhere real.
+**Link:** https://getkitevo.com
 
 ---
 

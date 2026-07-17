@@ -14,9 +14,14 @@ redirect URIs at `app/api/youtube/connect/route.ts` and
 Stripe. Changing it later means: update the env var, update three dashboards, and
 **redeploy** (an env change alone will not take effect).
 
-If the domain isn't bought yet, ship on the Vercel URL
-(`https://kitevo.vercel.app`) and treat the domain switch as a deliberate later
-task that repeats steps 3, 5, 6, and 7.
+**Decided: `getkitevo.com`** (bought July 2026). Use it from the first deploy so
+steps 3, 5, 6 and 7 are only done once. Matches the `@getkitevo` handle across X,
+Instagram and LinkedIn.
+
+`kitevo.com` was taken (investor, $997 on Afternic, renewed to 2027). If it is
+ever bought, `getkitevo.com` must stay renewed **permanently** as a redirect:
+Kitevo's product is a link that lives in brands' inboxes, so a shared kit URL can
+never 404.
 
 ## 1. Vercel project
 
@@ -46,8 +51,8 @@ ones marked "new for prod".
 | Var | Notes |
 |---|---|
 | `DATABASE_URL` | Pooled Neon string from step 2. |
-| `NEXT_PUBLIC_APP_URL` | The step 0 URL. No trailing slash. |
-| `NEXTAUTH_URL` | Same value as `NEXT_PUBLIC_APP_URL`. |
+| `NEXT_PUBLIC_APP_URL` | `https://getkitevo.com` — no trailing slash (the build guard rejects one). |
+| `NEXTAUTH_URL` | `https://getkitevo.com` — same as `NEXT_PUBLIC_APP_URL`. |
 | `NEXTAUTH_SECRET` | **New for prod.** `openssl rand -base64 32`. Do not reuse the dev value. |
 | `SUBSCRIPTION_COOKIE_SECRET` | **New for prod.** `openssl rand -base64 32`. Signs the Stripe customer id cookie. |
 | `STRIPE_SECRET_KEY` | **Live** key (`sk_live_…`), not test. |
