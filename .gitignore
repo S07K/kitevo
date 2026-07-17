@@ -35,6 +35,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...except the example, which is documentation and is meant to be committed.
+# Without this negation `.env*` above hides it, and a fresh clone has no idea what
+# the app needs.
+!.env.example
 
 # prisma
 prisma/dev.db

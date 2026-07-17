@@ -74,9 +74,7 @@ ones marked "new for prod".
 | `STRIPE_SECRET_KEY` | **Test** key (`sk_test_…`) for now — see step 4. Live key only at launch. |
 | `STRIPE_WEBHOOK_SECRET` | From step 6 — comes back to fill this in. |
 | `STRIPE_PRICE_ID_STARTER` | Test price id for now; swap at launch (step 4). |
-| `STRIPE_PRICE_ID_STARTER_YEARLY` | Test price id for now; swap at launch (step 4). |
 | `STRIPE_PRICE_ID_PRO` | Test price id for now; swap at launch (step 4). |
-| `STRIPE_PRICE_ID_PRO_YEARLY` | Test price id for now; swap at launch (step 4). |
 | `STRIPE_PRICE_ID_BRAND` | Test price id for now; swap at launch (step 4). |
 | `STRIPE_PRICE_ID_BRAND_YEARLY` | Test price id for now; swap at launch (step 4). |
 | `META_APP_ID` | Instagram Graph API. |
@@ -88,7 +86,8 @@ ones marked "new for prod".
 
 The price ids are read dynamically as
 `STRIPE_PRICE_ID_${tierId.toUpperCase()}${suffix}` (`config/subscriptions.ts`),
-so a missing one fails at checkout, not at build. Set all six.
+so a missing one fails at checkout, not at build. Only four exist: `brand` is the
+only tier with a yearly price, so there is no `STARTER_YEARLY` or `PRO_YEARLY`.
 
 **The verified sending domain is `mail.getkitevo.com`, not the root.** Sending
 from a subdomain is deliberate: transactional bounces and spam complaints hit the
@@ -127,7 +126,7 @@ weeks.
 
 When you actually launch:
 
-- Flip the dashboard to live mode and recreate the six prices (test prices do not
+- Flip the dashboard to live mode and recreate the four prices (test prices do not
   carry over). Copy each id into step 3.
 - Enable the **Customer Portal** in live mode (Settings → Billing → Customer
   portal). `app/api/create-portal-session/route.ts` depends on it; "Manage
