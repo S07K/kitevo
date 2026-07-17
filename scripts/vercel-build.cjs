@@ -70,11 +70,19 @@ function checkAppUrl() {
 function checkFromEmail() {
   const isProd = process.env.VERCEL_ENV === "production";
   const raw = (process.env.RESEND_FROM_EMAIL ?? "").trim();
+
+  // Resend takes either a bare address or `Display Name <address>`, and the second form is
+  // the one you want — it makes the From line read "Kitevo" instead of a raw address, which
+  // is why vitest.setup.ts uses it. So validate the address inside the brackets rather than
+  // the whole string: checking `raw` would both reject the good form and let
+  // `Kitevo <onboarding@resend.dev>` past the sandbox check, which is the check that matters.
+  const address = raw.match(/<([^>]*)>\s*$/)?.[1].trim() ?? raw;
+
   const problem = !raw
     ? "is not set.\n  Production would send from Resend's sandbox address, which only delivers to\n  your own verified address. Every user email would be silently dropped."
-    : /@resend\.dev$/i.test(raw)
+    : /@resend\.dev$/i.test(address)
       ? `is still Resend's sandbox sender (${raw}).\n  It only delivers to your own verified address.`
-      : !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(raw)
+      : !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)
         ? `is not a valid email address (${raw}).`
         : null;
 
