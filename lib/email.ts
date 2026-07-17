@@ -22,7 +22,7 @@ export async function sendVerificationEmail(email: string, token: string) {
   await resend.emails.send({
     from: FROM,
     to: email,
-    subject: "Verify your email — Kitevo",
+    subject: "Verify your email · Kitevo",
     html: emailHtml({
       heading: "Verify your email",
       body: "Click the button below to verify your email address and activate your account. This link expires in 24 hours.",
@@ -51,7 +51,7 @@ export async function sendInquiryNotification({
   await resend.emails.send({
     from: FROM,
     to: ownerEmail,
-    subject: `New inquiry on your kit "${kitName}" — Kitevo`,
+    subject: `New inquiry on your kit "${kitName}" · Kitevo`,
     html: emailHtml({
       heading: `New inquiry on your brand kit: "${kitName}"`,
       body: `<strong>${from.name}${company}</strong> &lt;${from.email}&gt; sent you a message:<br><br><blockquote style="margin:0;padding:12px 16px;border-left:3px solid #e8e4e0;color:#6b6560;font-style:italic">${from.message.replace(/\n/g, "<br>")}</blockquote><br>Reply directly to <a href="mailto:${from.email}" style="color:#111110">${from.email}</a>.`,
@@ -82,7 +82,7 @@ export async function sendViewMilestoneEmail({
     subject: `Your kit "${kitName}" just hit ${milestoneFormatted} views`,
     html: emailHtml({
       heading: `${milestoneFormatted} views on "${kitName}"`,
-      body: `Your media kit just crossed <strong>${milestone.toLocaleString()} views</strong>. Brands and agencies are noticing you — keep sharing your kit link to grow your reach.`,
+      body: `Your media kit just crossed <strong>${milestone.toLocaleString()} views</strong>. Brands and agencies are noticing you. Keep sharing your kit link to grow your reach.`,
       ctaLabel: "View your analytics",
       ctaUrl: dashboardUrl,
       footer: `You received this because your kit hit a view milestone. To stop these emails, contact us via your dashboard.`,
@@ -94,10 +94,10 @@ export async function sendDeleteAccountCodeEmail(email: string, code: string): P
   const { error } = await resend.emails.send({
     from: FROM,
     to: email,
-    subject: "Your account deletion code — Kitevo",
+    subject: "Your account deletion code · Kitevo",
     html: emailHtml({
       heading: "Confirm account deletion",
-      body: `Your 6-digit confirmation code is:<br><br><span style="font-size:32px;font-weight:700;letter-spacing:0.12em;color:#111110">${code}</span><br><br>Enter this code to permanently delete your account. It expires in <strong>15 minutes</strong>.<br><br>If you did not request this, your account is safe — just ignore this email.`,
+      body: `Your 6-digit confirmation code is:<br><br><span style="font-size:32px;font-weight:700;letter-spacing:0.12em;color:#111110">${code}</span><br><br>Enter this code to permanently delete your account. It expires in <strong>15 minutes</strong>.<br><br>If you did not request this, your account is safe. Just ignore this email.`,
       ctaLabel: "Go to Kitevo",
       ctaUrl: APP_URL,
       footer: "This code was requested from the account settings page. Do not share it with anyone.",
@@ -111,7 +111,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   await resend.emails.send({
     from: FROM,
     to: email,
-    subject: "Reset your password — Kitevo",
+    subject: "Reset your password · Kitevo",
     html: emailHtml({
       heading: "Reset your password",
       body: "Click the button below to set a new password. This link expires in 1 hour.",
