@@ -59,7 +59,34 @@ function checkAppUrl() {
   }
 }
 
+/**
+ * Refuse to ship a production build still using Resend's sandbox sender.
+ *
+ * lib/email.ts falls back to onboarding@resend.dev. That address only delivers to the
+ * Resend account's own verified address, so in production every verification email,
+ * password reset, and inquiry notification is silently dropped. Signups would simply never
+ * arrive and nothing would log an error.
+ */
+function checkFromEmail() {
+  const isProd = process.env.VERCEL_ENV === "production";
+  const raw = (process.env.RESEND_FROM_EMAIL ?? "").trim();
+  const problem = !raw
+    ? "is not set.\n  Production would send from Resend's sandbox address, which only delivers to\n  your own verified address. Every user email would be silently dropped."
+    : /@resend\.dev$/i.test(raw)
+      ? `is still Resend's sandbox sender (${raw}).\n  It only delivers to your own verified address.`
+      : !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(raw)
+        ? `is not a valid email address (${raw}).`
+        : null;
+
+  if (!problem) return;
+  const msg = `\n[vercel-build] RESEND_FROM_EMAIL ${problem}${isProd ? "" : " (preview/local build — continuing)"}\n  See DEPLOY.md step 3.\n`;
+  if (!isProd) return void console.log(msg);
+  console.error(msg);
+  process.exit(1);
+}
+
 checkAppUrl();
+checkFromEmail();
 
 run("npx prisma generate");
 

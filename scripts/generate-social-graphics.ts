@@ -22,7 +22,7 @@
 import { chromium } from "@playwright/test";
 import path from "node:path";
 import fs from "node:fs";
-import { LOGO_ON_INK, logoLayers, logoMarkSvg } from "../lib/logo";
+import { LOGO_ON_CREAM, LOGO_ON_INK, logoLayers, logoMarkSvg } from "../lib/logo";
 
 // ── Brand tokens (mirrors app/globals.css + lib/kit-appearance.ts) ──
 const INK = "#111110";
@@ -197,6 +197,19 @@ async function main() {
     const kb = (fs.statSync(out).size / 1024).toFixed(0);
     console.log(`✓ ${g.file.padEnd(38)} ${g.width}x${g.height}  (${kb} KB @2x)`);
   }
+
+  // Email logo. lib/email.ts points an <img> at {APP_URL}/logo-email.png, because Gmail and
+  // Outlook strip <svg> and Gmail blocks data: URIs. Transparent, ink top impression: the
+  // email shell is cream (#f5f3f0) and the wordmark beside it is #111110.
+  // 44px for a 22px slot, so it stays sharp on retina.
+  const emailPage = await browser.newPage({ viewport: { width: 22, height: 22 }, deviceScaleFactor: 2 });
+  await emailPage.setContent(
+    `<!doctype html><style>*{margin:0;padding:0}html,body{width:22px;height:22px}svg{width:22px;height:22px;display:block}</style>${logoMarkSvg(LOGO_ON_CREAM)}`
+  );
+  const emailOut = path.join(root, "public/logo-email.png");
+  await emailPage.screenshot({ path: emailOut, omitBackground: true });
+  await emailPage.close();
+  console.log(`✓ ${"public/logo-email.png".padEnd(38)} 22x22 @2x  (transparent, for lib/email.ts)`);
 
   // Favicon. Bakes in the ink plate rather than shipping a transparent mark: the top
   // impression is cream, which would vanish on a light browser tab.

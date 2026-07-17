@@ -1,8 +1,21 @@
 import { Resend } from "resend";
+import { APP_URL } from "@/lib/app-url";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+/**
+ * Resend's shared sandbox sender. It only delivers to the Resend account's own verified
+ * address, so leaving it in production means every user email is silently dropped.
+ * scripts/vercel-build.cjs fails a production build if RESEND_FROM_EMAIL is unset.
+ */
 const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+/**
+ * Absolute, because email clients have no page to resolve a relative src against.
+ * PNG, because Gmail and Outlook strip <svg> and Gmail blocks data: URIs in <img>.
+ * Regenerate with `npx tsx scripts/generate-social-graphics.ts`.
+ */
+const LOGO_URL = `${APP_URL}/logo-email.png`;
 
 export async function sendVerificationEmail(email: string, token: string) {
   const url = `${APP_URL}/api/auth/verify-email?token=${token}`;
@@ -123,9 +136,19 @@ function emailHtml({ heading, body, ctaLabel, ctaUrl, footer }: {
   <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px">
     <tr><td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
-        <!-- Logo -->
+        <!-- Logo. Table cells, not flex/gap: Outlook supports neither.
+             alt="" is deliberate — the wordmark beside it already says "Kitevo", and when a
+             client blocks images this degrades to the wordmark alone rather than to the
+             word twice. -->
         <tr><td style="padding-bottom:32px">
-          <span style="font-size:18px;font-weight:600;color:#111110;letter-spacing:-0.02em">Kitevo</span>
+          <table cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="padding-right:8px;line-height:0">
+              <img src="${LOGO_URL}" width="22" height="22" alt="" style="display:block;border:0;outline:none;text-decoration:none">
+            </td>
+            <td style="line-height:1">
+              <span style="font-size:18px;font-weight:600;color:#111110;letter-spacing:-0.02em">Kitevo</span>
+            </td>
+          </tr></table>
         </td></tr>
         <!-- Card -->
         <tr><td style="background:#ffffff;border-radius:16px;padding:40px;border:1px solid #e8e4e0">

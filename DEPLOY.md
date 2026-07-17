@@ -63,18 +63,25 @@ ones marked "new for prod".
 | `GOOGLE_CLIENT_ID` | Google SSO + YouTube. |
 | `GOOGLE_CLIENT_SECRET` | Google SSO + YouTube. |
 | `RESEND_API_KEY` | Transactional email. |
-| `RESEND_FROM_EMAIL` | Must be on a Resend-verified domain, or sends fail. |
+| `RESEND_FROM_EMAIL` | Must be on a Resend-verified domain. Guarded (see below). |
 
 The price ids are read dynamically as
 `STRIPE_PRICE_ID_${tierId.toUpperCase()}${suffix}` (`config/subscriptions.ts`),
 so a missing one fails at checkout, not at build. Set all six.
 
-`NEXT_PUBLIC_APP_URL` is guarded: `scripts/vercel-build.cjs` fails a **production**
-build if it is unset, not https, pointing at localhost, or carrying a trailing
-slash. Preview and local builds only warn. Without that guard the failure is
-silent rather than loud — `lib/app-url.ts` falls back to `http://localhost:3000`,
-which would publish "our website is located at localhost:3000" on the privacy
-page and point every OAuth redirect there.
+Two vars are guarded — `scripts/vercel-build.cjs` fails a **production** build
+(preview and local only warn) because both fall back to something that looks fine
+and is silently broken:
+
+- **`NEXT_PUBLIC_APP_URL`** — rejected if unset, not https, pointing at
+  localhost, or carrying a trailing slash. `lib/app-url.ts` falls back to
+  `http://localhost:3000`, which would publish "our website is located at
+  localhost:3000" on the privacy page and point every OAuth redirect there.
+- **`RESEND_FROM_EMAIL`** — rejected if unset, malformed, or still an
+  `@resend.dev` address. `lib/email.ts` falls back to Resend's sandbox sender,
+  which only delivers to your own verified address. Every verification email,
+  password reset, and inquiry notification to a real user would be dropped with
+  no error.
 
 ## 4. Stripe live mode
 
