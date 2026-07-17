@@ -68,11 +68,24 @@ ones marked "new for prod".
 | `GOOGLE_CLIENT_ID` | Google SSO + YouTube. |
 | `GOOGLE_CLIENT_SECRET` | Google SSO + YouTube. |
 | `RESEND_API_KEY` | Transactional email. |
-| `RESEND_FROM_EMAIL` | Must be on a Resend-verified domain. Guarded (see below). |
+| `RESEND_FROM_EMAIL` | `Kitevo <hello@mail.getkitevo.com>` — see the note below. Guarded. |
 
 The price ids are read dynamically as
 `STRIPE_PRICE_ID_${tierId.toUpperCase()}${suffix}` (`config/subscriptions.ts`),
 so a missing one fails at checkout, not at build. Set all six.
+
+**The verified sending domain is `mail.getkitevo.com`, not the root.** Sending
+from a subdomain is deliberate: transactional bounces and spam complaints hit the
+subdomain's reputation instead of `getkitevo.com`, so a bad send week can't
+poison mail from the root later. Resend only sends from a *verified* domain, so
+`hello@getkitevo.com` would be rejected on every send. Use
+`Kitevo <hello@mail.getkitevo.com>`. The display-name form is what makes the From
+line read "Kitevo" rather than a raw address.
+
+Verified records (checked live, July 2026): DKIM at
+`resend._domainkey.mail.getkitevo.com`, SPF `v=spf1 include:amazonses.com ~all`
+on `send.mail.getkitevo.com`, MX to `feedback-smtp.eu-west-1.amazonses.com`,
+DMARC `p=none` on the subdomain.
 
 Two vars are guarded — `scripts/vercel-build.cjs` fails a **production** build
 (preview and local only warn) because both fall back to something that looks fine
@@ -145,3 +158,9 @@ step can't prove.
   (`channels` + `playlistItems`) against a 10k/day default.
 - Avatars and logos are base64 in Postgres. Fine at current scale; revisit
   before the row count makes the table unpleasant.
+- Add DMARC on the **root**: `_dmarc.getkitevo.com` → `v=DMARC1; p=reject;`.
+  Nothing legitimate sends from the root (all mail goes via
+  `mail.getkitevo.com`), so `p=reject` costs nothing and stops anyone spoofing
+  `@getkitevo.com` at brands — which matters more than usual for a product whose
+  pitch is that its numbers can be trusted. Leave the subdomain's `p=none` until
+  you've watched real delivery for a few weeks.

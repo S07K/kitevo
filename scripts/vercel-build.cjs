@@ -86,11 +86,36 @@ function checkFromEmail() {
         ? `is not a valid email address (${raw}).`
         : null;
 
-  if (!problem) return;
+  if (!problem) {
+    // Warn (don't fail) when the sender isn't on the app's own domain. Resend only sends
+    // from a *verified* domain, so `hello@getkitevo.com` when you verified
+    // `mail.getkitevo.com` throws at send time, not here — the same silent-drop this guard
+    // exists to prevent. Not fatal: sending from an unrelated domain is a legitimate, if
+    // unusual, setup, and this check can't see what you actually verified with Resend.
+    const appHost = safeHost(process.env.NEXT_PUBLIC_APP_URL);
+    const fromHost = address.split("@")[1]?.toLowerCase();
+    if (appHost && fromHost && fromHost !== appHost && !fromHost.endsWith(`.${appHost}`)) {
+      console.log(
+        `\n[vercel-build] Note: RESEND_FROM_EMAIL (${fromHost}) is not ${appHost} or a\n` +
+          `  subdomain of it. Fine if that domain is verified in Resend; every email is\n` +
+          `  silently rejected if it isn't.\n`
+      );
+    }
+    return;
+  }
   const msg = `\n[vercel-build] RESEND_FROM_EMAIL ${problem}${isProd ? "" : " (preview/local build — continuing)"}\n  See DEPLOY.md step 3.\n`;
   if (!isProd) return void console.log(msg);
   console.error(msg);
   process.exit(1);
+}
+
+/** Host of a URL, or null if it isn't parseable. */
+function safeHost(url) {
+  try {
+    return new URL(String(url)).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
 }
 
 checkAppUrl();
