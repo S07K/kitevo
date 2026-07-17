@@ -31,14 +31,29 @@ never 404.
   a stale Prisma client against an empty database.
 - Framework preset: Next.js. Install/output settings: defaults.
 
-## 2. Production Postgres
+## 2. Production Postgres (Supabase)
 
-- Create a Neon (or Vercel Postgres) database. Copy the **pooled** connection
-  string.
+Supabase offers three connection strings and Prisma needs **two of them**, neither
+being the one called "direct connection". Get this wrong and it fails at runtime
+or mid-migration with errors that don't name the cause. From Supabase → Connect:
+
+| Env var | Which string | Why |
+|---|---|---|
+| `DATABASE_URL` | **Transaction pooler**, port **6543**, plus `?pgbouncer=true&connection_limit=1` | Runtime. Serverless opens a connection per invocation and exhausts a direct one. Transaction mode has no prepared statements, and Prisma uses them unless `pgbouncer=true` says otherwise. |
+| `DIRECT_URL` | **Session pooler**, port **5432** (the `...pooler.supabase.com` host) | Schema changes. `prisma db push` runs in a transaction, which the transaction pooler cannot do. |
+
+**Do not use Supabase's "direct connection" (`db.<ref>.supabase.co`) for
+`DIRECT_URL`.** It is IPv6-only unless you buy the IPv4 add-on, and Vercel's
+builder will not reach it. The shared pooler is IPv4 on every tier, which is why
+the session pooler is the right answer here.
+
+`prisma/schema.prisma` declares both via `url` and `directUrl`.
+`scripts/vercel-build.cjs` fails the build if `DATABASE_URL` is set without
+`DIRECT_URL`, and warns if either port looks wrong.
+
 - Schema sync is `prisma db push`, not migrations — there is no
-  `prisma/migrations` directory. `scripts/vercel-build.cjs` runs the push
-  automatically once `DATABASE_URL` is set, so the first deploy creates the
-  schema.
+  `prisma/migrations` directory. The build runs the push automatically once
+  `DATABASE_URL` is set, so the first deploy creates the schema.
 - `db push` runs with `--accept-data-loss`. On an empty database that's
   harmless. Once real users exist, review any destructive schema change before
   merging to `main`.
@@ -50,19 +65,20 @@ ones marked "new for prod".
 
 | Var | Notes |
 |---|---|
-| `DATABASE_URL` | Pooled Neon string from step 2. |
+| `DATABASE_URL` | Supabase **transaction pooler** (:6543) + `?pgbouncer=true&connection_limit=1`. See step 2. |
+| `DIRECT_URL` | Supabase **session pooler** (:5432). Needed for `db push`. See step 2. |
 | `NEXT_PUBLIC_APP_URL` | `https://getkitevo.com` — no trailing slash (the build guard rejects one). |
 | `NEXTAUTH_URL` | `https://getkitevo.com` — same as `NEXT_PUBLIC_APP_URL`. |
 | `NEXTAUTH_SECRET` | **New for prod.** `openssl rand -base64 32`. Do not reuse the dev value. |
 | `SUBSCRIPTION_COOKIE_SECRET` | **New for prod.** `openssl rand -base64 32`. Signs the Stripe customer id cookie. |
-| `STRIPE_SECRET_KEY` | **Live** key (`sk_live_…`), not test. |
+| `STRIPE_SECRET_KEY` | **Test** key (`sk_test_…`) for now — see step 4. Live key only at launch. |
 | `STRIPE_WEBHOOK_SECRET` | From step 6 — comes back to fill this in. |
-| `STRIPE_PRICE_ID_STARTER` | Live price id. |
-| `STRIPE_PRICE_ID_STARTER_YEARLY` | Live price id. |
-| `STRIPE_PRICE_ID_PRO` | Live price id. |
-| `STRIPE_PRICE_ID_PRO_YEARLY` | Live price id. |
-| `STRIPE_PRICE_ID_BRAND` | Live price id. |
-| `STRIPE_PRICE_ID_BRAND_YEARLY` | Live price id. |
+| `STRIPE_PRICE_ID_STARTER` | Test price id for now; swap at launch (step 4). |
+| `STRIPE_PRICE_ID_STARTER_YEARLY` | Test price id for now; swap at launch (step 4). |
+| `STRIPE_PRICE_ID_PRO` | Test price id for now; swap at launch (step 4). |
+| `STRIPE_PRICE_ID_PRO_YEARLY` | Test price id for now; swap at launch (step 4). |
+| `STRIPE_PRICE_ID_BRAND` | Test price id for now; swap at launch (step 4). |
+| `STRIPE_PRICE_ID_BRAND_YEARLY` | Test price id for now; swap at launch (step 4). |
 | `META_APP_ID` | Instagram Graph API. |
 | `META_APP_SECRET` | Instagram Graph API. |
 | `GOOGLE_CLIENT_ID` | Google SSO + YouTube. |
@@ -101,7 +117,15 @@ and is silently broken:
   password reset, and inquiry notification to a real user would be dropped with
   no error.
 
-## 4. Stripe live mode
+## 4. Stripe live mode — AT LAUNCH, NOT NOW
+
+Deploy with **test** keys. The pre-launch deploy exists so Meta and Google
+reviewers can see a live app; nobody is paying, so live Stripe is not needed and
+its absence blocks nothing. This also decouples the deploy from Stripe India's
+invitation queue and the registered-business requirement, which are measured in
+weeks.
+
+When you actually launch:
 
 - Flip the dashboard to live mode and recreate the six prices (test prices do not
   carry over). Copy each id into step 3.

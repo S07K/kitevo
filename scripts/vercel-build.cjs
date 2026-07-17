@@ -124,12 +124,50 @@ checkFromEmail();
 run("npx prisma generate");
 
 if (process.env.DATABASE_URL && String(process.env.DATABASE_URL).trim() !== "") {
+  checkDbUrls();
   run("npx prisma db push --accept-data-loss");
 } else {
   console.log(
     "\n[vercel-build] DATABASE_URL not set — skipping prisma db push.\n" +
       "  Production: set DATABASE_URL on Vercel so schema sync runs.\n"
   );
+}
+
+/**
+ * Supabase hands out three connection strings and Prisma needs two specific ones. Getting
+ * this wrong fails at runtime or mid-migration with errors that don't name the cause, so
+ * check the shape here where we can say what's actually wrong.
+ */
+function checkDbUrls() {
+  const db = (process.env.DATABASE_URL ?? "").trim();
+  const direct = (process.env.DIRECT_URL ?? "").trim();
+
+  // prisma/schema.prisma declares directUrl, so `db push` needs it. Without it the push
+  // would try to run a transaction through the transaction pooler, which cannot.
+  if (!direct) {
+    console.error(
+      "\n[vercel-build] DIRECT_URL is not set, but prisma/schema.prisma declares directUrl.\n" +
+        "  `prisma db push` runs in a transaction and cannot use the transaction pooler.\n" +
+        "  Set DIRECT_URL to Supabase's SESSION pooler (:5432 on the pooler host).\n" +
+        "  Not the 'direct connection' — that is IPv6-only without the IPv4 add-on.\n" +
+        "  See DEPLOY.md step 2.\n"
+    );
+    process.exit(1);
+  }
+
+  // Transaction mode has no prepared statements; Prisma uses them unless told otherwise.
+  if (db.includes(":6543") && !/[?&]pgbouncer=true/.test(db)) {
+    console.log(
+      "\n[vercel-build] Note: DATABASE_URL uses the transaction pooler (:6543) without\n" +
+        "  ?pgbouncer=true. Expect prepared-statement errors at runtime.\n"
+    );
+  }
+  if (direct.includes(":6543")) {
+    console.log(
+      "\n[vercel-build] Note: DIRECT_URL points at :6543 (transaction pooler). Schema\n" +
+        "  changes need the session pooler (:5432) and will likely fail here.\n"
+    );
+  }
 }
 
 run("npx next build");

@@ -7,7 +7,18 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+
+  // Runtime: Supabase's transaction pooler (:6543). Serverless functions open a connection
+  // per invocation, which exhausts a direct connection fast. Needs ?pgbouncer=true —
+  // transaction mode has no prepared statements, and Prisma uses them by default.
+  url = env("DATABASE_URL")
+
+  // Schema changes: `prisma db push` runs in a transaction and cannot go through the
+  // transaction pooler. Point this at the SESSION pooler (:5432 on the pooler host), not
+  // at Supabase's "direct connection" — the direct one is IPv6-only unless you buy the
+  // IPv4 add-on, and Vercel's builder will not reach it. The shared pooler is IPv4 on
+  // every tier. See DEPLOY.md step 2.
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

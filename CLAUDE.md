@@ -6,7 +6,7 @@ Kitevo is a creator-brand collaboration platform. Two sides:
 - **Creators** build professional media kits (shareable pages with live Instagram/YouTube stats), apply to brand campaigns, and get discovered
 - **Brands** post campaigns, browse/message creators via a discover page, and manage applicants
 
-Stack: Next.js 15 App Router, Prisma + Neon (Postgres), NextAuth, Stripe, Tailwind v4, Resend (email), Vercel deployment.
+Stack: Next.js 15 App Router, Prisma + Supabase (Postgres), NextAuth, Stripe, Tailwind v4, Resend (email), Vercel deployment.
 
 ---
 
@@ -191,6 +191,7 @@ Phase 3 — Business tier:
 - `CampaignView` — campaign view events (`campaignId`, nullable `viewerId`, `referrer`); owner views not recorded
 - `User.followerCount/engagementRate/statsUpdatedAt` — cached creator stats for discover filtering (refreshed from IG/YT via `lib/creator-stats-cache.ts`)
 - **Schema sync is `db push`, not migrations** (`scripts/vercel-build.cjs` runs `prisma db push --accept-data-loss`); no `prisma/migrations` dir
+- **Supabase needs two connection strings**: `DATABASE_URL` = transaction pooler (:6543, `?pgbouncer=true`) for runtime, `DIRECT_URL` = session pooler (:5432) for `db push`. Never Supabase's "direct connection" — it is IPv6-only without the paid add-on. See DEPLOY.md step 2
 
 ---
 

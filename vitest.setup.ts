@@ -8,6 +8,8 @@
  */
 
 process.env.DATABASE_URL ||= "postgresql://test:test@localhost:5432/test";
+// schema.prisma declares directUrl; Prisma CLI reads it for schema work.
+process.env.DIRECT_URL ||= "postgresql://test:test@localhost:5432/test";
 process.env.RESEND_API_KEY ||= "re_test_key";
 process.env.RESEND_FROM_EMAIL ||= "Kitevo <test@example.com>";
 process.env.STRIPE_SECRET_KEY ||= "sk_test_fake";
