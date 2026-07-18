@@ -157,6 +157,65 @@ Caption:
 
 ---
 
+## Build update, July 2026 (pairs with the screen recording)
+
+Posted as video + text, no face cam, so the copy carries the story the footage
+cannot narrate. The hook is the mistake, not the mark: a reversal travels further
+than a reveal.
+
+### X
+
+> Spent a day on the Kitevo logo and got it wrong.
+>
+> The name has "kite" in it, so I drew kites. Eleven concepts deep I remembered the name
+> is Kit + evo. The kit, evolved.
+>
+> A kite logo teaches people to mispronounce your own brand.
+>
+> Started over. Here is what shipped this week.
+
+*(280 chars. If it needs trimming, cut the last line before anything else.)*
+
+Optional reply, for the engineers:
+
+> Also found a good one. Kitevo called the YouTube search endpoint on every public kit
+> view. 100 quota units a call, 10,000 a day.
+>
+> So after roughly 100 views, everyone's videos silently disappeared.
+>
+> Same data from the uploads playlist costs 1 unit.
+
+### LinkedIn
+
+> I killed eleven logo concepts last week before I understood my own product name.
+>
+> Kitevo has "kite" in it, so I designed kites. Several of them. They were fine. Then it
+> landed that the name is Kit plus evo. The kit, evolved. A media kit that keeps itself
+> current instead of going stale the moment you export it as a PDF.
+>
+> A kite logo would have taught every visitor to mispronounce the brand.
+>
+> What I landed on prints the K three times, each impression offset slightly, like a
+> misregistered riso print. The layers behind are older impressions. The one on top is
+> the current one. Which is the product in a shape.
+>
+> Also shipped this week:
+>
+> The kit profile card, with the cover and overlapping avatar.
+>
+> Brand partners now render as real logos rather than text, with a ratio option so a wide
+> wordmark is not crushed into a square.
+>
+> A YouTube fix. I was calling the search endpoint on every public kit view, which costs
+> 100 quota units against a 10,000 daily limit. After about 100 views, everyone's videos
+> silently disappeared. The same data from the uploads playlist costs 1 unit.
+>
+> Caching on the platform API calls. 656ms down to zero on repeat views.
+>
+> Kitevo is still in development. The domain is bought and deployment is next.
+
+---
+
 ## Ongoing post ideas
 
 Build-in-public works when the posts are specific. "Made progress today" is worth
