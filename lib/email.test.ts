@@ -89,4 +89,21 @@ describe("email templates", () => {
     const { from } = await capture(SENDERS[0].run);
     expect(from).not.toMatch(/@resend\.dev$/);
   });
+
+  // The bug this guards: resend.emails.send() resolves with { error } instead of
+  // throwing, so `await` alone discards failures. A signup then reports success while
+  // no email was ever accepted, and the caller's .catch() never fires.
+  describe.each(SENDERS)("$name error handling", ({ run }) => {
+    it("rejects when Resend returns an error", async () => {
+      send.mockClear();
+      send.mockResolvedValueOnce({ data: null, error: { message: "domain is not verified" } });
+      await expect(run()).rejects.toThrow(/not verified/);
+    });
+
+    it("names the failing template in the error", async () => {
+      send.mockClear();
+      send.mockResolvedValueOnce({ data: null, error: { message: "boom" } });
+      await expect(run()).rejects.toThrow(/^\[email:[a-z-]+\]/);
+    });
+  });
 });

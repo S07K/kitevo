@@ -17,9 +17,32 @@ const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
  */
 const LOGO_URL = `${APP_URL}/logo-email.png`;
 
+type SendArgs = Parameters<typeof resend.emails.send>[0];
+
+/**
+ * Send, and throw if Resend refused.
+ *
+ * `resend.emails.send()` resolves with `{ data, error }` rather than throwing, so an
+ * `await` alone silently discards every failure: a rejected send looks identical to a
+ * delivered one. That is how a signup could report success while no verification email
+ * was ever accepted — the caller's own `.catch()` never fired because nothing rejected.
+ *
+ * The most common rejection is a `from` address on a domain that is not verified in
+ * Resend. We send from `mail.getkitevo.com`, so `hello@getkitevo.com` is refused even
+ * though it looks right and passes the build guard.
+ */
+async function send(args: SendArgs, context: string): Promise<void> {
+  const { error } = await resend.emails.send(args);
+  if (error) {
+    // Named so the failing template is obvious in the log, since these are usually
+    // fire-and-forget at the call site.
+    throw new Error(`[email:${context}] Resend rejected the send: ${error.message}`);
+  }
+}
+
 export async function sendVerificationEmail(email: string, token: string) {
   const url = `${APP_URL}/api/auth/verify-email?token=${token}`;
-  await resend.emails.send({
+  await send({
     from: FROM,
     to: email,
     subject: "Verify your email · Kitevo",
@@ -30,7 +53,7 @@ export async function sendVerificationEmail(email: string, token: string) {
       ctaUrl: url,
       footer: "If you didn't create an account, you can safely ignore this email.",
     }),
-  });
+  }, "verification");
 }
 
 export async function sendInquiryNotification({
@@ -48,7 +71,7 @@ export async function sendInquiryNotification({
 }) {
   const dashboardUrl = `${APP_URL}/dashboard`;
   const company = from.company ? ` (${from.company})` : "";
-  await resend.emails.send({
+  await send({
     from: FROM,
     to: ownerEmail,
     subject: `New inquiry on your kit "${kitName}" · Kitevo`,
@@ -60,7 +83,7 @@ export async function sendInquiryNotification({
       footer: `You received this because someone submitted an inquiry on your ${kitName} media kit. To stop these emails, contact us via your dashboard.`,
     }),
     replyTo: from.email,
-  });
+  }, "inquiry");
 }
 
 export async function sendViewMilestoneEmail({
@@ -76,7 +99,7 @@ export async function sendViewMilestoneEmail({
 }) {
   const dashboardUrl = `${APP_URL}/dashboard`;
   const milestoneFormatted = milestone >= 1000 ? `${milestone / 1000}k` : String(milestone);
-  await resend.emails.send({
+  await send({
     from: FROM,
     to: ownerEmail,
     subject: `Your kit "${kitName}" just hit ${milestoneFormatted} views`,
@@ -87,11 +110,11 @@ export async function sendViewMilestoneEmail({
       ctaUrl: dashboardUrl,
       footer: `You received this because your kit hit a view milestone. To stop these emails, contact us via your dashboard.`,
     }),
-  });
+  }, "view-milestone");
 }
 
 export async function sendDeleteAccountCodeEmail(email: string, code: string): Promise<void> {
-  const { error } = await resend.emails.send({
+  await send({
     from: FROM,
     to: email,
     subject: "Your account deletion code · Kitevo",
@@ -102,13 +125,12 @@ export async function sendDeleteAccountCodeEmail(email: string, code: string): P
       ctaUrl: APP_URL,
       footer: "This code was requested from the account settings page. Do not share it with anyone.",
     }),
-  });
-  if (error) throw new Error(error.message);
+  }, "delete-account");
 }
 
 export async function sendPasswordResetEmail(email: string, token: string) {
   const url = `${APP_URL}/reset-password?token=${token}`;
-  await resend.emails.send({
+  await send({
     from: FROM,
     to: email,
     subject: "Reset your password · Kitevo",
@@ -119,7 +141,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
       ctaUrl: url,
       footer: "If you didn't request a password reset, you can safely ignore this email.",
     }),
-  });
+  }, "password-reset");
 }
 
 function emailHtml({ heading, body, ctaLabel, ctaUrl, footer }: {
