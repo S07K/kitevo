@@ -25,6 +25,15 @@ export const metadata: Metadata = {
   description:
     "Turn your link-in-bio into a high-end agency portfolio. Live Instagram & YouTube stats, audience demographics, and growth charts that win brand deals.",
   metadataBase: new URL(BASE_URL),
+  /*
+    Google Search Console ownership proof. Required before Google's OAuth branding
+    verification will accept getkitevo.com as our homepage. The token is public (it ships
+    in the HTML), so it lives in an env var only to avoid a code change per environment.
+    Set GOOGLE_SITE_VERIFICATION in Vercel, redeploy, then verify in Search Console.
+  */
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
   openGraph: {
     siteName: "Kitevo",
     type: "website",
