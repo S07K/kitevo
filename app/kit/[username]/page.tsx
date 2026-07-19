@@ -10,6 +10,7 @@ import {
   MOCK_LINKS,
   MOCK_RATES,
   MOCK_BRANDS,
+  MOCK_POSTS,
 } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
@@ -219,7 +220,16 @@ export default async function MediaKitPage({
   }
 
   if (DEMO_SLUGS.includes(slug)) {
-    const creator = { name: MOCK_CREATOR.name, username: MOCK_CREATOR.username, bio: MOCK_CREATOR.bio };
+    // avatarUrl was omitted here, so the demo fell back to an initial even once the
+    // avatar file existed. niches/location give the hero the same shape a real kit has.
+    const creator = {
+      name: MOCK_CREATOR.name,
+      username: MOCK_CREATOR.username,
+      bio: MOCK_CREATOR.bio,
+      avatarUrl: MOCK_CREATOR.avatar,
+      niches: ["Fashion", "Lifestyle", "Travel"],
+      location: "Los Angeles, CA",
+    };
     const [platformStats, enabledPlatformIds] = await Promise.all([
       getStatsForCreator({ instagram: creator.username }),
       Promise.resolve(getEnabledPlatformIds()),
@@ -233,6 +243,7 @@ export default async function MediaKitPage({
         enabledPlatformIds={enabledPlatformIds}
         rates={MOCK_RATES}
         brands={MOCK_BRANDS}
+        instagramPosts={MOCK_POSTS}
         appearance={DEFAULT_KIT_APPEARANCE}
         isDemoKit
       />

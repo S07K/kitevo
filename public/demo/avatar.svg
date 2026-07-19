@@ -1,0 +1,10 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Abstract portrait">
+  <defs>
+  <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse">
+    <circle cx="1.5" cy="1.5" r="1.1" fill="#f5f0e8" opacity="0.10"/>
+  </pattern></defs>
+  <rect width="400" height="400" fill="#111110"/>
+  <rect width="400" height="400" fill="url(#dots)"/>
+  <g><circle cx="189" cy="431" r="200" fill="#6366f1" opacity="0.9"/><circle cx="194.5" cy="436.5" r="200" fill="#c97b4b" opacity="0.9"/><circle cx="200" cy="442" r="200" fill="#f5f0e8" opacity="0.9"/></g>
+  <g><circle cx="189" cy="147" r="78" fill="#6366f1" opacity="0.9"/><circle cx="194.5" cy="152.5" r="78" fill="#c97b4b" opacity="0.9"/><circle cx="200" cy="158" r="78" fill="#f5f0e8" opacity="0.9"/></g>
+</svg>
