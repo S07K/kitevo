@@ -11,6 +11,9 @@ type NavUser = { name: string | null; avatarUrl: string | null; username: string
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
+  // A real page, not an in-page anchor. Rendered with <a> like the rest, which is fine:
+  // it is a full navigation away from the landing page either way.
+  { label: "Live example", href: "/kit/demo" },
   { label: "Vibes", href: "#vibes" },
   { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },

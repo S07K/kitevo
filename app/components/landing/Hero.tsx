@@ -237,12 +237,18 @@ export function Hero(): ReactNode {
           >
             Start building for free
           </Link>
-          <a
-            href="#how-it-works"
+          {/*
+            Points at a real kit rather than scrolling to #how-it-works. Nothing on the
+            public site linked to the demo, so a visitor could not see what Kitevo
+            produces without signing up first — and the product is the page, not the
+            description of it. #how-it-works is still reachable from the nav.
+          */}
+          <Link
+            href="/kit/demo"
             className="focus-ring border-border text-foreground hover:bg-muted inline-flex h-13 w-full items-center justify-center rounded-full border px-8 text-sm font-medium transition-colors sm:w-auto"
           >
-            See how it works
-          </a>
+            See a live media kit
+          </Link>
         </motion.div>
 
         <motion.p
