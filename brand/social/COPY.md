@@ -234,12 +234,25 @@ opening line has to be about them or it reads as a mass DM and gets ignored.
 > into a live media kit instead of a PDF that goes out of date the day you export it.
 > One link, real numbers, always current.
 >
+> Here is a sample one so you can see what it looks like: getkitevo.com/kit/demo
+>
 > It is in private beta and free. Would you try it and tell me what is broken? I want the
 > honest version, not the polite one.
 
-*Roughly 60 words. Instagram DMs get skimmed, and anything longer reads as a pitch deck.
-"Tell me what is broken" is the actual ask: it is a small favour, it flatters their
-judgement, and it sets expectations that this is early.*
+*Instagram DMs get skimmed, and anything longer reads as a pitch deck. "Tell me what is
+broken" is the actual ask: it is a small favour, it flatters their judgement, and it sets
+expectations that this is early.*
+
+**Why the demo kit and not the homepage.** `/kit/demo` is the product itself, fully
+rendered, with no signup and no account needed. A creator understands it in three seconds.
+The homepage is a pitch about the product, which is a slower and weaker read for someone
+who already makes content for a living. Send `getkitevo.com` in DM 2 when they are ready
+to sign up.
+
+**A caution on links.** Instagram filters DMs with links from accounts you do not follow
+each other with, so a first message containing a URL is more likely to land in Requests or
+be hidden entirely. If you do not have a mutual follow, send the message without the link,
+and reply with the demo link once they respond.
 
 ### DM 2 — after they say yes
 
@@ -259,6 +272,8 @@ judgement, and it sets expectations that this is early.*
 
 > Hey, I built a thing. It turns your Instagram and YouTube into a live media kit for
 > pitching brands, instead of a PDF. Free, early, probably broken in places.
+>
+> This is what it makes: getkitevo.com/kit/demo
 >
 > Want to be one of the first to try it and tell me what is wrong with it?
 
