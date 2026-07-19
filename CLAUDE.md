@@ -195,6 +195,29 @@ Phase 3 — Business tier:
 
 ---
 
+## Deployment status (July 2026)
+
+**Live at https://getkitevo.com.** Vercel Hobby, personal repo `S07K/kitevo`
+(Hobby refuses private *org* repos — do not move it back). Supabase Postgres via
+two connection strings, Resend email from `mail.getkitevo.com`, Stripe in **test**
+mode. Instagram insights and YouTube data both verified working in production.
+
+Full setup and the reasoning behind each choice is in `DEPLOY.md`. Open items:
+
+- **Publish the Google OAuth consent screen** if still in "Testing": Google
+  expires refresh tokens after 7 days in that state, so every creator's YouTube
+  connection dies weekly. Separate from verification.
+- `GOOGLE_SITE_VERIFICATION` unset in Vercel, so Search Console cannot verify
+  domain ownership and Google's OAuth branding check keeps rejecting the homepage.
+- Meta App Review not filed. Not required for a beta: creators added as Instagram
+  **testers** can connect without review or Business Verification.
+- Platform access tokens are stored in plain text (the DB provider encrypts at
+  rest). Worth real encryption before public launch.
+- `/api/auth/resend-verification` has no rate limiting — anyone can trigger
+  unlimited email to any address, billed to us. Fix before real users.
+- Supabase free projects pause after ~7 days of inactivity; a paused DB means kit
+  links error for visitors.
+
 ## Git / Deploy
 
 - Repo: `https://github.com/S07K/kitevo.git` (personal, private — Vercel Hobby refuses private *org* repos)
