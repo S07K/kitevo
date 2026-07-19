@@ -187,3 +187,38 @@ step can't prove.
   `@getkitevo.com` at brands — which matters more than usual for a product whose
   pitch is that its numbers can be trusted. Leave the subdomain's `p=none` until
   you've watched real delivery for a few weeks.
+
+## 9. Meta App Review and Google OAuth verification
+
+Both require a **live** app: a reachable privacy policy and a screencast of the
+real OAuth flow. Neither can be filed before deploying.
+
+**You may not need Meta App Review to start.** Business Verification is required
+only if the app is used by people *without a Role on the app*. Creators added as
+Instagram **testers** in the Meta dashboard can connect fully with no review, no
+Business Verification, and no registered business. That is the zero-cost path to
+a private beta.
+
+Prepared in advance:
+
+- **Data Deletion Request Callback**: `{APP_URL}/api/meta/data-deletion`. Meta
+  requires this URL and its absence is a standard rejection. It verifies Meta's
+  HMAC-signed `signed_request`, then clears the Instagram connection and every
+  cached stat derived from it. It deliberately does *not* delete the account, as
+  the user may have signed up by email. Paste this URL into the Meta app
+  dashboard under Data Deletion.
+- **Deauthorize Callback URL**: the same endpoint works.
+- The privacy policy carries the sections Google checks during OAuth
+  verification: YouTube API Services disclosure, a link to the YouTube Terms of
+  Service, a link to Google's Privacy Policy, and how to revoke access via
+  Google's security settings page. A `#data-deletion` anchor documents all three
+  deletion routes.
+
+`youtube.readonly` is a **sensitive** scope, not restricted, so it needs no paid
+third-party security assessment. Unverified, users see an "unverified app" screen
+and you are capped at 100 of them, which is enough for a beta.
+
+**Known gap:** platform access tokens are stored in plain text. The database
+provider encrypts at rest, and the privacy policy now says exactly that rather
+than claiming application-level encryption. Worth adding real encryption before
+public launch.

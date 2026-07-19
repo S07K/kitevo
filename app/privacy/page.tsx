@@ -28,7 +28,7 @@ export default function PrivacyPolicy() {
           Privacy Policy
         </h1>
         <p className="text-muted-foreground mt-3 text-sm">
-          Last updated: June 2026
+          Last updated: July 2026
         </p>
 
         <div className="prose-sm mt-12 space-y-10 text-sm leading-relaxed text-muted-foreground">
@@ -73,6 +73,13 @@ export default function PrivacyPolicy() {
                 Instagram password.
               </li>
               <li>
+                <strong className="text-foreground">YouTube data:</strong>{" "}
+                Channel name, subscriber count, total view count, video count,
+                and recent videos with their view and like counts, fetched via
+                the YouTube Data API when you authorize the connection. We do not
+                receive or store your Google password.
+              </li>
+              <li>
                 <strong className="text-foreground">Billing data:</strong>{" "}
                 Subscription and payment information is handled directly by
                 Stripe. We store only your Stripe Customer ID — we never store
@@ -100,8 +107,8 @@ export default function PrivacyPolicy() {
                 To process payments and manage your subscription via Stripe.
               </li>
               <li>
-                To fetch your Instagram stats on your behalf and display them on
-                your kit.
+                To fetch your Instagram and YouTube statistics on your behalf and
+                display them on your kit.
               </li>
               <li>
                 To send transactional emails (account confirmation, billing
@@ -125,8 +132,9 @@ export default function PrivacyPolicy() {
                 business/creator account metrics.
               </li>
               <li>
-                We store your Instagram access token encrypted in our database
-                solely to refresh your kit statistics.
+                We store your Instagram access token in our database, solely to
+                refresh your kit statistics. Our database provider encrypts data
+                at rest.
               </li>
               <li>
                 We do not use your Instagram data for advertising, sell it to
@@ -140,9 +148,104 @@ export default function PrivacyPolicy() {
             </ul>
           </section>
 
+          {/*
+            Required by the YouTube API Services Terms of Service: apps using the API must
+            disclose it here, link Google's privacy policy and the YouTube ToS, and tell
+            users how to revoke access. Google checks this page during OAuth verification.
+          */}
+          <section id="youtube-api">
+            <h2 className="text-foreground mb-3 text-lg font-medium tracking-tight">
+              5. YouTube API Services
+            </h2>
+            <p className="mb-3">
+              Kitevo uses YouTube API Services to read your channel statistics
+              when you connect your YouTube account. By using this feature you
+              are also agreeing to be bound by the{" "}
+              <a
+                href="https://www.youtube.com/t/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground underline underline-offset-4"
+              >
+                YouTube Terms of Service
+              </a>
+              .
+            </p>
+            <ul className="ml-4 list-disc space-y-2">
+              <li>
+                We request read-only access. Kitevo cannot upload, edit, or
+                delete anything on your channel.
+              </li>
+              <li>
+                We read your subscriber count, total views, video count, and
+                recent videos with their view and like counts, solely to display
+                them on your own media kit.
+              </li>
+              <li>
+                Google&apos;s handling of your data is governed by the{" "}
+                <a
+                  href="https://policies.google.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground underline underline-offset-4"
+                >
+                  Google Privacy Policy
+                </a>
+                .
+              </li>
+              <li>
+                You can revoke Kitevo&apos;s access at any time from your
+                dashboard, or through Google&apos;s{" "}
+                <a
+                  href="https://myaccount.google.com/permissions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground underline underline-offset-4"
+                >
+                  security settings page
+                </a>
+                . On revocation we delete the stored tokens and the cached
+                statistics derived from them.
+              </li>
+            </ul>
+          </section>
+
+          {/* Anchor target: the Meta data deletion callback returns a URL pointing here. */}
+          <section id="data-deletion">
+            <h2 className="text-foreground mb-3 text-lg font-medium tracking-tight">
+              6. Deleting your data
+            </h2>
+            <p className="mb-3">There are three ways to remove your data:</p>
+            <ul className="ml-4 list-disc space-y-2">
+              <li>
+                <strong className="text-foreground">
+                  Disconnect a platform.
+                </strong>{" "}
+                Disconnecting Instagram or YouTube from your dashboard deletes
+                the stored access tokens and the statistics we cached from them.
+              </li>
+              <li>
+                <strong className="text-foreground">
+                  Remove Kitevo from Instagram or Facebook.
+                </strong>{" "}
+                If you remove Kitevo in your Instagram or Facebook app settings,
+                Meta notifies us automatically and we delete all data received
+                from Meta, along with any statistics derived from it. Your Kitevo
+                account and any kit content you wrote yourself are left intact,
+                since you may have signed up by email.
+              </li>
+              <li>
+                <strong className="text-foreground">Delete your account.</strong>{" "}
+                Deleting your account from profile settings permanently removes
+                your profile, kits, inquiries, messages, and all connected
+                platform data. This cannot be undone.
+              </li>
+            </ul>
+          </section>
+
           <section>
             <h2 className="text-foreground mb-3 text-lg font-medium tracking-tight">
-              5. Data sharing
+              7. Data sharing
             </h2>
             <p>
               We do not sell your personal data. We share data only with service
@@ -174,7 +277,7 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="text-foreground mb-3 text-lg font-medium tracking-tight">
-              6. Your rights
+              8. Your rights
             </h2>
             <p className="mb-3">You have the right to:</p>
             <ul className="ml-4 list-disc space-y-2">
@@ -192,7 +295,7 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="text-foreground mb-3 text-lg font-medium tracking-tight">
-              7. Data retention
+              9. Data retention
             </h2>
             <p>
               We retain your data for as long as your account is active. If you
@@ -204,7 +307,7 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="text-foreground mb-3 text-lg font-medium tracking-tight">
-              8. Security
+              10. Security
             </h2>
             <p>
               We implement industry-standard security practices including encrypted
@@ -216,7 +319,7 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="text-foreground mb-3 text-lg font-medium tracking-tight">
-              9. Cookies
+              11. Cookies
             </h2>
             <p>
               We use a minimal set of cookies: a session cookie for
@@ -228,7 +331,7 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="text-foreground mb-3 text-lg font-medium tracking-tight">
-              10. Changes to this policy
+              12. Changes to this policy
             </h2>
             <p>
               We may update this Privacy Policy from time to time. We will notify
@@ -240,7 +343,7 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="text-foreground mb-3 text-lg font-medium tracking-tight">
-              11. Contact
+              13. Contact
             </h2>
             <p>
               Questions about this Privacy Policy? Contact us via the dashboard.
