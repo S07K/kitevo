@@ -358,13 +358,26 @@ export function MediaKitClient({
       {/* Instagram post modal */}
       {selectedPost && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setSelectedPost(null)}>
-          <div className="bg-white dark:bg-[#1c1c1a] rounded-2xl overflow-hidden max-w-lg w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-[#1c1c1a] rounded-2xl overflow-hidden max-w-lg w-full shadow-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/*
+              object-contain in a flexible box, not object-cover in aspect-square. Instagram
+              posts are 1:1, 4:5 or 9:16, so a square crop silently cut the top and bottom
+              off most of them — a portrait post lost the subject's head. The whole point of
+              this modal is to see the post, so it must never crop.
+
+              max-h on the image plus a scrollable body keeps a tall portrait from pushing
+              the caption and stats off screen.
+            */}
             {selectedPost.thumbnailUrl && (
-              <div className="aspect-square bg-black">
-                <img src={selectedPost.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+              <div className="bg-black flex items-center justify-center shrink-0">
+                <img
+                  src={selectedPost.thumbnailUrl}
+                  alt=""
+                  className="max-h-[60vh] w-auto max-w-full object-contain"
+                />
               </div>
             )}
-            <div className="p-5">
+            <div className="p-5 overflow-y-auto">
               {selectedPost.caption && (
                 <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed mb-4 line-clamp-4">{selectedPost.caption}</p>
               )}
