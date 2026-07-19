@@ -17,6 +17,14 @@ const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
  */
 const LOGO_URL = `${APP_URL}/logo-email.png`;
 
+/**
+ * How long a verification link stays valid. Exported because three places depend on it
+ * and must agree: the signup route, the resend route's per-email cooldown (which
+ * recovers the issue time by subtracting this from the stored expiry), and the copy in
+ * the verification email below, which tells the user "expires in 24 hours".
+ */
+export const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+
 type SendArgs = Parameters<typeof resend.emails.send>[0];
 
 /**
