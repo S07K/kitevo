@@ -105,7 +105,9 @@ line read "Kitevo" rather than a raw address.
 Verified records (checked live, July 2026): DKIM at
 `resend._domainkey.mail.getkitevo.com`, SPF `v=spf1 include:amazonses.com ~all`
 on `send.mail.getkitevo.com`, MX to `feedback-smtp.eu-west-1.amazonses.com`,
-DMARC `p=none` on the subdomain.
+DMARC `v=DMARC1; p=none;` on the **root** (`_dmarc.getkitevo.com`), which covers
+`mail.getkitevo.com` too: a root DMARC policy applies to subdomains unless an `sp=`
+tag overrides it.
 
 Two vars are guarded — `scripts/vercel-build.cjs` fails a **production** build
 (preview and local only warn) because both fall back to something that looks fine
@@ -186,12 +188,11 @@ step can't prove.
   (`channels` + `playlistItems`) against a 10k/day default.
 - Avatars and logos are base64 in Postgres. Fine at current scale; revisit
   before the row count makes the table unpleasant.
-- Add DMARC on the **root**: `_dmarc.getkitevo.com` → `v=DMARC1; p=reject;`.
-  Nothing legitimate sends from the root (all mail goes via
-  `mail.getkitevo.com`), so `p=reject` costs nothing and stops anyone spoofing
-  `@getkitevo.com` at brands — which matters more than usual for a product whose
-  pitch is that its numbers can be trusted. Leave the subdomain's `p=none` until
-  you've watched real delivery for a few weeks.
+- Tighten DMARC once delivery looks healthy: `_dmarc.getkitevo.com` is currently
+  `p=none`, which only monitors. Moving it to `p=reject` stops anyone spoofing
+  `@getkitevo.com` at brands, which matters more than usual for a product whose
+  pitch is that its numbers can be trusted. Watch real delivery for a few weeks
+  first, since `p=reject` on a misconfigured domain silently bounces your own mail.
 
 ## 9. Meta App Review and Google OAuth verification
 
