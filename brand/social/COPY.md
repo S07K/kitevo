@@ -216,6 +216,64 @@ Optional reply, for the engineers:
 
 ---
 
+## Beta outreach DMs
+
+Two messages, deliberately. The first asks for help and nothing else; the second
+carries the setup steps. Front-loading the requirements (Professional account,
+linked Facebook Page, accept a tester invite buried in Instagram settings) puts
+three obstacles in front of someone who has not yet said yes, and they will not.
+
+Send individually. Never paste this to more than one person unchanged: the
+opening line has to be about them or it reads as a mass DM and gets ignored.
+
+### DM 1 — the ask
+
+> Hey [name], I have been following your [specific thing they actually make] for a while.
+>
+> I built something for creators who pitch brands. It turns your Instagram and YouTube
+> into a live media kit instead of a PDF that goes out of date the day you export it.
+> One link, real numbers, always current.
+>
+> It is in private beta and free. Would you try it and tell me what is broken? I want the
+> honest version, not the polite one.
+
+*Roughly 60 words. Instagram DMs get skimmed, and anything longer reads as a pitch deck.
+"Tell me what is broken" is the actual ask: it is a small favour, it flatters their
+judgement, and it sets expectations that this is early.*
+
+### DM 2 — after they say yes
+
+> Brilliant, thank you. Two things first, both free and quick.
+>
+> Your Instagram needs to be a Professional account (Business or Creator, switchable in
+> Instagram settings), and it needs to be linked to a Facebook Page. That is Meta's
+> requirement for pulling audience data, not mine.
+>
+> Then I will send an invite from Instagram. Accept it under Settings and privacy,
+> Website permissions, Apps and websites, Tester invites.
+>
+> After that, sign up at getkitevo.com and hit Connect Instagram. If anything fails,
+> screenshot it and send it over. That is genuinely the most useful thing you can do.
+
+### Shorter version, for people you actually know
+
+> Hey, I built a thing. It turns your Instagram and YouTube into a live media kit for
+> pitching brands, instead of a PDF. Free, early, probably broken in places.
+>
+> Want to be one of the first to try it and tell me what is wrong with it?
+
+### Who to send it to
+
+Three people, not twenty. There are three separate failure points before anyone sees a
+kit, and you need to watch real people hit them before scaling. Whatever stalls the first
+two will stall the next fifty.
+
+Priority order: creators you know personally, then your own second account (a genuine
+end-to-end run where you are not the developer), then small creators you actually follow
+and can open with something specific about.
+
+---
+
 ## Ongoing post ideas
 
 Build-in-public works when the posts are specific. "Made progress today" is worth
