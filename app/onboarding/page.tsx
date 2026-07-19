@@ -166,6 +166,20 @@ function OnboardingContent() {
     const igErr = searchParams.get("instagram_error");
     const ytResult = searchParams.get("youtube");
     if (igConnected === "1" || igErr || ytResult) {
+      /*
+        Connecting a platform is a full page load, so all component state is lost and
+        accountType comes back null. The picker at the top of the render is shown whenever
+        accountType is falsy, so it covered the step UI and the user landed back at the
+        very first screen even though setCurrentStep(1) below had already run.
+
+        accountType is deliberately never restored as "creator" from the DB (every new user
+        defaults to creator, so restoring it would skip the picker for genuinely new
+        users). But arriving here proves the choice was already made: the platforms step is
+        creator-only and sits past the picker. So restore it from that fact rather than
+        from the DB. `prev ?? ` keeps a brand restore that already won the race.
+      */
+      setAccountType((prev) => prev ?? "creator");
+      setAccountTypeLoading(false);
       setCurrentStep(1);
     }
   }, [searchParams]);
