@@ -213,10 +213,12 @@ Full setup and the reasoning behind each choice is in `DEPLOY.md`. Open items:
   **testers** can connect without review or Business Verification.
 - Platform access tokens are stored in plain text (the DB provider encrypts at
   rest). Worth real encryption before public launch.
-- Rate limiting exists only on `/api/auth/resend-verification` (`lib/rate-limit.ts`:
-  per-IP in memory, plus a durable per-email cooldown). `/api/auth/signup` and
-  `/api/auth/forgot-password` send email on the same unauthenticated terms and are
-  still unprotected.
+- Rate limiting (`lib/rate-limit.ts`) covers all three unauthenticated email routes:
+  signup, forgot-password, resend-verification. Per-IP is in memory, so it is
+  process-local on serverless and only slows a single source; the durable protection
+  is the per-email cooldown on the two resend paths, derived from the stored token
+  expiry. `vitest.setup.ts` clears windows between tests. Upgrade path if abuse ever
+  justifies it: a Redis-backed counter with the same shape.
 - Supabase free projects pause after ~7 days of inactivity; a paused DB means kit
   links error for visitors.
 

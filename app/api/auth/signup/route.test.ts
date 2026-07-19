@@ -10,6 +10,20 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+/*
+  bcrypt runs at cost factor 12 (~240ms of real CPU per call), so the rate-limit tests
+  below, which must exceed a 20-request window, would take over 5s and hit vitest's
+  default timeout. These tests are about routing and limiting, not hashing, so the hash
+  is stubbed. The cost factor itself is exercised in production, not here.
+*/
+vi.mock("bcryptjs", () => ({ hash: vi.fn().mockResolvedValue("$2a$12$stubbed") }));
+
+// Otherwise every signup constructs the real Resend client and logs a failed send.
+vi.mock("@/lib/email", () => ({
+  sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
+  VERIFY_TOKEN_TTL_MS: 24 * 60 * 60 * 1000,
+}));
+
 const { prisma } = await import("@/lib/prisma");
 
 describe("POST /api/auth/signup", () => {
@@ -81,5 +95,33 @@ describe("POST /api/auth/signup", () => {
         }),
       })
     );
+  });
+
+  // Signup both creates rows and runs bcrypt at cost 12 (~240ms CPU each), so an
+  // unthrottled loop is a cheap way to fill the database and saturate the function.
+  describe("rate limiting", () => {
+    const signup = (email: string, ip: string) =>
+      POST(
+        new Request("http://x", {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-forwarded-for": ip },
+          body: JSON.stringify({ email, password: "abcd1234", name: "T" }),
+        })
+      );
+
+    it("blocks a single IP past the limit, with Retry-After", async () => {
+      const ip = "203.0.113.40";
+      for (let i = 0; i < 20; i++) await signup(`u${i}@example.com`, ip);
+
+      const blocked = await signup("over@example.com", ip);
+      expect(blocked.status).toBe(429);
+      expect(Number(blocked.headers.get("Retry-After"))).toBeGreaterThan(0);
+    });
+
+    it("does not let one IP's limit affect another", async () => {
+      for (let i = 0; i < 21; i++) await signup(`u${i}@example.com`, "203.0.113.41");
+      const other = await signup("fresh@example.com", "203.0.113.42");
+      expect(other.status).not.toBe(429);
+    });
   });
 });

@@ -3,9 +3,36 @@ import { hash } from "bcryptjs";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail, VERIFY_TOKEN_TTL_MS } from "@/lib/email";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
+
+/*
+  Deliberately generous. Real users sign up once, but mobile carriers and offices put many
+  people behind one IP, and blocking a genuine signup costs far more than letting some
+  abuse through at this stage. Sized to stop a script creating thousands of accounts, not
+  to police normal traffic.
+
+  No per-email counterpart, unlike the other two routes: a signup by definition has no
+  prior account to cool down against, and a repeat with an existing address already exits
+  at the 409 below without sending anything.
+*/
+const IP_LIMIT = 20;
+const IP_WINDOW_MS = 60 * 60 * 1000;
 
 export async function POST(req: Request) {
   try {
+    /*
+      Checked before any parsing or hashing. Beyond spam accounts this is CPU protection:
+      the bcrypt call below runs at cost factor 12, roughly 240ms of CPU per request, so
+      an unthrottled loop is a cheap way to saturate the function.
+    */
+    const ip = rateLimit(`signup:ip:${clientIp(req)}`, IP_LIMIT, IP_WINDOW_MS);
+    if (!ip.ok) {
+      return NextResponse.json(
+        { error: "Too many signup attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(ip.retryAfterSec) } }
+      );
+    }
+
     const body = await req.json();
     const { email, password, name } = body as { email?: string; password?: string; name?: string };
 

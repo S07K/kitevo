@@ -18,3 +18,14 @@ process.env.NEXTAUTH_SECRET ||= "test-secret-at-least-32-characters-long";
 process.env.NEXTAUTH_URL ||= "http://localhost:3000";
 process.env.NEXT_PUBLIC_APP_URL ||= "http://localhost:3000";
 process.env.SUBSCRIPTION_COOKIE_SECRET ||= "test-cookie-secret-at-least-32-chars";
+
+/**
+ * Rate-limit windows are process-local, so they leak between tests in the same file: a
+ * route test that runs enough requests would start getting 429s from an earlier test's
+ * counter rather than from what it is asserting. Cleared before every test so each starts
+ * from an empty bucket.
+ */
+import { beforeEach } from "vitest";
+import { __resetRateLimits } from "./lib/rate-limit";
+
+beforeEach(() => __resetRateLimits());

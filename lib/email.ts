@@ -25,6 +25,13 @@ const LOGO_URL = `${APP_URL}/logo-email.png`;
  */
 export const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * How long a password-reset link stays valid. Same contract as the verify TTL: the
+ * forgot-password route's per-email cooldown recovers a token's issue time by
+ * subtracting this from the stored expiry, and the reset email says "expires in 1 hour".
+ */
+export const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
 type SendArgs = Parameters<typeof resend.emails.send>[0];
 
 /**
