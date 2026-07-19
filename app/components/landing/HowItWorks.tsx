@@ -12,8 +12,18 @@ const STEPS = [
   {
     number: "02",
     title: "Connect your platforms",
+    /*
+      The second sentence is a compliance requirement, not filler. Google's App Homepage
+      rules require the homepage to "explain with transparency the purpose for which your
+      app requests user data", and the FAQ that covered this is inside a client-rendered
+      accordion, so it never reaches the delivered HTML a reviewer reads.
+
+      "only reads" rather than "read-only access": the Meta scopes include
+      business_management, which technically permits more than reading, so a blanket
+      read-only claim would overstate it. What is true is that Kitevo never writes.
+    */
     description:
-      "Link Instagram and YouTube. We pull follower counts, engagement rate, audience demographics, and recent content automatically — always live.",
+      "Link Instagram and YouTube. We pull follower counts, engagement rate, audience demographics, and recent content automatically — always live. Kitevo only reads these stats to build your kit; it never posts, edits, or deletes anything on your accounts.",
   },
   {
     number: "03",
