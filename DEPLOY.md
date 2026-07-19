@@ -28,9 +28,12 @@ never 404.
 - Import `github.com/S07K/kitevo` (branch `main`). It must stay on a personal
   account: Vercel Hobby refuses private **organization** repos, though private
   personal ones are fine. Moving it back to an org means paying for Pro.
-- **Build Command: `npm run build:vercel`** — not the default `npm run build`.
-  The default skips `prisma generate` and `prisma db push`, so the build ships
-  a stale Prisma client against an empty database.
+- **Leave Build and Output Settings alone.** `vercel.json` already sets
+  `buildCommand: npm run build:vercel`, so Vercel reads it and shows the field
+  greyed out with that value. That is correct, not broken. The default
+  `npm run build` would skip `prisma generate` and `prisma db push` and ship a
+  stale client against an empty database, which is exactly why the command lives
+  in version control rather than in a dashboard field.
 - Framework preset: Next.js. Install/output settings: defaults.
 
 ## 2. Production Postgres (Supabase)
