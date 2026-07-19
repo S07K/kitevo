@@ -25,7 +25,9 @@ never 404.
 
 ## 1. Vercel project
 
-- Import `github.com/micro-builds/kitevo` (branch `main`).
+- Import `github.com/S07K/kitevo` (branch `main`). It must stay on a personal
+  account: Vercel Hobby refuses private **organization** repos, though private
+  personal ones are fine. Moving it back to an org means paying for Pro.
 - **Build Command: `npm run build:vercel`** — not the default `npm run build`.
   The default skips `prisma generate` and `prisma db push`, so the build ships
   a stale Prisma client against an empty database.

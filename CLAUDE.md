@@ -197,6 +197,6 @@ Phase 3 — Business tier:
 
 ## Git / Deploy
 
-- Repo: `https://github.com/micro-builds/kitevo.git`
+- Repo: `https://github.com/S07K/kitevo.git` (personal, private — Vercel Hobby refuses private *org* repos)
 - Branch: `main`
 - All work committed and pushed to main
