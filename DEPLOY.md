@@ -224,6 +224,14 @@ Prepared in advance:
 third-party security assessment. Unverified, users see an "unverified app" screen
 and you are capped at 100 of them, which is enough for a beta.
 
+**Publish the OAuth consent screen immediately, even before verification.** While
+its publishing status is "Testing", Google expires refresh tokens after 7 days.
+`lib/youtube-api.ts` refreshes the access token from the stored refresh token, so
+in Testing mode every creator's YouTube data goes dark weekly and they must
+reconnect. Moving to "In production" removes that expiry at once; the unverified
+warning and the 100-user cap remain until verification clears, and neither blocks
+a beta. Publishing and being verified are separate things.
+
 **Known gap:** platform access tokens are stored in plain text. The database
 provider encrypts at rest, and the privacy policy now says exactly that rather
 than claiming application-level encryption. Worth adding real encryption before
