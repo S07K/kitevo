@@ -176,7 +176,14 @@ export function Hero(): ReactNode {
           transition={{ duration: 0.6, ease: softEase, delay: 0.05 }}
           className="text-muted-foreground mb-6 text-xs font-semibold tracking-[0.2em] uppercase"
         >
-          For Creators · Built to Win Brand Deals
+          {/*
+            Names the product and states what it is, above the fold. The headline below is
+            benefit-led and never says "Kitevo", so without this a first-time visitor reads
+            a promise before they know what they are looking at. Google's OAuth branding
+            review flagged exactly that: homepage does not explain the purpose, and the
+            consent-screen app name does not match anything prominent on the page.
+          */}
+          Kitevo · Live Media Kits for Creators
         </motion.p>
 
         <h1 className="text-foreground text-[clamp(32px,7vw,80px)] leading-[1.04] font-medium tracking-tight text-balance">
