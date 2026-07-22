@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { payments } from "@/lib/payments";
 import { getSubscriptionCustomerId } from "@/lib/subscription-cookie";
 
 const BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
@@ -18,9 +18,9 @@ export async function POST(req: Request) {
 
     let customerId: string | null = null;
 
-    if (sessionId && sessionId.startsWith("cs_")) {
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-      customerId = session.customer as string | null;
+    if (sessionId && payments.isCheckoutSessionId(sessionId)) {
+      const checkout = await payments.getCheckout(sessionId);
+      customerId = checkout?.customerId ?? null;
     } else if (authSession?.user?.id) {
       const user = await prisma.user.findUnique({
         where: { id: authSession.user.id },
@@ -38,12 +38,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: returnUrl,
-    });
+    const url = await payments.createBillingPortalUrl(customerId, returnUrl);
 
-    return NextResponse.json({ url: portalSession.url });
+    return NextResponse.json({ url });
   } catch (err: unknown) {
     console.error("Create portal session error:", err);
     const message = err instanceof Error ? err.message : "Unknown error";

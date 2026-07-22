@@ -1,114 +1,97 @@
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { getVerifiedTierForPriceId } from "@/config/subscriptions";
-import Stripe from "stripe";
+import { payments, WebhookVerificationError } from "@/lib/payments";
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+/**
+ * Payment provider webhook.
+ *
+ * Provider-agnostic: `payments.parseWebhook` verifies the signature and translates the
+ * provider's event into one of our domain events, so this file contains no Stripe types
+ * and no signature logic.
+ *
+ * This is the path that grants paid features. If it silently fails, a user pays and
+ * receives nothing, so every branch logs.
+ */
+
+/** Look up the local user for a provider customer id. */
+async function findUserByCustomerId(customerId: string | null): Promise<string | null> {
+  if (!customerId) return null;
+  const user = await prisma.user.findFirst({
+    where: { stripeCustomerId: customerId },
+    select: { id: true },
+  });
+  return user?.id ?? null;
+}
 
 export async function POST(req: Request) {
-  if (!webhookSecret) {
-    console.error("STRIPE_WEBHOOK_SECRET not set");
-    return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
+  const rawBody = await req.text();
+
+  let event;
+  try {
+    event = await payments.parseWebhook(rawBody, req.headers);
+  } catch (err) {
+    if (err instanceof WebhookVerificationError) {
+      console.error(`[webhook] ${payments.id} verification failed:`, err.message);
+      return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+    }
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[webhook] Failed to parse:", message);
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
-
-  const body = await req.text();
-  const sig = req.headers.get("stripe-signature");
-
-  if (!sig) {
-    return NextResponse.json({ error: "Missing stripe-signature" }, { status: 400 });
-  }
-
-  let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Webhook signature verification failed:", message);
-    return NextResponse.json({ error: `Webhook Error: ${message}` }, { status: 400 });
-  }
-
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const customerId = session.customer as string | null;
-      const userId =
-        (session.client_reference_id as string) ||
-        (session.metadata?.userId as string) ||
-        null;
-
-      // Derive the badge tier from the purchased plan's price (creator_pro vs brand_verified).
-      let verifiedTier: string | null = null;
-      if (session.subscription) {
-        const subscription = await stripe.subscriptions.retrieve(
-          session.subscription as string
-        );
-        const priceId = subscription.items?.data?.[0]?.price?.id ?? null;
-        verifiedTier = getVerifiedTierForPriceId(priceId);
-        console.log(
-          `[Webhook] Subscription created: ${subscription.id} for customer ${customerId} (tier ${verifiedTier ?? "none"})`
-        );
-      }
-
-      if (customerId && userId) {
-        try {
+    switch (event.type) {
+      case "checkout.completed": {
+        // The badge tier is derived from the purchased price (creator_pro vs brand_verified).
+        const verifiedTier = getVerifiedTierForPriceId(event.priceId);
+        if (event.customerId && event.userId) {
           await prisma.user.update({
-            where: { id: userId },
-            data: { stripeCustomerId: customerId, verifiedTier },
+            where: { id: event.userId },
+            data: { stripeCustomerId: event.customerId, verifiedTier },
           });
-          console.log(`[Webhook] Linked customer ${customerId} to user ${userId}, granted ${verifiedTier ?? "no"} tier`);
-        } catch (e) {
-          console.error("[Webhook] Failed to set stripeCustomerId:", e);
+          console.log(
+            `[webhook] Linked customer ${event.customerId} to user ${event.userId}, granted ${verifiedTier ?? "no"} tier`
+          );
+        } else {
+          console.error(
+            `[webhook] checkout.completed missing ids (customer=${event.customerId}, user=${event.userId}) — tier not granted`
+          );
         }
+        break;
       }
-      break;
-    }
-    case "customer.subscription.updated": {
-      const subscription = event.data.object as Stripe.Subscription;
-      const status = subscription.status;
-      const priceId = subscription.items?.data?.[0]?.price?.id ?? null;
-      const tier = status === "active" ? getVerifiedTierForPriceId(priceId) : null;
-      if (subscription.customer) {
-        try {
-          const user = await prisma.user.findFirst({
-            where: { stripeCustomerId: subscription.customer as string },
-            select: { id: true },
-          });
-          if (user) {
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { verifiedTier: tier },
-            });
-            console.log(`[Webhook] Subscription ${status} — verifiedTier ${tier ? `set to ${tier}` : "cleared"} for user ${user.id}`);
-          }
-        } catch (e) {
-          console.error("[Webhook] Failed to update verifiedTier on subscription update:", e);
+
+      case "subscription.changed": {
+        const userId = await findUserByCustomerId(event.customerId);
+        if (userId) {
+          const tier = event.isActive ? getVerifiedTierForPriceId(event.priceId) : null;
+          await prisma.user.update({ where: { id: userId }, data: { verifiedTier: tier } });
+          console.log(
+            `[webhook] Subscription changed — verifiedTier ${tier ? `set to ${tier}` : "cleared"} for user ${userId}`
+          );
         }
+        break;
       }
-      break;
-    }
-    case "customer.subscription.deleted": {
-      const subscription = event.data.object as Stripe.Subscription;
-      if (subscription.customer) {
-        try {
-          const user = await prisma.user.findFirst({
-            where: { stripeCustomerId: subscription.customer as string },
-            select: { id: true },
-          });
-          if (user) {
-            await prisma.user.update({ where: { id: user.id }, data: { verifiedTier: null } });
-            console.log(`[Webhook] Subscription canceled — verifiedTier cleared for user ${user.id}`);
-          }
-        } catch (e) {
-          console.error("[Webhook] Failed to clear verifiedTier on cancellation:", e);
+
+      case "subscription.canceled": {
+        const userId = await findUserByCustomerId(event.customerId);
+        if (userId) {
+          await prisma.user.update({ where: { id: userId }, data: { verifiedTier: null } });
+          console.log(`[webhook] Subscription canceled — verifiedTier cleared for user ${userId}`);
         }
+        break;
       }
-      console.log(`[Webhook] Subscription canceled: ${subscription.id}`);
-      break;
+
+      case "ignored":
+        console.log(`[webhook] Unhandled ${payments.id} event: ${event.providerEventType}`);
+        break;
     }
-    default:
-      console.log(`[Webhook] Unhandled event type: ${event.type}`);
+  } catch (e) {
+    /*
+      Answer 200 anyway. The signature was valid, so the provider would retry and replay
+      the same event into the same error. Logged loudly instead of looping.
+    */
+    console.error(`[webhook] Failed to apply ${event.type}:`, e);
   }
 
   return NextResponse.json({ received: true });

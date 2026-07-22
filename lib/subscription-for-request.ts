@@ -1,19 +1,12 @@
-import { stripe } from "@/lib/stripe";
+import { payments } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
 import { getSubscriptionCustomerId } from "@/lib/subscription-cookie";
 import { getKitsAllowedForPriceId } from "@/config/subscriptions";
 
 async function allowedKitsForCustomer(customerId: string): Promise<number> {
-  const subscriptions = await stripe.subscriptions.list({
-    customer: customerId,
-    status: "active",
-    limit: 1,
-  });
-  const sub = subscriptions.data[0];
+  const sub = await payments.getSubscription(customerId, { activeOnly: true });
   if (!sub) return 0;
-  const item = sub.items?.data?.[0];
-  const priceId = (item?.price?.id as string) ?? null;
-  return getKitsAllowedForPriceId(priceId);
+  return getKitsAllowedForPriceId(sub.priceId);
 }
 
 /** Get allowed kits for a logged-in user (uses stripeCustomerId from DB). Free tier = 1 kit. */

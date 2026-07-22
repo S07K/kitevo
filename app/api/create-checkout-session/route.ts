@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { stripe } from "@/lib/stripe";
+import { payments } from "@/lib/payments";
 import { authOptions } from "@/lib/auth";
 import { getPriceIdForTier, type BillingInterval } from "@/config/subscriptions";
 import { prisma } from "@/lib/prisma";
@@ -8,8 +8,8 @@ import { prisma } from "@/lib/prisma";
 async function hasPaidSubscription(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { stripeCustomerId: true } });
   if (!user?.stripeCustomerId) return false;
-  const subs = await stripe.subscriptions.list({ customer: user.stripeCustomerId, status: "active", limit: 1 });
-  return subs.data.length > 0;
+  const sub = await payments.getSubscription(user.stripeCustomerId, { activeOnly: true });
+  return sub !== null;
 }
 
 export async function POST(req: Request) {
@@ -59,25 +59,17 @@ export async function POST(req: Request) {
     const successUrl = `${baseUrl}${returnBase}?success=true&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${baseUrl}${cancelBase}?canceled=true`;
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      payment_method_types: ["card"],
-      customer_email: authSession.user.email ?? undefined,
-      client_reference_id: authSession.user.id,
-      metadata: { userId: authSession.user.id },
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+    const { url } = await payments.createCheckout({
+      priceId,
+      userId: authSession.user.id,
+      email: authSession.user.email ?? undefined,
+      successUrl,
+      cancelUrl,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url });
   } catch (err: unknown) {
-    console.error("Stripe checkout error:", err);
+    console.error("Checkout error:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

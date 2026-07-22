@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { payments } from "@/lib/payments";
 import {
   setSubscriptionCookie,
   getSubscriptionCustomerId,
@@ -11,16 +11,12 @@ import {
 import { getKitsAllowedForPriceId, getTierByPriceId, getVerifiedTierForPriceId } from "@/lib/subscription-tiers";
 
 async function getSubscriptionPayload(customerId: string) {
-  const subscriptions = await stripe.subscriptions.list({
-    customer: customerId,
-    status: "all",
-    limit: 1,
-  });
-  const sub = subscriptions.data[0];
+  // Not activeOnly: a status endpoint should report "canceled" or "past_due" rather than
+  // pretending the customer never subscribed.
+  const sub = await payments.getSubscription(customerId);
   const status = sub?.status ?? "inactive";
-  const hasSubscription = status === "active" || status === "trialing";
-  const item = sub?.items?.data?.[0];
-  const priceId = (item?.price?.id as string) ?? null;
+  const hasSubscription = sub?.isActive ?? false;
+  const priceId = sub?.priceId ?? null;
   const tier = getTierByPriceId(priceId);
   const allowedKits = hasSubscription ? getKitsAllowedForPriceId(priceId) : 0;
   return {
@@ -41,31 +37,18 @@ export async function POST(req: Request) {
     const authSession = await getServerSession(authOptions);
 
     // First time after checkout: exchange session_id for customer, link to user, set cookie
-    if (sessionId && sessionId.startsWith("cs_")) {
-      const session = await stripe.checkout.sessions.retrieve(sessionId, {
-        expand: ["subscription"],
-      });
-      const customerId = session.customer as string | null;
-      if (!customerId || typeof customerId !== "string") {
+    if (sessionId && payments.isCheckoutSessionId(sessionId)) {
+      const checkout = await payments.getCheckout(sessionId);
+      const customerId = checkout?.customerId ?? null;
+      if (!customerId) {
         return NextResponse.json({ hasSubscription: false });
       }
 
-      const userId =
-        (session.client_reference_id as string) || (session.metadata?.userId as string) || null;
-
-      const subscription = session.subscription;
-      let status = "inactive";
-      let priceId: string | null = null;
-      if (subscription) {
-        const sub =
-          typeof subscription === "object"
-            ? subscription
-            : await stripe.subscriptions.retrieve(subscription as string);
-        status = sub.status;
-        const item = sub.items?.data?.[0];
-        priceId = (item?.price?.id as string) ?? null;
-      }
-      const hasSubscription = status === "active" || status === "trialing";
+      const userId = checkout?.userId ?? null;
+      const sub = checkout?.subscription ?? null;
+      const status = sub?.status ?? "inactive";
+      const priceId = sub?.priceId ?? null;
+      const hasSubscription = sub?.isActive ?? false;
       const tier = getTierByPriceId(priceId);
       const allowedKits = hasSubscription ? getKitsAllowedForPriceId(priceId) : 0;
 

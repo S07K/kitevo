@@ -184,11 +184,18 @@ function OnboardingContent() {
     }
   }, [searchParams]);
 
-  // Handle Stripe return
+  // Handle the return from hosted checkout.
   useEffect(() => {
     const success = searchParams.get("success");
     const sessionId = searchParams.get("session_id");
-    if (success === "true" && sessionId?.startsWith("cs_")) {
+    /*
+      No prefix check here. This used to require sessionId.startsWith("cs_"), a
+      Stripe-specific format that would silently stop working on a provider swap: the page
+      would simply never finalise the subscription. Validating the token is the server's
+      job — /api/subscription-status asks the active provider via
+      payments.isCheckoutSessionId and ignores anything it does not recognise.
+    */
+    if (success === "true" && sessionId) {
       setCurrentStep(2);
       fetch("/api/subscription-status", {
         method: "POST",

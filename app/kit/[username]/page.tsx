@@ -13,7 +13,7 @@ import {
   MOCK_POSTS,
 } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { payments } from "@/lib/payments";
 import { getTierByPriceId } from "@/config/subscriptions";
 import { getKitBySlug } from "@/lib/get-kit-by-slug";
 import { recordKitView } from "@/lib/kit-views";
@@ -172,13 +172,8 @@ export default async function MediaKitPage({
     let inquiryEnabled = false;
     if (user?.stripeCustomerId) {
       try {
-        const subs = await stripe.subscriptions.list({
-          customer: user.stripeCustomerId,
-          status: "active",
-          limit: 1,
-        });
-        const priceId = subs.data[0]?.items?.data?.[0]?.price?.id ?? null;
-        const tier = getTierByPriceId(priceId);
+        const sub = await payments.getSubscription(user.stripeCustomerId, { activeOnly: true });
+        const tier = getTierByPriceId(sub?.priceId ?? null);
         inquiryEnabled = tier?.id === "pro";
       } catch (e) {
         console.error("[kit page] Stripe error:", e);

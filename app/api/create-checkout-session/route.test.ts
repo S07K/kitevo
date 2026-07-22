@@ -5,21 +5,22 @@ vi.mock("next-auth", () => ({
   getServerSession: vi.fn(),
 }));
 
-// The route decides "already subscribed" via prisma (stripeCustomerId) + stripe.subscriptions.list.
+// The route decides "already subscribed" via prisma (stripeCustomerId) + the provider.
 vi.mock("@/lib/prisma", () => ({
   prisma: { user: { findUnique: vi.fn() } },
 }));
 
-vi.mock("@/lib/stripe", () => ({
-  stripe: {
-    checkout: {
-      sessions: {
-        create: vi.fn().mockResolvedValue({ url: "https://checkout.stripe.com/fake" }),
-      },
-    },
-    subscriptions: {
-      list: vi.fn().mockResolvedValue({ data: [] }),
-    },
+/*
+  Mocks the provider interface rather than Stripe's SDK shape. Before the payments
+  abstraction this had to stub `stripe.checkout.sessions.create` and
+  `stripe.subscriptions.list` — nested objects that would all change with the provider,
+  even though the route's behaviour would not.
+*/
+vi.mock("@/lib/payments", () => ({
+  payments: {
+    id: "test",
+    getSubscription: vi.fn().mockResolvedValue(null),
+    createCheckout: vi.fn().mockResolvedValue({ url: "https://checkout.example/fake" }),
   },
 }));
 
@@ -29,13 +30,13 @@ vi.mock("@/config/subscriptions", () => ({
 
 const { getServerSession } = await import("next-auth");
 const { prisma } = await import("@/lib/prisma");
-const { stripe } = await import("@/lib/stripe");
+const { payments } = await import("@/lib/payments");
 
 describe("POST /api/create-checkout-session", () => {
   beforeEach(() => {
     vi.mocked(getServerSession).mockResolvedValue(null);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
-    vi.mocked(stripe.subscriptions.list).mockResolvedValue({ data: [] } as never);
+    vi.mocked(payments.getSubscription).mockResolvedValue(null);
   });
 
   it("returns 409 when logged-in user already has an active subscription", async () => {
@@ -44,7 +45,14 @@ describe("POST /api/create-checkout-session", () => {
       expires: "",
     });
     vi.mocked(prisma.user.findUnique).mockResolvedValue({ stripeCustomerId: "cus_1" } as never);
-    vi.mocked(stripe.subscriptions.list).mockResolvedValue({ data: [{ id: "sub_1" }] } as never);
+    vi.mocked(payments.getSubscription).mockResolvedValue({
+      id: "sub_1",
+      customerId: "cus_1",
+      status: "active",
+      priceId: "price_fake",
+      isActive: true,
+      itemId: "si_1",
+    });
 
     const res = await POST(
       new Request("http://x", {
@@ -74,7 +82,23 @@ describe("POST /api/create-checkout-session", () => {
     );
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json.url).toBe("https://checkout.stripe.com/fake");
+    expect(json.url).toBe("https://checkout.example/fake");
+  });
+
+  it("passes the user id to checkout, so the webhook can identify the buyer", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: "user-1", email: "user@example.com" },
+      expires: "",
+    });
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ stripeCustomerId: null } as never);
+
+    await POST(
+      new Request("http://x", { method: "POST", body: JSON.stringify({ tierId: "starter" }) })
+    );
+
+    expect(payments.createCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "user-1", priceId: "price_fake" })
+    );
   });
 
   it("returns 401 when not logged in", async () => {

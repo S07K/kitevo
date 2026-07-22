@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { payments } from "@/lib/payments";
 import { getSubscriptionCustomerId } from "@/lib/subscription-cookie";
 import { getPriceIdForTier, getTierByPriceId } from "@/config/subscriptions";
 
@@ -43,12 +43,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
-    const sub = subscriptions.data[0];
+    const sub = await payments.getSubscription(customerId, { activeOnly: true });
     if (!sub) {
       return NextResponse.json(
         { error: "No active subscription found" },
@@ -56,15 +51,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const item = sub.items.data[0];
-    if (!item) {
-      return NextResponse.json(
-        { error: "Subscription has no items" },
-        { status: 400 }
-      );
-    }
-
-    const currentTier = getTierByPriceId(item.price.id as string);
+    const currentTier = getTierByPriceId(sub.priceId);
     if (currentTier?.id === tierId) {
       return NextResponse.json({
         url: null,
@@ -72,15 +59,7 @@ export async function POST(req: Request) {
       });
     }
 
-    await stripe.subscriptions.update(sub.id, {
-      items: [
-        {
-          id: item.id,
-          price: newPriceId,
-        },
-      ],
-      proration_behavior: "create_prorations",
-    });
+    await payments.changeSubscriptionPrice(sub, newPriceId);
 
     return NextResponse.json({
       success: true,
