@@ -109,6 +109,46 @@ function checkFromEmail() {
   process.exit(1);
 }
 
+/**
+ * Payment provider config. Only checks the provider actually selected, so having stale
+ * env for the other one is harmless.
+ *
+ * The dangerous case is Dodo in test_mode on production: checkout works, the UI looks
+ * healthy, and no money is ever taken. That fails silently, which is exactly what these
+ * guards exist for.
+ */
+function checkPaymentProvider() {
+  const isProd = process.env.VERCEL_ENV === "production";
+  const provider = (process.env.PAYMENT_PROVIDER || "stripe").trim().toLowerCase();
+
+  const fail = (msg) => {
+    const text = `\n[vercel-build] ${msg}${isProd ? "" : " (preview/local build — continuing)"}\n  See DEPLOY.md step 3.\n`;
+    if (!isProd) return void console.log(text);
+    console.error(text);
+    process.exit(1);
+  };
+
+  if (!["stripe", "dodo"].includes(provider)) {
+    return fail(`PAYMENT_PROVIDER is "${provider}". Expected "stripe" or "dodo".`);
+  }
+  if (provider !== "dodo") return;
+
+  if (!process.env.DODO_API_KEY) return fail("PAYMENT_PROVIDER=dodo but DODO_API_KEY is not set.");
+  if (!process.env.DODO_WEBHOOK_SECRET) {
+    return fail(
+      "PAYMENT_PROVIDER=dodo but DODO_WEBHOOK_SECRET is not set.\n" +
+        "  Webhooks would fail verification, so nobody who pays would be granted their plan."
+    );
+  }
+  if (isProd && process.env.DODO_ENVIRONMENT !== "live_mode") {
+    return fail(
+      `PAYMENT_PROVIDER=dodo but DODO_ENVIRONMENT is "${process.env.DODO_ENVIRONMENT || "unset"}".\n` +
+        "  Production would run against Dodo's test environment: checkout appears to work\n" +
+        "  and no real payment is ever taken. Set DODO_ENVIRONMENT=live_mode."
+    );
+  }
+}
+
 /** Host of a URL, or null if it isn't parseable. */
 function safeHost(url) {
   try {
@@ -120,6 +160,8 @@ function safeHost(url) {
 
 checkAppUrl();
 checkFromEmail();
+
+checkPaymentProvider();
 
 run("npx prisma generate");
 

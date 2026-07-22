@@ -89,18 +89,28 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
 
 export type BillingInterval = "monthly" | "yearly";
 
-/** Resolve Stripe Price ID for a tier + interval.
- *  Monthly env: STRIPE_PRICE_ID_STARTER, STRIPE_PRICE_ID_PRO
- *  Yearly env:  STRIPE_PRICE_ID_STARTER_YEARLY, STRIPE_PRICE_ID_PRO_YEARLY
+/**
+ * Resolve the active provider's price/product id for a tier + interval.
+ *
+ * Each provider names the concept differently and the ids are not interchangeable, so
+ * they live under separate env prefixes and switching provider does not require
+ * re-entering the other one's ids:
+ *
+ *   Stripe: STRIPE_PRICE_ID_STARTER,   STRIPE_PRICE_ID_BRAND_YEARLY
+ *   Dodo:   DODO_PRODUCT_ID_STARTER,   DODO_PRODUCT_ID_BRAND_YEARLY
+ *
+ * Reads PAYMENT_PROVIDER directly rather than importing lib/payments, because that module
+ * pulls in provider SDKs and this config is imported by client components too.
  */
 export function getPriceIdForTier(tierId: string, interval: BillingInterval = "monthly"): string | null {
+  const prefix = process.env.PAYMENT_PROVIDER === "dodo" ? "DODO_PRODUCT_ID" : "STRIPE_PRICE_ID";
   const suffix = interval === "yearly" ? "_YEARLY" : "";
-  const key = `STRIPE_PRICE_ID_${tierId.toUpperCase().replace(/-/g, "_")}${suffix}` as keyof typeof process.env;
+  const key = `${prefix}_${tierId.toUpperCase().replace(/-/g, "_")}${suffix}` as keyof typeof process.env;
   const value = process.env[key];
   return typeof value === "string" && value ? value : null;
 }
 
-/** Get tier by Stripe Price ID — checks both monthly and yearly IDs. */
+/** Get tier by the provider's price/product id — checks both monthly and yearly. */
 export function getTierByPriceId(priceId: string | null): SubscriptionTier | null {
   if (!priceId) return null;
   for (const tier of SUBSCRIPTION_TIERS) {

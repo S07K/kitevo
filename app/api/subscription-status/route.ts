@@ -37,15 +37,24 @@ export async function POST(req: Request) {
     const authSession = await getServerSession(authOptions);
 
     // First time after checkout: exchange session_id for customer, link to user, set cookie
-    if (sessionId && payments.isCheckoutSessionId(sessionId)) {
-      const checkout = await payments.getCheckout(sessionId);
-      const customerId = checkout?.customerId ?? null;
-      if (!customerId) {
-        return NextResponse.json({ hasSubscription: false });
-      }
+    /*
+      Fast path: exchange a just-completed checkout for its customer and link it to the
+      user immediately, so the success page does not have to wait for the webhook.
 
-      const userId = checkout?.userId ?? null;
-      const sub = checkout?.subscription ?? null;
+      Only some providers can do this. Stripe returns the customer and subscription from a
+      session; Dodo's session exposes payment status alone, so its isCheckoutSessionId
+      returns false and this block is skipped entirely. Either way the webhook is the
+      authority — this is a latency optimisation, not the source of truth.
+    */
+    const checkout =
+      sessionId && payments.isCheckoutSessionId(sessionId)
+        ? await payments.getCheckout(sessionId)
+        : null;
+
+    if (checkout?.customerId) {
+      const customerId = checkout.customerId;
+      const userId = checkout.userId;
+      const sub = checkout.subscription;
       const status = sub?.status ?? "inactive";
       const priceId = sub?.priceId ?? null;
       const hasSubscription = sub?.isActive ?? false;

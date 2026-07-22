@@ -1,24 +1,36 @@
 import type { PaymentProvider } from "./types";
 import { stripeProvider } from "./stripe-provider";
+import { dodoProvider } from "./dodo-provider";
+
+const PROVIDERS: Record<string, PaymentProvider> = {
+  stripe: stripeProvider,
+  dodo: dodoProvider,
+};
 
 /**
- * The active payment provider.
+ * The active payment provider, chosen by `PAYMENT_PROVIDER` (default: stripe).
  *
- * Adding one (Dodo, Paddle, Lemon Squeezy) means writing a second file implementing
- * `PaymentProvider` and selecting it here, ideally from an env var so the switch is a
- * config change rather than a deploy of new logic:
+ * Defaults to stripe rather than throwing on an unset value so local and preview builds
+ * keep working without extra config. An *unrecognised* value does throw: silently falling
+ * back to a different provider than intended would take real payments through the wrong
+ * account.
  *
- *   const providers = { stripe: stripeProvider, dodo: dodoProvider };
- *   export const payments = providers[process.env.PAYMENT_PROVIDER ?? "stripe"];
+ * `config/subscriptions.ts` reads the same variable to pick between `STRIPE_PRICE_ID_*`
+ * and `DODO_PRODUCT_ID_*`, so the ids always match the provider.
  *
- * Left as a direct binding for now because there is exactly one implementation, and a
- * lookup with a single entry is indirection without benefit.
- *
- * Note the DB column is still `User.stripeCustomerId`. It holds whatever the active
- * provider calls a customer, so a rename is cosmetic and would cost a migration; worth
- * doing at the point a second provider actually ships.
+ * The DB column is still `User.stripeCustomerId`. It holds whatever the active provider
+ * calls a customer; renaming costs a migration and is worth doing only once one provider
+ * is settled on.
  */
-export const payments: PaymentProvider = stripeProvider;
+const configured = process.env.PAYMENT_PROVIDER?.trim().toLowerCase();
+
+if (configured && !PROVIDERS[configured]) {
+  throw new Error(
+    `Unknown PAYMENT_PROVIDER "${configured}". Expected one of: ${Object.keys(PROVIDERS).join(", ")}`
+  );
+}
+
+export const payments: PaymentProvider = PROVIDERS[configured ?? "stripe"];
 
 export type {
   CheckoutSnapshot,
