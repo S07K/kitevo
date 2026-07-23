@@ -23,6 +23,11 @@ vi.mock("standardwebhooks", () => ({
 }));
 
 import { dodoProvider } from "./dodo-provider";
+
+// The provider is only reachable when Dodo is the active provider, which always has a key.
+// The lazy client throws without one (verified by the stripe-default import test), so
+// stub it here rather than in every describe block.
+vi.stubEnv("DODO_API_KEY", "dodo_test_key");
 import { WebhookVerificationError } from "./types";
 
 /** A Dodo subscription, shaped as the API returns it. */

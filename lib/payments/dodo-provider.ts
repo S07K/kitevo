@@ -32,17 +32,28 @@ import { WebhookVerificationError } from "./types";
  * in `config/subscriptions.ts` (see `DODO_PRODUCT_ID_*`).
  */
 
-const apiKey = process.env.DODO_API_KEY;
-if (!apiKey && process.env.NODE_ENV === "production" && process.env.PAYMENT_PROVIDER === "dodo") {
-  throw new Error("DODO_API_KEY is required when PAYMENT_PROVIDER=dodo");
+/**
+ * Lazily-built Dodo client.
+ *
+ * `lib/payments/index.ts` imports every provider so it can select one, so this module
+ * loads even when PAYMENT_PROVIDER=stripe. Constructing the SDK client at import time
+ * would then build a Dodo client (and, depending on SDK version, demand a key) for users
+ * who never touch Dodo. Building it on first use instead means importing this file costs
+ * nothing and the key is only required when Dodo is actually the active provider.
+ */
+let client: DodoPayments | null = null;
+function dodoClient(): DodoPayments {
+  if (client) return client;
+  const apiKey = process.env.DODO_API_KEY;
+  if (!apiKey) throw new Error("DODO_API_KEY is required when PAYMENT_PROVIDER=dodo");
+  client = new DodoPayments({
+    bearerToken: apiKey,
+    // Dodo runs a separate test environment; default to it so a missing or wrong setting
+    // can never take a real payment by accident.
+    environment: process.env.DODO_ENVIRONMENT === "live_mode" ? "live_mode" : "test_mode",
+  });
+  return client;
 }
-
-const dodo = new DodoPayments({
-  bearerToken: apiKey ?? "",
-  // Dodo runs a separate test environment; default to it so a missing/incorrect setting
-  // can never take a real payment by accident.
-  environment: process.env.DODO_ENVIRONMENT === "live_mode" ? "live_mode" : "test_mode",
-});
 
 /** Our own user id, round-tripped through Dodo metadata so the webhook can identify a buyer. */
 const USER_ID_KEY = "kitevo_user_id";
@@ -104,7 +115,7 @@ export const dodoProvider: PaymentProvider = {
   },
 
   async createCheckout({ priceId, userId, email, successUrl }: CreateCheckoutParams) {
-    const session = await dodo.checkoutSessions.create({
+    const session = await dodoClient().checkoutSessions.create({
       product_cart: [{ product_id: priceId, quantity: 1 }],
       customer: email ? { email, name: email } : undefined,
       // Surfaces on the Subscription object, so the webhook can map back to our user.
@@ -122,13 +133,13 @@ export const dodoProvider: PaymentProvider = {
    * not normally reached.
    */
   async getCheckout(sessionId): Promise<CheckoutSnapshot | null> {
-    const session = await dodo.checkoutSessions.retrieve(sessionId);
+    const session = await dodoClient().checkoutSessions.retrieve(sessionId);
     if (!session) return null;
     return { customerId: null, userId: null, subscription: null };
   },
 
   async getSubscription(customerId, opts) {
-    const page = await dodo.subscriptions.list({ customer_id: customerId, page_size: 10 });
+    const page = await dodoClient().subscriptions.list({ customer_id: customerId, page_size: 10 });
     const items = (page.items ?? []) as DodoSubscriptionLike[];
     const snapshots = items.map(toSnapshot);
     if (opts?.activeOnly) return snapshots.find((s) => s.isActive) ?? null;
@@ -138,7 +149,7 @@ export const dodoProvider: PaymentProvider = {
   },
 
   async changeSubscriptionPrice(subscription, newPriceId) {
-    await dodo.subscriptions.changePlan(subscription.id, {
+    await dodoClient().subscriptions.changePlan(subscription.id, {
       product_id: newPriceId,
       quantity: 1,
       // Charge the difference immediately, matching the Stripe provider's
@@ -148,7 +159,7 @@ export const dodoProvider: PaymentProvider = {
   },
 
   async createBillingPortalUrl(customerId, returnUrl) {
-    const session = await dodo.customers.customerPortal.create(customerId, {
+    const session = await dodoClient().customers.customerPortal.create(customerId, {
       send_email: false,
     });
     if (!session.link) {

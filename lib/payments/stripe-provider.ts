@@ -16,13 +16,23 @@ import { WebhookVerificationError } from "./types";
  * `cs_` prefix means. Everything Stripe-shaped is normalised here.
  */
 
-const key = process.env.STRIPE_SECRET_KEY;
-if (!key && process.env.NODE_ENV === "production") {
-  throw new Error("STRIPE_SECRET_KEY is required in production");
+/**
+ * Lazily-built Stripe client.
+ *
+ * `lib/payments/index.ts` imports every provider to select one, so this module loads even
+ * when PAYMENT_PROVIDER=dodo. Newer Stripe SDKs throw from the constructor on an empty
+ * key, so building the client at import time would crash a Dodo-only deployment that
+ * carries no STRIPE_SECRET_KEY. Building on first use means selecting Stripe is the only
+ * thing that requires a Stripe key.
+ */
+let client: Stripe | null = null;
+function stripeClient(): Stripe {
+  if (client) return client;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY is required when PAYMENT_PROVIDER=stripe");
+  client = new Stripe(key, { typescript: true });
+  return client;
 }
-
-/** Exported for the tests that still assert on Stripe call shapes. */
-export const stripe = new Stripe(key || "", { typescript: true });
 
 /** Stripe's statuses, narrowed to ours. Unknown values fail closed to "inactive". */
 function toStatus(status: Stripe.Subscription.Status | string | undefined): SubscriptionStatus {
@@ -60,7 +70,7 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async createCheckout({ priceId, userId, email, successUrl, cancelUrl }: CreateCheckoutParams) {
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeClient().checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
       customer_email: email,
@@ -76,7 +86,7 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async getCheckout(sessionId): Promise<CheckoutSnapshot | null> {
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    const session = await stripeClient().checkout.sessions.retrieve(sessionId, {
       expand: ["subscription"],
     });
     if (!session) return null;
@@ -85,7 +95,7 @@ export const stripeProvider: PaymentProvider = {
     let subscription: SubscriptionSnapshot | null = null;
     if (raw) {
       // `expand` usually returns the object, but fall back to a fetch if it came back as an id.
-      const sub = typeof raw === "object" ? raw : await stripe.subscriptions.retrieve(raw as string);
+      const sub = typeof raw === "object" ? raw : await stripeClient().subscriptions.retrieve(raw as string);
       subscription = toSnapshot(sub as Stripe.Subscription);
     }
 
@@ -98,7 +108,7 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async getSubscription(customerId, opts) {
-    const subs = await stripe.subscriptions.list({
+    const subs = await stripeClient().subscriptions.list({
       customer: customerId,
       status: opts?.activeOnly ? "active" : "all",
       limit: 1,
@@ -111,14 +121,14 @@ export const stripeProvider: PaymentProvider = {
     if (!subscription.itemId) {
       throw new Error("Subscription has no line item to update");
     }
-    await stripe.subscriptions.update(subscription.id, {
+    await stripeClient().subscriptions.update(subscription.id, {
       items: [{ id: subscription.itemId, price: newPriceId }],
       proration_behavior: "create_prorations",
     });
   },
 
   async createBillingPortalUrl(customerId, returnUrl) {
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await stripeClient().billingPortal.sessions.create({
       customer: customerId,
       return_url: returnUrl,
     });
@@ -134,7 +144,7 @@ export const stripeProvider: PaymentProvider = {
 
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(rawBody, signature, secret);
+      event = stripeClient().webhooks.constructEvent(rawBody, signature, secret);
     } catch (err) {
       throw new WebhookVerificationError(err instanceof Error ? err.message : "Invalid signature");
     }
@@ -146,7 +156,7 @@ export const stripeProvider: PaymentProvider = {
         // the webhook cannot tell a creator plan from a brand plan.
         let priceId: string | null = null;
         if (session.subscription) {
-          const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+          const sub = await stripeClient().subscriptions.retrieve(session.subscription as string);
           priceId = sub.items?.data?.[0]?.price?.id ?? null;
         }
         return {
