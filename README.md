@@ -1,156 +1,108 @@
 # Kitevo — Creator Media Kit Builder
 
-A professional media kit platform for creators. Turn your social stats into a high-end, shareable page with live Instagram and YouTube data, audience demographics, and growth charts — built to send to brands.
+A professional media kit platform for creators. Turn your social stats into a high-end, shareable page with live Instagram and YouTube data, audience demographics, and growth charts, built to send to brands.
+
+Live at [getkitevo.com](https://getkitevo.com).
 
 ## What's built
 
 ### Auth & accounts
-- Email/password signup with email verification
-- Google SSO (OAuth)
-- Forgot password / reset password flow
+- Email/password signup with email verification, Google SSO, forgot/reset password
+- Rate limiting on all three unauthenticated email routes (signup, forgot-password, resend-verification)
 - Onboarding flow: profile → connect platforms → choose plan → create kit
 
 ### Creator dashboard
 - Multi-kit management (create, rename slug, delete, password-protect)
-- Integrations panel: connect/disconnect Instagram and YouTube
-- Kit editor: brand kit styles, rates, brand partners, section visibility toggles
+- Connect/disconnect Instagram and YouTube
+- Kit editor: brand kit vibes, rates, brand partners, section visibility
 - Analytics: kit views over time, referrer breakdown
-- Inquiry inbox (Pro): manage brand inquiries with status pipeline
+- Inquiry inbox (Pro): brand inquiries with a status pipeline
 
 ### Kit page (public, brand-facing)
-- Hero card with avatar, name, bio
-- **Instagram section**: live followers, engagement rate, post count + 9:16 Reels-style post grid (clickable, opens stats modal)
-- **YouTube section**: live subscribers, total views, video count + 16:9 video grid (clickable, plays inline)
-- Brands I've worked with chips
-- Rates card with optional CTA
-- Audience demographics and follower growth chart
-- Password protection option
-- Theme system: 2 starter styles + 5 Pro Brand Kit Vibes (Editorial, Studio, Bloom, Electric, Noir)
-
-### Integrations
-- **Instagram** (Meta Graph API) — Business/Creator accounts; fetches followers, engagement, demographics, recent posts with full engagement metrics
-- **YouTube** (Data API v3) — OAuth via Google; fetches channel stats + 6 recent videos with view/like counts; token auto-refresh
+- Hero with avatar, name, bio, niches, location
+- **Instagram**: live followers, engagement, audience demographics (age / gender / country), and a 9:16 Reels-style post grid
+- **YouTube**: live subscribers, total views, video count, and a recent-video grid
+- Follower-growth chart, brand partners, rates, contact
+- Five Brand Kit Vibes (Editorial, Studio, Bloom, Electric, Noir) plus starter styles
+- Honesty rules: never renders fabricated stats; hides anything unavailable
 
 ### Subscriptions & payments
-- Stripe Checkout + webhook for subscription lifecycle
-- Starter plan (1 kit) and Pro plan (multiple kits, brand kit vibes, inquiry management)
-- Stripe Customer Portal for plan management
+- **Provider-agnostic** (`lib/payments`): Stripe and Dodo Payments, selected by `PAYMENT_PROVIDER`. Dodo is a Merchant of Record, which lets an Indian founder sell worldwide without a US entity or per-jurisdiction tax registration.
+- Checkout, webhook-driven subscription lifecycle, hosted billing portal, plan upgrades
+- Starter (1 kit, $9/mo), Pro (3 kits + inquiry inbox + verified tick, $15/mo), Brand Pro ($29/mo)
 
 ## Tech stack
 
-- **Framework**: Next.js 15 App Router + React 19 + TypeScript 5
+- **Framework**: Next.js 16 App Router + React + TypeScript
 - **Styling**: Tailwind CSS 4
-- **Database**: PostgreSQL via Prisma ORM
-- **Auth**: NextAuth.js (credentials + Google provider)
-- **Payments**: Stripe
+- **Database**: PostgreSQL via Prisma, on Supabase
+- **Auth**: NextAuth (credentials + Google)
+- **Payments**: Stripe or Dodo Payments (`PAYMENT_PROVIDER`)
 - **Email**: Resend
+- **Hosting**: Vercel
 
 ## Local development
 
 ```bash
 npm install
-cp .env.example .env.local  # fill in all values (see below)
-DATABASE_URL="postgresql://..." npx prisma db push
+cp .env.example .env.local   # fill in the values; .env.example documents each one
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). The schema is synced with
+`prisma db push` (there are no migration files); `npm run build:vercel` runs it
+automatically on deploy.
 
-## Environment variables
+**`.env.example` is the source of truth for environment variables** — it explains
+each one and the non-obvious gotchas (Supabase's two connection strings, why the
+email sender must be on a verified domain, the `PAYMENT_PROVIDER` prefix). This
+README deliberately does not duplicate that list, because the duplicate is what
+goes stale.
 
-```env
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# Database
-DATABASE_URL=postgresql://user@localhost:5432/kitevo
-
-# Auth
-NEXTAUTH_SECRET=your-secret
-NEXTAUTH_URL=http://localhost:3000
-
-# Google (OAuth + YouTube)
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-
-# Instagram (Meta Graph API)
-INSTAGRAM_APP_ID=...
-INSTAGRAM_APP_SECRET=...
-
-# Stripe
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-
-# Resend (email)
-RESEND_API_KEY=re_...
-RESEND_FROM_EMAIL=hello@yourdomain.com
-
-# Stripe price IDs (from Stripe dashboard)
-STRIPE_STARTER_PRICE_ID=price_...
-STRIPE_PRO_PRICE_ID=price_...
-```
-
-## Stripe setup
-
-1. Create products in [Stripe dashboard](https://dashboard.stripe.com): Starter ($9/mo) and Pro ($29/mo)
-2. Copy price IDs to `.env.local`
-3. Forward webhooks locally:
+## Testing
 
 ```bash
-stripe listen --forward-to localhost:3000/api/webhook
+npm test          # vitest, ~150 tests
+npm run build     # production build (also typechecks)
 ```
 
-## Google / YouTube setup
+## Provider setup pointers
 
-1. Create a project in [Google Cloud Console](https://console.cloud.google.com)
-2. Enable **YouTube Data API v3**
-3. Create OAuth 2.0 credentials, add authorized redirect URI:
-   `http://localhost:3000/api/youtube/callback`
-4. Same client ID/secret is used for Google SSO — no separate credentials needed
+- **Instagram** (Meta Graph API): a Meta app with the Instagram product, a Facebook Page linked to an Instagram Business/Creator account, and redirect URI `{APP_URL}/api/instagram/callback`. The scopes need App Review before non-tester accounts can connect; testers work immediately.
+- **YouTube / Google**: one OAuth client covers SSO and YouTube. Enable YouTube Data API v3, add redirect URIs `{APP_URL}/api/auth/callback/google` and `{APP_URL}/api/youtube/callback`. Publish the consent screen or refresh tokens expire after 7 days.
+- **Payments**: set `PAYMENT_PROVIDER` and the matching provider's keys and product/price ids. Point a webhook at `{APP_URL}/api/webhook`.
 
-## Instagram setup
+## Production deployment
 
-1. Create a Meta app at [developers.facebook.com](https://developers.facebook.com)
-2. Add Instagram Graph API product
-3. Add redirect URI: `http://localhost:3000/api/instagram/callback`
-4. Requires a Facebook Page linked to an Instagram Business or Creator account
+See **[DEPLOY.md](./DEPLOY.md)** — the full, ordered checklist, including the
+build guards in `scripts/vercel-build.cjs` that fail the build on the
+silent-failure env mistakes (wrong app URL, sandbox email sender, missing DB
+pooler, Dodo in test mode on production).
+
+## Architecture notes
+
+Deeper conventions and the reasoning behind non-obvious decisions live in
+[CLAUDE.md](./CLAUDE.md): the payments provider interface, kit-page honesty
+rules, the brand mark, chart rendering constraints, and more.
 
 ## Project structure
 
 ```
 app/
-  api/           — All API routes (auth, kits, instagram, youtube, stripe, inquiries)
-  dashboard/     — Creator dashboard + kit editor
-  kit/[username] — Public kit page (server + client components)
-  onboarding/    — 4-step new user setup flow
-  components/    — Shared UI components
+  api/            — API routes (auth, kits, instagram, youtube, webhook, ...)
+  dashboard/      — Creator dashboard + kit editor
+  kit/[username]/ — Public kit page (server + client)
+  onboarding/     — New-user setup flow
+  components/     — Shared UI
 lib/
-  platforms/     — Social platform abstraction layer
-  instagram-api.ts
-  youtube-api.ts
-  kit-storage.ts
-  kit-appearance.ts
-  mock-data.ts
+  payments/       — Provider-agnostic payments (types, stripe, dodo, selection)
+  platforms/      — Social platform abstraction
+  instagram-api.ts, youtube-api.ts, email.ts, rate-limit.ts, logo.ts
+config/
+  subscriptions.ts — Tiers, price/product-id resolution per provider
 prisma/
-  schema.prisma  — DB schema (User, Kit, KitView, Inquiry, Account)
+  schema.prisma
+scripts/
+  vercel-build.cjs         — Build entry with env guards + db push
+  generate-social-graphics.ts — Brand mark → OG image, avatar, favicon
 ```
-
-## Roadmap (pre-launch)
-
-**Phase 2 — Reliability**
-- [ ] Instagram token auto-refresh (60-day expiry)
-- [ ] Graceful API error handling on kit page
-- [ ] Rate limit handling for IG/YouTube quota
-
-**Phase 3 — Growth / Monetization**
-- [ ] Pricing page → Stripe checkout wired
-- [ ] Inquiry inbox UI in dashboard
-- [ ] Free vs Pro limits enforced
-- [ ] Kit analytics visible to owner
-
-**Phase 4 — Launch**
-- [ ] OG/SEO metadata per kit (generateMetadata)
-- [ ] Supabase migration
-- [ ] Vercel deploy
-- [ ] Landing page polish

@@ -6,7 +6,7 @@ Kitevo is a creator-brand collaboration platform. Two sides:
 - **Creators** build professional media kits (shareable pages with live Instagram/YouTube stats), apply to brand campaigns, and get discovered
 - **Brands** post campaigns, browse/message creators via a discover page, and manage applicants
 
-Stack: Next.js 15 App Router, Prisma + Supabase (Postgres), NextAuth, Stripe, Tailwind v4, Resend (email), Vercel deployment.
+Stack: Next.js 16 App Router, Prisma + Supabase (Postgres), NextAuth, payments via `lib/payments` (Stripe or Dodo, per `PAYMENT_PROVIDER`), Tailwind v4, Resend (email), Vercel deployment.
 
 ---
 
