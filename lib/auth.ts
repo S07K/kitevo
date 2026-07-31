@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
+import { betaCompFieldsForNewUser } from "@/lib/beta-comp";
 import { compare } from "bcryptjs";
 import { prisma } from "./prisma";
 
@@ -54,6 +55,7 @@ export const authOptions: NextAuthOptions = {
         } else {
           const newUser = await prisma.user.create({
             data: {
+              ...betaCompFieldsForNewUser(),
               email: user.email,
               name: user.name ?? null,
               avatarUrl: user.image ?? null,

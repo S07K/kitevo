@@ -4,6 +4,7 @@ import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail, VERIFY_TOKEN_TTL_MS } from "@/lib/email";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { betaCompFieldsForNewUser } from "@/lib/beta-comp";
 
 /*
   Deliberately generous. Real users sign up once, but mobile carriers and offices put many
@@ -56,6 +57,9 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.create({
       data: {
+        // Beta auto-comp (no-op unless BETA_AUTO_COMP_TIER is set). Spread first so the
+        // explicit fields below always win on any overlap.
+        ...betaCompFieldsForNewUser(),
         email: trimmedEmail,
         name: typeof name === "string" ? name.trim() || null : null,
         passwordHash,

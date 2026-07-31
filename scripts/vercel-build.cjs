@@ -149,6 +149,22 @@ function checkPaymentProvider() {
   }
 }
 
+/**
+ * Loud reminder if beta auto-comp is left on in production. Not a failure — running the
+ * beta on production is legitimate — but every new signup gets a free comped plan while
+ * BETA_AUTO_COMP_TIER is set, so it must not be forgotten after launch.
+ */
+function checkBetaComp() {
+  const tier = process.env.BETA_AUTO_COMP_TIER?.trim();
+  if (!tier) return;
+  if (process.env.VERCEL_ENV === "production") {
+    console.log(
+      `\n[vercel-build] Note: BETA_AUTO_COMP_TIER="${tier}" is set on PRODUCTION.\n` +
+        "  Every new signup will be granted this tier free. Remove it at launch.\n"
+    );
+  }
+}
+
 /** Host of a URL, or null if it isn't parseable. */
 function safeHost(url) {
   try {
@@ -162,6 +178,7 @@ checkAppUrl();
 checkFromEmail();
 
 checkPaymentProvider();
+checkBetaComp();
 
 run("npx prisma generate");
 
