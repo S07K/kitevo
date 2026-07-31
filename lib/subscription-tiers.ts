@@ -9,6 +9,10 @@ export {
   getTierByPriceId,
   getPriceIdForTier,
   getPublicTiers,
+  getTierById,
+  getKitsAllowedForTier,
+  getVerifiedTierForTier,
+  resolveVerifiedTier,
   SUBSCRIPTION_TIERS,
 } from "@/config/subscriptions";
 export type { SubscriptionTier } from "@/config/subscriptions";

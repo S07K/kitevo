@@ -141,7 +141,7 @@ export default async function MediaKitPage({
       Promise.resolve(getEnabledPlatformIds()),
       prisma.user.findUnique({
         where: { id: result.kit.userId },
-        select: { instagramUserId: true, instagramAccessToken: true, stripeCustomerId: true, youtubeChannelId: true, youtubeAccessToken: true },
+        select: { instagramUserId: true, instagramAccessToken: true, stripeCustomerId: true, compedTier: true, youtubeChannelId: true, youtubeAccessToken: true },
       }),
     ]);
     const instagramConnectedForKit = !!(user?.instagramUserId && user?.instagramAccessToken);
@@ -169,8 +169,9 @@ export default async function MediaKitPage({
       }
     }
 
-    let inquiryEnabled = false;
-    if (user?.stripeCustomerId) {
+    // Inquiry form is a Pro feature. A comp to pro grants it with no subscription.
+    let inquiryEnabled = user?.compedTier === "pro";
+    if (!inquiryEnabled && user?.stripeCustomerId) {
       try {
         const sub = await payments.getSubscription(user.stripeCustomerId, { activeOnly: true });
         const tier = getTierByPriceId(sub?.priceId ?? null);

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getVerifiedTierForPriceId } from "@/config/subscriptions";
+import { getVerifiedTierForPriceId, resolveVerifiedTier } from "@/config/subscriptions";
 import { payments, WebhookVerificationError } from "@/lib/payments";
 
 /**
@@ -14,14 +14,15 @@ import { payments, WebhookVerificationError } from "@/lib/payments";
  * receives nothing, so every branch logs.
  */
 
-/** Look up the local user for a provider customer id. */
-async function findUserByCustomerId(customerId: string | null): Promise<string | null> {
+/** Look up the local user (id + comp) for a provider customer id. */
+async function findUserByCustomerId(
+  customerId: string | null
+): Promise<{ id: string; compedTier: string | null } | null> {
   if (!customerId) return null;
-  const user = await prisma.user.findFirst({
+  return prisma.user.findFirst({
     where: { stripeCustomerId: customerId },
-    select: { id: true },
+    select: { id: true, compedTier: true },
   });
-  return user?.id ?? null;
 }
 
 export async function POST(req: Request) {
@@ -43,9 +44,17 @@ export async function POST(req: Request) {
   try {
     switch (event.type) {
       case "checkout.completed": {
-        // The badge tier is derived from the purchased price (creator_pro vs brand_verified).
-        const verifiedTier = getVerifiedTierForPriceId(event.priceId);
         if (event.customerId && event.userId) {
+          // Badge from the purchased price, but a comp is the floor: a paying comped user
+          // never loses their badge if the price somehow maps to none.
+          const existing = await prisma.user.findUnique({
+            where: { id: event.userId },
+            select: { compedTier: true },
+          });
+          const verifiedTier = resolveVerifiedTier(
+            getVerifiedTierForPriceId(event.priceId),
+            existing?.compedTier ?? null
+          );
           await prisma.user.update({
             where: { id: event.userId },
             data: { stripeCustomerId: event.customerId, verifiedTier },
@@ -62,22 +71,30 @@ export async function POST(req: Request) {
       }
 
       case "subscription.changed": {
-        const userId = await findUserByCustomerId(event.customerId);
-        if (userId) {
-          const tier = event.isActive ? getVerifiedTierForPriceId(event.priceId) : null;
-          await prisma.user.update({ where: { id: userId }, data: { verifiedTier: tier } });
+        const user = await findUserByCustomerId(event.customerId);
+        if (user) {
+          // Comp survives a subscription going inactive: resolve to comp, not null.
+          const tier = resolveVerifiedTier(
+            event.isActive ? getVerifiedTierForPriceId(event.priceId) : null,
+            user.compedTier
+          );
+          await prisma.user.update({ where: { id: user.id }, data: { verifiedTier: tier } });
           console.log(
-            `[webhook] Subscription changed — verifiedTier ${tier ? `set to ${tier}` : "cleared"} for user ${userId}`
+            `[webhook] Subscription changed — verifiedTier ${tier ? `set to ${tier}` : "cleared"} for user ${user.id}`
           );
         }
         break;
       }
 
       case "subscription.canceled": {
-        const userId = await findUserByCustomerId(event.customerId);
-        if (userId) {
-          await prisma.user.update({ where: { id: userId }, data: { verifiedTier: null } });
-          console.log(`[webhook] Subscription canceled — verifiedTier cleared for user ${userId}`);
+        const user = await findUserByCustomerId(event.customerId);
+        if (user) {
+          // Fall back to the comp if there is one, rather than clearing outright.
+          const tier = resolveVerifiedTier(null, user.compedTier);
+          await prisma.user.update({ where: { id: user.id }, data: { verifiedTier: tier } });
+          console.log(
+            `[webhook] Subscription canceled — verifiedTier ${tier ? `kept at comp ${tier}` : "cleared"} for user ${user.id}`
+          );
         }
         break;
       }

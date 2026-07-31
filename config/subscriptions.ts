@@ -137,3 +137,39 @@ export function getVerifiedTierForPriceId(priceId: string | null): string | null
 export function getPublicTiers(audience: "creator" | "brand" = "creator"): SubscriptionTier[] {
   return SUBSCRIPTION_TIERS.filter((t) => (t.audience ?? "creator") === audience);
 }
+
+// ── Comped access (User.compedTier) ──────────────────────────────────────────
+// A comp grants a tier's entitlements with no subscription: beta testers, press,
+// grandfathered early users. These resolve a tier by its id (not a price id), because a
+// comp is expressed as a tier name, never a provider product.
+
+/** Look up a tier by its id ("starter" | "pro" | "brand" | ...). */
+export function getTierById(tierId: string | null): SubscriptionTier | null {
+  if (!tierId) return null;
+  return SUBSCRIPTION_TIERS.find((t) => t.id === tierId) ?? null;
+}
+
+/** Kits granted by a comped tier id. 0 if not a real tier. */
+export function getKitsAllowedForTier(tierId: string | null): number {
+  return getTierById(tierId)?.kitsAllowed ?? 0;
+}
+
+/** verifiedTier (badge) granted by a comped tier id. */
+export function getVerifiedTierForTier(tierId: string | null): string | null {
+  return getTierById(tierId)?.verifiedTier ?? null;
+}
+
+/**
+ * The verifiedTier a user should have, given their live subscription and any comp.
+ *
+ * The single rule every write site must use: a subscription wins if present, otherwise the
+ * comp applies, otherwise nothing. This is what stops the subscription-status sync and the
+ * webhook from clearing a comped user's badge just because they have no subscription —
+ * which was the trap when granting paid features without a real payment.
+ */
+export function resolveVerifiedTier(
+  subscriptionVerifiedTier: string | null,
+  compedTier: string | null
+): string | null {
+  return subscriptionVerifiedTier ?? getVerifiedTierForTier(compedTier);
+}

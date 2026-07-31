@@ -8,7 +8,14 @@ import {
   getSubscriptionCustomerId,
   clearSubscriptionCookie,
 } from "@/lib/subscription-cookie";
-import { getKitsAllowedForPriceId, getTierByPriceId, getVerifiedTierForPriceId } from "@/lib/subscription-tiers";
+import {
+  getKitsAllowedForPriceId,
+  getTierByPriceId,
+  getVerifiedTierForPriceId,
+  getTierById,
+  getKitsAllowedForTier,
+  resolveVerifiedTier,
+} from "@/lib/subscription-tiers";
 
 async function getSubscriptionPayload(customerId: string) {
   // Not activeOnly: a status endpoint should report "canceled" or "past_due" rather than
@@ -90,24 +97,42 @@ export async function POST(req: Request) {
     if (authSession?.user?.id) {
       const user = await prisma.user.findUnique({
         where: { id: authSession.user.id },
-        select: { stripeCustomerId: true },
+        select: { stripeCustomerId: true, compedTier: true },
       });
       const customerId = user?.stripeCustomerId ?? null;
+      // A comp grants entitlements with no subscription; resolve it once here.
+      const compTier = getTierById(user?.compedTier ?? null);
+      const compPayload = compTier && {
+        hasSubscription: false,
+        status: "comped" as const,
+        allowedKits: getKitsAllowedForTier(compTier.id),
+        tierId: compTier.id,
+        tierName: compTier.name,
+        verifiedTier: compTier.verifiedTier,
+      };
+
       if (customerId) {
         const payload = await getSubscriptionPayload(customerId);
-        // Sync verifiedTier with active subscription state (creator_pro / brand_verified / null)
+        // Persisted badge = subscription OR comp, never cleared below the comp.
         await prisma.user.update({
           where: { id: authSession.user.id },
-          data: { verifiedTier: payload.hasSubscription ? payload.verifiedTier : null },
+          data: {
+            verifiedTier: resolveVerifiedTier(
+              payload.hasSubscription ? payload.verifiedTier : null,
+              user?.compedTier ?? null
+            ),
+          },
         }).catch(() => {});
-        // Fall back to free tier if no active paid subscription
-        const effective = payload.hasSubscription ? payload : {
-          hasSubscription: false,
-          status: "inactive",
-          allowedKits: 1,
-          tierId: "free",
-          tierName: "Free",
-        };
+        // Effective plan: an active subscription, else the comp, else free.
+        const effective = payload.hasSubscription
+          ? payload
+          : compPayload ?? {
+              hasSubscription: false,
+              status: "inactive",
+              allowedKits: 1,
+              tierId: "free",
+              tierName: "Free",
+            };
         const res = NextResponse.json(effective);
         if (payload.hasSubscription) {
           res.headers.set("Set-Cookie", setSubscriptionCookie(customerId));
@@ -116,7 +141,16 @@ export async function POST(req: Request) {
         }
         return res;
       }
-      // No Stripe customer — free tier by default
+
+      // No customer: comp if present, else free. Keep the badge in sync with the comp.
+      if (compPayload) {
+        await prisma.user
+          .update({ where: { id: authSession.user.id }, data: { verifiedTier: compPayload.verifiedTier } })
+          .catch(() => {});
+        const res = NextResponse.json(compPayload);
+        res.headers.set("Set-Cookie", clearSubscriptionCookie());
+        return res;
+      }
       const res = NextResponse.json({ hasSubscription: false, allowedKits: 1, tierId: "free", tierName: "Free" });
       res.headers.set("Set-Cookie", clearSubscriptionCookie());
       return res;

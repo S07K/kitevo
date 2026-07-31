@@ -59,6 +59,12 @@ model User {
   // null = no tick, "creator_pro" = blue (Pro subscriber), "top_creator" = gold (manually granted)
   verifiedTier  String?
 
+  // Comped access: grants a tier's entitlements (kits, badge, inquiry) with NO subscription.
+  // For beta testers, press, grandfathered users. A tier id ("starter"|"pro"|"brand") or null.
+  // Set/cleared with scripts/comp-user.ts. Kept separate from verifiedTier so a comp can be
+  // revoked in one place and never gets cleared by subscription syncing. See config resolveVerifiedTier.
+  compedTier    String?
+
   // Cached creator stats for discover filtering (refreshed from IG/YT; see lib/creator-stats-cache.ts)
   followerCount  Int?      // primary audience size (IG followers, else YT subscribers)
   engagementRate Float?    // IG avg engagement %
