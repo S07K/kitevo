@@ -4,10 +4,23 @@ import { useState } from "react";
 import type { SubscriptionTier } from "@/config/subscriptions";
 import type { BillingInterval } from "@/config/subscriptions";
 
-const YEARLY_PRICES: Record<string, number> = {
-  starter: 7,
-  pro: 12,
-};
+/**
+ * Per-month figure to show when billed yearly, derived from the tier's annual price.
+ * Matches BrandPlanCard.yearlyPerMonth so both surfaces round the same way.
+ *
+ * Deliberately NOT a hardcoded {starter: 7, pro: 12} map, which is what let the page
+ * advertise a yearly price for a tier that had no yearly product configured — clicking it
+ * 500'd at checkout. Now the display and the checkout both come from config: a tier
+ * without `priceYearly` shows no yearly option at all.
+ */
+function yearlyPerMonth(priceYearly: number): number {
+  return Math.round(priceYearly / 12);
+}
+
+/** True only for tiers that actually have an annual plan, so the toggle can't oversell. */
+function hasYearly(tier: SubscriptionTier): boolean {
+  return typeof tier.priceYearly === "number" && tier.priceYearly > 0;
+}
 
 function SubscribeButton({
   tier,
@@ -21,6 +34,11 @@ function SubscribeButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Never request a yearly checkout for a tier with no yearly price, even if the toggle is
+  // on: getPriceIdForTier would return null and the route would 500. Defence in depth —
+  // the card already hides the yearly option for these tiers.
+  const effectiveBilling: BillingInterval = hasYearly(tier) ? billing : "monthly";
+
   const handleSubscribe = async () => {
     setLoading(true);
     setError(null);
@@ -28,12 +46,12 @@ function SubscribeButton({
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tierId: tier.id, billing }),
+        body: JSON.stringify({ tierId: tier.id, billing: effectiveBilling }),
         credentials: "include",
       });
       const data = await res.json();
       if (res.status === 401) {
-        const callbackUrl = encodeURIComponent(`/pricing?billing=${billing}`);
+        const callbackUrl = encodeURIComponent(`/pricing?billing=${effectiveBilling}`);
         window.location.href = `/login?callbackUrl=${callbackUrl}`;
         return;
       }
@@ -111,8 +129,11 @@ export function PricingTiers({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {tiers.map((tier) => {
           const isHighlighted = highlightTierId ? tier.id === highlightTierId : tier.highlight;
-          const displayPrice = billing === "yearly" && tier.priceMonthly > 0
-            ? (YEARLY_PRICES[tier.id] ?? tier.priceMonthly)
+          // Yearly display only when the tier has a real annual plan; otherwise the
+          // monthly price stands even under the yearly toggle, so nothing is oversold.
+          const showYearly = billing === "yearly" && hasYearly(tier);
+          const displayPrice = showYearly
+            ? yearlyPerMonth(tier.priceYearly!)
             : tier.priceMonthly;
 
           return (
@@ -135,12 +156,12 @@ export function PricingTiers({
                   <>
                     <span className="font-display text-3xl font-semibold text-foreground">${displayPrice}</span>
                     <span className="text-muted-foreground text-sm">
-                      /mo{billing === "yearly" ? ", billed yearly" : ""}
+                      /mo{showYearly ? ", billed yearly" : ""}
                     </span>
                   </>
                 )}
               </div>
-              {billing === "yearly" && tier.priceMonthly > 0 && (
+              {showYearly && (
                 <p className="mt-0.5 text-xs text-emerald-600 font-medium">
                   Save ${(tier.priceMonthly - displayPrice) * 12}/yr vs monthly
                 </p>

@@ -44,6 +44,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     id: "starter",
     name: "Starter",
     priceMonthly: 9,
+    priceYearly: 84, // $7/mo billed yearly. Annual total, per the priceYearly convention.
     kitsAllowed: 1,
     audience: "creator",
     verifiedTier: "creator_pro",
@@ -59,6 +60,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     id: "pro",
     name: "Pro",
     priceMonthly: 15,
+    priceYearly: 144, // $12/mo billed yearly.
     kitsAllowed: 3,
     audience: "creator",
     verifiedTier: "creator_pro",
