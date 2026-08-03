@@ -11,6 +11,7 @@ export function PricingContent() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     hasSubscription: boolean;
     tierName?: string | null;
+    tierId?: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export function PricingContent() {
           setSubscriptionStatus({
             hasSubscription: data.hasSubscription === true,
             tierName: data.tierName ?? null,
+            tierId: data.tierId ?? null,
           });
         } else if (!cancelled) {
           setSubscriptionStatus({ hasSubscription: false });
@@ -46,19 +48,29 @@ export function PricingContent() {
     );
   }
 
-  if (subscriptionStatus.hasSubscription) {
+  // Comped access: a tier with no subscription. Distinct from a paying subscriber because
+  // there is nothing to manage — no customer, so no billing portal button (it would fail).
+  const isComped =
+    !subscriptionStatus.hasSubscription &&
+    !!subscriptionStatus.tierId &&
+    subscriptionStatus.tierId !== "free";
+
+  if (subscriptionStatus.hasSubscription || isComped) {
     return (
       <div className="mt-12 max-w-md mx-auto p-8 rounded-2xl border border-border bg-background text-center">
         <p className="font-display text-lg font-semibold text-foreground">
-          You&apos;re already subscribed
+          {isComped ? "You have full access" : "You're already subscribed"}
         </p>
         {subscriptionStatus.tierName && (
           <p className="mt-2 text-sm text-muted-foreground">
             Current plan: <span className="font-medium text-foreground">{subscriptionStatus.tierName}</span>
+            {isComped ? " (complimentary)" : ""}
           </p>
         )}
         <p className="mt-4 text-sm text-muted-foreground">
-          Manage your plan, payment method, or cancel from your dashboard.
+          {isComped
+            ? "Everything is unlocked. Head to your dashboard to build your kit."
+            : "Manage your plan, payment method, or cancel from your dashboard."}
         </p>
         <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
           <Link
@@ -67,7 +79,8 @@ export function PricingContent() {
           >
             Go to Dashboard
           </Link>
-          <ManageSubscriptionButton />
+          {/* No billing portal for a comp: there is no customer to manage. */}
+          {!isComped && <ManageSubscriptionButton />}
         </div>
       </div>
     );

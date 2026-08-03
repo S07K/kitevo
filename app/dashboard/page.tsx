@@ -612,7 +612,7 @@ function KitCard({
 // ─── Main dashboard ───────────────────────────────────────────────────────────
 
 function DashboardContent() {
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [hasKitAccess, setHasKitAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
@@ -673,7 +673,9 @@ function DashboardContent() {
       });
       if (cancelled) return;
       const data = await res.json().catch(() => ({}));
-      setIsSubscribed(data.hasSubscription === true);
+      // Access, not payment: a comp grants the paid tier with hasSubscription=false, so gate
+      // on the effective tier instead. free (or no tier) = no access; any real tier = access.
+      setHasKitAccess(!!data.tierId && data.tierId !== "free");
       setAllowedKits(typeof data.allowedKits === "number" ? data.allowedKits : 1);
       setTierId(data.tierId ?? null);
       setTierName(data.tierName ?? null);
@@ -696,7 +698,7 @@ function DashboardContent() {
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [isSubscribed]);
+  }, [hasKitAccess]);
 
   const fetchKitViews = useCallback((days: number) => {
     fetch(`/api/kit-views?days=${days}`, { credentials: "include" })
@@ -765,7 +767,7 @@ function DashboardContent() {
   }, [subscriptionLoaded, profileLoaded, profile]);
 
   useEffect(() => {
-    if (!isSubscribed) return;
+    if (!hasKitAccess) return;
     let cancelled = false;
     fetch("/api/instagram/stats", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
@@ -774,7 +776,7 @@ function DashboardContent() {
       })
       .catch(() => { if (!cancelled) setPlatformStats({}); });
     return () => { cancelled = true; };
-  }, [isSubscribed]);
+  }, [hasKitAccess]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1032,7 +1034,7 @@ function DashboardContent() {
         {/* ── Content ── */}
         {loading ? (
           <DashboardSkeleton />
-        ) : !isSubscribed ? (
+        ) : !hasKitAccess ? (
           /* ── Upgrade gate ── */
           <div className="grid gap-6 lg:grid-cols-2">
             <Card className="flex flex-col justify-between">

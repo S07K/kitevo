@@ -675,7 +675,9 @@ function OnboardingContent() {
           {/* ── Step 3: Choose a plan ── */}
           {currentStep === 2 && (
             <div className="mt-5">
-              {hasSubscription && tierName && tierName !== "Free" ? (
+              {/* Access, not payment: a comp sets tierName without hasSubscription, and a
+                  comped creator must see "you're on Pro", not the Subscribe buttons. */}
+              {tierName && tierName !== "Free" ? (
                 <div className="rounded-xl border border-green-200 bg-green-50 p-4">
                   <p className="text-sm font-medium text-green-800">
                     You&apos;re on <span className="font-semibold">{tierName}</span>. Hit Next to create your first kit.
