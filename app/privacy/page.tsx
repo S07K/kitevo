@@ -182,6 +182,19 @@ export default function PrivacyPolicy() {
                 them on your own media kit.
               </li>
               <li>
+                Kitevo&apos;s use and transfer of information received from Google
+                APIs to any other app adheres to the{" "}
+                <a
+                  href="https://developers.google.com/terms/api-services-user-data-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground underline underline-offset-4"
+                >
+                  Google API Services User Data Policy
+                </a>
+                , including its Limited Use requirements.
+              </li>
+              <li>
                 Google&apos;s handling of your data is governed by the{" "}
                 <a
                   href="https://policies.google.com/privacy"
