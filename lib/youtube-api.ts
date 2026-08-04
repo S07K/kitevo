@@ -34,7 +34,29 @@ async function refreshAccessToken(userId: string, refreshToken: string): Promise
       grant_type: "refresh_token",
     }),
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { error?: string };
+    // `invalid_grant` = the refresh token is dead (revoked, or — the common case —
+    // expired after 7 days because the Google OAuth consent screen is still in "Testing").
+    // It can never recover on its own, so clear the connection: this flips
+    // /api/youtube/status to disconnected and the dashboard prompts a reconnect, instead of
+    // silently 401ing on every kit view forever while still showing "connected".
+    if (err.error === "invalid_grant") {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          youtubeChannelId: null,
+          youtubeAccessToken: null,
+          youtubeRefreshToken: null,
+          youtubeTokenExpiresAt: null,
+        },
+      });
+      console.warn(`[youtube] refresh token invalid_grant for user ${userId}; cleared connection (reconnect required).`);
+    } else {
+      console.error("[youtube] token refresh failed:", res.status, err.error ?? "");
+    }
+    return null;
+  }
   const data = await res.json() as { access_token?: string; expires_in?: number };
   if (!data.access_token) return null;
   const expiresAt = new Date(Date.now() + (data.expires_in ?? 3600) * 1000);
@@ -119,19 +141,34 @@ async function fetchYouTubeStatsForUser(userId: string): Promise<YouTubeStats | 
   if (!user?.youtubeAccessToken || !user?.youtubeChannelId) return null;
 
   let token = user.youtubeAccessToken;
+  let refreshed = false;
 
   if (user.youtubeTokenExpiresAt && user.youtubeRefreshToken) {
     const expiresIn = user.youtubeTokenExpiresAt.getTime() - Date.now();
     if (expiresIn < 5 * 60 * 1000) {
-      token = (await refreshAccessToken(userId, user.youtubeRefreshToken)) ?? token;
+      const fresh = await refreshAccessToken(userId, user.youtubeRefreshToken);
+      refreshed = true;
+      if (fresh) token = fresh;
     }
   }
 
   // One channels call gets stats AND the uploads playlist id (contentDetails is free here),
   // which getRecentVideos then reads instead of the expensive search endpoint.
-  const channelRes = await fetch(
-    `${YOUTUBE_API}/channels?part=statistics,snippet,contentDetails&id=${user.youtubeChannelId}&access_token=${encodeURIComponent(token)}`
-  );
+  const channelUrl = (t: string) =>
+    `${YOUTUBE_API}/channels?part=statistics,snippet,contentDetails&id=${user.youtubeChannelId}&access_token=${encodeURIComponent(t)}`;
+
+  let channelRes = await fetch(channelUrl(token));
+
+  // Reactive refresh: the token was rejected but we never tried a fresh one (stored expiry was
+  // null/stale, or the token was revoked before its clock-time expiry). Refresh once and retry.
+  // If the refresh token itself is dead, refreshAccessToken clears the connection and returns null.
+  if (channelRes.status === 401 && !refreshed && user.youtubeRefreshToken) {
+    const fresh = await refreshAccessToken(userId, user.youtubeRefreshToken);
+    if (fresh) {
+      token = fresh;
+      channelRes = await fetch(channelUrl(token));
+    }
+  }
 
   if (!channelRes.ok) {
     console.error("[youtube] channels failed:", channelRes.status, (await channelRes.text()).slice(0, 200));

@@ -45,8 +45,10 @@ export async function generateMetadata({
       ? creator.bio.slice(0, 155)
       : `View ${creator.name}'s professional media kit powered by Kitevo.`;
     const url = `${BASE_URL}/kit/${slug}`;
-    const image = creator.avatarUrl ?? `${BASE_URL}/og-default.png`;
 
+    // og:image / twitter:image come from the co-located opengraph-image.tsx
+    // (the branded "Start collaborating with <name>" card). Do not set `images`
+    // here — an explicit value would override the generated card.
     return {
       title,
       description,
@@ -56,13 +58,11 @@ export async function generateMetadata({
         url,
         siteName: "Kitevo",
         type: "profile",
-        images: [{ url: image, width: 400, height: 400, alt: creator.name }],
       },
       twitter: {
-        card: "summary",
+        card: "summary_large_image",
         title,
         description,
-        images: [image],
       },
       alternates: { canonical: url },
     };

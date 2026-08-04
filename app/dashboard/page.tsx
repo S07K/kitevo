@@ -503,7 +503,8 @@ function KitCard({
                     )}
                   </button>
 
-                  {/* PDF */}
+                  {/* PDF export temporarily hidden — layout needs polish before re-enabling.
+                      Keep downloadFile("pdf") + the /export route intact so this is a one-line restore.
                   <button
                     type="button"
                     onClick={() => downloadFile("pdf")}
@@ -527,6 +528,7 @@ function KitCard({
                       </svg>
                     )}
                   </button>
+                  */}
                 </div>
               </div>
 

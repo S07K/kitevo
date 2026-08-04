@@ -314,7 +314,7 @@ export function KitPdf({
                 <Text style={s.statLabel}>
                   {stats.platform.charAt(0).toUpperCase() + stats.platform.slice(1)} followers
                 </Text>
-                <Text style={s.statSub}>+{stats.growthThisMonth}% this month</Text>
+                <Text style={s.statSub}>+{stats.growthThisMonth.toFixed(2)}% this month</Text>
               </View>
               <View style={s.statCard}>
                 <Text style={s.statValue}>{stats.avgEngagement}%</Text>

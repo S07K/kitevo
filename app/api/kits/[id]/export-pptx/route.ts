@@ -110,11 +110,14 @@ export async function GET(
     align: "right", margin: 0,
   });
 
-  // Avatar (circular)
+  // Avatar (circular). Avatars are stored as base64 data URLs; pptxgenjs only accepts those
+  // via `data`, not `path` (path is for real URLs/files) — passing a data URL as `path` throws
+  // "Unable to read media" during write(), which the try/catch below cannot catch.
   if (user.avatarUrl) {
-    try {
-      s1.addImage({ path: user.avatarUrl, x: MARGIN, y: 1.05, w: 1.55, h: 1.55, rounding: true });
-    } catch { /* avatar load failed — skip */ }
+    const avatarSource = user.avatarUrl.startsWith("data:")
+      ? { data: user.avatarUrl }
+      : { path: user.avatarUrl };
+    s1.addImage({ ...avatarSource, x: MARGIN, y: 1.05, w: 1.55, h: 1.55, rounding: true });
   }
 
   // Name
@@ -180,7 +183,7 @@ export async function GET(
     const stats = [
       { label: "Followers", value: fmt(igStats.followers) },
       { label: "Avg Engagement", value: pct(igStats.avgEngagement) },
-      { label: "Monthly Growth", value: fmt(igStats.growthThisMonth >= 0 ? igStats.growthThisMonth : 0) },
+      { label: "Monthly Growth", value: "+" + pct(igStats.growthThisMonth >= 0 ? igStats.growthThisMonth : 0) },
     ];
     const cardW = 2.7, cardH = 2.4, cardGap = 0.35;
     const totalW = stats.length * cardW + (stats.length - 1) * cardGap;
