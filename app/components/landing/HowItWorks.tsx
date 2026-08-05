@@ -18,11 +18,10 @@ const STEPS = [
       app requests user data", and the FAQ that covered this is inside a client-rendered
       accordion, so it never reaches the delivered HTML a reviewer reads.
 
-      The Meta scopes (instagram_basic, pages_show_list, instagram_manage_insights) are all
-      read-only, and the YouTube scope is youtube.readonly, so "only reads / never posts,
-      edits, or deletes" is accurate. (Earlier the scope also included business_management,
-      which permitted more than reading; it was dropped as unused — see
-      app/api/instagram/connect/route.ts.)
+      "only reads" rather than "read-only access": the Meta scopes include
+      business_management (required to resolve business-portfolio-owned Pages), which
+      technically permits more than reading, so a blanket read-only claim would overstate it.
+      What is true is that Kitevo never writes.
     */
     description:
       "Link Instagram and YouTube. We pull follower counts, engagement rate, audience demographics, and recent content automatically — always live. Kitevo only reads these stats to build your kit; it never posts, edits, or deletes anything on your accounts.",

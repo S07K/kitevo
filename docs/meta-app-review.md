@@ -11,7 +11,7 @@ Keep this file; Meta review commonly bounces once, and re-submission is faster w
 | App name | Kitevo |
 | Login flow | Facebook Login for Business (`facebook.com/dialog/oauth`) |
 | API | Instagram Graph API (professional accounts, via a linked Facebook Page) |
-| Requested permissions | `instagram_basic`, `instagram_manage_insights`, `pages_show_list` (business_management dropped — unused; see app/api/instagram/connect/route.ts) |
+| Requested permissions | `instagram_basic`, `instagram_manage_insights`, `pages_show_list`, `business_management` |
 | Privacy policy | https://getkitevo.com/privacy |
 | Terms | https://getkitevo.com/terms |
 | Data deletion callback | https://getkitevo.com/api/meta/data-deletion |
@@ -78,11 +78,12 @@ Paste each into the "Tell us how you'll use this permission" box for that permis
 > It is used only to resolve and read the creator's own connected Instagram account. Kitevo
 > does not create, manage, or modify any business, Page, ad account, or asset.
 
-Note: business_management is the most heavily scrutinized of the four. Before submitting,
-confirm it is actually required for your connection flow. If accounts connect successfully
-without it (many do, using only instagram_basic + instagram_manage_insights +
-pages_show_list), drop it from the requested scope and from this submission. Fewer
-permissions means a faster, cleaner review. See app/api/instagram/connect/route.ts.
+Note: business_management is the most heavily scrutinized of the four, but it is REQUIRED and
+must stay in the submission. Verified empirically: removing it and reconnecting a
+business-portfolio-owned account returned zero pages from /me/accounts, so the connection
+failed with "No Facebook Page found." Many creators have their Instagram professional account
+on a Page owned by a Meta Business Portfolio, so this scope is needed for them to connect.
+Emphasize in the use-case writeup that it is used only to READ the creator's own asset.
 
 ---
 
