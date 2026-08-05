@@ -11,7 +11,7 @@ Keep this file; Meta review commonly bounces once, and re-submission is faster w
 | App name | Kitevo |
 | Login flow | Facebook Login for Business (`facebook.com/dialog/oauth`) |
 | API | Instagram Graph API (professional accounts, via a linked Facebook Page) |
-| Requested permissions | `instagram_basic`, `instagram_manage_insights`, `pages_show_list`, `business_management` |
+| Requested permissions | `instagram_basic`, `instagram_manage_insights`, `pages_show_list` (business_management dropped — unused; see app/api/instagram/connect/route.ts) |
 | Privacy policy | https://getkitevo.com/privacy |
 | Terms | https://getkitevo.com/terms |
 | Data deletion callback | https://getkitevo.com/api/meta/data-deletion |

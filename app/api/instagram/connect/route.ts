@@ -35,7 +35,13 @@ export async function GET(req: Request) {
   const stateCookie = `${state}.${sig}`;
 
   const redirectUri = `${BASE_URL}/api/instagram/callback`;
-  const scope = "business_management,instagram_basic,pages_show_list,instagram_manage_insights";
+  // Minimum read scopes for the professional-account flow: instagram_basic (profile + media),
+  // instagram_manage_insights (reach/engagement/growth/demographics), pages_show_list (resolve
+  // the IG account via its linked Page in /me/accounts). business_management was dropped — it
+  // is not used by the callback (resolution is entirely pages_show_list + instagram_business_account),
+  // Meta's IG-insights flow does not require it, and it is the most heavily reviewed scope. All
+  // three remaining scopes are read-only, so Kitevo never writes to a creator's accounts.
+  const scope = "instagram_basic,pages_show_list,instagram_manage_insights";
   const url = new URL("https://www.facebook.com/v18.0/dialog/oauth");
   url.searchParams.set("client_id", META_APP_ID);
   url.searchParams.set("redirect_uri", redirectUri);
