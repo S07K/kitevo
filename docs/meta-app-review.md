@@ -1,5 +1,10 @@
 # Meta App Review Submission — Kitevo (Instagram Graph API)
 
+> **Status: Business Verification DONE (Aug 5 2026); App Review IN REVIEW.** Verified
+> via the founder's Udyam (MSME) registration as "Kitevo". App Review submitted for all
+> four permissions (~20 days). App flips to Live on approval. Kept below as the record
+> and for any re-submission.
+
 Reference for Meta App Review. Paste-ready use-case writeups per permission, a screencast
 shot list, reviewer test instructions, and the gotchas that get Instagram apps rejected.
 Keep this file; Meta review commonly bounces once, and re-submission is faster with this.

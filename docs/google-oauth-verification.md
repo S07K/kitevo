@@ -1,5 +1,9 @@
 # Google OAuth Verification Submission — Kitevo (`youtube.readonly`)
 
+> **Status: VERIFIED (approved).** `youtube.readonly` passed Google verification;
+> consent screen is In Production, branding + domain verified. No unverified-app
+> warning, no 100-user cap. Kept below as the record and for any future re-submission.
+
 Reference for the Google Cloud Console OAuth verification. Paste-ready text plus a
 demo-video shot list. Keep this file so re-submissions (if Google bounces) are quick.
 

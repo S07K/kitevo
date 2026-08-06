@@ -197,22 +197,36 @@ Phase 3 — Business tier:
 
 ---
 
-## Deployment status (July 2026)
+## Deployment status (August 2026)
 
 **Live at https://getkitevo.com.** Vercel Hobby, personal repo `S07K/kitevo`
 (Hobby refuses private *org* repos — do not move it back). Supabase Postgres via
-two connection strings, Resend email from `mail.getkitevo.com`, Stripe in **test**
-mode. Instagram insights and YouTube data both verified working in production.
+two connection strings, Resend email from `mail.getkitevo.com`, payments via Dodo
+(Merchant of Record). Instagram insights and YouTube data both verified working in
+production.
 
-Full setup and the reasoning behind each choice is in `DEPLOY.md`. Open items:
+### Platform API verification
+- **Google / YouTube (`youtube.readonly`): VERIFIED (done).** Consent screen is
+  published and **In Production**, branding + domain verified, and the sensitive
+  scope passed Google verification. No "unverified app" warning, no 100-user cap,
+  refresh tokens are durable (the old 7-day Testing-mode expiry is gone). Submission
+  record: `docs/google-oauth-verification.md`.
+- **Meta Business Verification: VERIFIED (Aug 5 2026).** Done via the founder's
+  **Udyam (MSME) registration** as "Kitevo" — Meta matched the public record
+  automatically. Business name + address must stay consistent across Udyam, Meta
+  Business Info, and the site.
+- **Meta App Review: IN REVIEW** for `instagram_basic`, `instagram_manage_insights`,
+  `pages_show_list`, `business_management` (Meta quotes up to ~20 days). App stays in
+  **Development** until approved; flip to **Live** on approval, after which any
+  creator can connect Instagram with no tester allowlist. Submission record +
+  per-permission writeups: `docs/meta-app-review.md`.
+- **`business_management` is required — do not drop it.** When a creator's Page is
+  owned by a Meta Business Portfolio (common), `/me/accounts` returns no pages
+  without it and the connect flow fails with `no_pages` ("No Facebook Page found").
+  Verified empirically; see the comment in `app/api/instagram/connect/route.ts`.
 
-- **Publish the Google OAuth consent screen** if still in "Testing": Google
-  expires refresh tokens after 7 days in that state, so every creator's YouTube
-  connection dies weekly. Separate from verification.
-- `GOOGLE_SITE_VERIFICATION` unset in Vercel, so Search Console cannot verify
-  domain ownership and Google's OAuth branding check keeps rejecting the homepage.
-- Meta App Review not filed. Not required for a beta: creators added as Instagram
-  **testers** can connect without review or Business Verification.
+Full setup and the reasoning behind each choice is in `DEPLOY.md`. Other open items:
+
 - Platform access tokens are stored in plain text (the DB provider encrypts at
   rest). Worth real encryption before public launch.
 - Rate limiting (`lib/rate-limit.ts`) covers all three unauthenticated email routes:

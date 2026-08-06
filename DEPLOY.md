@@ -199,11 +199,24 @@ step can't prove.
 Both require a **live** app: a reachable privacy policy and a screencast of the
 real OAuth flow. Neither can be filed before deploying.
 
-**You may not need Meta App Review to start.** Business Verification is required
-only if the app is used by people *without a Role on the app*. Creators added as
-Instagram **testers** in the Meta dashboard can connect fully with no review, no
-Business Verification, and no registered business. That is the zero-cost path to
-a private beta.
+**Current status (Aug 2026):**
+- Google `youtube.readonly` verification: **DONE** — consent screen In Production,
+  branding + domain verified, sensitive scope verified. Record:
+  `docs/google-oauth-verification.md`.
+- Meta Business Verification: **DONE (Aug 5 2026)** — via the founder's Udyam (MSME)
+  registration as "Kitevo"; Meta matched the public record automatically.
+- Meta App Review for `instagram_basic`, `instagram_manage_insights`,
+  `pages_show_list`, `business_management`: **IN REVIEW** (~20 days). Flip the app
+  to **Live** on approval. Record + per-permission writeups: `docs/meta-app-review.md`.
+- `business_management` is **required** — business-portfolio-owned Pages fail with
+  `no_pages` without it (see `app/api/instagram/connect/route.ts`). Do not drop it.
+
+**The tester path (used for the private beta, now superseded by full review).**
+Business Verification is required only if the app is used by people *without a Role
+on the app*. Creators added as Instagram **testers** in the Meta dashboard can
+connect fully with no review, no Business Verification, and no registered business.
+That was the zero-cost path to a private beta; full App Review is what opens Instagram
+to any creator.
 
 Prepared in advance:
 
