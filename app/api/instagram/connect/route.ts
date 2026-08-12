@@ -35,15 +35,17 @@ export async function GET(req: Request) {
   const stateCookie = `${state}.${sig}`;
 
   const redirectUri = `${BASE_URL}/api/instagram/callback`;
-  // Scopes for the professional-account flow:
+  // Scopes for the professional-account flow (all read-only; Kitevo never writes). BOTH
+  // pages_show_list and business_management are REQUIRED and were each confirmed by removing them:
   //   instagram_basic            - profile + media
   //   instagram_manage_insights  - reach/engagement/growth/demographics
-  //   pages_show_list            - resolve the IG account via its linked Page in /me/accounts
-  //   business_management        - REQUIRED: when the creator's Page is owned by a Meta Business
-  //                                Portfolio (common), /me/accounts returns no pages without it,
-  //                                so the callback fails with no_pages. Verified by removing it and
-  //                                hitting "No Facebook Page found" on a business-portfolio account.
-  //                                Do not drop it. Kitevo still never writes to any account.
+  //   pages_show_list            - lists the creator's Pages via /me/accounts, from which we read the
+  //                                instagram_business_account id. Dropping it -> /me/accounts returns
+  //                                no pages -> callback fails with no_pages, even with business_management.
+  //   business_management        - includes business-portfolio-owned Pages in /me/accounts. Dropping it
+  //                                -> no_pages for those creators.
+  // Meta App Review rejected pages_show_list as "not needed" (it IS needed — verified above); being
+  // re-requested with a sharper /me/accounts justification. Do not drop either scope.
   const scope = "business_management,instagram_basic,pages_show_list,instagram_manage_insights";
   const url = new URL("https://www.facebook.com/v18.0/dialog/oauth");
   url.searchParams.set("client_id", META_APP_ID);
