@@ -182,6 +182,24 @@ export function MarketingFooter(): ReactNode {
             ))}
           </div>
 
+          {/* Product Hunt featured badge */}
+          <div className="mt-8">
+            <a
+              href="https://www.producthunt.com/products/kitevo?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-kitevo"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Kitevo on Product Hunt"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1239307&theme=light&t=1788346221541"
+                alt="Kitevo - Live media kits that turn creator stats into brand deals | Product Hunt"
+                width={250}
+                height={54}
+              />
+            </a>
+          </div>
+
           <div className="border-border mt-6 flex flex-col items-start justify-between gap-3 border-t pt-6 text-xs sm:flex-row sm:items-center">
             <p className="text-muted-foreground">
               © {new Date().getFullYear()} Kitevo. All rights reserved.

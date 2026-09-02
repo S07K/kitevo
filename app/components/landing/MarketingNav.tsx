@@ -61,8 +61,10 @@ export function MarketingNav(): ReactNode {
   return (
     <>
       <header
+        // top offset = launch-banner height (0 when no banner) so the nav sits below it.
+        style={{ top: "var(--ph-banner, 0px)" }}
         className={[
-          "fixed inset-x-0 top-0 z-50 transition-all duration-300",
+          "fixed inset-x-0 z-50 transition-all duration-300",
           scrolled ? "bg-background/95 backdrop-blur-md border-b border-border" : "bg-transparent",
         ].join(" ")}
       >
