@@ -206,10 +206,12 @@ real OAuth flow. Neither can be filed before deploying.
 - Meta Business Verification: **DONE (Aug 5 2026)** — via the founder's Udyam (MSME)
   registration as "Kitevo"; Meta matched the public record automatically.
 - Meta App Review for `instagram_basic`, `instagram_manage_insights`,
-  `pages_show_list`, `business_management`: **IN REVIEW** (~20 days). Flip the app
-  to **Live** on approval. Record + per-permission writeups: `docs/meta-app-review.md`.
-- `business_management` is **required** — business-portfolio-owned Pages fail with
-  `no_pages` without it (see `app/api/instagram/connect/route.ts`). Do not drop it.
+  `pages_show_list`, `business_management`: **APPROVED (all four), app is LIVE.** Any
+  creator can now connect Instagram. `pages_show_list` was rejected once for an unclear
+  screencast (not policy) and approved on re-submit with a captioned demo. Record +
+  per-permission writeups: `docs/meta-app-review.md`.
+- `pages_show_list` and `business_management` are **both required** — dropping either
+  makes `/me/accounts` fail with `no_pages` (see `app/api/instagram/connect/route.ts`).
 
 **The tester path (used for the private beta, now superseded by full review).**
 Business Verification is required only if the app is used by people *without a Role

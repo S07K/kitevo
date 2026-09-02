@@ -215,15 +215,18 @@ production.
   **Udyam (MSME) registration** as "Kitevo" — Meta matched the public record
   automatically. Business name + address must stay consistent across Udyam, Meta
   Business Info, and the site.
-- **Meta App Review: IN REVIEW** for `instagram_basic`, `instagram_manage_insights`,
-  `pages_show_list`, `business_management` (Meta quotes up to ~20 days). App stays in
-  **Development** until approved; flip to **Live** on approval, after which any
-  creator can connect Instagram with no tester allowlist. Submission record +
-  per-permission writeups: `docs/meta-app-review.md`.
-- **`business_management` is required — do not drop it.** When a creator's Page is
-  owned by a Meta Business Portfolio (common), `/me/accounts` returns no pages
-  without it and the connect flow fails with `no_pages` ("No Facebook Page found").
-  Verified empirically; see the comment in `app/api/instagram/connect/route.ts`.
+- **Meta App Review: APPROVED (all four).** `instagram_basic`,
+  `instagram_manage_insights`, `pages_show_list`, and `business_management` are all
+  approved and the **app is in Live mode**, so any creator can connect Instagram with
+  no tester allowlist. `pages_show_list` was rejected once (unclear screencast, not a
+  policy issue) and approved on re-submit with a captioned demo showing the Page →
+  Instagram flow. Submission record + per-permission writeups: `docs/meta-app-review.md`.
+- **`business_management` and `pages_show_list` are both required — do not drop either.**
+  `/me/accounts` needs `pages_show_list` to list the creator's Pages; `business_management`
+  is what includes Business-Portfolio-owned Pages in that list. Dropping either makes the
+  connect flow fail with `no_pages` ("No Facebook Page found"). Both verified empirically;
+  see the comment in `app/api/instagram/connect/route.ts`.
+- **Both integrations are fully public: YouTube and Instagram are verified and Live.**
 
 Full setup and the reasoning behind each choice is in `DEPLOY.md`. Other open items:
 
