@@ -16,6 +16,7 @@ const NAV_LINKS = [
   { label: "Live example", href: "/kit/demo" },
   { label: "Vibes", href: "#vibes" },
   { label: "Pricing", href: "#pricing" },
+  { label: "Blog", href: "/blog" },
   { label: "FAQ", href: "#faq" },
 ];
 

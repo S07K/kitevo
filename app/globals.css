@@ -81,3 +81,58 @@ button:disabled {
 @keyframes shimmer {
   100% { transform: translateX(200%); }
 }
+
+/* Blog post typography. Uses design tokens so it adapts to the .dark theme. */
+.blog-prose {
+  color: var(--foreground);
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+.blog-prose > * + * { margin-top: 1.15em; }
+.blog-prose h2 {
+  font-family: var(--font-cormorant), Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin-top: 2.2em;
+  margin-bottom: 0.2em;
+  text-wrap: balance;
+}
+.blog-prose h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 1.8em;
+  margin-bottom: 0.1em;
+}
+.blog-prose p { color: var(--foreground); }
+.blog-prose a {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  font-weight: 500;
+}
+.blog-prose a:hover { text-decoration: none; }
+.blog-prose strong { font-weight: 600; color: var(--foreground); }
+.blog-prose ul, .blog-prose ol { padding-left: 1.4em; }
+.blog-prose li { margin-top: 0.4em; }
+.blog-prose ul { list-style: disc; }
+.blog-prose ol { list-style: decimal; }
+.blog-prose li::marker { color: var(--muted-foreground); }
+.blog-prose blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1.1em;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+.blog-prose hr { border: none; border-top: 1px solid var(--border); margin: 2.4em 0; }
+.blog-prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--muted);
+  padding: 0.15em 0.4em;
+  border-radius: 5px;
+}
+.blog-prose h2:first-child, .blog-prose h3:first-child { margin-top: 0; }
