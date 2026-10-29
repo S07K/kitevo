@@ -78,6 +78,11 @@ export default function RootLayout({
       >
         <Providers>{children}</Providers>
         <Analytics />
+        <Script
+          src="https://troopy.ai/api/support/widget.js"
+          data-bot-id="6ae2fb0cee6ad29d94ccdc6b"
+          strategy="afterInteractive"
+        />
         {gaId && (
           <>
             <Script
