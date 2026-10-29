@@ -1,20 +1,8 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { Providers } from "./components/Providers";
-
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-body",
-  subsets: ["latin"],
-});
 
 const BASE_URL = APP_URL.replace(/\/$/, "");
 
@@ -74,7 +62,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${cormorant.variable} ${dmSans.variable} font-sans antialiased`}
+        className="font-sans antialiased"
       >
         <Providers>{children}</Providers>
         <Analytics />

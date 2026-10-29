@@ -2,6 +2,8 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-cormorant: Georgia, "Times New Roman", serif;
   --background: #fafaf9;
   --foreground: #111110;
   --muted: #f5f4f2;
