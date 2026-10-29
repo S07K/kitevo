@@ -229,4 +229,4 @@ function checkDbUrls() {
   }
 }
 
-run("npx next build");
+run("npx next build --webpack");
