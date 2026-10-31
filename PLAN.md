@@ -202,7 +202,7 @@ Workstreams:
 - [x] **Advertised features exist.** Manual stats entry ships end-to-end (schema, API, editor, public kit). (2026-10-31)
 - [x] **Honest marketing.** Unverified testimonials removed for product-outcome cards; claims synced to shipped features. (2026-10-31)
 - [x] **Live-stat gating.** Public kits only show live IG/YT data when the owner has a paid plan; free kits use manual stats. (2026-10-31)
-- [x] **Migrations.** Versioned baseline in `prisma/migrations`; `migrate deploy` runs automatically on every deploy (GitHub Action gated on tests + Vercel build before `next build`). One-time prod baseline (DEPLOY.md step 2) still to run.
+- [x] **Migrations.** Versioned baseline in `prisma/migrations`; `migrate deploy` runs automatically on every deploy (GitHub Action gated on tests + Vercel build before `next build`). Prod baselined + first deploys verified 2026-10-31.
 - [ ] **Token encryption.** Encrypt Instagram/YouTube access and refresh tokens at rest.
 - [ ] **Admin/ops.** Minimal admin view for users, comps, subscriptions, and failed webhooks.
 - [ ] **Trials and coupons.** Provider-backed trial and coupon support, with abuse limits.
@@ -301,7 +301,7 @@ Workstreams:
 
 **Acceptance verified locally:** fresh DB applies the baseline cleanly; a `db push`-built DB fails fast with `P3005` (no destructive attempts); `migrate resolve --applied` fixes it; `migrate deploy` then reports "No pending migrations"; `migrate diff` reports no drift.
 
-**Still to do (one-time, needs prod credentials):** run the two baseline commands from DEPLOY.md step 2 against production, and add the `DATABASE_URL`/`DIRECT_URL` repo secrets — until then the first deploy including migrations fails closed on `P3005`.
+**Still to do:** none — prod baselined 2026-10-31 and verified end to end: GitHub Action run 41191818333 (tests → "No pending migrations to apply"), Vercel production build Ready in 53s (its migrate deploy no-oped), and the live site serves the new code. New databases (e.g. staging) built outside migrations still need the `P3005` baseline pair from DEPLOY.md step 2.
 
 **Policy:** author migrations locally with `prisma migrate dev`; never `db push` a managed database; destructive schema changes require a reviewed migration first.
 
@@ -394,3 +394,4 @@ Workstreams:
 | 2026-10-31 | Stats API routes stay owner-open | Onboarding needs YT stats pre-plan; routes return only the caller's own data; the monetized surface is the server-gated public kit |
 | 2026-10-31 | Dashboard tiles fall back to self-reported numbers | Makes Free feel real without breaking the live-stat paywall; "self-reported" subtitle carries the honesty |
 | 2026-10-31 | P0 first slice committed | Free plan access + manual stats + honest marketing + public-kit gating (see git history, 2026-10-31) |
+| 2026-10-31 | Migrations auto-apply on deploy | GitHub Action (tests → `migrate deploy`) + Vercel build both apply pending migrations; `db push` retired. Prod baselined and first runs verified (Action 41191818333, Vercel build 53s) |

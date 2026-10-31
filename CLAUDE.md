@@ -115,7 +115,7 @@ The competitive/product strategy (Stan Store teardown, pricing, roadmap) now liv
 - ✅ Free-plan dashboard access (no more upgrade wall for free users; live stats stay Starter+)
 - ✅ Manual stats end-to-end (`Kit.manualStats` → editor → API → public kit, "self-reported" label)
 - ✅ Honest landing social proof (fictional testimonials replaced with product-outcome cards); claims synced to shipped features
-- ✅ Prisma migrations — versioned baseline (`prisma/migrations/20261031000000_init`) + auto-apply on deploy (GitHub Action gated on tests + Vercel build). **One-time prod baseline still to run** — `db push` + `migrate resolve` against prod URLs, see DEPLOY.md step 2. Required before commerce tables land.
+- ✅ Prisma migrations — versioned baseline (`prisma/migrations/20261031000000_init`) + auto-apply on deploy (GitHub Action gated on tests + Vercel build). Prod baselined and verified live 2026-10-31: first Action run reported "No pending migrations"; Vercel build+migrate deploy passed. Required before commerce tables land.
 - ⬜ Token encryption at rest (IG/YT access + refresh tokens)
 - ⬜ Admin/ops view, trials/coupons, analytics events, custom domains
 
@@ -203,7 +203,7 @@ Phase 3 — Business tier:
 - `User.followerCount/engagementRate/statsUpdatedAt` — cached creator stats for discover filtering (refreshed from IG/YT via `lib/creator-stats-cache.ts`)
 - **Schema changes are versioned migrations** (`prisma/migrations`, baseline `20261031000000_init`), applied automatically on deploy: GitHub Action `.github/workflows/db-migrate.yml` (after `npm test`) and `scripts/vercel-build.cjs` before `next build`, both via `prisma migrate deploy`. Author new migrations locally with `prisma migrate dev`; never reach for `db push` against prod/staging
 - **Supabase needs two connection strings**: `DATABASE_URL` = transaction pooler (:6543, `?pgbouncer=true`) for runtime, `DIRECT_URL` = session pooler (:5432) for `prisma migrate deploy` (and the same two values must exist as GitHub repo secrets for the Action). Never Supabase's "direct connection" — it is IPv6-only without the paid add-on. See DEPLOY.md step 2
-- **Future migrations need a one-time prod baseline** if prod has never run `migrate deploy`: `migrate deploy` there fails closed with `P3005` until `db push` + `migrate resolve --applied <migration>` sync the history (documented in DEPLOY.md step 2)
+- **New/foreign databases still need baselining before `migrate deploy`**: db built via the old `db push` flow (e.g. a staging DB cloned this way) has no `_prisma_migrations` history and fails closed with `P3005` until `db push` + `migrate resolve --applied <migration>` sync it. Prod was baselined 2026-10-31 (first Action run: "No pending migrations"). See DEPLOY.md step 2
 
 ---
 
