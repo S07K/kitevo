@@ -35,6 +35,7 @@ describe("GET /api/kits/by-slug/[slug]", () => {
       brands: "[]",
       sectionVisibility: "{}",
       appearance: "{}",
+      manualStats: '{"instagramFollowers":12400,"instagramEngagement":4.2,"garbage":-3}',
       user: {
         name: "Jane",
         username: "jane",
@@ -51,6 +52,10 @@ describe("GET /api/kits/by-slug/[slug]", () => {
     expect(json.kit).toBeDefined();
     expect(json.kit.id).toBe("kit-1");
     expect(json.kit.slug).toBe("my-kit");
+    expect(json.kit.manualStats).toEqual({
+      instagramFollowers: 12400,
+      instagramEngagement: 4.2,
+    });
     expect(json.creator).toBeDefined();
     expect(json.creator.name).toBe("Jane");
     expect(json.creator.username).toBe("jane");

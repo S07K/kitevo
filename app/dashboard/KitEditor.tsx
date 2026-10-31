@@ -25,6 +25,53 @@ import {
   parseKitAppearance,
 } from "@/lib/kit-appearance";
 import { KitEditorSkeleton } from "@/app/components/Skeleton";
+import {
+  EMPTY_MANUAL_STATS,
+  normalizeManualStats,
+  type ManualStats,
+} from "@/lib/manual-stats";
+
+function StatField({
+  label,
+  value,
+  onChange,
+  suffix,
+  min = 0,
+  step = 1,
+  hint,
+}: {
+  label: string;
+  value: number | undefined;
+  onChange: (value: number | undefined) => void;
+  suffix?: string;
+  min?: number;
+  step?: number;
+  hint?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="block text-xs text-muted-foreground mb-1">{label}</span>
+      <div className="relative">
+        <input
+          type="number"
+          min={min}
+          step={step}
+          inputMode="decimal"
+          placeholder="—"
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+          className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        {suffix && (
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+            {suffix}
+          </span>
+        )}
+      </div>
+      {hint && <span className="mt-1 block text-[11px] text-muted-foreground">{hint}</span>}
+    </label>
+  );
+}
 
 function newId(): string {
   return Math.random().toString(36).slice(2, 11);
@@ -51,6 +98,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
     DEFAULT_SECTION_VISIBILITY
   );
   const [appearance, setAppearance] = useState<KitAppearance>(DEFAULT_KIT_APPEARANCE);
+  const [manualStats, setManualStats] = useState<ManualStats>(EMPTY_MANUAL_STATS);
 
   // Resolve effective kit id (first kit if none specified)
   useEffect(() => {
@@ -84,6 +132,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
               ? parseKitAppearance(typeof data.appearance === "string" ? data.appearance : JSON.stringify(data.appearance))
               : DEFAULT_KIT_APPEARANCE
           );
+          setManualStats(normalizeManualStats(data.manualStats));
         })
         .catch((e) => setLoadError(e.message ?? "Failed to load kit"))
         .finally(() => setLoadingKit(false));
@@ -95,6 +144,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
       setRates(stored.rates);
       setBrands(stored.brands);
       setSectionVisibility(stored.sectionVisibility ?? DEFAULT_SECTION_VISIBILITY);
+      setManualStats(normalizeManualStats(stored.manualStats));
     }
   }, [effectiveKitId]);
 
@@ -106,7 +156,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ rates, brands, sectionVisibility, appearance }),
+        body: JSON.stringify({ rates, brands, sectionVisibility, appearance, manualStats }),
       })
         .then(async (r) => {
           if (!r.ok) throw new Error("Failed to save");
@@ -118,7 +168,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
         .catch(() => setLoadError("Failed to save"));
       return;
     }
-    setKitContent(effectiveKitId, { rates, brands, sectionVisibility });
+    setKitContent(effectiveKitId, { rates, brands, sectionVisibility, manualStats });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -198,6 +248,59 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
           </button>
         </div>
       )}
+
+      {/* Manual stats — available on every plan, replaced by live data when connected */}
+      <div className="p-6 border border-border rounded-2xl bg-background">
+        <div className="flex items-start justify-between gap-4 mb-1">
+          <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
+            Manual stats
+          </h3>
+          <span className="border-border text-muted-foreground rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide shrink-0">
+            All plans
+          </span>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          No platform connected? Enter your headline numbers and they&apos;ll appear on your public kit, clearly labelled as self-reported.
+          On Starter and Pro, live data replaces these for any platform you connect.
+        </p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <StatField
+            label="Instagram followers"
+            value={manualStats.instagramFollowers}
+            onChange={(instagramFollowers) => setManualStats((s) => ({ ...s, instagramFollowers }))}
+          />
+          <StatField
+            label="Instagram engagement rate"
+            value={manualStats.instagramEngagement}
+            onChange={(instagramEngagement) => setManualStats((s) => ({ ...s, instagramEngagement }))}
+            suffix="%"
+            step={0.1}
+            hint="Average engagement across recent posts"
+          />
+          <StatField
+            label="YouTube subscribers"
+            value={manualStats.youtubeSubscribers}
+            onChange={(youtubeSubscribers) => setManualStats((s) => ({ ...s, youtubeSubscribers }))}
+          />
+          <StatField
+            label="YouTube total views"
+            value={manualStats.youtubeTotalViews}
+            onChange={(youtubeTotalViews) => setManualStats((s) => ({ ...s, youtubeTotalViews }))}
+          />
+          <StatField
+            label="Follower growth"
+            value={manualStats.growthThisMonth}
+            onChange={(growthThisMonth) => setManualStats((s) => ({ ...s, growthThisMonth }))}
+            suffix="%"
+            step={0.1}
+            min={-100}
+            hint="Last 30 days. Shown only when positive."
+          />
+        </div>
+        <p className="mt-4 text-xs text-muted-foreground">
+          Growth charts and audience demographics are only generated from connected platforms — manual numbers never become a chart.
+        </p>
+      </div>
 
       {/* Section visibility — what appears on the public kit */}
       <div className="p-6 border border-border rounded-2xl bg-background">

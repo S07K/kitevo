@@ -4,6 +4,7 @@ import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import type { SectionVisibility } from "@/lib/kit-storage";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
 import { parseKitAppearance } from "@/lib/kit-appearance";
+import { parseManualStats } from "@/lib/manual-stats";
 
 function parseJson<T>(raw: string, fallback: T): T {
   try {
@@ -63,6 +64,7 @@ export async function GET(
       brands: parseJson<BrandPartner[]>(kit.brands, []),
       sectionVisibility,
       appearance: parseKitAppearance(kit.appearance),
+      manualStats: parseManualStats(kit.manualStats),
     },
     creator,
   });

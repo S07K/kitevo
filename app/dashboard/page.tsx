@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { SubscribeButton } from "../components/SubscribeButton";
 import {
   getEnabledPlatformIds,
   getPlatformMeta,
@@ -18,7 +17,7 @@ import { DashboardSkeleton, StatCardSkeleton, KitCardSkeleton, CountUp } from ".
 import { AnalyticsChart } from "../components/AnalyticsChart";
 import type { KitRecord } from "@/lib/kit-storage";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
-import { APP_URL, APP_HOST } from "@/lib/app-url";
+import { APP_HOST } from "@/lib/app-url";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -56,14 +55,6 @@ function referrerDomain(referrer: string | null): string | null {
 }
 
 // ─── Design system primitives ────────────────────────────────────────────────
-
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`bg-background border-border rounded-2xl border p-6 ${className}`}>
-      {children}
-    </div>
-  );
-}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -614,7 +605,6 @@ function KitCard({
 // ─── Main dashboard ───────────────────────────────────────────────────────────
 
 function DashboardContent() {
-  const [hasKitAccess, setHasKitAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [subscriptionLoaded, setSubscriptionLoaded] = useState(false);
@@ -622,6 +612,7 @@ function DashboardContent() {
   const [allowedKits, setAllowedKits] = useState(1);
   const [tierId, setTierId] = useState<string | null>(null);
   const [tierName, setTierName] = useState<string | null>(null);
+  const isPaidTier = !!tierId && tierId !== "free";
   const [kits, setKits] = useState<KitRecord[]>([]);
   const [profile, setProfile] = useState<ProfileFormProfile | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);
@@ -676,8 +667,8 @@ function DashboardContent() {
       if (cancelled) return;
       const data = await res.json().catch(() => ({}));
       // Access, not payment: a comp grants the paid tier with hasSubscription=false, so gate
-      // on the effective tier instead. free (or no tier) = no access; any real tier = access.
-      setHasKitAccess(!!data.tierId && data.tierId !== "free");
+      // paid features on the effective tier. Every authenticated user reaches the dashboard;
+      // the Free plan includes one kit.
       setAllowedKits(typeof data.allowedKits === "number" ? data.allowedKits : 1);
       setTierId(data.tierId ?? null);
       setTierName(data.tierName ?? null);
@@ -700,7 +691,7 @@ function DashboardContent() {
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [hasKitAccess]);
+  }, []);
 
   const fetchKitViews = useCallback((days: number) => {
     fetch(`/api/kit-views?days=${days}`, { credentials: "include" })
@@ -769,7 +760,11 @@ function DashboardContent() {
   }, [subscriptionLoaded, profileLoaded, profile]);
 
   useEffect(() => {
-    if (!hasKitAccess) return;
+    if (!isPaidTier) {
+      // Free kits use creator-reported stats. Never fetch live platform data for them.
+      setPlatformStats({});
+      return;
+    }
     let cancelled = false;
     fetch("/api/instagram/stats", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
@@ -778,7 +773,7 @@ function DashboardContent() {
       })
       .catch(() => { if (!cancelled) setPlatformStats({}); });
     return () => { cancelled = true; };
-  }, [hasKitAccess]);
+  }, [isPaidTier]);
 
   useEffect(() => {
     let cancelled = false;
@@ -791,7 +786,25 @@ function DashboardContent() {
     return () => { cancelled = true; };
   }, [instagramConnectedParam]);
 
+  // Connection status is independent of the plan: a free creator's token exists, so the
+  // Integrations row must still offer Disconnect. Only the live numbers are Starter+.
   useEffect(() => {
+    let cancelled = false;
+    fetch("/api/youtube/status", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.connected === "boolean") setYoutubeConnected(data.connected);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [youtubeParam]);
+
+  useEffect(() => {
+    // Live YouTube stats are Starter+. Free accounts must not rely on them.
+    if (!isPaidTier) {
+      setYoutubeStats(null);
+      return;
+    }
     let cancelled = false;
     fetch("/api/youtube/stats", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
@@ -803,7 +816,7 @@ function DashboardContent() {
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [youtubeParam]);
+  }, [isPaidTier, youtubeParam]);
 
   const handleDisconnectYoutube = async () => {
     setDisconnectingYoutube(true);
@@ -961,6 +974,8 @@ function DashboardContent() {
     : "?";
   // Aggregate stats
   const instagramStats = platformStats?.["instagram"] ?? null;
+  // Free plans: self-reported headline numbers (entered in KitEditor) stand in for live stats.
+  const manual = kits[0]?.manualStats;
   const totalViews = kits.reduce((sum, k) => sum + (k.viewCount ?? 0), 0);
 
   return (
@@ -1036,68 +1051,8 @@ function DashboardContent() {
         {/* ── Content ── */}
         {loading ? (
           <DashboardSkeleton />
-        ) : !hasKitAccess ? (
-          /* ── Upgrade gate ── */
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="flex flex-col justify-between">
-              <div>
-                <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-[0.16em] uppercase">
-                  Get started
-                </p>
-                <h2 className="font-display text-foreground text-2xl font-semibold tracking-tight">
-                  Unlock your media kit
-                </h2>
-                <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
-                  Subscribe to publish your professional pitch page with live Instagram stats, audience demographics, and growth charts brands actually want to see.
-                </p>
-              </div>
-              <div className="mt-8">
-                <SubscribeButton email={profile?.email} />
-              </div>
-            </Card>
-
-            <div className="space-y-3">
-              {[
-                {
-                  icon: (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-                    </svg>
-                  ),
-                  label: "Live Instagram stats",
-                  desc: "Follower count, engagement rate, and demographics — always up to date.",
-                },
-                {
-                  icon: (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/>
-                    </svg>
-                  ),
-                  label: "Brand Kit Vibes (Pro)",
-                  desc: "5 signature design styles. Custom colors, fonts, and logo upload.",
-                },
-                {
-                  icon: (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                    </svg>
-                  ),
-                  label: "Shareable link",
-                  desc: `Your kit lives at ${APP_HOST}/kit/[you]. One link for every brand pitch.`,
-                },
-              ].map((item) => (
-                <div key={item.label} className="border-border bg-background flex gap-4 rounded-2xl border p-5">
-                  <div className="mt-0.5 shrink-0 text-muted-foreground">{item.icon}</div>
-                  <div>
-                    <p className="text-foreground text-sm font-semibold">{item.label}</p>
-                    <p className="text-muted-foreground mt-0.5 text-sm">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         ) : (
-          /* ── Subscribed dashboard ── */
+          /* ── Dashboard ── */
           <div className="space-y-6">
             {/* ── Welcome banner ── */}
             <div className="bg-[#111110] dark:bg-[#1c1c1a] dark:border dark:border-[#2a2a28] rounded-2xl px-6 py-5 sm:px-7 sm:py-6">
@@ -1148,16 +1103,26 @@ function DashboardContent() {
               type Tile = { key: string; label: string; sub: string; node: React.ReactNode };
               const tiles: Tile[] = [];
 
+              const manualFollowers = !instagramStats && manual?.instagramFollowers ? manual.instagramFollowers : null;
               tiles.push({
-                key: "followers", label: "Followers", sub: "Instagram",
-                node: !platformStats ? skel("w-20") : instagramStats ? <CountUp value={instagramStats.followers} duration={1400} /> : <span className="text-muted-foreground text-base">—</span>,
+                key: "followers",
+                label: "Followers",
+                sub: instagramStats ? "Instagram" : manualFollowers ? "Instagram · self-reported" : "Instagram",
+                node: !platformStats ? skel("w-20") : instagramStats ? <CountUp value={instagramStats.followers} duration={1400} /> : manualFollowers ? <CountUp value={manualFollowers} duration={1400} /> : <span className="text-muted-foreground text-base">—</span>,
               });
-              if (youtubeConnected && youtubeStats) {
-                tiles.push({ key: "subs", label: "Subscribers", sub: "YouTube", node: <CountUp value={youtubeStats.subscriberCount} duration={1400} /> });
+              if (youtubeStats || manual?.youtubeSubscribers) {
+                tiles.push({
+                  key: "subs",
+                  label: "Subscribers",
+                  sub: youtubeStats ? "YouTube" : "YouTube · self-reported",
+                  node: youtubeStats ? <CountUp value={youtubeStats.subscriberCount} duration={1400} /> : <CountUp value={manual?.youtubeSubscribers ?? 0} duration={1400} />,
+                });
               }
               // Only show engagement when it's a real, non-zero rate (0.0% reads as "no engagement").
               if (instagramStats && instagramStats.avgEngagement > 0) {
                 tiles.push({ key: "eng", label: "Engagement", sub: "avg rate", node: <CountUp value={instagramStats.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
+              } else if (manual?.instagramEngagement) {
+                tiles.push({ key: "eng", label: "Engagement", sub: "avg rate · self-reported", node: <CountUp value={manual.instagramEngagement} decimals={1} suffix="%" duration={1000} /> });
               }
               tiles.push({
                 key: "week", label: "Views this week", sub: "kit page visits",
@@ -1394,6 +1359,11 @@ function DashboardContent() {
               {/* ── Integrations ── */}
               <div className="border-border rounded-2xl border overflow-hidden mt-4">
                 <p className="px-5 pt-5 pb-3 text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Integrations</p>
+                {!isPaidTier && (
+                  <p className="px-5 pb-3 -mt-1 text-xs text-muted-foreground">
+                    Live stats are a Starter feature. You can connect now; your data starts appearing after you upgrade.
+                  </p>
+                )}
 
                 {/* YouTube */}
                 <div className="flex items-center justify-between gap-4 px-5 py-4 border-t border-border">
@@ -1409,6 +1379,8 @@ function DashboardContent() {
                         <p className="text-muted-foreground text-xs mt-0.5">
                           {youtubeStats.channelTitle} · {youtubeStats.subscriberCount.toLocaleString()} subscribers
                         </p>
+                      ) : youtubeConnected ? (
+                        <p className="text-muted-foreground text-xs mt-0.5">Connected · live stats on Starter and above</p>
                       ) : (
                         <p className="text-muted-foreground text-xs mt-0.5">Show subscriber count on your kit</p>
                       )}
@@ -1495,7 +1467,7 @@ function DashboardContent() {
                 <div className="border-border bg-background mt-4 flex items-center justify-between gap-4 rounded-2xl border p-5">
                   <div>
                     <p className="text-foreground text-sm font-semibold">Unlock Brand Kit Vibes</p>
-                    <p className="text-muted-foreground mt-0.5 text-xs">Pro gives you 5 signature styles, custom colors, fonts, and logo upload.</p>
+                    <p className="text-muted-foreground mt-0.5 text-xs">Pro gives you 5 signature styles, three kits, and a brand inquiry inbox with deal tracking.</p>
                   </div>
                   <button
                     type="button"

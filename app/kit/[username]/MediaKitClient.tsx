@@ -61,6 +61,8 @@ interface MediaKitClientProps {
   instagramConnected?: boolean;
   /** Static demo kits (/kit/demo, etc.) — never show connect overlay; always show sample stats/charts */
   isDemoKit?: boolean;
+  /** Where the headline stats came from. Manual numbers must never be labelled "live". */
+  statsSource?: "live" | "manual" | "mixed" | "none";
   /** Kit DB id — required for inquiry form submissions */
   kitId?: string;
   /** When true, show the brand inquiry form (Pro feature) */
@@ -277,6 +279,7 @@ export function MediaKitClient({
   appearance: appearanceProp,
   instagramConnected = true,
   isDemoKit = false,
+  statsSource = "live",
   kitId,
   inquiryEnabled = false,
   isOwner = false,
@@ -322,8 +325,9 @@ export function MediaKitClient({
       : [];
 
   // Charts sit side-by-side on desktop when both are present; full-width when only one.
-  const showGrowthChart = sectionVisibility.growthChart && (instagramConnected || isDemoKit || isOwner);
-  const showAudienceChart = sectionVisibility.audience && (instagramConnected || isDemoKit || isOwner);
+  // Manual stats are headline-only — never turn them into a fake growth/audience chart.
+  const showGrowthChart = sectionVisibility.growthChart && statsSource !== "manual" && (instagramConnected || isDemoKit || isOwner);
+  const showAudienceChart = sectionVisibility.audience && statsSource !== "manual" && (instagramConnected || isDemoKit || isOwner);
 
   // Gender split + top countries (Instagram audience insights).
   const genderData = platformStats["instagram"]?.audienceGender ?? [];
@@ -345,7 +349,7 @@ export function MediaKitClient({
     avgComments != null && avgComments > 0 ? { label: "Avg comments", value: avgComments } : null,
     avgReach != null && avgReach > 0 ? { label: "Avg reach", value: avgReach } : null,
   ].filter((c): c is { label: string; value: number } => c !== null);
-  const showPerPost = (instagramConnected || isDemoKit) && perPostCells.length > 0;
+  const showPerPost = sectionVisibility.stats && (instagramConnected || isDemoKit) && perPostCells.length > 0;
 
   return (
     <div
@@ -569,7 +573,7 @@ export function MediaKitClient({
           </div>
 
           {/* ── Combined stats — every platform's headline numbers, up top ── */}
-          {(() => {
+          {sectionVisibility.stats && (() => {
             const ig = platformStats["instagram"];
             const yt = platformStats["youtube"];
             if (!ig && !yt) return null;
@@ -612,7 +616,13 @@ export function MediaKitClient({
             const totalAudience = (ig?.followers ?? 0) + (yt?.followers ?? 0);
             // Compact cells (number over label) let more fit per row: 3-up on mobile, all-in-one-row on desktop.
             const cols = cells.length >= 5 ? "sm:grid-cols-5" : cells.length === 4 ? "sm:grid-cols-4" : cells.length === 3 ? "sm:grid-cols-3" : cells.length === 2 ? "sm:grid-cols-2" : "";
-            const liveLabel = bothPlatforms ? "Live — synced from Instagram & YouTube" : ig ? "Live — synced from Instagram" : "Live — synced from YouTube";
+            const platformLabel = bothPlatforms ? "Instagram & YouTube" : ig ? "Instagram" : "YouTube";
+            const liveLabel =
+              statsSource === "manual"
+                ? "Self-reported by creator"
+                : statsSource === "mixed"
+                  ? "Live where connected · other stats self-reported"
+                  : `Live — synced from ${platformLabel}`;
 
             // Mobile is a 6-col grid so cells can divide evenly: normally 3-up (span 2 each), and a
             // trailing row of 1 or 2 stretches to fill (span 6, or 3 each) — no leftover gaps.
@@ -647,13 +657,17 @@ export function MediaKitClient({
                     ))}
                   </div>
                 </div>
-                {/* Live indicator — only claim "live" for real synced kits (not demo) */}
+                {/* Source indicator — manual numbers are never dressed up as live */}
                 {!isDemoKit && (ig || yt) && (
                   <div className="mt-2.5 flex items-center justify-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                    </span>
+                    {statsSource === "manual" ? (
+                      <span className="h-2 w-2 rounded-full bg-[var(--mk-text-soft)]" aria-hidden />
+                    ) : (
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                      </span>
+                    )}
                     <span className="text-[11px] font-medium text-[var(--mk-text-soft)] tracking-wide">{liveLabel}</span>
                   </div>
                 )}

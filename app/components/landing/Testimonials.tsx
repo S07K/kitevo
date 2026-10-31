@@ -5,94 +5,72 @@ import { useReducedMotion } from "@/lib/motion";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef, type ReactNode } from "react";
 
-type Testimonial = {
-  quote: string;
-  name: string;
-  role: string;
-  followers: string;
-  initials: string;
-  color: string;
+type ProductOutcome = {
+  tag: string;
+  title: string;
+  body: string;
 };
 
-const TESTIMONIALS: Testimonial[] = [
+/**
+ * Product outcomes, not testimonials.
+ *
+ * Every claim here maps to something the product does today. We do not invent creators,
+ * follower counts, or quotes — trust is the product, and fake proof would undermine it.
+ */
+const OUTCOMES: ProductOutcome[] = [
   {
-    quote:
-      "I sent my Kitevo link to three brands in one week. Two replied the same day. My old PDF got zero responses in a month.",
-    name: "Natalie Rose",
-    role: "Lifestyle creator · Instagram",
-    followers: "182K followers",
-    initials: "NR",
-    color: "#d4a574",
+    tag: "Live proof",
+    title: "Stats brands can verify",
+    body:
+      "Connect Instagram or YouTube and your kit pulls the latest followers, engagement, and views. No screenshots to update before every pitch.",
   },
   {
-    quote:
-      "The engagement rate and demographic breakdown on my kit is exactly what brand managers ask for in every outreach email. Now it's just there.",
-    name: "Alex Chen",
-    role: "Tech & finance creator",
-    followers: "94K followers",
-    initials: "AC",
-    color: "#7c9cbc",
+    tag: "Free plan",
+    title: "Start before you spend",
+    body:
+      "One kit, manual stats, and brand partners. Publish a credible page before paying anything.",
   },
   {
-    quote:
-      "Switched from a Canva template I'd been using for two years. The live Instagram stats alone make it worth it — brands can see everything is real.",
-    name: "Sara Amir",
-    role: "Food & travel creator",
-    followers: "340K followers",
-    initials: "SA",
-    color: "#c4956a",
+    tag: "One link",
+    title: "A pitch that travels well",
+    body:
+      "Send one URL to a brand. It opens fast, looks sharp on mobile, and answers the questions a static PDF can't.",
   },
   {
-    quote:
-      "As a micro-influencer I always felt like I needed to over-explain my value. Now my kit does that for me. Closed my first deal at 22K followers.",
-    name: "Jordan Miles",
-    role: "Fitness & wellness creator",
-    followers: "22K followers",
-    initials: "JM",
-    color: "#8fbc8f",
+    tag: "Multi-kit",
+    title: "Different lanes, same dashboard",
+    body:
+      "Pro creators can publish up to three kits for different niches, offers, or audiences — without buying another tool.",
   },
   {
-    quote:
-      "I'm a photographer who works with creators. Every one of my clients who uses Kitevo lands better collaborations. It looks like a real agency pitch.",
-    name: "Priya Nair",
-    role: "Brand photographer",
-    followers: "Works with 50+ creators",
-    initials: "PN",
-    color: "#b39ddb",
+    tag: "Pipeline",
+    title: "Inquiries become deals",
+    body:
+      "Every brand message lands in a pipeline, so follow-ups don't disappear in your DMs.",
   },
   {
-    quote:
-      "The Noir vibe matches my streetwear brand perfectly. Brands DM me saying my kit looks more professional than agencies they've worked with.",
-    name: "Marcus Webb",
-    role: "Streetwear & culture creator",
-    followers: "211K followers",
-    initials: "MW",
-    color: "#e0c070",
+    tag: "Roadmap",
+    title: "Built to grow into commerce",
+    body:
+      "Digital products, bookings, and brand deal rooms are next. Your kit stays the front door.",
   },
 ];
 
 const COLUMNS: number[][] = [[0, 3], [1, 4], [2, 5]];
 
-function QuoteCard({ t }: { t: Testimonial }): ReactNode {
+function OutcomeCard({ outcome }: { outcome: ProductOutcome }): ReactNode {
   return (
-    <figure className="border-border bg-background flex flex-col gap-6 rounded-3xl border p-7">
-      <blockquote className="text-foreground text-base leading-relaxed font-medium tracking-tight">
-        &ldquo;{t.quote}&rdquo;
-      </blockquote>
-      <figcaption className="flex items-center gap-3">
-        <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-          style={{ backgroundColor: t.color }}
-        >
-          {t.initials}
-        </div>
-        <div>
-          <p className="text-foreground text-sm font-medium">{t.name}</p>
-          <p className="text-muted-foreground mt-0.5 text-xs">{t.role}</p>
-          <p className="text-muted-foreground text-xs">{t.followers}</p>
-        </div>
-      </figcaption>
-    </figure>
+    <article className="border-border bg-background flex flex-col gap-4 rounded-3xl border p-7">
+      <span className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase">
+        {outcome.tag}
+      </span>
+      <div>
+        <h3 className="font-display text-foreground text-lg font-semibold tracking-tight">
+          {outcome.title}
+        </h3>
+        <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{outcome.body}</p>
+      </div>
+    </article>
   );
 }
 
@@ -113,26 +91,26 @@ export function Testimonials(): ReactNode {
   return (
     <section
       ref={sectionRef}
-      id="reviews"
+      id="why-kitevo"
       className="mx-auto max-w-[1440px] scroll-mt-24 px-5 pb-24 sm:px-8 sm:pb-32 lg:px-10"
     >
       <SectionHeading
-        label="Creator stories"
-        title="Creators who went from pitching to closing"
-        description="Real results from influencers who replaced their PDF decks with Kitevo."
+        label="Why Kitevo"
+        title="Built for the way brand deals actually happen"
+        description="Kitevo is early. Instead of rented testimonials, here is exactly what the product does today — and what it is being built to do next."
       />
 
       {reduce ? (
         <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {TESTIMONIALS.map((t) => (
-            <QuoteCard key={t.name} t={t} />
+          {OUTCOMES.map((outcome) => (
+            <OutcomeCard key={outcome.title} outcome={outcome} />
           ))}
         </div>
       ) : (
         <>
           <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:hidden">
-            {TESTIMONIALS.map((t) => (
-              <QuoteCard key={t.name} t={t} />
+            {OUTCOMES.map((outcome) => (
+              <OutcomeCard key={outcome.title} outcome={outcome} />
             ))}
           </div>
           <div className="mt-16 hidden grid-cols-3 gap-4 lg:grid">
@@ -143,9 +121,9 @@ export function Testimonials(): ReactNode {
                 className="flex flex-col gap-4"
               >
                 {column.map((idx) => {
-                  const t = TESTIMONIALS[idx];
-                  if (!t) return null;
-                  return <QuoteCard key={t.name} t={t} />;
+                  const outcome = OUTCOMES[idx];
+                  if (!outcome) return null;
+                  return <OutcomeCard key={outcome.title} outcome={outcome} />;
                 })}
               </motion.div>
             ))}

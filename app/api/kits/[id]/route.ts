@@ -11,6 +11,11 @@ import {
   serializeKitAppearance,
   type KitAppearance,
 } from "@/lib/kit-appearance";
+import {
+  parseManualStats,
+  serializeManualStats,
+  type ManualStats,
+} from "@/lib/manual-stats";
 
 function parseJson<T>(raw: string, fallback: T): T {
   try {
@@ -31,6 +36,7 @@ function toKitResponse(k: {
   brands: string;
   sectionVisibility: string;
   appearance: string;
+  manualStats: string;
 }) {
   return {
     id: k.id,
@@ -42,6 +48,7 @@ function toKitResponse(k: {
     brands: parseJson<BrandPartner[]>(k.brands, []),
     sectionVisibility: parseJson<SectionVisibility>(k.sectionVisibility, { ...DEFAULT_SECTION_VISIBILITY }),
     appearance: parseKitAppearance(k.appearance),
+    manualStats: parseManualStats(k.manualStats),
   };
 }
 
@@ -91,6 +98,7 @@ export async function PUT(
     brands: string;
     sectionVisibility: string;
     appearance: string;
+    manualStats: string;
   }> = {};
   if (typeof body.name === "string") updates.name = body.name.trim() || kit.name;
   if (typeof body.slug === "string") {
@@ -119,6 +127,9 @@ export async function PUT(
   }
   if (body.appearance !== undefined && body.appearance !== null && typeof body.appearance === "object") {
     updates.appearance = serializeKitAppearance(body.appearance as KitAppearance);
+  }
+  if (body.manualStats !== undefined && body.manualStats !== null && typeof body.manualStats === "object") {
+    updates.manualStats = serializeManualStats(body.manualStats as ManualStats);
   }
 
   const updated = await prisma.kit.update({

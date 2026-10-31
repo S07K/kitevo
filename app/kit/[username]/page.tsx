@@ -14,7 +14,8 @@ import {
 } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
 import { payments } from "@/lib/payments";
-import { getTierByPriceId } from "@/config/subscriptions";
+import { getTierById, getTierByPriceId } from "@/config/subscriptions";
+import { manualStatsToPlatformStats } from "@/lib/manual-stats";
 import { getKitBySlug } from "@/lib/get-kit-by-slug";
 import { recordKitView } from "@/lib/kit-views";
 import { MediaKitClient } from "./MediaKitClient";
@@ -144,10 +145,26 @@ export default async function MediaKitPage({
         select: { instagramUserId: true, instagramAccessToken: true, stripeCustomerId: true, compedTier: true, youtubeChannelId: true, youtubeAccessToken: true },
       }),
     ]);
+
+    // Effective plan: an active subscription wins over a comp, matching /api/subscription-status.
+    // Live platform data is a Starter+ feature; free kits render only creator-reported stats.
+    let creatorTier = getTierById(user?.compedTier ?? null);
+    if (user?.stripeCustomerId) {
+      try {
+        const sub = await payments.getSubscription(user.stripeCustomerId, { activeOnly: true });
+        const subscriptionTier = getTierByPriceId(sub?.priceId ?? null);
+        if (subscriptionTier) creatorTier = subscriptionTier;
+      } catch (e) {
+        console.error("[kit page] subscription lookup failed:", e);
+      }
+    }
+    const hasPaidPlan = !!creatorTier && creatorTier.id !== "free";
+    const inquiryEnabled = creatorTier?.id === "pro";
+
     const instagramConnectedForKit = !!(user?.instagramUserId && user?.instagramAccessToken);
     let instagramStats = null;
     let instagramPosts: Awaited<ReturnType<typeof getRecentPostsForUser>> = [];
-    if (instagramConnectedForKit) {
+    if (hasPaidPlan && instagramConnectedForKit) {
       try {
         [instagramStats, instagramPosts] = await Promise.all([
           getStatsForUser(result.kit.userId),
@@ -160,7 +177,7 @@ export default async function MediaKitPage({
 
     const youtubeConnectedForKit = !!(user?.youtubeChannelId && user?.youtubeAccessToken);
     let youtubeStats = null;
-    if (youtubeConnectedForKit) {
+    if (hasPaidPlan && youtubeConnectedForKit) {
       try {
         const { getYouTubeStatsForUser } = await import("@/lib/youtube-api");
         youtubeStats = await getYouTubeStatsForUser(result.kit.userId);
@@ -169,22 +186,26 @@ export default async function MediaKitPage({
       }
     }
 
-    // Inquiry form is a Pro feature. A comp to pro grants it with no subscription.
-    let inquiryEnabled = user?.compedTier === "pro";
-    if (!inquiryEnabled && user?.stripeCustomerId) {
-      try {
-        const sub = await payments.getSubscription(user.stripeCustomerId, { activeOnly: true });
-        const tier = getTierByPriceId(sub?.priceId ?? null);
-        inquiryEnabled = tier?.id === "pro";
-      } catch (e) {
-        console.error("[kit page] Stripe error:", e);
-      }
-    }
-
+    // Manual numbers are the fallback. Live data replaces them per connected platform, so a
+    // paid creator never sees a stale self-reported number where a verified one exists.
+    const manualPlatformStats = manualStatsToPlatformStats(result.kit.manualStats);
     const platformStats: Record<string, import("@/lib/platforms/types").PlatformStatsWithCharts> = {
+      ...manualPlatformStats,
       ...(instagramStats ? { instagram: instagramStats } : {}),
       ...(youtubeStats ? { youtube: { followers: youtubeStats.subscriberCount, avgEngagement: 0, growthThisMonth: 0, extra: { videoCount: youtubeStats.videoCount, totalViews: youtubeStats.viewCount, recentVideosJson: JSON.stringify(youtubeStats.recentVideos) } } } : {}),
     };
+    const manualOnlyPlatforms = Object.keys(manualPlatformStats).filter((id) => {
+      if (id === "instagram" && instagramStats) return false;
+      if (id === "youtube" && youtubeStats) return false;
+      return true;
+    });
+    const statsSource: "live" | "manual" | "mixed" | "none" = (instagramStats || youtubeStats)
+      ? manualOnlyPlatforms.length > 0
+        ? "mixed"
+        : "live"
+      : Object.keys(platformStats).length > 0
+        ? "manual"
+        : "none";
     const enabledPlatformIds = Object.keys(platformStats) as import("@/lib/platforms/types").PlatformId[];
     const instagramConnected = instagramConnectedForKit;
     return (
@@ -208,6 +229,7 @@ export default async function MediaKitPage({
         appearance={result.kit.appearance}
         instagramConnected={instagramConnected}
         instagramPosts={instagramPosts}
+        statsSource={statsSource}
         kitId={result.kit.id}
         inquiryEnabled={inquiryEnabled}
         isOwner={isOwner && !previewMode}

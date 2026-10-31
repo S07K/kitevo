@@ -37,7 +37,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
       "1 media kit",
       "Shareable link",
       "Basic profile & bio",
-      "Rates & brand partners",
+      "Manual stats & brand partners",
     ],
   },
   {
@@ -52,7 +52,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
       "1 media kit",
       "Professional shareable link",
       "Live stats & growth charts",
-      "Work samples & rates",
+      "Audience demographics",
       "Section visibility controls",
     ],
   },

@@ -8,6 +8,7 @@ import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import type { SectionVisibility } from "@/lib/kit-storage";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
 import { parseKitAppearance, type KitAppearance } from "@/lib/kit-appearance";
+import { parseManualStats, type ManualStats } from "@/lib/manual-stats";
 
 function parseJson<T>(raw: string, fallback: T): T {
   try {
@@ -46,6 +47,7 @@ export type PublicKit = {
   brands: BrandPartner[];
   sectionVisibility: SectionVisibility;
   appearance: KitAppearance;
+  manualStats: ManualStats;
 };
 
 export type PublicCreator = {
@@ -100,6 +102,7 @@ export async function getKitBySlug(slug: string): Promise<KitBySlugResult> {
       brands: parseJson<BrandPartner[]>(kit.brands, []),
       sectionVisibility,
       appearance: parseKitAppearance(kit.appearance),
+      manualStats: parseManualStats(kit.manualStats),
     },
     creator,
   };

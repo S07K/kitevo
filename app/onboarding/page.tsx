@@ -696,7 +696,7 @@ function OnboardingContent() {
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <p className="text-foreground font-semibold">Free</p>
-                        <p className="text-muted-foreground text-xs mt-0.5">1 kit · basic profile · rates & brands</p>
+                        <p className="text-muted-foreground text-xs mt-0.5">1 kit · basic profile · manual stats & brands</p>
                       </div>
                       <span className="text-foreground text-xl font-semibold tabular-nums">$0</span>
                     </div>

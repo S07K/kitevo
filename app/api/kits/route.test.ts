@@ -79,6 +79,7 @@ describe("GET /api/kits", () => {
     expect(json[0].slug).toBe("my-kit");
     expect(json[0].name).toBe("My Kit");
     expect(json[0].viewCount).toBe(0);
+    expect(json[0].manualStats).toEqual({});
   });
 });
 

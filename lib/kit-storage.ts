@@ -5,6 +5,7 @@
 
 import type { WorkSample, KitRates, BrandPartner } from "./mock-data";
 import { MOCK_CREATOR } from "./mock-data";
+import { normalizeManualStats, type ManualStats } from "./manual-stats";
 
 const STORAGE_KEY = "media_kit_pro_kit";
 const STORAGE_KEY_MULTI = "media_kit_pro_kits";
@@ -35,6 +36,7 @@ export interface StoredKitContent {
   rates: KitRates;
   brands: BrandPartner[];
   sectionVisibility?: SectionVisibility;
+  manualStats?: ManualStats;
 }
 
 /** One kit in the multi-kit list. */
@@ -46,6 +48,7 @@ export interface KitRecord {
   rates: KitRates;
   brands: BrandPartner[];
   sectionVisibility: SectionVisibility;
+  manualStats?: ManualStats;
   /** View count from analytics (when loaded from API). */
   viewCount?: number;
 }
@@ -100,6 +103,7 @@ export function getAllKits(): KitRecord[] {
     return (parsed as KitRecord[]).map((k) => ({
       ...k,
       sectionVisibility: normalizeVisibility(k.sectionVisibility),
+      manualStats: normalizeManualStats(k.manualStats),
     }));
   } catch {
     return [];
@@ -150,6 +154,7 @@ export function getKitContent(kitId: string | null): StoredKitContent | null {
     rates: kit.rates,
     brands: kit.brands,
     sectionVisibility: kit.sectionVisibility,
+    manualStats: kit.manualStats,
   };
 }
 
@@ -165,6 +170,7 @@ export function setKitContent(kitId: string, data: StoredKitContent): void {
       rates: data.rates,
       brands: data.brands,
       sectionVisibility: visibility,
+      manualStats: normalizeManualStats(data.manualStats),
     };
     setAllKits(kits);
   }

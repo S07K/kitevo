@@ -8,6 +8,7 @@ import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import type { SectionVisibility } from "@/lib/kit-storage";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
 import { parseKitAppearance } from "@/lib/kit-appearance";
+import { parseManualStats } from "@/lib/manual-stats";
 
 function defaultVisibility(): SectionVisibility {
   return { ...DEFAULT_SECTION_VISIBILITY };
@@ -43,6 +44,7 @@ export async function GET() {
     brands: parseJson<BrandPartner[]>(k.brands, []),
     sectionVisibility: parseJson<SectionVisibility>(k.sectionVisibility, defaultVisibility()),
     appearance: parseKitAppearance(k.appearance),
+    manualStats: parseManualStats(k.manualStats),
     viewCount: viewCounts[k.id] ?? 0,
   }));
   return NextResponse.json(list);
@@ -98,5 +100,6 @@ export async function POST(req: Request) {
     brands: [],
     sectionVisibility: defaultVisibility(),
     appearance: parseKitAppearance(kit.appearance),
+    manualStats: {},
   });
 }

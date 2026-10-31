@@ -20,8 +20,9 @@ Live at [getkitevo.com](https://getkitevo.com).
 
 ### Kit page (public, brand-facing)
 - Hero with avatar, name, bio, niches, location
-- **Instagram**: live followers, engagement, audience demographics (age / gender / country), and a 9:16 Reels-style post grid
-- **YouTube**: live subscribers, total views, video count, and a recent-video grid
+- **Instagram**: live followers, engagement, audience demographics (age / gender / country), and a 9:16 Reels-style post grid (Starter+; free kits use creator-reported stats instead)
+- **YouTube**: live subscribers, total views, video count, and a recent-video grid (Starter+)
+- Manual headline stats for unconnected platforms, always labelled "self-reported" on the public kit
 - Follower-growth chart, brand partners, rates, contact
 - Five Brand Kit Vibes (Editorial, Studio, Bloom, Electric, Noir) plus starter styles
 - Honesty rules: never renders fabricated stats; hides anything unavailable
@@ -29,7 +30,7 @@ Live at [getkitevo.com](https://getkitevo.com).
 ### Subscriptions & payments
 - **Provider-agnostic** (`lib/payments`): Stripe and Dodo Payments, selected by `PAYMENT_PROVIDER`. Dodo is a Merchant of Record, which lets an Indian founder sell worldwide without a US entity or per-jurisdiction tax registration.
 - Checkout, webhook-driven subscription lifecycle, hosted billing portal, plan upgrades
-- Starter (1 kit, $9/mo), Pro (3 kits + inquiry inbox + verified tick, $15/mo), Brand Pro ($29/mo)
+- Free (1 kit + manual stats), Starter (1 kit, $9/mo), Pro (3 kits + inquiry inbox + verified tick, $15/mo), Brand Pro ($29/mo)
 
 ## Tech stack
 

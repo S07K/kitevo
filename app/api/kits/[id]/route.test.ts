@@ -65,6 +65,8 @@ describe("GET /api/kits/[id]", () => {
     expect(json.id).toBe("kit-1");
     expect(json.slug).toBe("my-kit");
     expect(json.name).toBe("My Kit");
+    // Kits created before manual stats still respond with an empty object, not null/undefined
+    expect(json.manualStats).toEqual({});
   });
 });
 
@@ -109,6 +111,7 @@ describe("PUT /api/kits/[id]", () => {
       brands: "[]",
       sectionVisibility: "{}",
       appearance: "{}",
+      manualStats: "{}",
     };
     vi.mocked(prisma.kit.findFirst).mockResolvedValue(existing as never);
     vi.mocked(prisma.kit.update).mockResolvedValue({
@@ -123,6 +126,46 @@ describe("PUT /api/kits/[id]", () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.name).toBe("Updated Kit");
+  });
+
+  it("serializes manual stats, dropping invalid values", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: "user-1", email: "u@example.com" },
+      expires: "",
+    });
+    const existing = {
+      id: "kit-1",
+      slug: "my-kit",
+      name: "My Kit",
+      workSamples: "[]",
+      rates: "{}",
+      brands: "[]",
+      sectionVisibility: "{}",
+      appearance: "{}",
+      manualStats: "{}",
+    };
+    vi.mocked(prisma.kit.findFirst).mockResolvedValue(existing as never);
+    vi.mocked(prisma.kit.update).mockResolvedValue({
+      ...existing,
+      manualStats: '{"instagramFollowers":1200}',
+    } as never);
+
+    const res = await PUT(
+      new Request("http://x", {
+        method: "PUT",
+        body: JSON.stringify({
+          manualStats: { instagramFollowers: 1200, youtubeSubscribers: -5 },
+        }),
+      }),
+      { params: params("kit-1") }
+    );
+    expect(res.status).toBe(200);
+    expect(prisma.kit.update).toHaveBeenCalledWith({
+      where: { id: "kit-1" },
+      data: expect.objectContaining({ manualStats: '{"instagramFollowers":1200}' }),
+    });
+    const json = await res.json();
+    expect(json.manualStats).toEqual({ instagramFollowers: 1200 });
   });
 });
 

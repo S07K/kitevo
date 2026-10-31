@@ -13,7 +13,7 @@ const FAQS: QA[] = [
   {
     question: "What is a media kit and why do I need one?",
     answer:
-      "A media kit is a document you send to brands when pitching for collaborations. It shows your follower count, engagement rate, audience demographics, past work, and rates. Kitevo turns all of that into a live, professional web page instead of a static PDF — so brands see real-time data and you look serious.",
+      "A media kit is a document you send to brands when pitching for collaborations. It shows your follower count, engagement rate, audience demographics, and what you create. Kitevo turns all of that into a live, professional web page instead of a static PDF — so brands see real-time data and you look serious.",
   },
   {
     question: "How does the Instagram connection work?",
@@ -29,12 +29,12 @@ const FAQS: QA[] = [
   {
     question: "What's included in the free plan?",
     answer:
-      "The free plan lets you create one media kit with your profile, bio, work samples, and manually entered stats. You get a shareable link immediately. Upgrading to Starter adds live Instagram data; upgrading to Pro adds brand kit customization and three kits.",
+      "The free plan lets you create one media kit with your profile, bio, brand partners, and manually entered stats. You get a shareable link immediately. Upgrading to Starter adds live Instagram and YouTube data; upgrading to Pro adds three kits and the brand inquiry inbox.",
   },
   {
     question: "What makes Pro different from Starter?",
     answer:
-      "Pro gives you three media kits (great for different niches or brand verticals), access to the Brand Kit Vibe system (five signature design styles — Editorial, Studio, Noir, Bloom, Electric), custom color palette, font pair selector, logo upload, and an inquiry form so brands can contact you directly from your kit.",
+      "Pro gives you three media kits (great for different niches or brand verticals), access to the Brand Kit Vibe system (five signature design styles — Editorial, Studio, Noir, Bloom, Electric), and a brand inquiry inbox with a deal pipeline so you can track every conversation from first message to won.",
   },
   {
     question: "Can I cancel my subscription anytime?",
