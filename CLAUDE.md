@@ -13,7 +13,7 @@ Stack: Next.js 16 App Router, Prisma + Supabase (Postgres), NextAuth, payments v
 ## Key Technical Rules
 
 - **Tailwind v4**: Use `@import "tailwindcss"` — `neutral` color unreliable, use `bg-muted`/CSS vars instead. Dark mode requires `@variant dark (&:where(.dark, .dark *));` in globals.css (class-based, not OS media query)
-- **Prisma**: Run `prisma generate` after schema changes. For NOT NULL columns on existing rows, use raw SQL `ALTER TABLE` via `prisma db execute --stdin` before `db push`
+- **Prisma / migrations**: Schema changes ship as versioned migrations in `prisma/migrations`. Workflow: change `schema.prisma` → `npx prisma migrate dev --name <change>` against the LOCAL DB (env vars need both `DATABASE_URL` and `DIRECT_URL` inline: `DATABASE_URL=<local url> DIRECT_URL=<local url> npx prisma migrate dev …`) → commit schema + migration together. Deploys apply pending migrations automatically — GitHub Action `.github/workflows/db-migrate.yml` (tests first, then `migrate deploy`) and `scripts/vercel-build.cjs` before `next build`. NEVER use `prisma db push` on a migrations-managed (prod/staging) database: it drifts from history and accepts data loss. For NOT NULL columns on existing rows, author the migration SQL with a `DEFAULT` (or backfill-then-constrain).
 - **Avatar/logo uploads**: Stored as base64 data URLs in DB (resized client-side before upload). Max ~200k chars. Pattern: resize in browser → POST data URL → store in DB. **Instagram photo import** downloads the image server-side to base64 (`lib/image-to-data-url.ts`) — never stores the expiring `fbcdn` CDN URL. Render avatars via `AvatarImg` (falls back to initials on load error). Backfill: `scripts/backfill-instagram-avatars.ts`
 - **Dark mode**: Managed via `next-themes`, class applied to `<html>`. ThemeToggle lives in NavAvatar popup only.
 - **Comped access** (`User.compedTier`): grants a tier's entitlements (kits, verified badge, inquiry inbox) with NO subscription, for beta/press/grandfathering. A tier id or null, set with `scripts/comp-user.ts <email> <pro|brand|none>` per-user, or auto-applied to **every new signup** while `BETA_AUTO_COMP_TIER` names a tier (`lib/beta-comp.ts`, spread into both the email and Google signup creates; unset at launch, vercel-build warns if left on in production). Never a fake subscription (no customer id, survives provider swaps). `config/resolveVerifiedTier(subscriptionTier, compedTier)` is the one rule — subscription wins, comp is the floor — used at every verifiedTier write site (webhook, subscription-status) so a comp is never cleared by subscription syncing. `getAllowedKitsForUser` takes the max of comp and subscription. During beta, `BETA_AUTO_COMP_TIER=pro` auto-comps every new signup (both email and Google paths, via `lib/beta-comp.ts`); unset it at launch.  **Beta testers should be comped, never sent through test checkout** — test-mode checkout writes a real verifiedTier + a dead test customer id that has to be reconciled at go-live.
@@ -115,7 +115,7 @@ The competitive/product strategy (Stan Store teardown, pricing, roadmap) now liv
 - ✅ Free-plan dashboard access (no more upgrade wall for free users; live stats stay Starter+)
 - ✅ Manual stats end-to-end (`Kit.manualStats` → editor → API → public kit, "self-reported" label)
 - ✅ Honest landing social proof (fictional testimonials replaced with product-outcome cards); claims synced to shipped features
-- ⬜ Prisma migrations (replace `db push`) — required before commerce tables
+- ✅ Prisma migrations — versioned baseline (`prisma/migrations/20261031000000_init`) + auto-apply on deploy (GitHub Action gated on tests + Vercel build). **One-time prod baseline still to run** — `db push` + `migrate resolve` against prod URLs, see DEPLOY.md step 2. Required before commerce tables land.
 - ⬜ Token encryption at rest (IG/YT access + refresh tokens)
 - ⬜ Admin/ops view, trials/coupons, analytics events, custom domains
 
@@ -201,8 +201,9 @@ Phase 3 — Business tier:
 - `SavedCreator` — brand↔creator shortlist join (`@@unique([brandId, creatorId])`, named relations `BrandSaved`/`SavedByBrand`)
 - `CampaignView` — campaign view events (`campaignId`, nullable `viewerId`, `referrer`); owner views not recorded
 - `User.followerCount/engagementRate/statsUpdatedAt` — cached creator stats for discover filtering (refreshed from IG/YT via `lib/creator-stats-cache.ts`)
-- **Schema sync is `db push`, not migrations** (`scripts/vercel-build.cjs` runs `prisma db push --accept-data-loss`); no `prisma/migrations` dir
-- **Supabase needs two connection strings**: `DATABASE_URL` = transaction pooler (:6543, `?pgbouncer=true`) for runtime, `DIRECT_URL` = session pooler (:5432) for `db push`. Never Supabase's "direct connection" — it is IPv6-only without the paid add-on. See DEPLOY.md step 2
+- **Schema changes are versioned migrations** (`prisma/migrations`, baseline `20261031000000_init`), applied automatically on deploy: GitHub Action `.github/workflows/db-migrate.yml` (after `npm test`) and `scripts/vercel-build.cjs` before `next build`, both via `prisma migrate deploy`. Author new migrations locally with `prisma migrate dev`; never reach for `db push` against prod/staging
+- **Supabase needs two connection strings**: `DATABASE_URL` = transaction pooler (:6543, `?pgbouncer=true`) for runtime, `DIRECT_URL` = session pooler (:5432) for `prisma migrate deploy` (and the same two values must exist as GitHub repo secrets for the Action). Never Supabase's "direct connection" — it is IPv6-only without the paid add-on. See DEPLOY.md step 2
+- **Future migrations need a one-time prod baseline** if prod has never run `migrate deploy`: `migrate deploy` there fails closed with `P3005` until `db push` + `migrate resolve --applied <migration>` sync the history (documented in DEPLOY.md step 2)
 
 ---
 

@@ -13,11 +13,12 @@ datasource db {
   // transaction mode has no prepared statements, and Prisma uses them by default.
   url = env("DATABASE_URL")
 
-  // Schema changes: `prisma db push` runs in a transaction and cannot go through the
-  // transaction pooler. Point this at the SESSION pooler (:5432 on the pooler host), not
-  // at Supabase's "direct connection" — the direct one is IPv6-only unless you buy the
-  // IPv4 add-on, and Vercel's builder will not reach it. The shared pooler is IPv4 on
-  // every tier. See DEPLOY.md step 2.
+  // Migrations (`prisma migrate deploy`, applied on deploy by the GitHub Action and
+  // the Vercel build) cannot run through the transaction pooler. Point this at the
+  // SESSION pooler (:5432 on the pooler host), not at Supabase's "direct connection"
+  // — the direct one is IPv6-only unless you buy the IPv4 add-on, and Vercel's
+  // builder will not reach it. The shared pooler is IPv4 on every tier. See
+  // DEPLOY.md step 2.
   directUrl = env("DIRECT_URL")
 }
 

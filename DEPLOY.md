@@ -31,9 +31,9 @@ never 404.
 - **Leave Build and Output Settings alone.** `vercel.json` already sets
   `buildCommand: npm run build:vercel`, so Vercel reads it and shows the field
   greyed out with that value. That is correct, not broken. The default
-  `npm run build` would skip `prisma generate` and `prisma db push` and ship a
-  stale client against an empty database, which is exactly why the command lives
-  in version control rather than in a dashboard field.
+  `npm run build` would skip `prisma generate` and `prisma migrate deploy` and
+  ship a stale client against an unmigrated database, which is exactly why the
+  command lives in version control rather than in a dashboard field.
 - Framework preset: Next.js. Install/output settings: defaults.
 
 ## 2. Production Postgres (Supabase)
@@ -45,7 +45,7 @@ or mid-migration with errors that don't name the cause. From Supabase → Connec
 | Env var | Which string | Why |
 |---|---|---|
 | `DATABASE_URL` | **Transaction pooler**, port **6543**, plus `?pgbouncer=true&connection_limit=1` | Runtime. Serverless opens a connection per invocation and exhausts a direct one. Transaction mode has no prepared statements, and Prisma uses them unless `pgbouncer=true` says otherwise. |
-| `DIRECT_URL` | **Session pooler**, port **5432** (the `...pooler.supabase.com` host) | Schema changes. `prisma db push` runs in a transaction, which the transaction pooler cannot do. |
+| `DIRECT_URL` | **Session pooler**, port **5432** (the `...pooler.supabase.com` host) | Migrations. Schema-mutating commands run in a transaction, which the transaction pooler cannot do. |
 
 **Do not use Supabase's "direct connection" (`db.<ref>.supabase.co`) for
 `DIRECT_URL`.** It is IPv6-only unless you buy the IPv4 add-on, and Vercel's
@@ -56,12 +56,40 @@ the session pooler is the right answer here.
 `scripts/vercel-build.cjs` fails the build if `DATABASE_URL` is set without
 `DIRECT_URL`, and warns if either port looks wrong.
 
-- Schema sync is `prisma db push`, not migrations — there is no
-  `prisma/migrations` directory. The build runs the push automatically once
-  `DATABASE_URL` is set, so the first deploy creates the schema.
-- `db push` runs with `--accept-data-loss`. On an empty database that's
-  harmless. Once real users exist, review any destructive schema change before
-  merging to `main`.
+- Schema changes are **versioned migrations**, applied automatically at
+  deploy time — twice over, redundantly and safely:
+  1. `scripts/vercel-build.cjs` runs `prisma migrate deploy` **before**
+     `next build`, so a deploy either lands with the new schema or does not
+     land at all (a failed migration fails the build; the old version keeps
+     serving).
+  2. A GitHub Action (`.github/workflows/db-migrate.yml`) runs the same
+     `prisma migrate deploy` on every push to `main` after the test suite
+     passes. Whichever runs first applies a pending migration; the other
+     reports "No pending migrations" and exits 0. `migrate deploy` only
+     ever applies pending migrations — it never resets and never drops data.
+- New migrations are authored locally against your dev database
+  (`npx prisma migrate dev --name my_change`, with both `DATABASE_URL` and
+  `DIRECT_URL` pointing at the local DB), committed with the schema change,
+  and applied to prod by the deploy flow above — never by hand.
+- **One-time baseline (do this before the first deploy that includes
+  migrations).** The production DB already has its tables — created via the
+  old `db push` flow — but no migration history, so `migrate deploy` fails
+  fast with error `P3005`. Repair it by telling Prisma the existing schema is
+  the baseline, i.e. two local commands against the production URLs from
+  step 3:
+  ```bash
+  DATABASE_URL="<prod 6543 url>" DIRECT_URL="<prod 5432 url>" npx prisma db push
+  # then:
+  DATABASE_URL="<prod 6543 url>" DIRECT_URL="<prod 5432 url>" npx prisma migrate resolve --applied 20261031000000_init
+  ```
+  The `db push` is a no-op sync (it only adds anything the schema gained
+  since the last deploy, e.g. `Kit.manualStats` — additive, no data loss);
+  `migrate resolve` marks the baseline migration as already applied and
+  creates `_prisma_migrations`. Verified locally: after that pair,
+  `migrate deploy` reports "No pending migrations" and
+  `prisma migrate diff --from-url <prod> --to-schema-datamodel` reports "No
+  difference detected". Until these two commands run, every deploy with
+  migrations will fail closed on `P3005` — the old deployment keeps serving.
 
 ## 3. Environment variables (Vercel → Settings → Environment Variables)
 
@@ -71,7 +99,12 @@ ones marked "new for prod".
 | Var | Notes |
 |---|---|
 | `DATABASE_URL` | Supabase **transaction pooler** (:6543) + `?pgbouncer=true&connection_limit=1`. See step 2. |
-| `DIRECT_URL` | Supabase **session pooler** (:5432). Needed for `db push`. See step 2. |
+| `DIRECT_URL` | Supabase **session pooler** (:5432). Needed for `prisma migrate deploy` (GitHub Action + Vercel build). See step 2. |
+
+**Also set the same two values as GitHub repository secrets** (repo →
+Settings → Secrets and variables → Actions → `DATABASE_URL`, `DIRECT_URL`).
+`.github/workflows/db-migrate.yml` needs them to apply migrations on push to
+`main`; without them that workflow fails loudly with a message pointing here.
 | `NEXT_PUBLIC_APP_URL` | `https://getkitevo.com` — no trailing slash (the build guard rejects one). |
 | `NEXTAUTH_URL` | `https://getkitevo.com` — same as `NEXT_PUBLIC_APP_URL`. |
 | `NEXTAUTH_SECRET` | **New for prod.** `openssl rand -base64 32`. Do not reuse the dev value. |

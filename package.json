@@ -19,6 +19,7 @@
     "android": "npx cap open android",
     "lint": "eslint",
     "db:migrate": "DATABASE_URL=\"postgresql://shubham@localhost:5432/media_kit_pro\" prisma migrate deploy",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "DATABASE_URL=\"postgresql://shubham@localhost:5432/media_kit_pro\" prisma studio",
     "db:push": "DATABASE_URL=\"postgresql://shubham@localhost:5432/media_kit_pro\" prisma db push"
   },

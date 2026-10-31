@@ -202,7 +202,7 @@ Workstreams:
 - [x] **Advertised features exist.** Manual stats entry ships end-to-end (schema, API, editor, public kit). (2026-10-31)
 - [x] **Honest marketing.** Unverified testimonials removed for product-outcome cards; claims synced to shipped features. (2026-10-31)
 - [x] **Live-stat gating.** Public kits only show live IG/YT data when the owner has a paid plan; free kits use manual stats. (2026-10-31)
-- [ ] **Migrations.** Replace `prisma db push --accept-data-loss` with versioned migrations before commerce tables land.
+- [x] **Migrations.** Versioned baseline in `prisma/migrations`; `migrate deploy` runs automatically on every deploy (GitHub Action gated on tests + Vercel build before `next build`). One-time prod baseline (DEPLOY.md step 2) still to run.
 - [ ] **Token encryption.** Encrypt Instagram/YouTube access and refresh tokens at rest.
 - [ ] **Admin/ops.** Minimal admin view for users, comps, subscriptions, and failed webhooks.
 - [ ] **Trials and coupons.** Provider-backed trial and coupon support, with abuse limits.
@@ -291,12 +291,19 @@ Workstreams:
 
 **Acceptance verified:** grep audit for removed claim keywords comes back clean in marketing surfaces.
 
-### P0-4. Migrations
+### P0-4. Migrations ✅ (2026-10-31, prod baseline step pending)
 
-- Create `prisma/migrations/` and baseline the current schema.
-- Move deploy flow from `db push` to `migrate deploy`.
-- Add a pre-deploy backup/rollback note.
-- Never run destructive schema changes against production without a reviewed migration.
+**Shipped:**
+- `prisma/migrations/20261031000000_init/migration.sql` — full current schema as baseline (verified byte-equivalent via `migrate diff` both directions).
+- `.github/workflows/db-migrate.yml` — on every push to `main`: test suite first, then `prisma migrate deploy` against prod (`DATABASE_URL` + `DIRECT_URL` repo secrets). Serialized with a concurrency group; fails loudly if secrets are missing.
+- `scripts/vercel-build.cjs` now runs `migrate deploy` before `next build` (replacing `db push --accept-data-loss`), so a deploy either lands with the new schema or not at all.
+- Both runners are idempotent — whichever applies a pending migration first, the other no-ops.
+
+**Acceptance verified locally:** fresh DB applies the baseline cleanly; a `db push`-built DB fails fast with `P3005` (no destructive attempts); `migrate resolve --applied` fixes it; `migrate deploy` then reports "No pending migrations"; `migrate diff` reports no drift.
+
+**Still to do (one-time, needs prod credentials):** run the two baseline commands from DEPLOY.md step 2 against production, and add the `DATABASE_URL`/`DIRECT_URL` repo secrets — until then the first deploy including migrations fails closed on `P3005`.
+
+**Policy:** author migrations locally with `prisma migrate dev`; never `db push` a managed database; destructive schema changes require a reviewed migration first.
 
 ### P0-5. Token encryption
 

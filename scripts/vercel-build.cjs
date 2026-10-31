@@ -184,11 +184,17 @@ run("npx prisma generate");
 
 if (process.env.DATABASE_URL && String(process.env.DATABASE_URL).trim() !== "") {
   checkDbUrls();
-  run("npx prisma db push --accept-data-loss");
+  // Versioned migrations (prisma/migrations) applied before the build — a pending
+  // migration that fails fails the deploy, so new code never ships against an old
+  // schema. The GitHub Action (.github/workflows/db-migrate.yml) also runs
+  // `migrate deploy` on push to main; whichever gets there first applies it and the
+  // other is a no-op. Never use `db push` here again: it accepts data loss and it
+  // drifts from migration history.
+  run("npx prisma migrate deploy");
 } else {
   console.log(
-    "\n[vercel-build] DATABASE_URL not set — skipping prisma db push.\n" +
-      "  Production: set DATABASE_URL on Vercel so schema sync runs.\n"
+    "\n[vercel-build] DATABASE_URL not set — skipping prisma migrate deploy.\n" +
+      "  Production: set DATABASE_URL and DIRECT_URL on Vercel so migrations run.\n"
   );
 }
 
@@ -201,8 +207,10 @@ function checkDbUrls() {
   const db = (process.env.DATABASE_URL ?? "").trim();
   const direct = (process.env.DIRECT_URL ?? "").trim();
 
-  // prisma/schema.prisma declares directUrl, so `db push` needs it. Without it the push
-  // would try to run a transaction through the transaction pooler, which cannot.
+  // prisma/schema.prisma declares directUrl, so every schema-mutating command
+  // (`prisma migrate deploy`, and previously `db push`) needs it. Without it the
+  // command would try to run a transaction through the transaction pooler, which
+  // cannot. Migrations are applied at deploy time (Vercel build + GitHub Action).
   if (!direct) {
     console.error(
       "\n[vercel-build] DIRECT_URL is not set, but prisma/schema.prisma declares directUrl.\n" +
@@ -223,8 +231,8 @@ function checkDbUrls() {
   }
   if (direct.includes(":6543")) {
     console.log(
-      "\n[vercel-build] Note: DIRECT_URL points at :6543 (transaction pooler). Schema\n" +
-        "  changes need the session pooler (:5432) and will likely fail here.\n"
+      "\n[vercel-build] Note: DIRECT_URL points at :6543 (transaction pooler). Migrations\n" +
+        "  need the session pooler (:5432) and will likely fail here.\n"
     );
   }
 }

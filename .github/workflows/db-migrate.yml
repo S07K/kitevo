@@ -1,0 +1,76 @@
+# Applies versioned Prisma migrations to the production database on every
+# push to main — the same push that triggers the Vercel deployment. Migration
+# SQL lives in version control (prisma/migrations); nothing is hand-run.
+#
+# What runs:
+#   1. test  — the unit suite must pass before anything touches prod.
+#   2. apply — `prisma migrate deploy` (only pending migrations; never resets,
+#              never drops data). Migrate commands go through DIRECT_URL, which
+#              must be Supabase's session pooler (:5432) — see DEPLOY.md step 2.
+#
+# The Vercel build (scripts/vercel-build.cjs) runs the same `migrate deploy`
+# before its `next build`, so whichever finishes first applies it and the
+# other is a no-op ("No pending migrations").
+#
+# Secrets needed (same values as the Vercel env vars):
+#   DATABASE_URL — transaction pooler (:6543, ?pgbouncer=true)
+#   DIRECT_URL   — session pooler (:5432)
+#
+# One-time setup, run before this workflow can succeed (the production DB
+# predates migrations and has no _prisma_migrations history):
+#   npx prisma db push            # sync prod to the current schema
+#   npx prisma migrate resolve --applied 20261031000000_init
+#   See DEPLOY.md step 2. Without it, deploy fails fast with P3005.
+
+name: DB migrations
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: db-migrations
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests (gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  apply:
+    name: Apply migrations
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::DATABASE_URL secret is not set. Add the repository secrets DATABASE_URL and DIRECT_URL (same values as the Vercel env vars — see DEPLOY.md step 2)."
+            exit 1
+          fi
+          if [ -z "$DIRECT_URL" ]; then
+            echo "::error::DIRECT_URL secret is not set. prisma migrate deploy goes through directUrl (Supabase session pooler :5432) — see DEPLOY.md step 2."
+            exit 1
+          fi
+          npm run db:migrate:deploy

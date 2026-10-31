@@ -50,9 +50,11 @@ cp .env.example .env.local   # fill in the values; .env.example documents each o
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The schema is synced with
-`prisma db push` (there are no migration files); `npm run build:vercel` runs it
-automatically on deploy.
+Open [http://localhost:3000](http://localhost:3000). Schema changes are
+versioned migrations in `prisma/migrations` (`npx prisma migrate dev --name …`
+against the local DB to author one). Migrations apply automatically on deploy:
+the GitHub Action (`.github/workflows/db-migrate.yml`, after tests pass) and
+the Vercel build both run `prisma migrate deploy`. See DEPLOY.md step 2.
 
 **`.env.example` is the source of truth for environment variables** — it explains
 each one and the non-obvious gotchas (Supabase's two connection strings, why the
@@ -104,6 +106,6 @@ config/
 prisma/
   schema.prisma
 scripts/
-  vercel-build.cjs         — Build entry with env guards + db push
+  vercel-build.cjs         — Build entry with env guards + migrate deploy
   generate-social-graphics.ts — Brand mark → OG image, avatar, favicon
 ```
