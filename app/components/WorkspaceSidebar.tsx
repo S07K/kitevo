@@ -3,7 +3,7 @@
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { PalettePicker, useAppearance } from "./Appearance";
+import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
 import { ArrowUpRight, ChevronsUpDown, Loader2, SquareKanban, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
 import { AvatarImg } from "./AvatarImg";
@@ -261,11 +261,11 @@ export function WorkspaceSidebar({
                 key={it.href}
                 href={it.href}
                 className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors ${
-                  active ? "text-foreground" : "text-muted-foreground"
+                  active ? "text-primary dark:text-primary-soft-foreground" : "text-muted-foreground"
                 }`}
               >
                 {it.badge ? (
-                  <span className="absolute right-1/4 top-1.5 flex h-4 min-w-4 translate-x-2 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">
+                  <span className="absolute right-1/4 top-1.5 flex h-4 min-w-4 translate-x-2 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
                     {it.badge > 9 ? "9+" : it.badge}
                   </span>
                 ) : null}
@@ -283,9 +283,11 @@ export function WorkspaceSidebar({
 /** Signed-in account at the foot of the sidebar: avatar, name, role; opens theme + log out. */
 function AccountRow({ account, links, isActive }: { account: Account | null; links: Item[]; isActive: (i: Item) => boolean }) {
   const [open, setOpen] = useState(false);
-  const { mounted, isDark, toggleDark } = useAppearance();
+  const [mounted, setMounted] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
   const wrap = useRef<HTMLDivElement>(null);
 
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => !wrap.current?.contains(e.target as Node) && setOpen(false);
@@ -311,6 +313,7 @@ function AccountRow({ account, links, isActive }: { account: Account | null; lin
   }
 
   const label = account.name || account.email || "Account";
+  const isDark = mounted && resolvedTheme === "dark";
   const item = "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none";
   // You're on a page that lives in this menu (settings, plan, admin): mark the row as "here".
   const here = links.some((l) => !l.external && isActive(l));
@@ -322,7 +325,7 @@ function AccountRow({ account, links, isActive }: { account: Account | null; lin
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-muted ${open || here ? "bg-muted" : ""}`}
+        className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-muted ${here ? "bg-primary-soft" : open ? "bg-muted" : ""}`}
       >
         <AvatarImg
           src={account.avatarUrl}
@@ -348,7 +351,7 @@ function AccountRow({ account, links, isActive }: { account: Account | null; lin
           {account.email && <p className="truncate px-3 pb-1.5 pt-2 text-xs text-muted-foreground">{account.email}</p>}
           {links.map((l) => {
             const on = !l.external && isActive(l);
-            const cls = `${item} ${on ? "bg-muted font-medium text-foreground" : "text-foreground hover:bg-muted"}`;
+            const cls = `${item} ${on ? "bg-primary-soft font-medium text-primary-soft-foreground" : "text-foreground hover:bg-muted"}`;
             const body = (
               <>
                 <span className="shrink-0 text-muted-foreground">{l.icon}</span>
@@ -367,15 +370,11 @@ function AccountRow({ account, links, isActive }: { account: Account | null; lin
           })}
           {links.length > 0 && <div className="my-1 h-px bg-border" />}
           {mounted && (
-            <button role="menuitem" type="button" className={`${item} text-foreground hover:bg-muted`} onClick={toggleDark}>
+            <button role="menuitem" type="button" className={`${item} text-foreground hover:bg-muted`} onClick={() => setTheme(isDark ? "light" : "dark")}>
               {isDark ? <Sun size={15} aria-hidden /> : <Moon size={15} aria-hidden />}
               {isDark ? "Light mode" : "Dark mode"}
             </button>
           )}
-          <div className="px-3 pb-2 pt-1.5">
-            <p className="mb-2 text-xs text-muted-foreground">Colour palette</p>
-            <PalettePicker />
-          </div>
           <div className="my-1 h-px bg-border" />
           <button
             role="menuitem"
@@ -407,16 +406,16 @@ function NavItemSkeleton({ width }: { width: string }) {
 
 function NavItem({ item, active }: { item: Item; active: boolean }) {
   const cls = `relative flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
-    active ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+    active ? "bg-primary-soft text-primary-soft-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
   }`;
   const inner = (
     <>
       <span className="flex min-w-0 items-center gap-2.5">
-        <span className="shrink-0 opacity-80">{item.icon}</span>
+        <span className={`shrink-0 ${active ? "text-primary dark:text-primary-soft-foreground" : "opacity-80"}`}>{item.icon}</span>
         <span className="truncate">{item.label}</span>
       </span>
       {item.badge ? (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-bold text-white">
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground">
           {item.badge > 9 ? "9+" : item.badge}
         </span>
       ) : null}

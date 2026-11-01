@@ -2,7 +2,7 @@ type BadgeVariant = "default" | "accent" | "success" | "warning" | "danger" | "o
 
 const styles: Record<BadgeVariant, string> = {
   default:  "bg-muted text-muted-foreground",
-  accent:   "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400",
+  accent:   "bg-primary-soft text-primary-soft-foreground",
   success:  "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400",
   warning:  "bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400",
   danger:   "bg-red-100 dark:bg-red-900/40 text-red-500 dark:text-red-400",
@@ -25,7 +25,7 @@ export function Badge({ variant = "default", dot = false, children, className = 
           variant === "success" || variant === "open" ? "bg-green-500" :
           variant === "warning" ? "bg-amber-500" :
           variant === "danger" ? "bg-red-500" :
-          variant === "accent" ? "bg-blue-500" :
+          variant === "accent" ? "bg-primary" :
           "bg-muted-foreground"
         }`} />
       )}

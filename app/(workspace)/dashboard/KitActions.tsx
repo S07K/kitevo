@@ -17,6 +17,10 @@ export const VIBE_COLORS: Record<string, { bg: string; fg: string; label: string
   warm:      { bg: "#F5F3F0", fg: "#1A1A1A", label: "Warm" },
   cool:      { bg: "#F0F3F7", fg: "#1E3A5F", label: "Cool" },
   paper:     { bg: "#FAFAF8", fg: "#111111", label: "Paper" },
+  sage:      { bg: "#EEF3EA", fg: "#2F5D50", label: "Sage" },
+  mist:      { bg: "#EDF2F8", fg: "#2B4C7E", label: "Mist" },
+  blush:     { bg: "#F8EEEB", fg: "#A3485A", label: "Blush" },
+  lavender:  { bg: "#F1EFF9", fg: "#5B4B9A", label: "Lavender" },
 };
 
 export function vibeFor(kit: { appearance?: unknown }) {

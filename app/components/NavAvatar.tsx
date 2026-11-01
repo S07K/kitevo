@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { PalettePicker, useAppearance } from "./Appearance";
+import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
 import { AvatarImg } from "./AvatarImg";
 import { CreditCard, SquareKanban } from "lucide-react";
@@ -17,8 +17,11 @@ type Profile = {
 export function NavAvatar({ initial }: { initial?: Profile }) {
   const [profile, setProfile] = useState<Profile | null>(initial ?? null);
   const [open, setOpen] = useState(false);
-  const { mounted, isDark, toggleDark } = useAppearance();
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (initial) return;
@@ -51,6 +54,7 @@ export function NavAvatar({ initial }: { initial?: Profile }) {
 
   const settingsHref = profile.accountType === "brand" ? "/settings" : "/settings";
   const initials = (profile.name ?? "?").charAt(0).toUpperCase();
+  const isDark = theme === "dark";
 
   async function handleLogout() {
     setOpen(false);
@@ -143,7 +147,7 @@ export function NavAvatar({ initial }: { initial?: Profile }) {
             {mounted && (
               <button
                 type="button"
-                onClick={toggleDark}
+                onClick={() => setTheme(isDark ? "light" : "dark")}
                 className="w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
               >
                 <span className="flex items-center gap-2.5">
@@ -159,12 +163,6 @@ export function NavAvatar({ initial }: { initial?: Profile }) {
                   {isDark ? "Light mode" : "Dark mode"}
                 </span>
               </button>
-            )}
-            {mounted && (
-              <div className="px-3 pb-2 pt-1">
-                <p className="mb-2 text-xs text-muted-foreground">Colour palette</p>
-                <PalettePicker />
-              </div>
             )}
 
             <button

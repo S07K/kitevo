@@ -84,7 +84,7 @@ export default function ReferralProgramPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/signup"
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-foreground px-7 text-sm font-medium text-background transition-opacity hover:opacity-85"
+                  className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-7 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-85"
                 >
                   Sign up free &amp; get your link
                 </Link>
@@ -160,7 +160,7 @@ export default function ReferralProgramPage() {
 
         {/* CTA */}
         <section className="mx-auto max-w-5xl px-5 pb-24 sm:px-8">
-          <div className="flex flex-col items-center rounded-[32px] bg-foreground px-6 py-16 text-center text-background">
+          <div className="flex flex-col items-center rounded-[32px] bg-primary px-6 py-16 text-center text-primary-foreground">
             <h2 className="max-w-xl text-[clamp(28px,4vw,44px)] font-medium leading-tight tracking-tight">
               Your next payout starts with one link.
             </h2>

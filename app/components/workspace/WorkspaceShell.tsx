@@ -23,7 +23,7 @@ export function PageHeader({
   return (
     <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        {eyebrow && <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{eyebrow}</p>}
+        {eyebrow && <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary dark:text-primary-soft-foreground">{eyebrow}</p>}
         <h1 className="mt-2 font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground sm:text-[32px]">{title}</h1>
         {description && <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted-foreground">{description}</p>}
       </div>
@@ -61,7 +61,7 @@ export function Panel({
   bodyClassName?: string;
 }) {
   return (
-    <section className={`overflow-hidden rounded-2xl border border-border bg-background ${className}`}>
+    <section className={`overflow-hidden rounded-2xl border border-border bg-background shadow-[0_1px_2px_rgba(27,54,93,0.05)] ${className}`}>
       {(title || action) && (
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5 sm:px-6">
           {title && <SectionTitle>{title}</SectionTitle>}

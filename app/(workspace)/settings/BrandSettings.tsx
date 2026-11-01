@@ -8,7 +8,7 @@ import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/Wo
 import { Button } from "@/app/components/workspace/Button";
 import { Skeleton, FieldSkeleton } from "@/app/components/Skeleton";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { AccountPanels, AppearancePanel } from "./AccountPanels";
+import { AccountPanels } from "./AccountPanels";
 
 async function resizeToJpegDataUrl(file: File, maxPx = 400): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -279,7 +279,7 @@ export default function BrandSettings() {
                           disabled={logoUploading}
                           onClick={() => logoInputRef.current?.click()}
                           aria-label={form.logoUrl ? "Change logo" : "Upload logo"}
-                          className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-50"
+                          className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground transition-opacity hover:opacity-85 disabled:opacity-50"
                         >
                           <Camera size={14} aria-hidden />
                         </button>
@@ -360,7 +360,7 @@ export default function BrandSettings() {
                             onClick={() => set("budgetRange", b)}
                             className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
                               on
-                                ? "border-foreground bg-foreground text-background"
+                                ? "border-primary bg-primary text-primary-foreground"
                                 : "border-transparent bg-muted text-muted-foreground hover:border-border hover:text-foreground"
                             }`}
                           >
@@ -416,7 +416,6 @@ export default function BrandSettings() {
         {/* ── Rail: plan, account ── */}
         <aside className="min-w-0 space-y-6">
           <BrandPlanCard />
-          <AppearancePanel />
           <AccountPanels email={account.email} />
         </aside>
       </div>

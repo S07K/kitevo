@@ -61,7 +61,7 @@ function CreatorCard({ creator, onMessage, isSaved, onToggleSave }: { creator: C
         title={isSaved ? "Saved — click to remove" : "Save to shortlist"}
         className={`absolute top-2.5 right-2.5 z-10 h-8 w-8 inline-flex items-center justify-center rounded-full border transition-colors ${
           isSaved
-            ? "bg-foreground text-background border-foreground"
+            ? "bg-primary text-primary-foreground border-primary"
             : "bg-background/80 backdrop-blur border-border text-muted-foreground hover:text-foreground"
         }`}
       >
@@ -106,7 +106,7 @@ function CreatorCard({ creator, onMessage, isSaved, onToggleSave }: { creator: C
         {creator.niches.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {creator.niches.slice(0, 3).map((n) => (
-              <span key={n} className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full px-2.5 py-0.5">{n}</span>
+              <span key={n} className="text-[10px] font-medium bg-primary-soft text-primary-soft-foreground rounded-full px-2.5 py-0.5">{n}</span>
             ))}
             {creator.niches.length > 3 && (
               <span className="text-[10px] font-medium bg-muted text-muted-foreground rounded-full px-2.5 py-0.5">+{creator.niches.length - 3}</span>
@@ -128,7 +128,7 @@ function CreatorCard({ creator, onMessage, isSaved, onToggleSave }: { creator: C
           <button
             type="button"
             onClick={() => onMessage(creator.id)}
-            className="flex-1 inline-flex justify-center h-8 items-center rounded-full bg-foreground text-background text-xs font-medium hover:opacity-80 transition-opacity"
+            className="flex-1 inline-flex justify-center h-8 items-center rounded-full bg-primary text-primary-foreground text-xs font-medium hover:opacity-80 transition-opacity"
           >
             Message
           </button>
@@ -277,7 +277,7 @@ export default function BrandDiscover() {
             </div>
             <Link
               href="/settings"
-              className="shrink-0 h-9 px-4 inline-flex items-center rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity"
+              className="shrink-0 h-9 px-4 inline-flex items-center rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:opacity-80 transition-opacity"
             >
               Upgrade
             </Link>
@@ -295,7 +295,7 @@ export default function BrandDiscover() {
             type="button"
             onClick={() => setShowSavedOnly((v) => !v)}
             className={`shrink-0 inline-flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors ${
-              showSavedOnly ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground hover:text-foreground"
+              showSavedOnly ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"
             }`}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill={showSavedOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -346,7 +346,7 @@ export default function BrandDiscover() {
                 type="button"
                 onClick={() => setNiche(n)}
                 className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                  niche === n ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/40"
+                  niche === n ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/40"
                 }`}
               >
                 {n}

@@ -3,7 +3,7 @@ import type { ComponentProps, ReactNode } from "react";
 
 /**
  * The workspace button. One shape (pill), three sizes, four variants, so every page uses
- * the same heights and hovers. Keep `primary` (solid ink) to one action per area; use
+ * the same heights and hovers. Keep `primary` (solid brand indigo) to one action per area; use
  * `secondary` for the rest.
  */
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "danger-outline";
@@ -19,7 +19,7 @@ const SIZE: Record<ButtonSize, string> = {
 };
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: "bg-foreground text-background hover:opacity-85",
+  primary: "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:bg-primary-hover",
   secondary: "border border-border text-foreground hover:bg-muted",
   ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
   danger: "bg-red-600 text-white hover:opacity-85",

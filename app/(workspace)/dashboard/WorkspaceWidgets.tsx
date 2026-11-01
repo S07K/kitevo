@@ -180,14 +180,14 @@ export function SetupChecklist({ items }: { items: ChecklistItem[] }) {
     >
       <div className="px-3 pb-2 pt-2">
         <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-foreground transition-all duration-700" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${pct}%` }} />
         </div>
       </div>
       <ul>
         {items.map((it) => {
           const inner = (
             <>
-              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${it.done ? "bg-foreground text-background" : "text-muted-foreground"}`}>
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${it.done ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
                 {it.done ? <Check size={12} strokeWidth={3} aria-hidden /> : <CircleDashed size={18} strokeWidth={1.6} aria-hidden />}
               </span>
               <span className={`min-w-0 flex-1 truncate text-sm ${it.done ? "text-muted-foreground line-through decoration-muted-foreground/40" : "text-foreground"}`}>
@@ -465,7 +465,7 @@ export function InquiriesPanel({ inquiries, loaded }: { inquiries: InquirySummar
         <span className="inline-flex items-center gap-2">
           Inquiries
           {unread > 0 && (
-            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-semibold text-white">
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
               {unread}
               <span className="sr-only"> unread</span>
             </span>
@@ -494,7 +494,7 @@ export function InquiriesPanel({ inquiries, loaded }: { inquiries: InquirySummar
               <Link href="/pipeline" className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted/60">
                 <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
                   {(i.company || i.name || "?").charAt(0).toUpperCase()}
-                  {!i.read && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-blue-600" aria-hidden />}
+                  {!i.read && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary" aria-hidden />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className={`block truncate text-sm ${i.read ? "text-foreground" : "font-semibold text-foreground"}`}>{i.company || i.name}</span>

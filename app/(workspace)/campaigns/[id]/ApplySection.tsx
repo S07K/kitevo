@@ -96,8 +96,8 @@ const dotColors: Record<string, string> = {
   done_success: "bg-green-500",
   done_danger:  "bg-red-500",
   done_warning: "bg-amber-500",
-  done:         "bg-foreground",
-  active:       "bg-blue-500 ring-4 ring-blue-500/20",
+  done:         "bg-primary",
+  active:       "bg-primary ring-4 ring-primary/20",
   pending:      "bg-border",
 };
 
@@ -171,7 +171,7 @@ export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt,
                         step.variant && step.state === "done"
                           ? labelColors[step.variant]
                           : step.state === "active"
-                          ? "text-blue-600 dark:text-blue-400"
+                          ? "text-primary dark:text-primary-soft-foreground"
                           : step.state === "pending"
                           ? "text-muted-foreground"
                           : "text-foreground"
@@ -190,7 +190,7 @@ export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt,
                     {step.key === "reached" && (
                       <Link
                         href="/messages"
-                        className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
+                        className="inline-flex items-center gap-1 text-xs text-primary dark:text-primary-soft-foreground hover:underline mt-1"
                       >
                         Open inbox
                         <ArrowRight size={11} aria-hidden />

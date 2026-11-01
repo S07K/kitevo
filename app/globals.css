@@ -2,100 +2,70 @@
 @variant dark (&:where(.dark, .dark *));
 
 /*
-  Colour palettes (ids + labels in lib/palettes.ts, switched by next-themes).
-  --background = cards, inputs and plain pages · --canvas = the workspace backdrop, one
-  step deeper so Panels lift off it · --muted = hover/tinted fills.
-  Default (:root / .light) is "Paper": warm cream, from the brand's cream ink.
+  One app theme, from the Kitevo palette:
+    navy #1B365D (ink/text, hover) · blue #005A9C (primary) · sky #60C1E5 (accent)
+    · aqua #A0E0EF (soft tints).
+  --background = cards, inputs, menus · --canvas = page/workspace backdrop, one step deeper
+  so cards lift off it · --muted = neutral hover/fills · --primary-soft = tinted chip/active
+  fills · --accent = sky highlights ("New" pills etc.), always with --accent-foreground.
+  Dark mode flips primary to sky with dark navy text (blue on near-black is too dim).
 */
-:root,
-.light {
-  --background: #fdfbf7;
-  --canvas: #f5f0e6;
-  --foreground: #1c1914;
-  --muted: #f1ebdf;
-  --muted-foreground: #6c645a;
-  --border: #e6dfd1;
-  --ring: #1c1914;
-  --surface: #1c1914;
-  --surface-foreground: #fdfbf7;
-}
+:root {
+  --background: #ffffff;
+  --canvas: #f3f7fa;
+  --foreground: #1b365d;
+  --muted: #edf3f8;
+  --muted-foreground: #556b84;
+  --border: #dce6ef;
+  --ring: #005a9c;
+  --surface: #1b365d;
+  --surface-foreground: #ffffff;
 
-.theme-sage {
-  --background: #fafcf8;
-  --canvas: #edf2e9;
-  --foreground: #18211a;
-  --muted: #e7eee2;
-  --muted-foreground: #5c6959;
-  --border: #d9e3d2;
-  --ring: #18211a;
-  --surface: #18211a;
-  --surface-foreground: #fafcf8;
-}
+  --primary: #005a9c;
+  --primary-hover: #1b365d;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e3f4fa;
+  --primary-soft-foreground: #005a9c;
 
-.theme-mist {
-  --background: #fafcfe;
-  --canvas: #edf2f8;
-  --foreground: #141b26;
-  --muted: #e7edf5;
-  --muted-foreground: #5a6575;
-  --border: #d8e1ed;
-  --ring: #141b26;
-  --surface: #141b26;
-  --surface-foreground: #fafcfe;
-}
-
-.theme-blush {
-  --background: #fefaf9;
-  --canvas: #f8eeeb;
-  --foreground: #241816;
-  --muted: #f4e7e3;
-  --muted-foreground: #74605b;
-  --border: #ecdad5;
-  --ring: #241816;
-  --surface: #241816;
-  --surface-foreground: #fefaf9;
-}
-
-.theme-lavender {
-  --background: #fcfbfe;
-  --canvas: #f1eff9;
-  --foreground: #1b1828;
-  --muted: #ebe8f6;
-  --muted-foreground: #625d77;
-  --border: #dedaee;
-  --ring: #1b1828;
-  --surface: #1b1828;
-  --surface-foreground: #fcfbfe;
-}
-
-/* The original near-white neutral, for anyone who prefers it. */
-.theme-classic {
-  --background: #fafaf9;
-  --canvas: #f7f6f5;
-  --foreground: #111110;
-  --muted: #f5f4f2;
-  --muted-foreground: #6b6b68;
-  --border: #e4e3e0;
-  --ring: #111110;
-  --surface: #111110;
-  --surface-foreground: #fafaf9;
+  --accent: #60c1e5;
+  --accent-foreground: #1b365d;
+  --accent-soft: #a0e0ef;
 }
 
 .dark {
-  --canvas: #141413;
-  --background: #111110;
-  --foreground: #f5f3f0;
-  --muted: #1c1c1a;
-  --muted-foreground: #8a8a86;
-  --border: #2a2a28;
-  --ring: #f5f3f0;
-  --surface: #f5f3f0;
-  --surface-foreground: #111110;
+  --background: #0f1a2b;
+  --canvas: #0b1422;
+  --foreground: #f5f8fc;
+  --muted: #1a2a40;
+  /* Secondary text kept bright on navy (~9.5:1 on cards): #8ea3bb read as too dim. */
+  --muted-foreground: #b3c3d6;
+  --border: #2b3e5a;
+  --ring: #60c1e5;
+  --surface: #f5f8fc;
+  --surface-foreground: #0f1a2b;
+
+  --primary: #60c1e5;
+  --primary-hover: #a0e0ef;
+  --primary-foreground: #0b1a2e;
+  --primary-soft: rgba(96, 193, 229, 0.14);
+  --primary-soft-foreground: #a0e0ef;
+
+  --accent: #a0e0ef;
+  --accent-foreground: #0b1a2e;
+  --accent-soft: rgba(160, 224, 239, 0.16);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-canvas: var(--canvas);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
@@ -127,6 +97,13 @@ body {
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Grayscale smoothing thins light-on-dark text on macOS; let dark mode use the default
+   rendering so body copy keeps its weight. (Beats the `antialiased` class on <body>.) */
+.dark body {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
 button,

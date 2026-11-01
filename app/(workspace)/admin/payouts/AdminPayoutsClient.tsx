@@ -51,7 +51,7 @@ const eyebrow = "text-[11px] font-semibold uppercase tracking-[0.16em] text-mute
 const METHOD_LABEL: Record<string, string> = { paypal: "PayPal", wise: "Wise", bank: "Bank transfer" };
 const STATUS_STYLE: Record<string, string> = {
   pending: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  available: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  available: "bg-primary-soft text-primary-soft-foreground",
   paid: "bg-green-500/10 text-green-700 dark:text-green-400",
   reversed: "bg-muted text-muted-foreground",
 };
@@ -413,7 +413,7 @@ export function AdminPayoutsClient({
               type="button"
               disabled={busy || !reference.trim() || selectedRows.length === 0}
               onClick={record}
-              className="h-10 shrink-0 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-opacity hover:opacity-85 disabled:opacity-40"
+              className="h-10 shrink-0 rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-85 disabled:opacity-40"
             >
               {busy ? "Saving…" : "Mark as paid"}
             </button>

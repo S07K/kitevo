@@ -187,7 +187,7 @@ export function DatePicker({
                   onClick={() => selectDay(day)}
                   className={`flex h-8 w-full items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                     sel
-                      ? "bg-foreground text-background"
+                      ? "bg-primary text-primary-foreground"
                       : disabled
                       ? "text-muted-foreground/30 cursor-not-allowed"
                       : tod

@@ -20,6 +20,7 @@ import {
   DEFAULT_KIT_APPEARANCE,
   KIT_APPEARANCE_PRESET_LABELS,
   BASIC_PRESETS,
+  presetSwatch,
   BRAND_KIT_VIBES,
   BRAND_KIT_VIBE_META,
   parseKitAppearance,
@@ -227,7 +228,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
         <button
           type="button"
           onClick={save}
-          className="px-4 py-2 bg-foreground text-background text-sm font-medium rounded-full hover:opacity-80 disabled:opacity-70"
+          className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-full hover:opacity-80 disabled:opacity-70"
         >
           {saved ? "✓ Saved" : "Save changes"}
         </button>
@@ -309,7 +310,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
             Section visibility
           </h3>
           {isFree && (
-            <span className="bg-foreground text-background rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide shrink-0">
+            <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide shrink-0">
               Starter
             </span>
           )}
@@ -360,7 +361,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
         {isFree && (
           <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">Unlock live stats, growth charts & audience sections</p>
-            <a href="/pricing" className="shrink-0 bg-foreground text-background rounded-full px-4 py-1.5 text-xs font-medium hover:opacity-80 transition-opacity">
+            <a href="/pricing" className="shrink-0 bg-primary text-primary-foreground rounded-full px-4 py-1.5 text-xs font-medium hover:opacity-80 transition-opacity">
               Upgrade to Starter
             </a>
           </div>
@@ -398,12 +399,17 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
                     key={preset}
                     type="button"
                     onClick={() => setAppearance((a) => ({ ...a, preset }))}
-                    className={`rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all duration-150 ${
+                    className={`inline-flex items-center gap-2 rounded-full border py-1.5 pl-2 pr-4 text-sm font-medium whitespace-nowrap transition-all duration-150 ${
                       active
-                        ? "border-foreground bg-foreground text-background"
+                        ? "border-primary bg-primary text-primary-foreground"
                         : "border-border text-foreground hover:bg-muted hover:border-foreground/20"
                     }`}
                   >
+                    <span
+                      className="h-4 w-4 shrink-0 rounded-full border border-black/10"
+                      style={{ background: `linear-gradient(135deg, ${presetSwatch(preset).bg} 50%, ${presetSwatch(preset).accent} 50%)` }}
+                      aria-hidden
+                    />
                     {KIT_APPEARANCE_PRESET_LABELS[preset]}
                   </button>
                 );
@@ -418,7 +424,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
                 Brand Kit Vibes
               </p>
               {!isPro && (
-                <span className="bg-foreground text-background rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide">
+                <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide">
                   Pro
                 </span>
               )}
@@ -447,7 +453,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
                   </p>
                   <a
                     href="/pricing"
-                    className="bg-foreground text-background mt-4 inline-flex h-8 items-center rounded-full px-5 text-xs font-medium transition-opacity hover:opacity-80"
+                    className="bg-primary text-primary-foreground mt-4 inline-flex h-8 items-center rounded-full px-5 text-xs font-medium transition-opacity hover:opacity-80"
                   >
                     Upgrade to Pro
                   </a>
@@ -477,7 +483,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-sm font-semibold text-foreground leading-snug">{meta.label}</p>
                           {active && (
-                            <span className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background mt-0.5">
+                            <span className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground mt-0.5">
                               <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="1.5 5 3.8 7.5 8.5 2" />
                               </svg>
@@ -665,7 +671,7 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
                               onClick={() => updateBrand(b.id, { logoRatio: o.value })}
                               className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                                 active
-                                  ? "bg-foreground text-background"
+                                  ? "bg-primary text-primary-foreground"
                                   : "text-muted-foreground hover:text-foreground"
                               }`}
                             >

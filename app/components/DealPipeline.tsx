@@ -34,7 +34,7 @@ export interface InquiryRecord {
 }
 
 const COLUMNS: { id: DealStatus; label: string; dot: string }[] = [
-  { id: "new",         label: "New",         dot: "bg-blue-500" },
+  { id: "new",         label: "New",         dot: "bg-primary" },
   { id: "reviewing",   label: "Reviewing",   dot: "bg-amber-500" },
   { id: "negotiating", label: "Negotiating", dot: "bg-violet-500" },
   { id: "won",         label: "Won",         dot: "bg-green-500" },
@@ -42,7 +42,7 @@ const COLUMNS: { id: DealStatus; label: string; dot: string }[] = [
 ];
 
 const STATUS_BADGE: Record<DealStatus, string> = {
-  new:         "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
+  new:         "bg-primary-soft text-primary-soft-foreground",
   reviewing:   "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300",
   negotiating: "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300",
   won:         "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300",
@@ -91,7 +91,7 @@ function DealCard({ inq, onExpand, isDragging }: CardProps) {
     >
       <div className="flex items-center gap-2">
         <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{inq.company || inq.name}</p>
-        {!inq.read && <span className="h-2 w-2 shrink-0 rounded-full bg-blue-600" aria-label="Unread" />}
+        {!inq.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" aria-label="Unread" />}
       </div>
       {inq.company && <p className="truncate text-xs text-muted-foreground">{inq.name}</p>}
       <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{inq.message}</p>
@@ -188,7 +188,7 @@ function DetailDialog({
                   aria-checked={on}
                   onClick={() => onMove(inq.id, col.id)}
                   className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
-                    on ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground hover:text-foreground"
+                    on ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <span className={`h-1.5 w-1.5 rounded-full ${col.dot}`} aria-hidden />
@@ -234,7 +234,7 @@ function InboxList({ inquiries, onExpand }: { inquiries: InquiryRecord[]; onExpa
           >
             <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
               {initialOf(inq)}
-              {!inq.read && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-blue-600" aria-label="Unread" />}
+              {!inq.read && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary" aria-label="Unread" />}
             </span>
             <span className="min-w-0 flex-1">
               <span className="flex items-baseline gap-2">
@@ -347,7 +347,7 @@ export function DealPipeline({ inquiries, onUpdate, onMarkRead }: Props) {
                   aria-pressed={on}
                   onClick={() => setStage(f.id)}
                   className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
-                    on ? "border-foreground bg-foreground text-background" : "border-transparent bg-muted text-muted-foreground hover:text-foreground"
+                    on ? "border-primary bg-primary text-primary-foreground" : "border-transparent bg-muted text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {f.label}

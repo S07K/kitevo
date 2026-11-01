@@ -122,7 +122,7 @@ export function MarketingNav(): ReactNode {
                 <Link href="/login" className="focus-ring text-muted-foreground hover:text-foreground hidden text-sm font-medium transition-colors md:inline-flex">
                   Log in
                 </Link>
-                <Link href="/signup" className="focus-ring bg-foreground text-background hidden h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80 md:inline-flex">
+                <Link href="/signup" className="focus-ring bg-primary text-primary-foreground hidden h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80 md:inline-flex">
                   Get started free
                 </Link>
               </>
@@ -228,7 +228,7 @@ export function MarketingNav(): ReactNode {
                   <Link
                     href={dashHref}
                     onClick={close}
-                    className="focus-ring bg-foreground text-background flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-opacity hover:opacity-80"
+                    className="focus-ring bg-primary text-primary-foreground flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-opacity hover:opacity-80"
                   >
                     Go to Dashboard
                   </Link>
@@ -237,7 +237,7 @@ export function MarketingNav(): ReactNode {
                     <Link
                       href="/signup"
                       onClick={close}
-                      className="focus-ring bg-foreground text-background flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-opacity hover:opacity-80"
+                      className="focus-ring bg-primary text-primary-foreground flex h-12 w-full items-center justify-center rounded-2xl text-sm font-semibold transition-opacity hover:opacity-80"
                     >
                       Get started free
                     </Link>

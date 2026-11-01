@@ -96,7 +96,7 @@ export default async function BlogPost({
           </p>
           <Link
             href="/signup"
-            className="bg-foreground text-background mt-5 inline-flex h-10 items-center rounded-full px-6 text-sm font-medium transition-opacity hover:opacity-80"
+            className="bg-primary text-primary-foreground mt-5 inline-flex h-10 items-center rounded-full px-6 text-sm font-medium transition-opacity hover:opacity-80"
           >
             Create your kit free
           </Link>

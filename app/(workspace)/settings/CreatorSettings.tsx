@@ -9,7 +9,7 @@ import type { ProfilePayload } from "@/app/api/me/profile/route";
 import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/WorkspaceShell";
 import { Skeleton, FieldSkeleton, PanelSkeleton } from "@/app/components/Skeleton";
 import { ConnectionsPanel, PlanPanel } from "../dashboard/WorkspaceWidgets";
-import { AccountPanels, AppearancePanel } from "./AccountPanels";
+import { AccountPanels } from "./AccountPanels";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileFormProfile | null>(null);
@@ -253,7 +253,6 @@ export default function ProfilePage() {
             <PanelSkeleton rows={1} titleWidth="w-10" />
           )}
 
-          <AppearancePanel />
           <AccountPanels email={profile?.email ?? null} />
         </aside>
       </div>

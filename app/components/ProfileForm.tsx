@@ -295,7 +295,7 @@ export function ProfileForm({
                 disabled={avatarBusy || saving}
                 onClick={() => fileInputRef.current?.click()}
                 aria-label={avatarUrl ? "Change photo" : "Upload photo"}
-                className="absolute -bottom-0.5 -right-0.5 flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-50"
+                className="absolute -bottom-0.5 -right-0.5 flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground transition-opacity hover:opacity-85 disabled:opacity-50"
               >
                 <Camera size={14} aria-hidden />
               </button>
@@ -432,7 +432,7 @@ export function ProfileForm({
                     onClick={() => setNiches((prev) => (selected ? prev.filter((x) => x !== n) : [...prev, n]))}
                     className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
                       selected
-                        ? "border-foreground bg-foreground text-background"
+                        ? "border-primary bg-primary text-primary-foreground"
                         : maxed
                           ? "cursor-not-allowed border-transparent bg-muted text-muted-foreground/50"
                           : "border-transparent bg-muted text-muted-foreground hover:border-border hover:text-foreground"

@@ -195,7 +195,7 @@ export function PayoutDetailsCard({
                   <span
                     aria-hidden
                     className={`absolute right-3.5 top-3.5 flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
-                      on ? "border-foreground bg-foreground text-background" : "border-border bg-background"
+                      on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background"
                     }`}
                   >
                     {on && (
@@ -318,7 +318,7 @@ export function PayoutDetailsCard({
             <button
               type="submit"
               disabled={saving}
-              className="h-11 rounded-full bg-foreground px-7 text-sm font-medium text-background transition-opacity hover:opacity-85 disabled:opacity-50"
+              className="h-11 rounded-full bg-primary px-7 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-85 disabled:opacity-50"
             >
               {saving ? "Saving…" : profile ? "Save changes" : method === "bank" ? "Add bank account" : `Connect ${active.name}`}
             </button>
