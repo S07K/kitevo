@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
+import Link from "next/link";
+import { Building2, Camera, Check, ExternalLink, Loader2, Trash2, Upload } from "lucide-react";
 import { BrandPlanCard } from "@/app/settings/BrandPlanCard";
-import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
-import { FieldSkeleton } from "@/app/components/Skeleton";
+import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/WorkspaceShell";
+import { Button } from "@/app/components/workspace/Button";
+import { Skeleton, FieldSkeleton } from "@/app/components/Skeleton";
+import { VerifiedBadge } from "@/app/components/VerifiedBadge";
+import { AccountPanels } from "./AccountPanels";
 
 async function resizeToJpegDataUrl(file: File, maxPx = 400): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -32,6 +37,31 @@ const INDUSTRIES = [
 
 const BUDGET_RANGES = ["Under $500", "$500–$2k", "$2k–$10k", "$10k–$50k", "$50k+"];
 
+const fieldCls =
+  "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-ring/40";
+
+/** Same section anatomy as the creator ProfileForm: heading + hint, then fields. */
+function FormSection({ title, hint, children }: { title: string; hint?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="px-5 py-6 sm:px-6">
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        {hint && <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{hint}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Label({ htmlFor, children, optional }: { htmlFor: string; children: ReactNode; optional?: boolean }) {
+  return (
+    <label htmlFor={htmlFor} className="mb-1.5 block text-xs font-medium text-muted-foreground">
+      {children}
+      {optional ? <span className="font-normal"> (optional)</span> : <span className="text-red-600 dark:text-red-400" aria-hidden> *</span>}
+    </label>
+  );
+}
+
 type BrandProfile = {
   companyName: string;
   industry: string;
@@ -57,6 +87,13 @@ export default function BrandSettings() {
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  // Last saved text fields, to show "unsaved changes" and disable Save when clean.
+  const [savedForm, setSavedForm] = useState<BrandProfile | null>(null);
+  const [account, setAccount] = useState<{ email: string | null; username: string | null; verifiedTier: string | null }>({
+    email: null,
+    username: null,
+    verifiedTier: null,
+  });
 
   async function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -106,19 +143,24 @@ export default function BrandSettings() {
     fetch("/api/brand/profile", { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => {
-        if (d) {
-          setForm({
-            companyName: d.companyName ?? "",
-            industry: d.industry ?? "",
-            budgetRange: d.budgetRange ?? "",
-            website: d.website ?? "",
-            logoUrl: d.logoUrl ?? "",
-            description: d.description ?? "",
-          });
-        }
+        const next = {
+          companyName: d?.companyName ?? "",
+          industry: d?.industry ?? "",
+          budgetRange: d?.budgetRange ?? "",
+          website: d?.website ?? "",
+          logoUrl: d?.logoUrl ?? "",
+          description: d?.description ?? "",
+        };
+        setForm(next);
+        setSavedForm(next);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    fetch("/api/me/profile", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => p && setAccount({ email: p.email ?? null, username: p.username ?? null, verifiedTier: p.verifiedTier ?? null }))
+      .catch(() => {});
   }, []);
 
   function set(key: keyof BrandProfile, value: string) {
@@ -137,6 +179,7 @@ export default function BrandSettings() {
         credentials: "include",
       });
       if (res.ok) {
+        setSavedForm(form);
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
       } else {
@@ -148,152 +191,232 @@ export default function BrandSettings() {
     }
   }
 
+  // Logo saves on upload, so it's excluded from the dirty check.
+  const dirty = useMemo(() => {
+    if (!savedForm) return false;
+    const pick = (f: BrandProfile) => JSON.stringify([f.companyName.trim(), f.industry, f.budgetRange, f.website.trim(), f.description.trim()]);
+    return pick(form) !== pick(savedForm);
+  }, [form, savedForm]);
+  const missing = [!form.companyName.trim() && "company name", !form.industry && "industry", !form.budgetRange && "budget range"].filter(
+    Boolean,
+  ) as string[];
+
   return (
-    <WorkspaceShell variant="brand" width="narrow">
-        <PageHeader eyebrow="Settings" title="Brand settings" description="Your plan and the company profile creators see on your campaigns." />
-        <div className="space-y-8">
+    <WorkspaceShell variant="brand" width="wide">
+      <PageHeader eyebrow="Settings" title="Brand settings" description="The company profile creators see on your campaigns, and your plan." />
 
-          {/* Plan / upgrade */}
-          <BrandPlanCard />
-
-          {loading ? (
-            <div className="space-y-5" aria-hidden>
-              {Array.from({ length: 4 }).map((_, i) => <FieldSkeleton key={i} tall={i === 3} />)}
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {/* Company name */}
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Company name</label>
-                <input
-                  type="text"
-                  value={form.companyName}
-                  onChange={(e) => set("companyName", e.target.value)}
-                  placeholder="Acme Inc."
-                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-                />
-              </div>
-
-              {/* Industry */}
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Industry</label>
-                <select
-                  value={form.industry}
-                  onChange={(e) => set("industry", e.target.value)}
-                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* ── Main: company profile ── */}
+        <div className="min-w-0 lg:col-span-2">
+          <Panel
+            title={
+              <span className="inline-flex items-center gap-1.5">
+                Company profile <VerifiedBadge tier={account.verifiedTier} size="sm" />
+              </span>
+            }
+            action={
+              account.username ? (
+                <Link
+                  href={`/${account.username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  <option value="">Select industry</option>
-                  {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
-                </select>
-              </div>
-
-              {/* Budget range */}
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Campaign budget range</label>
-                <div className="flex flex-wrap gap-2">
-                  {BUDGET_RANGES.map((b) => (
-                    <button
-                      key={b}
-                      type="button"
-                      onClick={() => set("budgetRange", b)}
-                      className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                        form.budgetRange === b
-                          ? "bg-foreground text-background border-foreground"
-                          : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/40"
-                      }`}
-                    >
-                      {b}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Website */}
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Website</label>
-                <input
-                  type="url"
-                  value={form.website}
-                  onChange={(e) => set("website", e.target.value)}
-                  placeholder="https://yourcompany.com"
-                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-                />
-              </div>
-
-              {/* Logo upload */}
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-2">Company logo</label>
-                <input ref={logoInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleLogoFile} />
-                <div className="flex items-center gap-4">
-                  <button
-                    type="button"
-                    onClick={() => logoInputRef.current?.click()}
-                    disabled={logoUploading}
-                    className="relative h-16 w-16 rounded-2xl border-2 border-dashed border-border bg-muted hover:bg-muted/80 transition-colors flex items-center justify-center overflow-hidden shrink-0 disabled:opacity-50"
-                  >
-                    {form.logoUrl ? (
-                      <img src={form.logoUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                    ) : logoUploading ? (
-                      <svg className="animate-spin h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3V0a12 12 0 100 24v-4l-3 3 3 3v4A12 12 0 014 12z"/>
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                      </svg>
-                    )}
-                  </button>
-                  <div className="space-y-1.5">
-                    <button
-                      type="button"
-                      onClick={() => logoInputRef.current?.click()}
-                      disabled={logoUploading}
-                      className="inline-flex h-8 items-center rounded-full border border-border px-3 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-                    >
-                      {logoUploading ? "Uploading…" : form.logoUrl ? "Change logo" : "Upload logo"}
-                    </button>
-                    {form.logoUrl && (
-                      <button
-                        type="button"
-                        onClick={removeLogo}
-                        disabled={logoUploading}
-                        className="block text-xs text-muted-foreground hover:text-red-500 transition-colors"
-                      >
-                        Remove
-                      </button>
-                    )}
-                    <p className="text-[11px] text-muted-foreground">JPEG, PNG or WebP · max 8MB</p>
+                  View profile <ExternalLink size={12} aria-hidden />
+                </Link>
+              ) : null
+            }
+            bodyClassName=""
+          >
+            {loading ? (
+              <div className="space-y-6 p-5 sm:p-6" aria-hidden>
+                <div className="flex items-center gap-5">
+                  <Skeleton className="h-24 w-24 rounded-2xl" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3.5 w-28 rounded-full" />
+                    <Skeleton className="h-3 w-3/4 rounded-full" />
+                    <Skeleton className="mt-3 h-8 w-32 rounded-full" />
                   </div>
                 </div>
-                {logoError && <p className="mt-1.5 text-xs text-red-500">{logoError}</p>}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FieldSkeleton />
+                  <FieldSkeleton />
+                </div>
+                <FieldSkeleton tall />
               </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5">About your brand <span className="text-muted-foreground/50">(optional)</span></label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => set("description", e.target.value)}
-                  placeholder="What does your brand do? What kind of creators are you looking for?"
-                  rows={4}
-                  className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 resize-none"
-                />
-              </div>
-
-              {error && <p className="text-xs text-red-500">{error}</p>}
-
-              <button
-                type="button"
-                onClick={save}
-                disabled={saving || !form.companyName.trim() || !form.industry || !form.budgetRange}
-                className="h-10 px-6 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-50"
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (dirty && missing.length === 0) save();
+                }}
               >
-                {saving ? "Saving…" : saved ? "Saved" : "Save changes"}
-              </button>
-            </div>
-          )}
+                <div className="divide-y divide-border">
+                  {/* ── Logo ── */}
+                  <section className="px-5 py-6 sm:px-6">
+                    <input ref={logoInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleLogoFile} />
+                    <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                      <div className="relative h-24 w-24 shrink-0">
+                        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted">
+                          {form.logoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- base64 data URL
+                            <img src={form.logoUrl} alt="Company logo" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                          ) : form.companyName.trim() ? (
+                            <span className="font-display text-3xl text-muted-foreground">{form.companyName.trim()[0].toUpperCase()}</span>
+                          ) : (
+                            <Building2 size={28} strokeWidth={1.5} className="text-muted-foreground" aria-hidden />
+                          )}
+                          {logoUploading && (
+                            <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/45">
+                              <Loader2 size={20} className="animate-spin text-white" aria-label="Updating logo" />
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          disabled={logoUploading}
+                          onClick={() => logoInputRef.current?.click()}
+                          aria-label={form.logoUrl ? "Change logo" : "Upload logo"}
+                          className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-50"
+                        >
+                          <Camera size={14} aria-hidden />
+                        </button>
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-foreground">Company logo</h3>
+                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                          Shown on your campaigns, your public profile and in messages. JPG, PNG or WebP, up to 8MB. Saves as soon as you pick one.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button size="sm" disabled={logoUploading} onClick={() => logoInputRef.current?.click()}>
+                            <Upload size={13} aria-hidden /> {form.logoUrl ? "Change logo" : "Upload logo"}
+                          </Button>
+                          {form.logoUrl && (
+                            <Button size="sm" variant="ghost" disabled={logoUploading} onClick={removeLogo} className="hover:text-red-600 dark:hover:text-red-400">
+                              <Trash2 size={13} aria-hidden /> Remove
+                            </Button>
+                          )}
+                        </div>
+                        {logoError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{logoError}</p>}
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* ── Company ── */}
+                  <FormSection title="Company" hint="How creators recognise you on campaign cards and in their inbox.">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <Label htmlFor="bs-name">Company name</Label>
+                        <input
+                          id="bs-name"
+                          type="text"
+                          value={form.companyName}
+                          onChange={(e) => set("companyName", e.target.value)}
+                          placeholder="Acme Inc."
+                          autoComplete="organization"
+                          className={fieldCls}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="bs-industry">Industry</Label>
+                        <select id="bs-industry" value={form.industry} onChange={(e) => set("industry", e.target.value)} className={`${fieldCls} h-[42px]`}>
+                          <option value="">Select industry</option>
+                          {INDUSTRIES.map((i) => (
+                            <option key={i} value={i}>
+                              {i}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="bs-website" optional>
+                          Website
+                        </Label>
+                        <input
+                          id="bs-website"
+                          type="url"
+                          value={form.website}
+                          onChange={(e) => set("website", e.target.value)}
+                          placeholder="https://yourcompany.com"
+                          autoComplete="url"
+                          className={fieldCls}
+                        />
+                      </div>
+                    </div>
+                  </FormSection>
+
+                  {/* ── Budget ── */}
+                  <FormSection title="Typical campaign budget" hint="Helps creators judge fit before they apply. Shown as a range, never an exact figure.">
+                    <div className="flex flex-wrap gap-2" role="group" aria-label="Campaign budget range">
+                      {BUDGET_RANGES.map((b) => {
+                        const on = form.budgetRange === b;
+                        return (
+                          <button
+                            key={b}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => set("budgetRange", b)}
+                            className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
+                              on
+                                ? "border-foreground bg-foreground text-background"
+                                : "border-transparent bg-muted text-muted-foreground hover:border-border hover:text-foreground"
+                            }`}
+                          >
+                            {on && <Check size={12} strokeWidth={3} aria-hidden />}
+                            {b}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </FormSection>
+
+                  {/* ── About ── */}
+                  <FormSection title="About your brand" hint="What you do and the kind of creators you want to work with. Shown on your public profile.">
+                    <label htmlFor="bs-about" className="sr-only">
+                      About your brand
+                    </label>
+                    <textarea
+                      id="bs-about"
+                      value={form.description}
+                      onChange={(e) => set("description", e.target.value)}
+                      placeholder="What does your brand do? What kind of creators are you looking for?"
+                      rows={4}
+                      className={`${fieldCls} resize-y`}
+                    />
+                  </FormSection>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/30 px-5 py-4 sm:px-6">
+                  <p className="text-xs text-muted-foreground" aria-live="polite">
+                    {error ? (
+                      <span className="font-medium text-red-600 dark:text-red-400">{error}</span>
+                    ) : saved && !dirty ? (
+                      <span className="inline-flex items-center gap-1 font-medium text-green-600 dark:text-green-400">
+                        <Check size={13} aria-hidden /> Saved
+                      </span>
+                    ) : dirty && missing.length > 0 ? (
+                      `Add your ${missing.join(", ")} to save`
+                    ) : dirty ? (
+                      "You have unsaved changes"
+                    ) : (
+                      "All changes saved"
+                    )}
+                  </p>
+                  <Button type="submit" variant="primary" disabled={saving || logoUploading || !dirty || missing.length > 0}>
+                    {saving ? "Saving…" : "Save changes"}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </Panel>
         </div>
+
+        {/* ── Rail: plan, account ── */}
+        <aside className="min-w-0 space-y-6">
+          <BrandPlanCard />
+          <AccountPanels email={account.email} />
+        </aside>
+      </div>
     </WorkspaceShell>
   );
 }

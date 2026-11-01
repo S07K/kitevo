@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { getPublicTiers } from "@/config/subscriptions";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { Skeleton } from "@/app/components/Skeleton";
+import { Check } from "lucide-react";
+import { Panel } from "@/app/components/workspace/WorkspaceShell";
+import { Button } from "@/app/components/workspace/Button";
 
 const BRAND_TIER = getPublicTiers("brand")[0];
 
@@ -107,119 +110,81 @@ export function BrandPlanCard() {
 
   if (status.loading) {
     return (
-      <div className="rounded-2xl border border-border bg-muted/20 p-5" aria-hidden>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1 space-y-1.5">
-            <Skeleton className="h-4 w-28 rounded-full" />
-            <Skeleton className="h-3 w-3/5 rounded-full" />
-          </div>
-          <Skeleton className="h-8 w-28 rounded-full" />
+      <Panel title="Plan">
+        <div aria-hidden>
+          <Skeleton className="h-5 w-24 rounded-full" />
+          <Skeleton className="mt-2 h-3 w-4/5 rounded-full" />
+          <Skeleton className="mt-5 h-9 w-full rounded-full" />
         </div>
-        <Skeleton className="mt-5 h-3 w-4/5 rounded-full" />
-        <Skeleton className="mt-2 h-3 w-2/3 rounded-full" />
-      </div>
+      </Panel>
     );
   }
+
+  const errorLine = error && <p className="mt-3 text-xs text-red-600 dark:text-red-400">{error}</p>;
 
   // ── Active Brand Pro ──
   if (status.isPro) {
     return (
-      <div className="rounded-2xl border border-border bg-muted/20 p-5">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <VerifiedBadge tier="brand_verified" size="md" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">Brand Pro</p>
-              <p className="text-xs text-muted-foreground">Your brand is verified — thanks for supporting Kitevo.</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={openPortal}
-            disabled={busy}
-            className="h-9 px-4 rounded-full border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 shrink-0"
-          >
-            {busy ? "Opening…" : "Manage billing"}
-          </button>
-        </div>
-        {error && <p className="mt-3 text-xs text-red-500">{error}</p>}
-      </div>
+      <Panel title="Plan">
+        <p className="flex items-center gap-1.5 font-display text-lg font-semibold text-foreground">
+          Brand Pro <VerifiedBadge tier="brand_verified" size="sm" />
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Your brand is verified. Thanks for supporting Kitevo.</p>
+        <Button className="mt-4 w-full" onClick={openPortal} disabled={busy}>
+          {busy ? "Opening…" : "Manage billing"}
+        </Button>
+        {errorLine}
+      </Panel>
     );
   }
 
   // ── Upgrade CTA ──
   const monthly = BRAND_TIER.priceMonthly;
-  const perMonth = billing === "yearly" && BRAND_TIER.priceYearly
-    ? yearlyPerMonth(BRAND_TIER.priceYearly)
-    : monthly;
+  const perMonth = billing === "yearly" && BRAND_TIER.priceYearly ? yearlyPerMonth(BRAND_TIER.priceYearly) : monthly;
   const yearlySavings = BRAND_TIER.priceYearly ? monthly * 12 - BRAND_TIER.priceYearly : 0;
+  const seg = (on: boolean) =>
+    `flex-1 rounded-full py-1.5 text-xs font-medium transition-colors ${on ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`;
 
   return (
-    <div className="rounded-2xl border border-foreground/60 bg-muted/20 p-6">
+    <Panel title="Plan" action={<span className="text-xs font-medium text-muted-foreground">Free</span>}>
       {justUpgraded && (
-        <div className="mb-4 rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 px-4 py-2.5">
-          <p className="text-sm text-emerald-700 dark:text-emerald-400">Payment received — your Brand Pro badge will appear in a moment.</p>
+        <div role="status" className="mb-4 rounded-xl border border-green-200 bg-green-50 px-3.5 py-2.5 text-xs text-green-800 dark:border-green-900/60 dark:bg-green-950/30 dark:text-green-300">
+          Payment received. Your Brand Pro badge will appear in a moment.
         </div>
       )}
 
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <VerifiedBadge tier="brand_verified" size="md" />
-          <div>
-            <p className="text-base font-semibold text-foreground">Upgrade to Brand Pro</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Stand out to creators and run more campaigns.</p>
-          </div>
-        </div>
+      <p className="flex items-center gap-1.5 font-display text-lg font-semibold text-foreground">
+        Brand Pro <VerifiedBadge tier="brand_verified" size="sm" />
+      </p>
+      <p className="mt-0.5 text-xs text-muted-foreground">Stand out to creators and run more campaigns.</p>
 
-        {/* Monthly / yearly toggle */}
-        <div className="flex items-center rounded-full border border-border p-0.5 text-xs shrink-0">
-          <button
-            type="button"
-            onClick={() => setBilling("monthly")}
-            className={`px-3 py-1 rounded-full font-medium transition-colors ${billing === "monthly" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            Monthly
-          </button>
-          <button
-            type="button"
-            onClick={() => setBilling("yearly")}
-            className={`px-3 py-1 rounded-full font-medium transition-colors ${billing === "yearly" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            Yearly
-          </button>
-        </div>
+      <div role="radiogroup" aria-label="Billing period" className="mt-4 flex rounded-full bg-muted p-0.5">
+        <button type="button" role="radio" aria-checked={billing === "monthly"} onClick={() => setBilling("monthly")} className={seg(billing === "monthly")}>
+          Monthly
+        </button>
+        <button type="button" role="radio" aria-checked={billing === "yearly"} onClick={() => setBilling("yearly")} className={seg(billing === "yearly")}>
+          Yearly{yearlySavings > 0 && <span className="ml-1 text-green-600 dark:text-green-400">−${yearlySavings}</span>}
+        </button>
       </div>
 
-      {/* Price */}
       <div className="mt-4 flex items-baseline gap-1.5">
-        <span className="text-3xl font-semibold text-foreground tabular-nums">${perMonth}</span>
-        <span className="text-sm text-muted-foreground">/mo{billing === "yearly" ? ", billed yearly" : ""}</span>
+        <span className="font-display text-3xl font-semibold tabular-nums text-foreground">${perMonth}</span>
+        <span className="text-xs text-muted-foreground">/mo{billing === "yearly" ? ", billed yearly" : ""}</span>
       </div>
-      {billing === "yearly" && yearlySavings > 0 && (
-        <p className="mt-0.5 text-xs text-emerald-600 font-medium">Save ${yearlySavings}/yr vs monthly</p>
-      )}
 
-      {/* Features */}
       <ul className="mt-4 space-y-2">
         {BRAND_TIER.features.map((f) => (
-          <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-foreground shrink-0" aria-hidden>
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+          <li key={f} className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+            <Check size={13} strokeWidth={2.5} className="mt-0.5 shrink-0 text-foreground" aria-hidden />
             {f}
           </li>
         ))}
       </ul>
 
-      <button
-        type="button"
-        onClick={startCheckout}
-        disabled={busy}
-        className="mt-5 h-10 px-6 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-50"
-      >
+      <Button variant="primary" className="mt-5 w-full" onClick={startCheckout} disabled={busy}>
         {busy ? "Redirecting…" : "Upgrade to Brand Pro"}
-      </button>
-      {error && <p className="mt-3 text-xs text-red-500">{error}</p>}
-    </div>
+      </Button>
+      {errorLine}
+    </Panel>
   );
 }

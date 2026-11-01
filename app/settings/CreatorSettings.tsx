@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ExternalLink, LogOut } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm";
 import { VerifiedBadge } from "../components/VerifiedBadge";
-import { signOut } from "next-auth/react";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
 import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/WorkspaceShell";
-import { Button } from "@/app/components/workspace/Button";
 import { Skeleton, FieldSkeleton, PanelSkeleton } from "@/app/components/Skeleton";
 import { ConnectionsPanel, PlanPanel } from "../dashboard/WorkspaceWidgets";
+import { AccountPanels } from "./AccountPanels";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileFormProfile | null>(null);
@@ -18,14 +17,6 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-
-  // Account deletion
-  const [deleteStep, setDeleteStep] = useState<"idle" | "sent" | "confirmed">("idle");
-  const [deleteCode, setDeleteCode] = useState("");
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [deleteSentTo, setDeleteSentTo] = useState<string | null>(null);
-  const [deleteDevCode, setDeleteDevCode] = useState<string | null>(null);
 
   // Instagram
   const [instagramConnected, setInstagramConnected] = useState(false);
@@ -170,54 +161,6 @@ export default function ProfilePage() {
 
   const isPaidTier = !!tierId && tierId !== "free";
 
-  const requestDeleteCode = async (resend = false) => {
-    setDeleteError(null);
-    setDeleteLoading(true);
-    try {
-      const res = await fetch("/api/me/delete-account", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "request" }),
-        credentials: "include",
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setDeleteError(data.error ?? "Failed to send code");
-        return;
-      }
-      if (resend) setDeleteCode("");
-      else setDeleteSentTo(data.email);
-      setDeleteDevCode(data.devCode ?? null);
-      setDeleteStep("sent");
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
-
-  const confirmDelete = async () => {
-    setDeleteError(null);
-    setDeleteLoading(true);
-    try {
-      const res = await fetch("/api/me/delete-account", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "confirm", code: deleteCode }),
-        credentials: "include",
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setDeleteError(data.error ?? "Failed to confirm");
-        return;
-      }
-      // Account deleted — sign out and redirect
-      setDeleteStep("confirmed");
-      await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
-      signOut({ callbackUrl: "/?deleted=1" });
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
-
   return (
     <WorkspaceShell variant="creator" width="wide">
       <PageHeader eyebrow="Settings" title="Profile & settings" description="Your public profile, connected accounts and plan." />
@@ -308,89 +251,7 @@ export default function ProfilePage() {
             <PanelSkeleton rows={1} titleWidth="w-10" />
           )}
 
-          <Panel title="Account">
-            <p className="text-xs text-muted-foreground">Signed in as</p>
-            <p className="mt-0.5 truncate text-sm font-medium text-foreground">{profile?.email ?? "—"}</p>
-            <Button
-              className="mt-4 w-full"
-              onClick={async () => {
-                await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
-                signOut({ callbackUrl: "/" });
-              }}
-            >
-              <LogOut size={14} aria-hidden /> Sign out
-            </Button>
-          </Panel>
-
-          <section className="rounded-2xl border border-red-200 bg-background dark:border-red-900/60">
-            <div className="border-b border-red-200 px-5 py-3.5 sm:px-6 dark:border-red-900/60">
-              <h2 className="text-sm font-semibold tracking-tight text-red-600 dark:text-red-400">Danger zone</h2>
-            </div>
-            <div className="p-5 sm:p-6">
-              {deleteStep === "idle" && (
-                <>
-                  <p className="text-sm font-medium text-foreground">Delete account</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                    Permanently deletes your account, all kits and data. This cannot be undone.
-                  </p>
-                  {deleteError && <p className="mt-3 text-xs text-red-600 dark:text-red-400">{deleteError}</p>}
-                  <Button variant="danger-outline" className="mt-4 w-full" disabled={deleteLoading} onClick={() => requestDeleteCode()}>
-                    {deleteLoading ? "Sending code…" : "Delete account"}
-                  </Button>
-                </>
-              )}
-
-              {deleteStep === "sent" && (
-                <div className="space-y-3">
-                  <p className="text-sm text-foreground">
-                    We sent a 6-digit code to <strong>{deleteSentTo}</strong>. Enter it to confirm.
-                  </p>
-                  {deleteDevCode && (
-                    <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 font-mono text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
-                      <span className="font-sans font-semibold">Dev mode, email failed. Code: </span>
-                      {deleteDevCode}
-                    </div>
-                  )}
-                  {deleteError && <p className="text-xs text-red-600 dark:text-red-400">{deleteError}</p>}
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={deleteCode}
-                    onChange={(e) => setDeleteCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="6-digit code"
-                    aria-label="Deletion code"
-                    className="w-full rounded-xl border border-border bg-background px-4 py-2.5 font-mono text-sm tracking-widest text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-red-300"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        setDeleteStep("idle");
-                        setDeleteCode("");
-                        setDeleteError(null);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button variant="danger" className="flex-1" disabled={deleteCode.length !== 6 || deleteLoading} onClick={confirmDelete}>
-                      {deleteLoading ? "Deleting…" : "Confirm deletion"}
-                    </Button>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={deleteLoading}
-                    onClick={() => requestDeleteCode(true)}
-                    className="text-xs text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
-                  >
-                    Resend code
-                  </button>
-                </div>
-              )}
-
-              {deleteStep === "confirmed" && <p className="text-sm text-muted-foreground">Account deleted. Signing you out…</p>}
-            </div>
-          </section>
+          <AccountPanels email={profile?.email ?? null} />
         </aside>
       </div>
     </WorkspaceShell>
