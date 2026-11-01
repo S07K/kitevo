@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowUpRight, Compass, CreditCard, Gift, House, Megaphone, MessageCircle, Settings } from "lucide-react";
+import { ArrowUpRight, Compass, CreditCard, Gift, House, Megaphone, MessageCircle, Settings, ShieldCheck } from "lucide-react";
 import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
 import { Skeleton } from "@/app/components/Skeleton";
 
@@ -30,6 +30,15 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
   const [variant, setVariant] = useState<Variant | null>(variantProp ?? null);
   const [unread, setUnread] = useState(0);
   const [kitSlug, setKitSlug] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Admin-only footer link. Non-admins get { admin: false } and never see it.
+  useEffect(() => {
+    fetch("/api/me/admin", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setIsAdmin(d?.admin === true))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (variantProp) return;
@@ -111,6 +120,12 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
     mobile: [],
   };
   brand.mobile = [...brand.sections[0].items, { ...earn, label: "Earn" }, brand.footer[0]];
+
+  const admin: Item = { href: "/admin", label: "Admin", icon: <ShieldCheck {...ICON} />, match: (p) => p.startsWith("/admin") };
+  if (isAdmin) {
+    creator.footer.push(admin);
+    brand.footer.push(admin);
+  }
 
   const nav = variant === "brand" ? brand : creator;
   const isActive = (i: Item) => (i.match ? i.match(pathname) : pathname === i.href);

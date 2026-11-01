@@ -39,6 +39,9 @@ export function AdminFrame({
               {t.label}
             </Link>
           ))}
+          <Link href="/dashboard" className="ml-auto rounded-full px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+            ← Back to workspace
+          </Link>
         </nav>
         <h1 className="font-display text-foreground text-2xl font-semibold tracking-tight">{title}</h1>
         {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
