@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signOut } from "next-auth/react";
 import {
   getEnabledPlatformIds,
   getPlatformMeta,
@@ -32,7 +31,7 @@ import { DealPipeline, type InquiryRecord, type DealStatus } from "../components
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import { AvatarImg } from "../components/AvatarImg";
 import { ReferralCard } from "./ReferralCard";
-import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
+import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1017,20 +1016,11 @@ function DashboardContent() {
         </div>
       )}
 
-      <AppNav
-        links={[
-          { href: "/pricing", label: "Pricing" },
-          { href: "/social/inbox", label: "Social" },
-          { href: kits[0] ? `/kit/${kits[0].slug}` : "/kit/demo", label: "View Kit", external: true },
-          { href: "/referrals", label: `Earn ${REFERRAL_RATE_PCT}%` },
-        ]}
-        onLogout={async () => {
-          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
-          signOut({ callbackUrl: "/" });
-        }}
-      />
+      <AppNav />
+      <WorkspaceSidebar variant="creator" />
 
-      <main className="mx-auto max-w-6xl px-5 pb-24 pt-24 sm:px-8 lg:px-10">
+      <div className="md:pl-56">
+      <main className="mx-auto max-w-6xl px-5 pb-28 pt-24 sm:px-8 md:pb-24 lg:px-10">
         {/* ── Status banners ── */}
         {success && (
           <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
@@ -1489,6 +1479,7 @@ function DashboardContent() {
           </div>
         )}
       </main>
+      </div>
     </div>
   );
 }

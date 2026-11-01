@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AppNav } from "../components/AppNav";
 import { PayoutDetailsCard, type PayoutProfile } from "./PayoutDetailsCard";
 import { PayoutMark } from "../components/PayoutLogos";
+import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
 
 type Totals = Record<string, number>;
 type Summary = {
@@ -80,19 +81,11 @@ export default function ReferralsPage() {
   const minPayout = data ? money(data.terms.minPayout.USD ?? data.terms.defaultMinPayout, "USD") : "$25.00";
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <AppNav links={[{ href: "/dashboard", label: "Dashboard" }]} />
+    <div className="min-h-screen bg-muted/20 md:pl-56">
+      <AppNav />
+      <WorkspaceSidebar />
 
       <main className="mx-auto max-w-3xl px-4 pb-24 pt-24 sm:px-8">
-        <Link
-          href="/dashboard"
-          className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1.5 text-sm transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Back to dashboard
-        </Link>
 
         <h1 className="font-display text-foreground mt-4 text-2xl font-semibold tracking-tight">Invite &amp; earn</h1>
         <p className="text-muted-foreground mt-1 text-sm">

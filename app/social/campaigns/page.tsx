@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
-import { AppSidebar } from "@/app/components/AppSidebar";
 import { Badge } from "@/app/components/Badge";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { CampaignsIcon, InboxIcon, GiftIcon } from "@/app/components/NavIcons";
+import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
 
 const NICHES = ["All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 
@@ -54,18 +53,13 @@ export default function CreatorCampaigns() {
       .finally(() => setLoading(false));
   }, [niche]);
 
-  const sidebarTabs = [
-    { href: "/social/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
-    { href: "/social/inbox", label: "Inbox", icon: <InboxIcon />, badge: unreadCount },
-    { href: "/referrals", label: "Earn", icon: <GiftIcon /> },
-  ];
 
   return (
     <div className="min-h-screen bg-background">
       <AppNav />
-      <AppSidebar tabs={sidebarTabs} />
+      <WorkspaceSidebar variant="creator" />
 
-      <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
+      <main className="md:ml-56 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
         <div className="mx-auto max-w-2xl">
         <div className="mb-6">
           <h1 className="text-lg font-semibold text-foreground">Open Campaigns</h1>

@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { AppNav } from "@/app/components/AppNav";
-import { AppSidebar } from "@/app/components/AppSidebar";
 import { BrandPlanCard } from "@/app/brand/BrandPlanCard";
-import { DiscoverIcon, CampaignsIcon, InboxIcon, GiftIcon } from "@/app/components/NavIcons";
+import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
 
 async function resizeToJpegDataUrl(file: File, maxPx = 400): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -152,14 +151,9 @@ export default function BrandSettings() {
   return (
     <div className="min-h-screen bg-background">
       <AppNav />
-      <AppSidebar tabs={[
-        { href: "/brand", label: "Discover", icon: <DiscoverIcon /> },
-        { href: "/brand/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
-        { href: "/brand/inbox", label: "Inbox", icon: <InboxIcon /> },
-        { href: "/referrals", label: "Earn", icon: <GiftIcon /> },
-      ]} />
+      <WorkspaceSidebar variant="brand" />
 
-      <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
+      <main className="md:ml-56 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
         <div className="mx-auto max-w-xl py-6 space-y-8">
           <div>
             <h1 className="text-lg font-semibold text-foreground">Brand settings</h1>

@@ -7,6 +7,7 @@ import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm"
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import { signOut } from "next-auth/react";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
+import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileFormProfile | null>(null);
@@ -159,25 +160,11 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <AppNav
-        links={[{ href: "/dashboard", label: "Dashboard" }]}
-        onLogout={async () => {
-          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
-          signOut({ callbackUrl: "/" });
-        }}
-      />
+    <div className="min-h-screen bg-muted/20 md:pl-56">
+      <AppNav />
+      <WorkspaceSidebar variant="creator" />
 
-      <main className="mx-auto max-w-4xl px-5 pb-24 pt-24 sm:px-8">
-        <Link
-          href="/dashboard"
-          className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1.5 text-sm transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Back to dashboard
-        </Link>
+      <main className="mx-auto max-w-4xl px-5 pb-28 pt-24 sm:px-8 md:pb-24">
 
         <h1 className="font-display text-foreground mt-4 text-2xl font-semibold tracking-tight">Profile & settings</h1>
         <p className="text-muted-foreground mt-1 text-sm">Manage your public profile, connected accounts, and billing.</p>

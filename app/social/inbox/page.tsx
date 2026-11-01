@@ -3,10 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
-import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { useRealtimeStream } from "@/app/hooks/useRealtimeStream";
-import { CampaignsIcon, InboxIcon, GiftIcon } from "@/app/components/NavIcons";
+import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
 
 type Conversation = {
   id: string;
@@ -143,18 +142,13 @@ export default function CreatorInbox() {
 
   const activeConvo = conversations.find((c) => c.id === activeId);
 
-  const sidebarTabs = [
-    { href: "/social/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
-    { href: "/social/inbox", label: "Inbox", icon: <InboxIcon />, badge: unreadCount },
-    { href: "/referrals", label: "Earn", icon: <GiftIcon /> },
-  ];
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <AppNav />
-      <AppSidebar tabs={sidebarTabs} />
+      <WorkspaceSidebar variant="creator" inboxBadge={unreadCount} />
 
-      <div className="flex-1 overflow-hidden mt-[57px] md:ml-52 pb-[52px] md:pb-0">
+      <div className="flex-1 overflow-hidden mt-[57px] md:ml-56 pb-[52px] md:pb-0">
         <div className="flex h-full border-t border-border">
           {/* Sidebar */}
           <div className={`${activeId ? "hidden md:flex" : "flex"} flex-col w-full md:w-72 md:shrink-0 border-r border-border`}>

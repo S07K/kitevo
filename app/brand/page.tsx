@@ -4,9 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
-import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { DiscoverIcon, CampaignsIcon, InboxIcon, GiftIcon } from "@/app/components/NavIcons";
+import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
 
 const NICHES = [
   "All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel",
@@ -267,14 +266,9 @@ export default function BrandDiscover() {
   return (
     <div className="min-h-screen bg-background">
       <AppNav />
-      <AppSidebar tabs={[
-        { href: "/brand", label: "Discover", icon: <DiscoverIcon /> },
-        { href: "/brand/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
-        { href: "/brand/inbox", label: "Inbox", icon: <InboxIcon /> },
-        { href: "/referrals", label: "Earn", icon: <GiftIcon /> },
-      ]} />
+      <WorkspaceSidebar variant="brand" />
 
-      <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
+      <main className="md:ml-56 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
         <div className="mx-auto max-w-5xl">
         {coldMessageLocked && (
           <div className="mb-6 rounded-2xl border border-[#7c3aed]/40 bg-[#7c3aed]/5 px-5 py-4 flex items-center justify-between gap-4">

@@ -7,11 +7,10 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { recordCampaignView } from "@/lib/campaign-views";
 import { ApplySection } from "./ApplySection";
-import { AppSidebar } from "@/app/components/AppSidebar";
 import { AppNav } from "@/app/components/AppNav";
 import { Badge } from "@/app/components/Badge";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { CampaignsIcon, InboxIcon, GiftIcon } from "@/app/components/NavIcons";
+import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
 
 type Params = { id: string };
 
@@ -127,13 +126,9 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
         links={[{ href: "/dashboard", label: "Dashboard" }]}
         onLogout={undefined}
       />
-      <AppSidebar tabs={[
-        { href: "/social/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
-        { href: "/social/inbox", label: "Inbox", icon: <InboxIcon /> },
-        { href: "/referrals", label: "Earn", icon: <GiftIcon /> },
-      ]} />
+      <WorkspaceSidebar />
 
-      <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-20 sm:px-8">
+      <main className="md:ml-56 px-5 pt-[73px] pb-[72px] md:pb-20 sm:px-8">
         <div className="mx-auto max-w-2xl space-y-8 py-6">
           {/* Back */}
           <Link

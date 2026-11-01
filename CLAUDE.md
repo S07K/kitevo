@@ -87,7 +87,7 @@ Stack: Next.js 16 App Router, Prisma + Supabase (Postgres), NextAuth, payments v
 - **Shortlist/save creators**: `SavedCreator` table; bookmark toggle + "Saved" filter on brand discover (`/api/social/saved`). Available to all brands
 
 ### UI / UX
-- `AppNav`: logo + NavAvatar only (no tabs). Tabs moved to `AppSidebar`
+- `AppNav`: logo + NavAvatar only — never page links. **All in-app navigation is `WorkspaceSidebar`** (grouped left sidebar on desktop, 5-tab bottom bar on mobile). Creator: Home · Social (Campaigns, Messages) · Grow (Invite & earn) · footer (View my kit, Plan & billing, Settings). Brand: Discover · Campaigns · Inbox · Grow · Settings. Pages pass `variant`; shared pages omit it and it reads `/api/me/profile`. Content wraps in `md:pl-56`
 - `NavAvatar` popup: name, role, Dashboard, Settings (role-aware), theme toggle, logout
 - Brand accounts show `companyName` + `logoUrl` in NavAvatar (not personal name/avatar)
 - Logo upload fires `kitevo:avatar-updated` custom event → NavAvatar updates instantly
@@ -159,7 +159,7 @@ Phase 3 — Business tier:
 |------|---------|
 | `app/components/NavAvatar.tsx` | Avatar popup — Dashboard, Settings, theme, logout. Listens for `kitevo:avatar-updated` event |
 | `app/components/AppNav.tsx` | Top nav — logo + NavAvatar only |
-| `app/components/AppSidebar.tsx` | Side nav with exact-match active tab |
+| `app/components/WorkspaceSidebar.tsx` | The only in-app navigation (creator + brand variants, mobile bottom bar) |
 | `app/components/Badge.tsx` | Semantic badge/tag component |
 | `app/components/ProfileForm.tsx` | Creator profile form — avatar upload, username check, bio, links, niches picker |
 | `app/components/VerifiedBadge.tsx` | Verified tick: blue (creator_pro), gold (top_creator), purple (brand_verified) |
