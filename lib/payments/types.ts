@@ -143,4 +143,11 @@ export interface PaymentProvider {
 
   /** Verify and translate an incoming webhook. Throws `WebhookVerificationError`. */
   parseWebhook(rawBody: string, headers: Headers): Promise<PaymentWebhookEvent>;
+
+  /**
+   * The provider's id for this delivery, stable across its retries, or null. Used to log
+   * deliveries and to skip a retry of one we already applied. Call it only after
+   * `parseWebhook` succeeded: it reads the unverified body/headers and must not throw.
+   */
+  webhookDeliveryId(rawBody: string, headers: Headers): string | null;
 }

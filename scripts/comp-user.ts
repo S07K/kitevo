@@ -10,12 +10,14 @@
  *   Revoke:      npx tsx scripts/comp-user.ts creator@example.com none
  *   List comped: npx tsx scripts/comp-user.ts --list
  *
- * verifiedTier is set alongside so the badge shows immediately; it is kept in sync (and
- * never cleared below the comp) by config/resolveVerifiedTier at every write site.
+ * Same code path as /admin (lib/admin-actions setComp): the badge is re-derived from the
+ * live subscription + comp, and the change is written to the admin audit log.
+ * Needs the payment provider env (PAYMENT_PROVIDER + its API key) for users with a customer id.
  */
 
 import { prisma } from "@/lib/prisma";
-import { getTierById, getVerifiedTierForTier } from "@/config/subscriptions";
+import { getTierById } from "@/config/subscriptions";
+import { setComp } from "@/lib/admin-actions";
 
 async function list() {
   const users = await prisma.user.findMany({
@@ -55,18 +57,11 @@ async function main() {
     process.exit(1);
   }
 
-  const compedTier = revoke ? null : tierArg;
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      compedTier,
-      // Reflect the comp on the badge now. On revoke this drops to null, unless a live
-      // subscription later re-grants it via the webhook.
-      verifiedTier: getVerifiedTierForTier(compedTier),
-    },
-  });
+  const after = await setComp(user.id, revoke ? null : tierArg, "script:comp-user");
 
-  console.log(revoke ? `Revoked comp for ${email}.` : `Comped ${email} to "${compedTier}".`);
+  console.log(
+    `${revoke ? `Revoked comp for ${email}` : `Comped ${email} to "${tierArg}"`} (badge: ${after.verifiedTier ?? "none"}).`
+  );
 }
 
 main()
