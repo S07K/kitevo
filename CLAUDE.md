@@ -259,6 +259,8 @@ Full setup and the reasoning behind each choice is in `DEPLOY.md`. Other open it
 
 ## Git / Deploy
 
+- **`RELEASE.md` is the owner's post-merge checklist.** Whenever a change needs an env var, migration, webhook setting, backfill script or manual step at deploy time, add it to RELEASE.md in the same branch.
+
 - Repo: `https://github.com/S07K/kitevo.git` (personal, private — Vercel Hobby refuses private *org* repos)
 - Branch: `main`
 - All work committed and pushed to main

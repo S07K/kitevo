@@ -1,5 +1,7 @@
 # Kitevo — Production Deploy Checklist
 
+> **Shipping the current feature branches?** Follow [RELEASE.md](./RELEASE.md), the step-by-step post-merge checklist.
+
 Work top to bottom. The order matters: the app URL is baked into the build and is
 registered with three external services, so picking it late means redoing steps.
 
