@@ -112,11 +112,11 @@ export function PayoutDetailsCard({
   const active = METHODS.find((m) => m.id === method)!;
 
   return (
-    <section className="bg-background border-border mt-6 overflow-hidden rounded-2xl border">
+    <section className="bg-background border-border overflow-hidden rounded-2xl border">
       <div className="flex items-start justify-between gap-4 p-6 pb-0">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Payout method</p>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">Payout method</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Paid monthly once your balance passes {minPayoutLabel}. You can change this any time.
           </p>
         </div>
@@ -272,7 +272,7 @@ export function PayoutDetailsCard({
             )}
 
             <div className="border-t border-border pt-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Payee details</p>
+              <h3 className="text-sm font-semibold tracking-tight text-foreground">Payee details</h3>
               <div className="mt-4 grid gap-5 sm:grid-cols-2">
                 <label className="block">
                   <span className={labelCls}>Full legal name</span>

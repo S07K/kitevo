@@ -8,6 +8,7 @@ import { AvatarImg } from "@/app/components/AvatarImg";
 import { Panel } from "@/app/components/workspace/WorkspaceShell";
 import { Button, ButtonLink, buttonClass } from "@/app/components/workspace/Button";
 import { Badge } from "@/app/components/Badge";
+import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { vibeFor } from "./KitActions";
 import { Skeleton } from "@/app/components/Skeleton";
 
@@ -24,6 +25,7 @@ export function KitSpotlight({
   viewsLoaded,
   kitCount,
   menu,
+  verifiedTier,
 }: {
   kit: { id: string; slug: string; name: string; appearance?: unknown; hasPassword?: boolean };
   name: string;
@@ -34,6 +36,8 @@ export function KitSpotlight({
   kitCount: number;
   /** Overflow menu (share, URL, password, delete). */
   menu?: ReactNode;
+  /** Verified tick, shown next to the name exactly as brands see it on the live kit. */
+  verifiedTier?: string | null;
 }) {
   const [copied, setCopied] = useState(false);
   const vibe = vibeFor(kit);
@@ -83,7 +87,10 @@ export function KitSpotlight({
               }
             />
           </span>
-          <p className="mt-3 max-w-full truncate font-display text-lg font-semibold tracking-tight">{name || "Your name"}</p>
+          <p className="mt-3 flex max-w-full items-center gap-1.5 font-display text-lg font-semibold tracking-tight">
+            <span className="truncate">{name || "Your name"}</span>
+            <VerifiedBadge tier={verifiedTier} size="sm" />
+          </p>
           <div className="mt-2 flex flex-wrap justify-center gap-1">
             {niches.slice(0, 3).map((n) => (
               <span key={n} className="rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ backgroundColor: vibe.fg + "1f" }}>
@@ -383,7 +390,8 @@ export function PlanPanel({
 }: {
   tierId: string | null;
   tierName: string | null;
-  kitsUsed: number;
+  /** Omit where the kit count isn't loaded (e.g. Settings): shows "N kits included". */
+  kitsUsed?: number;
   kitsAllowed: number;
   onManageBilling: (() => void) | null;
   managing: boolean;
@@ -401,7 +409,9 @@ export function PlanPanel({
       <div className="flex items-baseline justify-between">
         <p className="font-display text-lg font-semibold text-foreground">{tierName ?? "Free"}</p>
         <p className="text-xs tabular-nums text-muted-foreground">
-          {kitsUsed}/{kitsAllowed} kit{kitsAllowed === 1 ? "" : "s"}
+          {kitsUsed === undefined
+            ? `${kitsAllowed} kit${kitsAllowed === 1 ? "" : "s"} included`
+            : `${kitsUsed}/${kitsAllowed} kit${kitsAllowed === 1 ? "" : "s"}`}
         </p>
       </div>
       {next ? (

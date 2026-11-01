@@ -737,6 +737,7 @@ function DashboardContent() {
                   viewsThisWeek={kitViewsThisWeek}
                   viewsLoaded={kitViewsLoaded}
                   kitCount={kits.length}
+                  verifiedTier={profile?.verifiedTier}
                   menu={
                     <KitActionsMenu
                       kit={mainKit}
