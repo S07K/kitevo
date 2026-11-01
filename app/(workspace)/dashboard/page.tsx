@@ -17,6 +17,7 @@ import { Button, ButtonLink } from "@/app/components/workspace/Button";
 import { Modal } from "@/app/components/workspace/Modal";
 import { KitSpotlight, SetupChecklist, OpportunitiesPanel, ConnectionsPanel, PlanPanel, InquiriesPanel } from "./WorkspaceWidgets";
 import { KitActionsMenu, vibeFor } from "./KitActions";
+import { CreateKitModal } from "./CreateKitModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -51,28 +52,6 @@ function referrerDomain(referrer: string | null): string | null {
   }
 }
 
-function TextInput({
-  value,
-  onChange,
-  placeholder,
-  label,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  label: string;
-}) {
-  return (
-    <input
-      type="text"
-      value={value}
-      aria-label={label}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="border-border bg-background text-foreground placeholder:text-muted-foreground w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-    />
-  );
-}
 
 /** Status banner (connect results, payment). Same place and style for every source. */
 function Notice({ tone, children }: { tone: "success" | "warning" | "danger"; children: ReactNode }) {
@@ -157,10 +136,7 @@ function DashboardContent() {
   const router = useRouter();
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [platformStats, setPlatformStats] = useState<Record<string, PlatformStatsWithCharts> | null>(null);
-  const [showAddKit, setShowAddKit] = useState(false);
-  const [newKitName, setNewKitName] = useState("");
-  const [newKitSlug, setNewKitSlug] = useState("");
-  const [addKitError, setAddKitError] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
   const [kitToDelete, setKitToDelete] = useState<{ id: string; name: string } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -391,28 +367,7 @@ function DashboardContent() {
     access_denied: "You declined access. Connect again to grant permissions.",
   };
 
-  const createKit = async () => {
-    if (!newKitSlug.trim()) return;
-    setAddKitError("");
-    const res = await fetch("/api/kits", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug: newKitSlug.trim(), name: newKitName.trim() }),
-      credentials: "include",
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.id) {
-      setShowAddKit(false);
-      setNewKitName("");
-      setNewKitSlug("");
-      fetch("/api/kits", { credentials: "include" })
-        .then((r) => (r.ok ? r.json() : []))
-        .then((list) => setKits(Array.isArray(list) ? list : []));
-      window.location.href = `/kit/edit?id=${encodeURIComponent(data.id)}`;
-    } else {
-      setAddKitError(data.error ?? "Failed to create kit");
-    }
-  };
+
 
   const deleteKit = async () => {
     if (!kitToDelete) return;
@@ -534,7 +489,7 @@ function DashboardContent() {
     <SetupChecklist
       items={[
         ...(kits.length === 0
-          ? [{ id: "kit", label: "Create your media kit", done: false, cta: "Create", onClick: () => document.getElementById("kits")?.scrollIntoView({ behavior: "smooth" }) }]
+          ? [{ id: "kit", label: "Create your media kit", done: false, cta: "Create", onClick: () => setCreateOpen(true) }]
           : []),
         { id: "photo", label: "Add a profile photo", done: !!avatarUrl, href: "/settings", cta: "Add" },
         { id: "bio", label: "Write a short bio", done: !!profile?.bio, href: "/settings", cta: "Write" },
@@ -644,6 +599,7 @@ function DashboardContent() {
 
   return (
     <WorkspaceShell variant="creator" width="wide">
+      <CreateKitModal open={createOpen} onClose={() => setCreateOpen(false)} isFirst={kits.length === 0} allowedKits={allowedKits} />
       <Modal
         open={!!kitToDelete}
         onClose={() => {
@@ -805,19 +761,16 @@ function DashboardContent() {
                   )}
 
                   {subscriptionLoaded && kits.length === 0 && allowedKits > 0 && (
-                    <div className="border-border bg-background max-w-md rounded-2xl border p-6">
-                      <SectionTitle>Create your first kit</SectionTitle>
-                      <p className="text-muted-foreground mt-1 text-sm">
-                        Give it a name and a URL. Connect Instagram or YouTube under Connections to show live stats.
-                      </p>
-                      <div className="mt-5 space-y-3">
-                        <TextInput label="Kit name" value={newKitName} onChange={setNewKitName} placeholder="Kit name (e.g. Fashion & Lifestyle)" />
-                        <TextInput label="URL slug" value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
-                        {addKitError && <p className="text-sm text-red-600 dark:text-red-400">{addKitError}</p>}
-                        <Button variant="primary" size="lg" onClick={createKit}>
-                          Create &amp; edit
-                        </Button>
+                    <div className="border-border bg-background flex flex-col items-start gap-4 rounded-2xl border border-dashed p-6 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <SectionTitle>Create your first kit</SectionTitle>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                          Name it, pick its link, then add your stats and rates in the editor.
+                        </p>
                       </div>
+                      <Button variant="primary" onClick={() => setCreateOpen(true)}>
+                        <Plus size={14} aria-hidden /> Create kit
+                      </Button>
                     </div>
                   )}
 
@@ -825,8 +778,8 @@ function DashboardContent() {
                     <>
                       <div className="mb-4 flex items-center justify-between">
                         <SectionTitle>Other kits</SectionTitle>
-                        {subscriptionLoaded && kits.length < allowedKits && !showAddKit && (
-                          <Button size="sm" onClick={() => setShowAddKit(true)}>
+                        {subscriptionLoaded && kits.length < allowedKits && (
+                          <Button size="sm" onClick={() => setCreateOpen(true)}>
                             <Plus size={14} aria-hidden /> New kit
                           </Button>
                         )}
@@ -842,7 +795,7 @@ function DashboardContent() {
                           />
                         ))}
                       </div>
-                      {subscriptionLoaded && kits.length >= allowedKits && !showAddKit && (
+                      {subscriptionLoaded && kits.length >= allowedKits && (
                         <p className="text-muted-foreground mt-4 text-sm">
                           You&apos;re using all {allowedKits} kits on your plan.{" "}
                           <Link href="/pricing" className="text-foreground underline underline-offset-4 hover:no-underline">
@@ -855,7 +808,7 @@ function DashboardContent() {
                   )}
 
                   {/* One kit with room for more: a quiet prompt, not a second copy of the kit */}
-                  {subscriptionLoaded && kits.length === 1 && kits.length < allowedKits && !showAddKit && (
+                  {subscriptionLoaded && kits.length === 1 && kits.length < allowedKits && (
                     <div className="border-border flex flex-col gap-3 rounded-2xl border border-dashed p-5 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
                         <SectionTitle as="h3">Add another kit</SectionTitle>
@@ -863,34 +816,12 @@ function DashboardContent() {
                           Your plan includes {allowedKits} kits. Make one per niche, language or audience.
                         </p>
                       </div>
-                      <Button onClick={() => setShowAddKit(true)}>
+                      <Button onClick={() => setCreateOpen(true)}>
                         <Plus size={14} aria-hidden /> New kit
                       </Button>
                     </div>
                   )}
 
-                  {showAddKit && kits.length > 0 && (
-                    <div className="border-border bg-background mt-4 max-w-md space-y-3 rounded-2xl border p-5">
-                      <SectionTitle as="h3">New kit</SectionTitle>
-                      <TextInput label="Kit name" value={newKitName} onChange={setNewKitName} placeholder="Kit name" />
-                      <TextInput label="URL slug" value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
-                      {addKitError && <p className="text-sm text-red-600 dark:text-red-400">{addKitError}</p>}
-                      <div className="flex gap-2">
-                        <Button variant="primary" onClick={createKit}>
-                          Create &amp; edit
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            setShowAddKit(false);
-                            setNewKitName("");
-                            setNewKitSlug("");
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                 </section>
               )}
             </div>
