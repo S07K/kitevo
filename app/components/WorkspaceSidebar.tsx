@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PalettePicker, useAppearance } from "./Appearance";
 import { signOut } from "next-auth/react";
-import { ArrowUpRight, ChevronsUpDown, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
+import { ArrowUpRight, ChevronsUpDown, Loader2, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
 import { AvatarImg } from "./AvatarImg";
 import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
 import { Skeleton } from "@/app/components/Skeleton";
@@ -207,13 +207,10 @@ export function WorkspaceSidebar({
                 </Link>
               )}
             </nav>
-            <div className="flex flex-col gap-0.5 border-t border-border p-3">
-              {nav.footer.map((it) => (
-                <NavItem key={it.href} item={it} active={isActive(it)} />
-              ))}
-            </div>
+            {/* Account-level destinations (my kit, plan, settings, admin) live in the profile menu,
+                so the sidebar body carries only the daily tabs. */}
             <div className="border-t border-border p-3">
-              <AccountRow account={account} />
+              <AccountRow account={account} links={nav.footer} isActive={isActive} />
             </div>
           </>
         ) : (
@@ -232,10 +229,12 @@ export function WorkspaceSidebar({
                 </div>
               ))}
             </div>
-            <div className="flex flex-col gap-0.5 border-t border-border p-3">
-              {["w-24", "w-24", "w-16"].map((w, i) => (
-                <NavItemSkeleton key={i} width={w} />
-              ))}
+            <div className="flex items-center gap-2.5 border-t border-border p-3 px-5">
+              <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-3 w-24 rounded-full" />
+                <Skeleton className="h-2.5 w-14 rounded-full" />
+              </div>
             </div>
           </div>
         )}
@@ -281,7 +280,7 @@ export function WorkspaceSidebar({
 }
 
 /** Signed-in account at the foot of the sidebar: avatar, name, role; opens theme + log out. */
-function AccountRow({ account }: { account: Account | null }) {
+function AccountRow({ account, links, isActive }: { account: Account | null; links: Item[]; isActive: (i: Item) => boolean }) {
   const [open, setOpen] = useState(false);
   const { mounted, isDark, toggleDark } = useAppearance();
   const wrap = useRef<HTMLDivElement>(null);
@@ -312,6 +311,8 @@ function AccountRow({ account }: { account: Account | null }) {
 
   const label = account.name || account.email || "Account";
   const item = "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none";
+  // You're on a page that lives in this menu (settings, plan, admin): mark the row as "here".
+  const here = links.some((l) => !l.external && isActive(l));
 
   return (
     <div ref={wrap} className="relative">
@@ -320,7 +321,7 @@ function AccountRow({ account }: { account: Account | null }) {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-muted ${open ? "bg-muted" : ""}`}
+        className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-muted ${open || here ? "bg-muted" : ""}`}
       >
         <AvatarImg
           src={account.avatarUrl}
@@ -344,6 +345,26 @@ function AccountRow({ account }: { account: Account | null }) {
       {open && (
         <div role="menu" aria-label="Account" className="absolute bottom-[calc(100%+6px)] left-0 right-0 z-50 overflow-hidden rounded-xl border border-border bg-background p-1 shadow-lg">
           {account.email && <p className="truncate px-3 pb-1.5 pt-2 text-xs text-muted-foreground">{account.email}</p>}
+          {links.map((l) => {
+            const on = !l.external && isActive(l);
+            const cls = `${item} ${on ? "bg-muted font-medium text-foreground" : "text-foreground hover:bg-muted"}`;
+            const body = (
+              <>
+                <span className="shrink-0 text-muted-foreground">{l.icon}</span>
+                <span className="flex-1">{l.label}</span>
+              </>
+            );
+            return l.external ? (
+              <a key={l.href} role="menuitem" href={l.href} target="_blank" rel="noopener noreferrer" className={cls} onClick={() => setOpen(false)}>
+                {body}
+              </a>
+            ) : (
+              <Link key={l.href} role="menuitem" href={l.href} aria-current={on ? "page" : undefined} className={cls} onClick={() => setOpen(false)}>
+                {body}
+              </Link>
+            );
+          })}
+          {links.length > 0 && <div className="my-1 h-px bg-border" />}
           {mounted && (
             <button role="menuitem" type="button" className={`${item} text-foreground hover:bg-muted`} onClick={toggleDark}>
               {isDark ? <Sun size={15} aria-hidden /> : <Moon size={15} aria-hidden />}
@@ -407,6 +428,13 @@ function NavItem({ item, active }: { item: Item; active: boolean }) {
   ) : (
     <Link href={item.href} className={cls} aria-current={active ? "page" : undefined}>
       {inner}
+      <PendingSpinner />
     </Link>
   );
+}
+
+/** Shows on the clicked tab from the click until the new page renders (instant feedback). */
+function PendingSpinner() {
+  const { pending } = useLinkStatus();
+  return pending ? <Loader2 size={13} className="absolute right-2.5 animate-spin text-muted-foreground" aria-label="Loading" /> : null;
 }

@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { payments } from "@/lib/payments";
 import { getSubscriptionCustomerId } from "@/lib/subscription-cookie";
 import { getPriceIdForTier, getTierByPriceId } from "@/config/subscriptions";
+import { invalidateSubscription } from "@/lib/subscription-cache";
+
 
 /**
  * Upgrade (or change) the current subscription to another tier.
@@ -60,6 +62,7 @@ export async function POST(req: Request) {
     }
 
     await payments.changeSubscriptionPrice(sub, newPriceId);
+    invalidateSubscription(customerId);
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { payments, type SubscriptionSnapshot } from "@/lib/payments";
 import { getTierById, getVerifiedTierForPriceId, resolveVerifiedTier } from "@/config/subscriptions";
+import { invalidateSubscription } from "@/lib/subscription-cache";
+
 
 /**
  * Admin-side plan changes, each written to `AdminAuditLog`.
@@ -93,6 +95,7 @@ export async function resyncPlan(userId: string, actor: string) {
   if (verifiedTier !== user.verifiedTier) {
     await prisma.user.update({ where: { id: userId }, data: { verifiedTier } });
   }
+  invalidateSubscription(user.stripeCustomerId);
   const after = { verifiedTier, subscriptionStatus: sub?.status ?? null, priceId: sub?.priceId ?? null };
   await logAdminAction(actor, "plan.resync", userId, { before: { verifiedTier: user.verifiedTier }, after });
   return after;

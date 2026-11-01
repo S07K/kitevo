@@ -16,11 +16,15 @@ export function WorkspaceFrame({ viewer, children }: { viewer: SidebarViewer; ch
   const [inboxBadge, setInboxBadge] = useState<number | undefined>(undefined);
   // Stable value: pages that only *set* the badge never re-render because of it.
   const api = useMemo<FrameApi>(() => ({ setInboxBadge }), []);
+  const account = useMemo(
+    () => ({ name: viewer.name, avatarUrl: viewer.avatarUrl, accountType: viewer.accountType }),
+    [viewer.name, viewer.avatarUrl, viewer.accountType],
+  );
 
   return (
     <FrameContext.Provider value={api}>
       <div className="min-h-screen bg-canvas">
-        <AppNav avatarOnMobileOnly />
+        <AppNav avatarOnMobileOnly account={account} />
         <WorkspaceSidebar viewer={viewer} inboxBadge={inboxBadge} />
         <div className="md:pl-56">{children}</div>
       </div>

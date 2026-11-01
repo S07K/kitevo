@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PalettePicker, useAppearance } from "./Appearance";
 import { signOut } from "next-auth/react";
 import { AvatarImg } from "./AvatarImg";
+import { CreditCard } from "lucide-react";
 
 type Profile = {
   name: string | null;
@@ -12,18 +13,20 @@ type Profile = {
   accountType: string;
 };
 
-export function NavAvatar() {
-  const [profile, setProfile] = useState<Profile | null>(null);
+/** `initial` comes from the workspace frame (server-known viewer): no profile fetch at all. */
+export function NavAvatar({ initial }: { initial?: Profile }) {
+  const [profile, setProfile] = useState<Profile | null>(initial ?? null);
   const [open, setOpen] = useState(false);
   const { mounted, isDark, toggleDark } = useAppearance();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (initial) return;
     fetch("/api/me/profile", { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => d && setProfile({ name: d.name, avatarUrl: d.avatarUrl, accountType: d.accountType }))
       .catch(() => {});
-  }, []);
+  }, [initial]);
 
   useEffect(() => {
     function handleAvatarUpdate(e: Event) {
@@ -112,6 +115,17 @@ export function NavAvatar() {
               </svg>
               Invite &amp; earn
             </Link>
+
+            {profile.accountType !== "brand" && (
+              <Link
+                href="/pricing"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+              >
+                <CreditCard size={14} aria-hidden />
+                Plan &amp; billing
+              </Link>
+            )}
           </div>
 
           <div className="border-t border-border p-1.5 space-y-0.5">

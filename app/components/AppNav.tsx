@@ -10,7 +10,10 @@ type NavLink = { href: string; label: string; primary?: boolean; external?: bool
 export function AppNav({
   links = [],
   avatarOnMobileOnly = false,
+  account,
 }: {
+  /** Known viewer (from the workspace frame): the avatar menu skips its profile fetch. */
+  account?: { name: string | null; avatarUrl: string | null; accountType: string };
   links?: NavLink[];
   /** Workspace pages: the sidebar shows the account on desktop, so only phones need it here. */
   avatarOnMobileOnly?: boolean;
@@ -49,7 +52,7 @@ export function AppNav({
 
       {/* Avatar menu — pushed to the right */}
       <div className={`ml-auto flex items-center gap-2 ${avatarOnMobileOnly ? "md:hidden" : ""}`}>
-        <NavAvatar />
+        <NavAvatar initial={account} />
       </div>
 
       {/* Mobile menu button — only shown if there are extra links */}

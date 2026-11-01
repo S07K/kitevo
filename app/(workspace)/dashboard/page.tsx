@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { type PlatformStatsWithCharts } from "@/lib/platforms";
 import { type ProfileFormProfile } from "@/app/components/ProfileForm";
-import { DashboardSkeleton, KitSpotlightSkeleton, MetricsSkeleton, ActivitySkeleton, Skeleton, CountUp } from "@/app/components/Skeleton";
+import { DashboardSkeleton, KitSpotlightSkeleton, MetricsSkeleton, ActivitySkeleton, PanelSkeleton, Skeleton, CountUp } from "@/app/components/Skeleton";
 import { AnalyticsChart } from "@/app/components/AnalyticsChart";
 import type { KitRecord } from "@/lib/kit-storage";
 import { DealPipeline, type InquiryRecord, type DealStatus } from "@/app/components/DealPipeline";
@@ -248,11 +248,11 @@ function DashboardContent() {
       .catch(() => setKitViewsLoaded(true));
   }, []);
 
+  // Kit views don't depend on the plan: start on mount, in parallel with everything else.
   useEffect(() => {
-    if (!subscriptionLoaded) return;
     fetchKitViews(kitViewsDays);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subscriptionLoaded]);
+  }, []);
 
   useEffect(() => {
     if (!tierId || tierId === "free") return;
@@ -292,12 +292,15 @@ function DashboardContent() {
   }, [profileLoaded, profile, router]);
 
   useEffect(() => {
-    if (!subscriptionLoaded || !profileLoaded) return;
+    // Only the profile gates the page (onboarding redirect + greeting). The plan check can
+    // hit the payment provider, so plan-dependent sections wait for it on their own.
+    if (!profileLoaded) return;
     if (profile !== null && (profile.onboardingCompletedAt == null || profile.onboardingCompletedAt === "")) return;
     setLoading(false);
-  }, [subscriptionLoaded, profileLoaded, profile]);
+  }, [profileLoaded, profile]);
 
   useEffect(() => {
+    if (!subscriptionLoaded) return; // metrics keep their skeleton until the plan is known
     if (!isPaidTier) {
       // Free kits use creator-reported stats. Never fetch live platform data for them.
       setPlatformStats({});
@@ -311,7 +314,7 @@ function DashboardContent() {
       })
       .catch(() => { if (!cancelled) setPlatformStats({}); });
     return () => { cancelled = true; };
-  }, [isPaidTier]);
+  }, [isPaidTier, subscriptionLoaded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -873,7 +876,7 @@ function DashboardContent() {
               {/* ── Kits: the main kit is the spotlight; this lists the rest, or creates the first ── */}
               {kitsLoaded && (
                 <section id="kits" className="scroll-mt-24">
-                  {kits.length === 0 && allowedKits === 0 && (
+                  {subscriptionLoaded && kits.length === 0 && allowedKits === 0 && (
                     <div className="border-border max-w-md rounded-2xl border border-dashed p-8 text-center">
                       <p className="text-foreground text-base font-semibold">Choose a plan to get started</p>
                       <p className="text-muted-foreground mt-1 text-sm">Pick a plan and create your first media kit in minutes.</p>
@@ -883,7 +886,7 @@ function DashboardContent() {
                     </div>
                   )}
 
-                  {kits.length === 0 && allowedKits > 0 && (
+                  {subscriptionLoaded && kits.length === 0 && allowedKits > 0 && (
                     <div className="border-border bg-background max-w-md rounded-2xl border p-6">
                       <SectionTitle>Create your first kit</SectionTitle>
                       <p className="text-muted-foreground mt-1 text-sm">
@@ -904,7 +907,7 @@ function DashboardContent() {
                     <>
                       <div className="mb-4 flex items-center justify-between">
                         <SectionTitle>Other kits</SectionTitle>
-                        {kits.length < allowedKits && !showAddKit && (
+                        {subscriptionLoaded && kits.length < allowedKits && !showAddKit && (
                           <Button size="sm" onClick={() => setShowAddKit(true)}>
                             <Plus size={14} aria-hidden /> New kit
                           </Button>
@@ -921,7 +924,7 @@ function DashboardContent() {
                           />
                         ))}
                       </div>
-                      {kits.length >= allowedKits && !showAddKit && (
+                      {subscriptionLoaded && kits.length >= allowedKits && !showAddKit && (
                         <p className="text-muted-foreground mt-4 text-sm">
                           You&apos;re using all {allowedKits} kits on your plan.{" "}
                           <Link href="/pricing" className="text-foreground underline underline-offset-4 hover:no-underline">
@@ -934,7 +937,7 @@ function DashboardContent() {
                   )}
 
                   {/* One kit with room for more: a quiet prompt, not a second copy of the kit */}
-                  {kits.length === 1 && kits.length < allowedKits && !showAddKit && (
+                  {subscriptionLoaded && kits.length === 1 && kits.length < allowedKits && !showAddKit && (
                     <div className="border-border flex flex-col gap-3 rounded-2xl border border-dashed p-5 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
                         <SectionTitle as="h3">Add another kit</SectionTitle>
@@ -992,6 +995,9 @@ function DashboardContent() {
                 busy={{ instagram: disconnectingInstagram, youtube: disconnectingYoutube }}
               />
 
+              {!subscriptionLoaded ? (
+                <PanelSkeleton rows={1} titleWidth="w-10" />
+              ) : (
               <PlanPanel
                 tierId={tierId}
                 tierName={tierName}
@@ -1002,6 +1008,7 @@ function DashboardContent() {
                 onUpgradeToPro={upgradeToPro}
                 upgrading={upgradeToProLoading}
               />
+              )}
 
               <ReferralCard compact />
             </aside>

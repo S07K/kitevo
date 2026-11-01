@@ -3,6 +3,7 @@ import { getTierByPriceId, getVerifiedTierForPriceId, resolveVerifiedTier } from
 import type { PaymentWebhookEvent } from "@/lib/payments";
 import { trackEvent } from "@/lib/analytics";
 import { applyRefundToCommission, recordCommissionForPayment } from "@/lib/referrals";
+import { invalidateSubscription } from "@/lib/subscription-cache";
 
 /**
  * Applies one provider-agnostic payment event to our database.
@@ -32,7 +33,16 @@ async function findUserByCustomerId(
   });
 }
 
+/** Apply a payment domain event, then drop the cached status snapshot so the app reads it fresh. */
 export async function applyPaymentEvent(event: PaymentWebhookEvent): Promise<ApplyResult> {
+  try {
+    return await applyPaymentEventInner(event);
+  } finally {
+    invalidateSubscription("customerId" in event ? (event.customerId as string | null | undefined) : null);
+  }
+}
+
+async function applyPaymentEventInner(event: PaymentWebhookEvent): Promise<ApplyResult> {
   switch (event.type) {
     case "checkout.completed": {
       if (!event.customerId || !event.userId) {
