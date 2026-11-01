@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { type PlatformStatsWithCharts } from "@/lib/platforms";
 import { type ProfileFormProfile } from "../components/ProfileForm";
-import { DashboardSkeleton, CountUp } from "../components/Skeleton";
+import { DashboardSkeleton, KitSpotlightSkeleton, MetricsSkeleton, ActivitySkeleton, Skeleton, CountUp } from "../components/Skeleton";
 import { AnalyticsChart } from "../components/AnalyticsChart";
 import type { KitRecord } from "@/lib/kit-storage";
 import { DealPipeline, type InquiryRecord, type DealStatus } from "../components/DealPipeline";
@@ -576,7 +576,7 @@ function DashboardContent() {
 
   // ── Audience numbers: only tiles with real data; no data → one honest prompt ──
   const metrics = (() => {
-    if (!platformStats) return <div className="h-[104px] animate-pulse rounded-2xl bg-muted" aria-hidden />;
+    if (!platformStats) return <MetricsSkeleton />;
     type Tile = { key: string; label: string; sub: string; node: ReactNode };
     const tiles: Tile[] = [];
     const manualFollowers = !instagramStats && manual?.instagramFollowers ? manual.instagramFollowers : null;
@@ -727,7 +727,7 @@ function DashboardContent() {
             {/* ── Main column ── */}
             <div className="min-w-0 space-y-8 lg:col-span-2">
               {!kitsLoaded ? (
-                <div className="h-56 animate-pulse rounded-2xl bg-muted sm:h-48" aria-hidden />
+                <KitSpotlightSkeleton />
               ) : mainKit ? (
                 <KitSpotlight
                   kit={mainKit}
@@ -753,6 +753,7 @@ function DashboardContent() {
               {metrics}
 
               {/* ── Pipeline / Activity ── */}
+              {!showActivity && !kitViewsLoaded && kits.length > 0 && <ActivitySkeleton />}
               {showActivity && (
                 <section id="activity">
                   {isPaidTier && kitViewsLoaded ? (
@@ -796,7 +797,11 @@ function DashboardContent() {
                   {effectiveTab === "inbox" && (
                     <div role="tabpanel" id="panel-inbox" aria-labelledby="tab-inbox">
                       {!inquiriesLoaded ? (
-                        <div className="h-32 animate-pulse rounded-2xl bg-muted" aria-hidden />
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-hidden>
+                          {[0, 1, 2].map((i) => (
+                            <Skeleton key={i} className="h-28 rounded-2xl" />
+                          ))}
+                        </div>
                       ) : inquiries.length === 0 ? (
                         <div className="border-border rounded-2xl border border-dashed p-8 text-center">
                           <p className="text-foreground text-sm font-semibold">No inquiries yet</p>
@@ -810,6 +815,11 @@ function DashboardContent() {
                     </div>
                   )}
 
+                  {effectiveTab === "activity" && !kitViewsLoaded && (
+                    <div className="h-[260px]" aria-hidden>
+                      <Skeleton className="h-full w-full rounded-2xl" />
+                    </div>
+                  )}
                   {effectiveTab === "activity" && kitViewsLoaded && (
                     <div role={isPaidTier ? "tabpanel" : undefined} id="panel-activity" aria-labelledby={isPaidTier ? "tab-activity" : undefined}>
                       {kitViewsTotal === 0 ? (
@@ -1005,9 +1015,9 @@ export default function DashboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <span className="text-muted-foreground text-sm">Loading…</span>
-        </div>
+        <WorkspaceShell variant="creator" width="wide">
+          <DashboardSkeleton />
+        </WorkspaceShell>
       }
     >
       <DashboardContent />

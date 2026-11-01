@@ -9,6 +9,7 @@ import { Panel } from "@/app/components/workspace/WorkspaceShell";
 import { Button, ButtonLink, buttonClass } from "@/app/components/workspace/Button";
 import { Badge } from "@/app/components/Badge";
 import { vibeFor } from "./KitActions";
+import { Skeleton } from "@/app/components/Skeleton";
 
 /* ─── Kit spotlight ──────────────────────────────────────────────────────── */
 
@@ -252,9 +253,15 @@ export function OpportunitiesPanel({ niches }: { niches: string[] }) {
       bodyClassName="p-2"
     >
       {items === null ? (
-        <div className="space-y-2 p-3" aria-hidden>
+        <div aria-hidden>
           {[0, 1].map((i) => (
-            <div key={i} className="h-12 animate-pulse rounded-xl bg-muted" />
+            <div key={i} className="flex items-center gap-3 px-3 py-2.5">
+              <Skeleton className="h-9 w-9 rounded-lg" />
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <Skeleton className={`h-3.5 rounded-full ${i ? "w-2/5" : "w-3/5"}`} />
+                <Skeleton className="h-3 w-4/5 rounded-full" />
+              </div>
+            </div>
           ))}
         </div>
       ) : items.length === 0 ? (

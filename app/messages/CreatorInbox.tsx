@@ -6,6 +6,7 @@ import { AppNav } from "@/app/components/AppNav";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { useRealtimeStream } from "@/app/hooks/useRealtimeStream";
 import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
+import { ConversationRowSkeleton } from "@/app/components/Skeleton";
 
 type Conversation = {
   id: string;
@@ -159,7 +160,7 @@ export default function CreatorInbox() {
             <div className="flex-1 overflow-y-auto">
               {loading ? (
                 <div className="p-4 space-y-1">
-                  {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-[68px] bg-muted/50 animate-pulse rounded-lg" />)}
+                  {Array.from({ length: 5 }).map((_, i) => <ConversationRowSkeleton key={i} />)}
                 </div>
               ) : conversations.length === 0 ? (
                 <div className="px-5 py-10 text-center">

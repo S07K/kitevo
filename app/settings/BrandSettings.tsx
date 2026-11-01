@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { BrandPlanCard } from "@/app/settings/BrandPlanCard";
 import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
+import { FieldSkeleton } from "@/app/components/Skeleton";
 
 async function resizeToJpegDataUrl(file: File, maxPx = 400): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -156,8 +157,8 @@ export default function BrandSettings() {
           <BrandPlanCard />
 
           {loading ? (
-            <div className="space-y-4 animate-pulse">
-              {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-11 rounded-xl bg-muted" />)}
+            <div className="space-y-5" aria-hidden>
+              {Array.from({ length: 4 }).map((_, i) => <FieldSkeleton key={i} tall={i === 3} />)}
             </div>
           ) : (
             <div className="space-y-5">

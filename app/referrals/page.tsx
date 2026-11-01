@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PayoutDetailsCard, type PayoutProfile } from "./PayoutDetailsCard";
 import { PayoutMark } from "../components/PayoutLogos";
 import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
+import { Skeleton, FieldSkeleton } from "@/app/components/Skeleton";
 
 type Totals = Record<string, number>;
 type Summary = {
@@ -104,7 +105,7 @@ export default function ReferralsPage() {
               </button>
             </div>
           ) : (
-            <div className="mt-3 h-10 animate-pulse rounded-xl bg-muted" />
+            <Skeleton className="mt-3 h-10 rounded-xl" />
           )}
           <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
             Your media kit&apos;s &ldquo;Create yours&rdquo; link already uses it, so every brand or creator who opens your kit can become your referral.
@@ -170,7 +171,11 @@ export default function ReferralsPage() {
             onSaved={(p) => setData((d) => (d ? { ...d, payoutProfile: p } : d))}
           />
         ) : (
-          <div className="bg-background border-border mt-6 h-56 animate-pulse rounded-2xl border" />
+          <div className="bg-background border-border mt-6 space-y-5 rounded-2xl border p-5 sm:p-6" aria-hidden>
+            <Skeleton className="h-3 w-28 rounded-full" />
+            <FieldSkeleton />
+            <FieldSkeleton />
+          </div>
         )}
 
         {data && data.payouts.length > 0 && (

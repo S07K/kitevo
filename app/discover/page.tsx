@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
+import { CreatorCardSkeleton } from "@/app/components/Skeleton";
 
 const NICHES = [
   "All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel",
@@ -367,7 +368,7 @@ export default function BrandDiscover() {
           )
         ) : loading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-64 rounded-2xl border border-border bg-muted animate-pulse" />)}
+            {Array.from({ length: 8 }).map((_, i) => <CreatorCardSkeleton key={i} />)}
           </div>
         ) : creators.length === 0 ? (
           <div className="text-center py-24">

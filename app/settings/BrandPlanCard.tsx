@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getPublicTiers } from "@/config/subscriptions";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
+import { Skeleton } from "@/app/components/Skeleton";
 
 const BRAND_TIER = getPublicTiers("brand")[0];
 
@@ -105,7 +106,19 @@ export function BrandPlanCard() {
   }
 
   if (status.loading) {
-    return <div className="h-40 rounded-2xl border border-border bg-muted/40 animate-pulse" />;
+    return (
+      <div className="rounded-2xl border border-border bg-muted/20 p-5" aria-hidden>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 space-y-1.5">
+            <Skeleton className="h-4 w-28 rounded-full" />
+            <Skeleton className="h-3 w-3/5 rounded-full" />
+          </div>
+          <Skeleton className="h-8 w-28 rounded-full" />
+        </div>
+        <Skeleton className="mt-5 h-3 w-4/5 rounded-full" />
+        <Skeleton className="mt-2 h-3 w-2/3 rounded-full" />
+      </div>
+    );
   }
 
   // ── Active Brand Pro ──

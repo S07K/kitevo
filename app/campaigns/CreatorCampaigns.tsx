@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/app/components/Badge";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
+import { ListCardSkeleton } from "@/app/components/Skeleton";
 
 const NICHES = ["All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 
@@ -77,7 +78,7 @@ export default function CreatorCampaigns() {
 
         {loading ? (
           <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-32 rounded-2xl border border-border bg-muted animate-pulse" />)}
+            {Array.from({ length: 4 }).map((_, i) => <ListCardSkeleton key={i} />)}
           </div>
         ) : campaigns.length === 0 ? (
           <div className="text-center py-20 border border-dashed border-border rounded-2xl">

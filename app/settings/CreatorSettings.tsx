@@ -7,6 +7,7 @@ import { VerifiedBadge } from "../components/VerifiedBadge";
 import { signOut } from "next-auth/react";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
 import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
+import { Skeleton, FieldSkeleton } from "@/app/components/Skeleton";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileFormProfile | null>(null);
@@ -193,11 +194,14 @@ export default function ProfilePage() {
             )}
           </div>
           {loading ? (
-            <div className="space-y-4 animate-pulse">
-              <div className="h-20 w-20 rounded-full bg-muted" />
-              <div className="h-4 bg-muted rounded-full w-1/2" />
-              <div className="h-4 bg-muted rounded-full w-2/3" />
-              <div className="h-20 bg-muted rounded-xl" />
+            <div className="space-y-5" aria-hidden>
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-20 w-20 rounded-full" />
+                <Skeleton className="h-9 w-28 rounded-full" />
+              </div>
+              <FieldSkeleton />
+              <FieldSkeleton />
+              <FieldSkeleton tall />
             </div>
           ) : profile ? (
             <ProfileForm

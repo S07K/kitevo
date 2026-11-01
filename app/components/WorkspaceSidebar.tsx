@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { ArrowUpRight, Compass, CreditCard, Gift, House, Megaphone, MessageCircle, Settings } from "lucide-react";
 import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
+import { Skeleton } from "@/app/components/Skeleton";
 
 /**
  * The one navigation for the signed-in app. Every workspace page renders this instead of
@@ -152,15 +153,41 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
             </div>
           </>
         ) : (
-          <div className="space-y-2 p-4 pt-6" aria-hidden>
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-8 animate-pulse rounded-xl bg-muted" />
-            ))}
+          // Same shape as the creator nav: Home · Social (2) · Grow (1), then the footer.
+          <div className="flex flex-1 flex-col" aria-hidden>
+            <div className="flex flex-1 flex-col gap-5 p-3 pt-5">
+              <NavItemSkeleton width="w-14" />
+              {[2, 1].map((n, g) => (
+                <div key={g}>
+                  <Skeleton className="mb-2.5 ml-3 h-2.5 w-12 rounded-full" />
+                  <div className="flex flex-col gap-0.5">
+                    {Array.from({ length: n }).map((_, i) => (
+                      <NavItemSkeleton key={i} width={i ? "w-20" : "w-24"} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col gap-0.5 border-t border-border p-3">
+              {["w-24", "w-24", "w-16"].map((w, i) => (
+                <NavItemSkeleton key={i} width={w} />
+              ))}
+            </div>
           </div>
         )}
       </aside>
 
       {/* Mobile bottom tabs */}
+      {!variant && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border bg-background/95 md:hidden" aria-hidden>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex flex-1 flex-col items-center justify-center gap-1.5 py-2.5">
+              <Skeleton className="h-[17px] w-[17px] rounded-md" />
+              <Skeleton className="h-2.5 w-10 rounded-full" />
+            </div>
+          ))}
+        </div>
+      )}
       {variant && (
         <nav className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border bg-background/95 backdrop-blur-md md:hidden" aria-label="Workspace">
           {nav.mobile.map((it) => {
@@ -186,6 +213,16 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
         </nav>
       )}
     </>
+  );
+}
+
+/** Matches NavItem's box: px-3 py-2, 17px icon, label. */
+function NavItemSkeleton({ width }: { width: string }) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-xl px-3 py-2">
+      <Skeleton className="h-[17px] w-[17px] shrink-0 rounded-md" />
+      <Skeleton className={`h-3.5 ${width} rounded-full`} />
+    </div>
   );
 }
 

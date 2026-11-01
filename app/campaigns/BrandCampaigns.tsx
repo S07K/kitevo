@@ -7,6 +7,7 @@ import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { Badge } from "@/app/components/Badge";
 import { DatePicker } from "@/app/components/DatePicker";
 import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
+import { Skeleton, ListCardSkeleton } from "@/app/components/Skeleton";
 
 const NICHES = ["Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 const BUDGET_OPTIONS = ["< $500", "$500–$2k", "$2k–$10k", "$10k–$50k", "$50k+"];
@@ -302,7 +303,7 @@ export default function BrandCampaigns() {
         {/* Campaign list */}
         {loading ? (
           <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-36 rounded-2xl border border-border bg-muted animate-pulse" />)}
+            {Array.from({ length: 3 }).map((_, i) => <ListCardSkeleton key={i} height="h-36" />)}
           </div>
         ) : campaigns.length === 0 ? (
           <div className="text-center py-24 border border-dashed border-border rounded-2xl">
@@ -400,7 +401,7 @@ export default function BrandCampaigns() {
                     <div className="border-t border-border bg-muted/20">
                       {loadingApps ? (
                         <div className="p-6 space-y-3">
-                          {Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />)}
+                          {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
                         </div>
                       ) : applications.length === 0 ? (
                         <div className="p-8 text-center">
