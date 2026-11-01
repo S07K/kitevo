@@ -3,7 +3,7 @@
 A running checklist for the work currently on feature branches. Updated as each branch
 lands. Tick items off as you go; delete the section once it's live.
 
-**Last updated:** 2026-11-01 (onboarding added)
+**Last updated:** 2026-11-01 (dashboard polish added)
 
 ---
 
@@ -19,8 +19,9 @@ The branches are stacked; each contains the one before it.
 | 4 | `feat/onboarding` | 3-step onboarding with live kit preview, auto-created kit, no plan step; admin payouts page without CSV; username rules |
 | 5 | `feat/workspace-sidebar` | One sidebar for the whole app: dashboard top links removed; Campaigns/Messages grouped under Social; Plan & billing, Settings, View my kit in the sidebar footer |
 | 6 | `feat/workspace-ui` | One route per tab (`/campaigns`, `/messages`, `/discover`, `/settings`; old URLs 301), shared page shell/headers on every tab, dashboard redesigned as a creator workspace |
+| 7 | `feat/dashboard-polish` | Dashboard design-critique fixes: main kit shown once (spotlight + "…" menu), honest audience-numbers prompt, banners in one place, shared `Button`/`Modal`, accessible dialogs/tabs, dark-mode fixes. No deploy steps |
 
-Merge the last branch (`feat/workspace-ui`) and it brings everything above it.
+Merge the last branch (`feat/dashboard-polish`) and it brings everything above it.
 
 ---
 

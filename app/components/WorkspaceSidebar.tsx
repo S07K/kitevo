@@ -123,7 +123,7 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
             <nav className="flex flex-1 flex-col gap-5 overflow-y-auto p-3 pt-5" aria-label="Workspace">
               {nav.sections.map((s, i) => (
                 <div key={s.title ?? i}>
-                  {s.title && <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{s.title}</p>}
+                  {s.title && <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{s.title}</p>}
                   <div className="flex flex-col gap-0.5">
                     {s.items.map((it) => (
                       <NavItem key={it.href} item={it} active={isActive(it)} />
@@ -131,8 +131,9 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
                   </div>
                 </div>
               ))}
-              {/* Referral nudge — the program is the main growth loop */}
-              {pathname !== "/referrals" && (
+              {/* Referral nudge — the program is the main growth loop. Hidden where the page
+                  already promotes it (/referrals itself, and the dashboard's referral card). */}
+              {pathname !== "/referrals" && pathname !== "/dashboard" && (
                 <Link
                   href="/referrals"
                   className="mx-1 mt-1 rounded-xl border border-border bg-muted/40 p-3 text-xs transition-colors hover:border-foreground/30"
@@ -173,7 +174,7 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
                 }`}
               >
                 {it.badge ? (
-                  <span className="absolute right-1/4 top-1.5 flex h-4 min-w-4 translate-x-2 items-center justify-center rounded-full bg-blue-500 px-1 text-[9px] font-bold text-white">
+                  <span className="absolute right-1/4 top-1.5 flex h-4 min-w-4 translate-x-2 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">
                     {it.badge > 9 ? "9+" : it.badge}
                   </span>
                 ) : null}
@@ -199,7 +200,7 @@ function NavItem({ item, active }: { item: Item; active: boolean }) {
         <span className="truncate">{item.label}</span>
       </span>
       {item.badge ? (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-bold text-white">
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-bold text-white">
           {item.badge > 9 ? "9+" : item.badge}
         </span>
       ) : null}

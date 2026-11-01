@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { SiInstagram, SiInstagramHex, SiYoutube, SiYoutubeHex } from "@icons-pack/react-simple-icons";
 import { ArrowRight, ArrowUpRight, Check, CircleDashed, Copy, Eye, PenLine, Sparkles } from "lucide-react";
 import { AvatarImg } from "@/app/components/AvatarImg";
 import { Panel } from "@/app/components/workspace/WorkspaceShell";
+import { Button, ButtonLink, buttonClass } from "@/app/components/workspace/Button";
+import { Badge } from "@/app/components/Badge";
+import { vibeFor } from "./KitActions";
 
 /* ─── Kit spotlight ──────────────────────────────────────────────────────── */
 
@@ -19,16 +22,20 @@ export function KitSpotlight({
   viewsThisWeek,
   viewsLoaded,
   kitCount,
+  menu,
 }: {
-  kit: { id: string; slug: string; name: string };
+  kit: { id: string; slug: string; name: string; appearance?: unknown; hasPassword?: boolean };
   name: string;
   avatarUrl: string | null;
   niches: string[];
   viewsThisWeek: number;
   viewsLoaded: boolean;
   kitCount: number;
+  /** Overflow menu (share, URL, password, delete). */
+  menu?: ReactNode;
 }) {
   const [copied, setCopied] = useState(false);
+  const vibe = vibeFor(kit);
   // Rendered only after the dashboard's client-side data load, so window exists.
   const [origin] = useState(() => (typeof window !== "undefined" ? window.location.origin : ""));
   const url = `${origin}/kit/${kit.slug}`;
@@ -44,25 +51,41 @@ export function KitSpotlight({
     }
   };
 
+  // No overflow-hidden: the "…" menu drops out of the card, so corners are rounded per side.
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-background">
+    <section className="rounded-2xl border border-border bg-background">
       <div className="flex flex-col sm:flex-row">
         {/* Poster */}
-        <div className="relative flex shrink-0 flex-col items-center justify-center bg-gradient-to-br from-muted via-muted/60 to-background px-8 py-8 sm:w-60">
-          <AvatarImg
-            src={avatarUrl}
-            alt=""
-            className="h-16 w-16 rounded-full object-cover ring-4 ring-background"
-            fallback={
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background font-display text-xl text-muted-foreground ring-4 ring-background">
-                {initials}
-              </div>
-            }
-          />
-          <p className="mt-3 max-w-full truncate font-display text-lg font-semibold tracking-tight text-foreground">{name || "Your name"}</p>
+        {/* Poster in the kit's own vibe, so it reads as the kit, not a generic card */}
+        <div
+          className="relative flex shrink-0 flex-col items-center justify-center rounded-t-[15px] px-8 py-8 sm:w-60 sm:rounded-l-[15px] sm:rounded-tr-none"
+          style={{ backgroundColor: vibe.bg, color: vibe.fg }}
+        >
+          <span
+            className="absolute left-3 top-3 rounded-full px-2 py-0.5 text-[11px] font-medium"
+            style={{ backgroundColor: vibe.fg + "1f" }}
+          >
+            {vibe.label}
+          </span>
+          <span className="flex rounded-full p-1" style={{ backgroundColor: vibe.fg + "26" }}>
+            <AvatarImg
+              src={avatarUrl}
+              alt=""
+              className="h-16 w-16 rounded-full object-cover"
+              fallback={
+                <span
+                  className="flex h-16 w-16 items-center justify-center rounded-full font-display text-xl"
+                  style={{ backgroundColor: vibe.fg + "1f" }}
+                >
+                  {initials}
+                </span>
+              }
+            />
+          </span>
+          <p className="mt-3 max-w-full truncate font-display text-lg font-semibold tracking-tight">{name || "Your name"}</p>
           <div className="mt-2 flex flex-wrap justify-center gap-1">
             {niches.slice(0, 3).map((n) => (
-              <span key={n} className="rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <span key={n} className="rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ backgroundColor: vibe.fg + "1f" }}>
                 {n}
               </span>
             ))}
@@ -73,12 +96,12 @@ export function KitSpotlight({
         <div className="flex min-w-0 flex-1 flex-col justify-between gap-5 p-5 sm:p-6">
           <div>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 px-2 py-0.5 text-[11px] font-medium text-green-700 dark:text-green-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-500" aria-hidden /> Live
-              </span>
-              {kitCount > 1 && <span className="text-xs text-muted-foreground">1 of {kitCount} kits</span>}
+              <Badge variant="success" dot>Live</Badge>
+              {kit.hasPassword && <Badge variant="warning">Private</Badge>}
+              {kitCount > 1 && <span className="text-xs text-muted-foreground">Main kit · 1 of {kitCount}</span>}
+              {menu && <div className="-my-1 -mr-2 ml-auto">{menu}</div>}
             </div>
-            <h2 className="mt-2 truncate text-xl font-semibold tracking-tight text-foreground">{kit.name}</h2>
+            <h2 className="mt-2 truncate font-display text-xl font-semibold tracking-tight text-foreground">{kit.name}</h2>
             <button
               type="button"
               onClick={copy}
@@ -86,37 +109,25 @@ export function KitSpotlight({
               title="Copy link"
             >
               <span className="truncate">{url.replace(/^https?:\/\//, "") || `/kit/${kit.slug}`}</span>
-              {copied ? <Check size={12} className="shrink-0 text-green-600" /> : <Copy size={12} className="shrink-0 opacity-60 group-hover:opacity-100" />}
+              {copied ? <Check size={12} className="shrink-0 text-green-600 dark:text-green-400" aria-hidden /> : <Copy size={12} className="shrink-0 opacity-60 group-hover:opacity-100" aria-hidden />}
             </button>
           </div>
 
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-xs text-muted-foreground">Views this week</p>
-              <p className="mt-0.5 text-2xl font-semibold tabular-nums tracking-tight text-foreground">{viewsLoaded ? viewsThisWeek : "—"}</p>
+              <p className="text-xs text-muted-foreground">{kitCount > 1 ? "Views this week · all kits" : "Views this week"}</p>
+              <p className="mt-0.5 font-display text-2xl font-semibold tabular-nums tracking-tight text-foreground">{viewsLoaded ? viewsThisWeek.toLocaleString() : "—"}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link
-                href={`/kit/edit?id=${encodeURIComponent(kit.id)}`}
-                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-85"
-              >
+              <ButtonLink variant="primary" href={`/kit/edit?id=${encodeURIComponent(kit.id)}`}>
                 <PenLine size={14} aria-hidden /> Edit kit
-              </Link>
-              <a
-                href={`/kit/${kit.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-              >
+              </ButtonLink>
+              <a href={`/kit/${kit.slug}`} target="_blank" rel="noopener noreferrer" className={buttonClass()}>
                 <Eye size={14} aria-hidden /> View
               </a>
-              <button
-                type="button"
-                onClick={copy}
-                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-              >
+              <Button onClick={copy} aria-live="polite">
                 {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />} {copied ? "Copied" : "Copy link"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -127,10 +138,29 @@ export function KitSpotlight({
 
 /* ─── Setup checklist ────────────────────────────────────────────────────── */
 
-export type ChecklistItem = { id: string; label: string; done: boolean; href?: string; onClick?: () => void; cta: string };
+export type ChecklistItem = {
+  id: string;
+  label: string;
+  done: boolean;
+  href?: string;
+  onClick?: () => void | Promise<void>;
+  cta: string;
+  /** Shown in place of the CTA for a moment after onClick, e.g. "Copied". */
+  feedback?: string;
+};
 
 /** "Finish your kit" progress list. Hides itself once everything is done. */
 export function SetupChecklist({ items }: { items: ChecklistItem[] }) {
+  const [flash, setFlash] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  const run = async (it: ChecklistItem) => {
+    await it.onClick?.();
+    if (!it.feedback) return;
+    setFlash(it.id);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setFlash(null), 2000);
+  };
   const done = items.filter((i) => i.done).length;
   if (done === items.length) return null;
   const pct = Math.round((done / items.length) * 100);
@@ -155,7 +185,14 @@ export function SetupChecklist({ items }: { items: ChecklistItem[] }) {
               <span className={`min-w-0 flex-1 truncate text-sm ${it.done ? "text-muted-foreground line-through decoration-muted-foreground/40" : "text-foreground"}`}>
                 {it.label}
               </span>
-              {!it.done && <span className="shrink-0 text-xs font-medium text-muted-foreground group-hover:text-foreground">{it.cta} →</span>}
+              {!it.done &&
+                (flash === it.id ? (
+                  <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400" aria-live="polite">
+                    <Check size={12} aria-hidden /> {it.feedback}
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-xs font-medium text-muted-foreground group-hover:text-foreground">{it.cta} →</span>
+                ))}
             </>
           );
           const cls = "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted/60";
@@ -168,7 +205,7 @@ export function SetupChecklist({ items }: { items: ChecklistItem[] }) {
                   {inner}
                 </Link>
               ) : (
-                <button type="button" onClick={it.onClick} className={cls}>
+                <button type="button" onClick={() => run(it)} className={cls}>
                   {inner}
                 </button>
               )}
@@ -304,19 +341,20 @@ export function ConnectionsPanel({
               type="button"
               onClick={r.off}
               disabled={busy[r.key]}
-              className="h-8 shrink-0 rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+              aria-label={`Disconnect ${r.name}`}
+              className={buttonClass({ variant: "ghost", size: "sm" })}
             >
-              {busy[r.key] ? "…" : "Disconnect"}
+              {busy[r.key] ? "Disconnecting…" : "Disconnect"}
             </button>
           ) : (
-            <a href={r.href} className="inline-flex h-8 shrink-0 items-center rounded-full bg-foreground px-3.5 text-xs font-medium text-background transition-opacity hover:opacity-85">
+            <a href={r.href} aria-label={`Connect ${r.name}`} className={buttonClass({ variant: "secondary", size: "sm" })}>
               Connect
             </a>
           )}
         </div>
       ))}
       {!isPaidTier && (
-        <p className="px-3 pb-2 pt-1 text-[11px] leading-relaxed text-muted-foreground">
+        <p className="px-3 pb-2 pt-1 text-xs leading-relaxed text-muted-foreground">
           Live stats on your public kit are a Starter feature. Connect now; they appear when you upgrade.
         </p>
       )}
@@ -354,7 +392,7 @@ export function PlanPanel({
   return (
     <Panel title="Plan">
       <div className="flex items-baseline justify-between">
-        <p className="text-lg font-semibold text-foreground">{tierName ?? "Free"}</p>
+        <p className="font-display text-lg font-semibold text-foreground">{tierName ?? "Free"}</p>
         <p className="text-xs tabular-nums text-muted-foreground">
           {kitsUsed}/{kitsAllowed} kit{kitsAllowed === 1 ? "" : "s"}
         </p>
@@ -363,18 +401,13 @@ export function PlanPanel({
         <>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{next.blurb}</p>
           {"href" in next && next.href ? (
-            <Link href={next.href} className="mt-4 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-foreground text-sm font-medium text-background transition-opacity hover:opacity-85">
+            <ButtonLink variant="primary" href={next.href} className="mt-4 w-full">
               {next.label} <ArrowUpRight size={14} aria-hidden />
-            </Link>
+            </ButtonLink>
           ) : (
-            <button
-              type="button"
-              onClick={next.action}
-              disabled={upgrading}
-              className="mt-4 inline-flex h-9 w-full items-center justify-center rounded-full bg-foreground text-sm font-medium text-background transition-opacity hover:opacity-85 disabled:opacity-50"
-            >
+            <Button variant="primary" onClick={next.action} disabled={upgrading} className="mt-4 w-full">
               {upgrading ? "Upgrading…" : next.label}
-            </button>
+            </Button>
           )}
         </>
       ) : (

@@ -62,6 +62,20 @@ export function PageHeader({
   );
 }
 
+/**
+ * Section heading inside a page (below the serif H1). Sentence-case 14px semibold so
+ * sections read as sections; the 11px uppercase eyebrow is reserved for the page eyebrow
+ * and metric labels.
+ */
+export function SectionTitle({ children, as: Tag = "h2" }: { children: ReactNode; as?: "h2" | "h3" }) {
+  return <Tag className="text-sm font-semibold tracking-tight text-foreground">{children}</Tag>;
+}
+
+/** 11px uppercase label: page eyebrow and metric-tile labels only. */
+export function Eyebrow({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground ${className}`}>{children}</p>;
+}
+
 /** Standard content card. */
 export function Panel({
   title,
@@ -80,7 +94,7 @@ export function Panel({
     <section className={`overflow-hidden rounded-2xl border border-border bg-background ${className}`}>
       {(title || action) && (
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5 sm:px-6">
-          {title && <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{title}</h2>}
+          {title && <SectionTitle>{title}</SectionTitle>}
           {action}
         </div>
       )}
