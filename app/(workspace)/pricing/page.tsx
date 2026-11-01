@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { AppNav } from "../components/AppNav";
-import { WorkspaceShell, PageHeader } from "../components/workspace/WorkspaceShell";
+import { AppNav } from "@/app/components/AppNav";
+import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
 import { CanceledMessage } from "./CanceledMessage";
 import { PricingContent } from "./PricingContent";
 

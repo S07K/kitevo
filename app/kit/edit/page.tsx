@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 import { AppNav } from "@/app/components/AppNav";
-import { KitEditor } from "@/app/dashboard/KitEditor";
+import { KitEditor } from "./KitEditor";
 
 function KitEditContent() {
   const searchParams = useSearchParams();

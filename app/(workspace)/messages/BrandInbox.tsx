@@ -3,10 +3,9 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { AppNav } from "@/app/components/AppNav";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { useRealtimeStream } from "@/app/hooks/useRealtimeStream";
-import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
+import { useInboxBadge } from "@/app/components/workspace/WorkspaceFrame";
 import { ConversationRowSkeleton } from "@/app/components/Skeleton";
 
 type Conversation = {
@@ -134,12 +133,13 @@ function BrandInboxContent() {
   const activeConvo = conversations.find((c) => c.id === activeId);
 
 
-  return (
-    <div className="h-screen flex flex-col overflow-hidden bg-background">
-      <AppNav avatarOnMobileOnly />
-      <WorkspaceSidebar variant="brand" inboxBadge={unreadCount} />
+  // The sidebar lives in the persistent workspace frame; keep its badge live from here.
+  useInboxBadge(unreadCount);
 
-      <div className="flex-1 overflow-hidden mt-[57px] md:ml-56 pb-[52px] md:pb-0">
+  return (
+    <div className="h-[100dvh] flex flex-col overflow-hidden bg-background">
+
+      <div className="flex-1 overflow-hidden mt-[57px] pb-[52px] md:pb-0">
         <div className="flex h-full border-t border-border bg-background">
           {/* Sidebar */}
           <div className={`${activeId ? "hidden md:flex" : "flex"} flex-col w-full md:w-72 md:shrink-0 border-r border-border`}>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PayoutDetailsCard, type PayoutProfile } from "./PayoutDetailsCard";
-import { PayoutMark } from "../components/PayoutLogos";
+import { PayoutMark } from "@/app/components/PayoutLogos";
 import { Check, Copy, Link2, Sparkles, Wallet } from "lucide-react";
 import { WorkspaceShell, PageHeader, Panel, Eyebrow } from "@/app/components/workspace/WorkspaceShell";
 import { Button } from "@/app/components/workspace/Button";

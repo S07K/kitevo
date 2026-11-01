@@ -21,8 +21,9 @@ The branches are stacked; each contains the one before it.
 | 6 | `feat/workspace-ui` | One route per tab (`/campaigns`, `/messages`, `/discover`, `/settings`; old URLs 301), shared page shell/headers on every tab, dashboard redesigned as a creator workspace |
 | 7 | `feat/dashboard-polish` | Design-critique pass across the workspace: dashboard (main kit shown once via spotlight + "…" menu, verified tick, honest audience-numbers prompt, banners in one place, ARIA tabs), shimmer skeletons matching every layout, redesigned profile + brand settings forms with unsaved-changes save bar, two-column wide layout for Settings, Invite & earn and Campaigns (feed, manager, detail), shared `Button`/`Modal`/`AccountPanels`, dark-mode fixes. No deploy steps. *(Committed on `feat/workspace-ui`; `feat/dashboard-polish` points at the same commit.)* |
 | 8 | `feat/admin-ops` | `/admin` user lookup, comp + plan resync controls, payment webhook log with replay, admin audit log. Adds migration `20261101130000_admin_ops` (new tables only). *(Merged into `feat/workspace-ui`.)* |
+| 9 | `feat/persistent-shell` | Workspace routes moved into the `app/(workspace)` route group (URLs unchanged) with one persistent layout: top bar + sidebar render once, tab clicks swap only the page, plus an instant loading state. No deploy steps. *(Branched from `feat/workspace-ui`.)* |
 
-Merge `feat/workspace-ui`: it now contains everything above it, including dashboard polish and admin ops.
+Merge `feat/persistent-shell` (or `feat/workspace-ui` without it): each contains everything above it, including dashboard polish and admin ops.
 
 ---
 

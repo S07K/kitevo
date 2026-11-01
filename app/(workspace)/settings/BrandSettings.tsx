@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { Building2, Camera, Check, ExternalLink, Loader2, Trash2, Upload } from "lucide-react";
-import { BrandPlanCard } from "@/app/settings/BrandPlanCard";
+import { BrandPlanCard } from "./BrandPlanCard";
 import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/WorkspaceShell";
 import { Button } from "@/app/components/workspace/Button";
 import { Skeleton, FieldSkeleton } from "@/app/components/Skeleton";
@@ -181,6 +181,8 @@ export default function BrandSettings() {
       if (res.ok) {
         setSavedForm(form);
         setSaved(true);
+        // The sidebar persists across tabs; for brands its name is the company name.
+        window.dispatchEvent(new CustomEvent("kitevo:profile-updated", { detail: { name: form.companyName.trim() } }));
         setTimeout(() => setSaved(false), 2500);
       } else {
         const d = await res.json().catch(() => ({}));

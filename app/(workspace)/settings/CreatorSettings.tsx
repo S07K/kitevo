@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
-import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm";
-import { VerifiedBadge } from "../components/VerifiedBadge";
+import { ProfileForm, type ProfileFormProfile } from "@/app/components/ProfileForm";
+import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
 import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/WorkspaceShell";
 import { Skeleton, FieldSkeleton, PanelSkeleton } from "@/app/components/Skeleton";
@@ -87,6 +87,8 @@ export default function ProfilePage() {
         setProfile((p) => (p ? { ...p, ...data, ...updated } : null));
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+        // The sidebar persists across tabs; tell it the new display name.
+        window.dispatchEvent(new CustomEvent("kitevo:profile-updated", { detail: { name: updated.name ?? data.name ?? null } }));
       } else {
         const err = await res.json().catch(() => ({}));
         setSaveError(err.error ?? "Failed to save profile");

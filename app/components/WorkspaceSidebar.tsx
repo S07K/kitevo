@@ -29,17 +29,33 @@ type Account = { name: string | null; email: string | null; avatarUrl: string | 
 
 const ICON = { size: 17, strokeWidth: 1.8, "aria-hidden": true } as const;
 
-export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant?: Variant; inboxBadge?: number }) {
+/** What the server already knows about the viewer (from the workspace layout). */
+export type SidebarViewer = { accountType: Variant; name: string | null; email: string | null; avatarUrl: string | null; isAdmin: boolean };
+
+export function WorkspaceSidebar({
+  viewer,
+  variant: variantProp,
+  inboxBadge,
+}: {
+  /** From the server layout: no profile/admin fetch and no skeleton on first paint. */
+  viewer?: SidebarViewer;
+  variant?: Variant;
+  /** Live unread count while the Messages page is open (it knows better than our first fetch). */
+  inboxBadge?: number;
+}) {
   const pathname = usePathname() ?? "";
-  const [variant, setVariant] = useState<Variant | null>(variantProp ?? null);
+  const [variant, setVariant] = useState<Variant | null>(variantProp ?? viewer?.accountType ?? null);
   const [unread, setUnread] = useState(0);
   const [kitSlug, setKitSlug] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [account, setAccount] = useState<Account | null>(null);
+  const [isAdmin, setIsAdmin] = useState(viewer?.isAdmin ?? false);
+  const [account, setAccount] = useState<Account | null>(
+    viewer ? { name: viewer.name, email: viewer.email, avatarUrl: viewer.avatarUrl, accountType: viewer.accountType } : null,
+  );
 
-  // Profile for the account row (and the variant, when the page didn't pass one).
+  // Without a server viewer (legacy callers), load the profile + admin flag client-side.
   // For brands the API already returns companyName as `name` and the logo as `avatarUrl`.
   useEffect(() => {
+    if (viewer) return;
     fetch("/api/me/profile", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => {
@@ -50,32 +66,40 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
       .catch(() => {
         if (!variantProp) setVariant("creator");
       });
-  }, [variantProp]);
-
-  // Avatar/logo uploads elsewhere fire this; keep the row in sync without a refetch.
-  useEffect(() => {
-    const onUpdate = (e: Event) => {
-      const url = (e as CustomEvent<{ avatarUrl: string }>).detail?.avatarUrl;
-      setAccount((a) => (a ? { ...a, avatarUrl: url || null } : a));
-    };
-    window.addEventListener("kitevo:avatar-updated", onUpdate);
-    return () => window.removeEventListener("kitevo:avatar-updated", onUpdate);
-  }, []);
-
-  // Admin-only footer link. Non-admins get { admin: false } and never see it.
-  useEffect(() => {
     fetch("/api/me/admin", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setIsAdmin(d?.admin === true))
       .catch(() => {});
+  }, [viewer, variantProp]);
+
+  // Avatar/logo uploads and profile saves elsewhere fire these; keep the row in sync without a refetch.
+  useEffect(() => {
+    const onAvatar = (e: Event) => {
+      const url = (e as CustomEvent<{ avatarUrl: string }>).detail?.avatarUrl;
+      setAccount((a) => (a ? { ...a, avatarUrl: url || null } : a));
+    };
+    const onProfile = (e: Event) => {
+      const name = (e as CustomEvent<{ name?: string | null }>).detail?.name;
+      if (name !== undefined) setAccount((a) => (a ? { ...a, name } : a));
+    };
+    window.addEventListener("kitevo:avatar-updated", onAvatar);
+    window.addEventListener("kitevo:profile-updated", onProfile);
+    return () => {
+      window.removeEventListener("kitevo:avatar-updated", onAvatar);
+      window.removeEventListener("kitevo:profile-updated", onProfile);
+    };
   }, []);
 
+  // Unread count: fetched once (the sidebar now persists across tabs). While Messages is open
+  // it passes the live number; remember it so the badge stays right after leaving.
   useEffect(() => {
-    if (inboxBadge !== undefined) return;
     fetch("/api/social/conversations", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => Array.isArray(d) && setUnread(d.filter((c: { unread?: boolean }) => c.unread).length))
       .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (inboxBadge !== undefined) setUnread(inboxBadge);
   }, [inboxBadge]);
 
   useEffect(() => {

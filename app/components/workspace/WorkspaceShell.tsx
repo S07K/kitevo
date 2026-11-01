@@ -1,42 +1,12 @@
 import type { ReactNode } from "react";
-import { AppNav } from "@/app/components/AppNav";
-import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
 
 /**
- * The frame every workspace tab renders in: top bar, sidebar, one canvas colour, one
- * content width scale and one vertical rhythm. Pages supply only their content (usually
- * starting with <PageHeader>), so moving between tabs feels like one app.
- *
- * width: "narrow" forms/settings (max-w-3xl) · "default" lists/feeds (max-w-5xl) ·
- *        "wide" dashboards (max-w-6xl) · "full" edge-to-edge tools like Messages.
+ * Workspace page building blocks. The frame (top bar + sidebar) lives in
+ * app/(workspace)/layout.tsx and persists across tabs; each page renders <WorkspaceShell>
+ * (just its content area, see WorkspaceMain.tsx) and starts with <PageHeader>.
+ * PageHeader / Panel / SectionTitle / Eyebrow stay server-safe so server pages can use them.
  */
-const WIDTH = { narrow: "max-w-3xl", default: "max-w-5xl", wide: "max-w-6xl", full: "" } as const;
-
-export function WorkspaceShell({
-  variant,
-  inboxBadge,
-  width = "default",
-  children,
-}: {
-  variant?: "creator" | "brand";
-  inboxBadge?: number;
-  width?: keyof typeof WIDTH;
-  children: ReactNode;
-}) {
-  return (
-    <div className="min-h-screen bg-muted/30">
-      <AppNav avatarOnMobileOnly />
-      <WorkspaceSidebar variant={variant} inboxBadge={inboxBadge} />
-      <div className="md:pl-56">
-        {width === "full" ? (
-          <main className="pt-[57px]">{children}</main>
-        ) : (
-          <main className={`mx-auto ${WIDTH[width]} px-5 pb-28 pt-[89px] sm:px-8 md:pb-16 lg:px-10`}>{children}</main>
-        )}
-      </div>
-    </div>
-  );
-}
+export { WorkspaceShell } from "./WorkspaceMain";
 
 /** Page title block shared by every tab: eyebrow (section), serif title, one-line description, actions. */
 export function PageHeader({
