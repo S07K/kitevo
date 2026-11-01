@@ -20,7 +20,7 @@ function usd(cents: number) {
  * there's activity, the creator's earnings. Always visible — referrals are the main
  * growth loop.
  */
-export function ReferralCard() {
+export function ReferralCard({ compact = false }: { compact?: boolean } = {}) {
   const [data, setData] = useState<Summary | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -45,8 +45,38 @@ export function ReferralCard() {
     }
   };
 
+  if (compact) {
+    return (
+      <div className="overflow-hidden rounded-2xl bg-foreground p-5 text-background">
+        <div className="flex items-center gap-2">
+          <Gift size={16} strokeWidth={1.8} aria-hidden />
+          <p className="text-sm font-semibold">Earn {REFERRAL_RATE_PCT}% for a year</p>
+        </div>
+        <p className="mt-1.5 text-xs leading-relaxed opacity-70">
+          {data && earned > 0
+            ? `${usd(earned)} earned from ${data.referredCount} invite${data.referredCount === 1 ? "" : "s"}.`
+            : "Invite creators with your link. When they upgrade, you get paid every month."}
+        </p>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={copy}
+            disabled={!data}
+            className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-background text-xs font-medium text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+            {copied ? "Copied" : "Copy invite link"}
+          </button>
+          <Link href="/referrals" className="inline-flex h-9 items-center rounded-full px-3 text-xs font-medium opacity-80 transition-opacity hover:opacity-100">
+            Earnings
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="mb-8 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-muted/60 to-background">
+    <div className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-muted/60 to-background">
       <div className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-4">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-foreground text-background">

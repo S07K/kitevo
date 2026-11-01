@@ -57,7 +57,7 @@ export function MarketingNav(): ReactNode {
   }, [menuOpen]);
 
   const close = () => setMenuOpen(false);
-  const dashHref = user?.accountType === "brand" ? "/brand" : "/dashboard";
+  const dashHref = user?.accountType === "brand" ? "/discover" : "/dashboard";
   const displayName = user?.name ?? user?.username ?? "Dashboard";
 
   return (

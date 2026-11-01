@@ -3,11 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AppNav } from "@/app/components/AppNav";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { Badge } from "@/app/components/Badge";
 import { DatePicker } from "@/app/components/DatePicker";
-import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
+import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
 
 const NICHES = ["Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 const BUDGET_OPTIONS = ["< $500", "$500–$2k", "$2k–$10k", "$10k–$50k", "$50k+"];
@@ -159,23 +158,17 @@ export default function BrandCampaigns() {
     });
     if (res.ok) {
       const d = await res.json();
-      router.push(`/brand/inbox?convo=${d.conversationId}`);
+      router.push(`/messages?convo=${d.conversationId}`);
     }
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppNav />
-      <WorkspaceSidebar variant="brand" />
-
-      <main className="md:ml-56 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
-        <div className="mx-auto max-w-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Campaigns</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">{campaigns.length} campaign{campaigns.length !== 1 ? "s" : ""}</p>
-          </div>
+    <WorkspaceShell variant="brand">
+        <PageHeader
+          eyebrow="Campaigns"
+          title="Your campaigns"
+          description={`${campaigns.length} campaign${campaigns.length !== 1 ? "s" : ""}. Post a brief and creators apply with their kit.`}
+          actions={
           <button
             type="button"
             onClick={handleNewCampaign}
@@ -186,14 +179,15 @@ export default function BrandCampaigns() {
             </svg>
             New campaign
           </button>
-        </div>
+          }
+        />
 
         {actionError && (
           <div className="mb-4 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/20 px-4 py-3">
             <p className="text-sm text-red-600 dark:text-red-400">
               {actionError}
               {actionError.includes("upgrade to run more") && (
-                <Link href="/brand/settings" className="ml-1 font-semibold underline hover:no-underline">Upgrade to Brand Pro</Link>
+                <Link href="/settings" className="ml-1 font-semibold underline hover:no-underline">Upgrade to Brand Pro</Link>
               )}
             </p>
           </div>
@@ -210,7 +204,7 @@ export default function BrandCampaigns() {
                   Free brands can keep <strong>1 campaign open</strong> at a time. Close your current campaign to post a new one, or upgrade to Brand Pro for unlimited open campaigns.
                 </p>
                 <div className="flex items-center gap-2 mt-4">
-                  <Link href="/brand/settings" className="h-9 px-4 inline-flex items-center rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity">
+                  <Link href="/settings" className="h-9 px-4 inline-flex items-center rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity">
                     Upgrade to Brand Pro
                   </Link>
                   <button type="button" onClick={() => setShowCapNotice(false)} className="h-9 px-4 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -233,7 +227,7 @@ export default function BrandCampaigns() {
               <div className="text-xs text-red-500">
                 {formError}
                 {formError.includes("upgrade to run more") && (
-                  <Link href="/brand/settings" className="ml-1 font-semibold underline hover:no-underline">Upgrade to Brand Pro</Link>
+                  <Link href="/settings" className="ml-1 font-semibold underline hover:no-underline">Upgrade to Brand Pro</Link>
                 )}
               </div>
             )}
@@ -491,8 +485,6 @@ export default function BrandCampaigns() {
             })}
           </div>
         )}
-        </div>
-      </main>
-    </div>
+    </WorkspaceShell>
   );
 }

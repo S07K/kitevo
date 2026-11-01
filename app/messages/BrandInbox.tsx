@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AppNav } from "@/app/components/AppNav";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
@@ -9,15 +10,7 @@ import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
 
 type Conversation = {
   id: string;
-  other: {
-    id: string;
-    name: string | null;
-    username: string | null;
-    avatarUrl: string | null;
-    accountType: string;
-    verifiedTier: string | null;
-    brandProfile: { companyName: string; logoUrl: string | null } | null;
-  } | null;
+  other: { id: string; name: string | null; username: string | null; avatarUrl: string | null; verifiedTier: string | null } | null;
   lastMessage: { body: string; at: string; mine: boolean } | null;
   unread: boolean;
   lastReadAt: string | null;
@@ -28,13 +21,14 @@ type Message = {
   body: string;
   createdAt: string;
   senderId: string;
-  sender: { name: string | null; avatarUrl: string | null; accountType: string; verifiedTier: string | null };
+  sender: { name: string | null; avatarUrl: string | null };
 };
 
-export default function CreatorInbox() {
+function BrandInboxContent() {
+  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(searchParams.get("convo"));
   const [messages, setMessages] = useState<Message[]>([]);
   const [firstUnreadId, setFirstUnreadId] = useState<string | null>(null);
   const [msgInput, setMsgInput] = useState("");
@@ -75,7 +69,7 @@ export default function CreatorInbox() {
       .catch(() => {});
   }, [loadConvos]);
 
-  // Initial load of conversations and messages
+  // Initial load
   useEffect(() => { loadConvos(); }, [loadConvos]);
   useEffect(() => {
     if (!activeId) { setFirstUnreadId(null); return; }
@@ -84,7 +78,6 @@ export default function CreatorInbox() {
       .then((d) => {
         if (!Array.isArray(d)) return;
         setMessages(d);
-        // Find first unread message to show the divider
         const convo = conversationsRef.current.find((c) => c.id === activeId);
         if (convo?.unread && convo.lastReadAt) {
           const lastRead = new Date(convo.lastReadAt);
@@ -98,7 +91,6 @@ export default function CreatorInbox() {
       .catch(() => {});
   }, [activeId, loadConvos]);
 
-  // Scroll to bottom whenever messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -112,7 +104,6 @@ export default function CreatorInbox() {
           const fresh = (newMsgs as Message[]).filter((m) => !existingIds.has(m.id));
           return fresh.length ? [...prev, ...fresh] : prev;
         });
-        // Conversation is open — mark read immediately so badge doesn't flash
         markRead(conversationId);
       } else {
         loadConvos();
@@ -132,7 +123,6 @@ export default function CreatorInbox() {
         credentials: "include",
       });
       setMsgInput("");
-      // Optimistically fetch updated thread after sending
       const d = await fetch(`/api/social/conversations/${activeId}`, { credentials: "include" }).then((r) => r.json());
       if (Array.isArray(d)) setMessages(d);
     } finally {
@@ -146,14 +136,15 @@ export default function CreatorInbox() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <AppNav />
-      <WorkspaceSidebar variant="creator" inboxBadge={unreadCount} />
+      <WorkspaceSidebar variant="brand" inboxBadge={unreadCount} />
 
       <div className="flex-1 overflow-hidden mt-[57px] md:ml-56 pb-[52px] md:pb-0">
-        <div className="flex h-full border-t border-border">
+        <div className="flex h-full border-t border-border bg-background">
           {/* Sidebar */}
           <div className={`${activeId ? "hidden md:flex" : "flex"} flex-col w-full md:w-72 md:shrink-0 border-r border-border`}>
-            <div className="px-5 py-4 border-b border-border">
-              <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Messages</p>
+            <div className="px-5 pb-4 pt-6 border-b border-border">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Creators</p>
+              <h1 className="mt-1.5 font-display text-2xl font-semibold tracking-tight text-foreground">Messages</h1>
             </div>
             <div className="flex-1 overflow-y-auto">
               {loading ? (
@@ -162,15 +153,14 @@ export default function CreatorInbox() {
                 </div>
               ) : conversations.length === 0 ? (
                 <div className="px-5 py-10 text-center">
-                  <p className="text-sm text-muted-foreground">No messages yet.</p>
-                  <p className="text-xs text-muted-foreground mt-1">Brands will reach out here.</p>
+                  <p className="text-sm text-muted-foreground">No conversations yet.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Message a creator from Discover.</p>
                 </div>
               ) : (
                 <div>
                   {conversations.map((c) => {
                     const other = c.other;
-                    const displayName = other?.brandProfile?.companyName ?? other?.name ?? other?.username ?? "Unknown";
-                    const avatar = other?.brandProfile?.logoUrl ?? other?.avatarUrl;
+                    const name = other?.name ?? other?.username ?? "Unknown";
                     return (
                       <button
                         key={c.id}
@@ -180,12 +170,10 @@ export default function CreatorInbox() {
                       >
                         <div className="relative shrink-0">
                           <div className="h-10 w-10 rounded-full overflow-hidden bg-muted border border-border">
-                            {avatar ? (
-                              <img src={avatar} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                            {other?.avatarUrl ? (
+                              <img src={other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                              <div className="h-full w-full flex items-center justify-center text-sm font-semibold text-muted-foreground">
-                                {displayName.charAt(0).toUpperCase()}
-                              </div>
+                              <div className="h-full w-full flex items-center justify-center text-sm font-semibold text-muted-foreground">{name.charAt(0).toUpperCase()}</div>
                             )}
                           </div>
                           {c.unread && <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-blue-500 border-2 border-background" />}
@@ -193,7 +181,7 @@ export default function CreatorInbox() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-1 mb-0.5">
                             <div className="flex items-center gap-1 min-w-0">
-                              <p className={`text-sm truncate ${c.unread ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>{displayName}</p>
+                              <p className={`text-sm truncate ${c.unread ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>{name}</p>
                               <VerifiedBadge tier={other?.verifiedTier} size="sm" />
                             </div>
                             {c.lastMessage?.at && (
@@ -224,9 +212,11 @@ export default function CreatorInbox() {
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
                 <p className="text-sm text-muted-foreground">Select a conversation</p>
+                <p className="text-xs text-muted-foreground">or message a creator from Discover</p>
               </div>
             ) : (
               <>
+                {/* Thread header */}
                 <div className="px-4 py-4 border-b border-border flex items-center gap-3 shrink-0">
                   <button
                     type="button"
@@ -238,42 +228,40 @@ export default function CreatorInbox() {
                       <path d="M19 12H5M12 5l-7 7 7 7"/>
                     </svg>
                   </button>
-                  {activeConvo?.other && (() => {
-                    const other = activeConvo.other;
-                    const displayName = other.brandProfile?.companyName ?? other.name ?? other.username ?? "Unknown";
-                    const avatar = other.brandProfile?.logoUrl ?? other.avatarUrl;
-                    const profileHref = other.username ? `/${other.username}` : null;
-                    const avatarEl = (
-                      <div className="h-full w-full">
-                        {avatar ? (
-                          <img src={avatar} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
-                            {displayName.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                    );
-                    return (
-                      <>
-                        {profileHref ? (
-                          <Link href={profileHref} target="_blank" className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0 hover:opacity-80 transition-opacity">
-                            {avatarEl}
-                          </Link>
-                        ) : (
-                          <div className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0">{avatarEl}</div>
-                        )}
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
-                          <VerifiedBadge tier={other.verifiedTier} size="sm" />
+                  {activeConvo?.other && (
+                    <>
+                      {activeConvo.other.username ? (
+                        <Link href={`/${activeConvo.other.username}`} target="_blank" className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0 hover:opacity-80 transition-opacity">
+                          {activeConvo.other.avatarUrl ? (
+                            <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                              {(activeConvo.other.name ?? activeConvo.other.username ?? "?").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </Link>
+                      ) : (
+                        <div className="h-8 w-8 rounded-full overflow-hidden bg-muted border border-border shrink-0">
+                          {activeConvo.other.avatarUrl ? (
+                            <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                              {(activeConvo.other.name ?? activeConvo.other.username ?? "?").charAt(0).toUpperCase()}
+                            </div>
+                          )}
                         </div>
-                      </>
-                    );
-                  })()}
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-semibold text-foreground">{activeConvo.other.name ?? activeConvo.other.username}</p>
+                        <VerifiedBadge tier={activeConvo.other.verifiedTier} size="sm" />
+                      </div>
+                    </>
+                  )}
                 </div>
 
+                {/* Messages */}
                 <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 min-h-0">
-                  {messages.length === 0 && <p className="text-xs text-muted-foreground text-center mt-12">No messages yet — say hello</p>}
+                  {messages.length === 0 && <p className="text-xs text-muted-foreground text-center mt-12">Start the conversation</p>}
                   {messages.map((m) => {
                     const mine = m.senderId === myUserId;
                     return (
@@ -286,24 +274,29 @@ export default function CreatorInbox() {
                           </div>
                         )}
                         <div className={`flex items-end gap-2.5 ${mine ? "justify-end" : "justify-start"}`}>
-                          {!mine && activeConvo?.other && (() => {
-                            const other = activeConvo.other;
-                            const profileHref = other.username ? `/${other.username}` : null;
-                            const inner = m.sender.avatarUrl ? (
-                              <img src={m.sender.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                                {(m.sender.name ?? "?").charAt(0).toUpperCase()}
-                              </div>
-                            );
-                            return profileHref ? (
-                              <Link href={profileHref} target="_blank" className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5 hover:opacity-80 transition-opacity">
-                                {inner}
+                          {!mine && activeConvo?.other && (
+                            activeConvo.other.username ? (
+                              <Link href={`/${activeConvo.other.username}`} target="_blank" className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5 hover:opacity-80 transition-opacity">
+                                {activeConvo.other.avatarUrl ? (
+                                  <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                                    {(activeConvo.other.name ?? "?").charAt(0).toUpperCase()}
+                                  </div>
+                                )}
                               </Link>
                             ) : (
-                              <div className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5">{inner}</div>
-                            );
-                          })()}
+                              <div className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5">
+                                {activeConvo.other.avatarUrl ? (
+                                  <img src={activeConvo.other.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                                    {(activeConvo.other.name ?? "?").charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          )}
                           <div className={`max-w-[68%] px-4 py-2.5 text-sm leading-relaxed ${mine ? "bg-foreground text-background rounded-2xl rounded-br-md" : "bg-muted text-foreground rounded-2xl rounded-bl-md"}`}>
                             {m.body}
                           </div>
@@ -314,6 +307,7 @@ export default function CreatorInbox() {
                   <div ref={messagesEndRef} />
                 </div>
 
+                {/* Compose */}
                 <div className="px-6 py-4 border-t border-border shrink-0">
                   <div className="flex items-center gap-3 bg-muted/40 border border-border rounded-2xl px-4 py-2.5">
                     <input
@@ -345,5 +339,19 @@ export default function CreatorInbox() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BrandInbox() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <span className="text-muted-foreground text-sm">Loading…</span>
+        </div>
+      }
+    >
+      <BrandInboxContent />
+    </Suspense>
   );
 }

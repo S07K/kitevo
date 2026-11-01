@@ -156,7 +156,7 @@ export default async function CreatorProfilePage({ params }: { params: Promise<P
             </Link>
           )}
           <Link
-            href={`/brand/inbox?message=${creator.id}`}
+            href={`/messages?message=${creator.id}`}
             className="inline-flex h-11 items-center justify-center rounded-full border border-border text-foreground px-6 text-sm font-medium hover:bg-muted transition-colors"
           >
             Send a message

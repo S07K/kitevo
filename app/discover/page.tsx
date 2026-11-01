@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AppNav } from "@/app/components/AppNav";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
+import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
 
 const NICHES = [
   "All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel",
@@ -259,17 +258,13 @@ export default function BrandDiscover() {
     }
     if (res.ok) {
       const d = await res.json();
-      router.push(`/brand/inbox?convo=${d.conversationId}`);
+      router.push(`/messages?convo=${d.conversationId}`);
     }
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppNav />
-      <WorkspaceSidebar variant="brand" />
-
-      <main className="md:ml-56 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
-        <div className="mx-auto max-w-5xl">
+    <WorkspaceShell variant="brand">
+        <PageHeader eyebrow="Discover" title="Find creators" description="Live media kits with verified stats. Save the ones you like, message them, or invite them to a campaign." />
         {coldMessageLocked && (
           <div className="mb-6 rounded-2xl border border-[#7c3aed]/40 bg-[#7c3aed]/5 px-5 py-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -280,7 +275,7 @@ export default function BrandDiscover() {
               </div>
             </div>
             <Link
-              href="/brand/settings"
+              href="/settings"
               className="shrink-0 h-9 px-4 inline-flex items-center rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity"
             >
               Upgrade
@@ -330,7 +325,7 @@ export default function BrandDiscover() {
               </>
             ) : (
               <Link
-                href="/brand/settings"
+                href="/settings"
                 className="inline-flex items-center gap-1.5 rounded-full border border-[#7c3aed]/40 bg-[#7c3aed]/5 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-[#7c3aed]/10 transition-colors"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -383,8 +378,6 @@ export default function BrandDiscover() {
             {creators.map((c) => <CreatorCard key={c.id} creator={c} onMessage={startConversation} isSaved={savedIds.has(c.id)} onToggleSave={toggleSave} />)}
           </div>
         )}
-        </div>
-      </main>
-    </div>
+    </WorkspaceShell>
   );
 }

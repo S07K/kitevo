@@ -191,7 +191,7 @@ export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt,
                     )}
                     {step.key === "reached" && (
                       <Link
-                        href="/social/inbox"
+                        href="/messages"
                         className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
                       >
                         Open inbox
@@ -202,7 +202,7 @@ export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt,
                     )}
                     {step.key === "decision" && isAccepted && (
                       <Link
-                        href="/social/inbox"
+                        href="/messages"
                         className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline mt-1"
                       >
                         Check inbox

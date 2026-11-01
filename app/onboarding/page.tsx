@@ -259,7 +259,7 @@ function Onboarding() {
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Couldn't save your brand profile.");
       await fetch("/api/me/onboarding-complete", { method: "POST", credentials: "include" });
-      router.replace("/brand");
+      router.replace("/discover");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setSaving(false);

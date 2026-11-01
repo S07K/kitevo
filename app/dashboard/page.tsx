@@ -10,7 +10,6 @@ import {
   type PlatformId,
   type PlatformStatsWithCharts,
 } from "@/lib/platforms";
-import { AppNav } from "../components/AppNav";
 import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm";
 import { DashboardSkeleton, StatCardSkeleton, KitCardSkeleton, CountUp } from "../components/Skeleton";
 import { AnalyticsChart } from "../components/AnalyticsChart";
@@ -31,7 +30,8 @@ import { DealPipeline, type InquiryRecord, type DealStatus } from "../components
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import { AvatarImg } from "../components/AvatarImg";
 import { ReferralCard } from "./ReferralCard";
-import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
+import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
+import { KitSpotlight, SetupChecklist, OpportunitiesPanel, ConnectionsPanel, PlanPanel } from "./WorkspaceWidgets";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -613,6 +613,8 @@ function DashboardContent() {
   const [allowedKits, setAllowedKits] = useState(1);
   const [tierId, setTierId] = useState<string | null>(null);
   const [tierName, setTierName] = useState<string | null>(null);
+  const [hasSubscription, setHasSubscription] = useState(false);
+  const [greeting, setGreeting] = useState({ hello: "Welcome back", today: "" });
   const isPaidTier = !!tierId && tierId !== "free";
   const [kits, setKits] = useState<KitRecord[]>([]);
   const [profile, setProfile] = useState<ProfileFormProfile | null>(null);
@@ -673,6 +675,7 @@ function DashboardContent() {
       setAllowedKits(typeof data.allowedKits === "number" ? data.allowedKits : 1);
       setTierId(data.tierId ?? null);
       setTierName(data.tierName ?? null);
+      setHasSubscription(data.hasSubscription === true);
       setSubscriptionLoaded(true);
     }
     check();
@@ -750,7 +753,7 @@ function DashboardContent() {
     }
     // Brand accounts have their own dashboard
     if ((profile as { accountType?: string }).accountType === "brand") {
-      router.replace("/brand");
+      router.replace("/discover");
     }
   }, [profileLoaded, profile, router]);
 
@@ -967,6 +970,16 @@ function DashboardContent() {
     }).catch(() => {});
   };
 
+  // Time-of-day greeting + date, computed on the client only (no SSR/locale mismatch).
+  useEffect(() => {
+    const now = new Date();
+    const h = now.getHours();
+    setGreeting({
+      hello: h < 5 ? "Working late" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening",
+      today: now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }),
+    });
+  }, []);
+
   // Derived helpers
   const firstName = profile?.name?.split(" ")[0] ?? "there";
   const avatarUrl = profile?.avatarUrl ?? null;
@@ -979,8 +992,40 @@ function DashboardContent() {
   const manual = kits[0]?.manualStats;
   const totalViews = kits.reduce((sum, k) => sum + (k.viewCount ?? 0), 0);
 
+  const checklist = (
+    <SetupChecklist
+                    items={[
+                      ...(kits.length === 0
+                        ? [{ id: "kit", label: "Create your media kit", done: false, cta: "Create", onClick: () => document.getElementById("kits")?.scrollIntoView({ behavior: "smooth" }) }]
+                        : []),
+                      { id: "photo", label: "Add a profile photo", done: !!avatarUrl, href: "/settings", cta: "Add" },
+                      { id: "bio", label: "Write a short bio", done: !!profile?.bio, href: "/settings", cta: "Write" },
+                      { id: "niches", label: "Pick your niches", done: (profile?.niches?.length ?? 0) > 0, href: "/settings", cta: "Pick" },
+                      {
+                        id: "connect",
+                        label: "Connect Instagram or YouTube",
+                        done: instagramConnected || youtubeConnected,
+                        cta: "Connect",
+                        onClick: () => document.getElementById("integrations")?.scrollIntoView({ behavior: "smooth", block: "center" }),
+                      },
+                      ...(kits[0]
+                        ? [
+                            { id: "rates", label: "Add your rates", done: !!kits[0].rates?.show, href: `/kit/edit?id=${encodeURIComponent(kits[0].id)}`, cta: "Add" },
+                            {
+                              id: "share",
+                              label: "Share your kit with a brand",
+                              done: totalViews > 0 || kitViewsTotal > 0,
+                              cta: "Copy link",
+                              onClick: () => navigator.clipboard?.writeText(`${window.location.origin}/kit/${kits[0].slug}`).catch(() => {}),
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
+  );
+
   return (
-    <div className="min-h-screen bg-muted/20">
+    <WorkspaceShell variant="creator" width="wide">
       {/* ── Delete confirmation modal ── */}
       {kitToDelete && (
         <div
@@ -1016,11 +1061,6 @@ function DashboardContent() {
         </div>
       )}
 
-      <AppNav />
-      <WorkspaceSidebar variant="creator" />
-
-      <div className="md:pl-56">
-      <main className="mx-auto max-w-6xl px-5 pb-28 pt-24 sm:px-8 md:pb-24 lg:px-10">
         {/* ── Status banners ── */}
         {success && (
           <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
@@ -1045,442 +1085,323 @@ function DashboardContent() {
         {loading ? (
           <DashboardSkeleton />
         ) : (
-          /* ── Dashboard ── */
-          <div className="space-y-6">
-            {/* ── Welcome banner ── */}
-            <div className="bg-[#111110] dark:bg-[#1c1c1a] dark:border dark:border-[#2a2a28] rounded-2xl px-6 py-5 sm:px-7 sm:py-6">
-              <div className="flex items-center gap-4">
-                {/* Avatar */}
-                <Link href="/profile" className="shrink-0 group relative">
-                  <AvatarImg
-                    src={avatarUrl}
-                    alt={profile?.name ?? "Avatar"}
-                    className="h-14 w-14 rounded-full object-cover ring-2 ring-white/10 transition-opacity group-hover:opacity-75"
-                    fallback={
-                      <div className="h-14 w-14 rounded-full bg-white/10 ring-2 ring-white/10 flex items-center justify-center transition-opacity group-hover:opacity-75">
-                        <span className="font-display text-lg font-semibold text-white/80">{avatarInitials}</span>
-                      </div>
-                    }
+          <div>
+            <PageHeader
+              eyebrow={greeting.today || "Your workspace"}
+              title={
+                <span className="inline-flex items-center gap-2">
+                  {greeting.hello}, {firstName}
+                  <VerifiedBadge tier={profile?.verifiedTier} size="md" />
+                </span>
+              }
+              description="Your kit, your numbers and your next opportunities, in one place."
+            />
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* ── Main column ── */}
+              <div className="min-w-0 space-y-6 lg:col-span-2">
+                {kits[0] && (
+                  <KitSpotlight
+                    kit={kits[0]}
+                    name={profile?.name ?? ""}
+                    avatarUrl={avatarUrl}
+                    niches={profile?.niches ?? []}
+                    viewsThisWeek={kitViewsThisWeek}
+                    viewsLoaded={kitViewsLoaded}
+                    kitCount={kits.length}
                   />
-                </Link>
-
-                {/* Name + subtitle */}
-                <div className="min-w-0 flex-1">
-                  <p className="text-white/40 text-[10px] font-semibold tracking-[0.2em] uppercase leading-none mb-1.5">Welcome back</p>
-                  <div className="flex items-center gap-2">
-                    <p className="font-display text-2xl font-semibold text-white leading-none tracking-tight truncate">{firstName}</p>
-                    <VerifiedBadge tier={profile?.verifiedTier} size="md" />
-                  </div>
-                </div>
-
-                {/* Actions — just edit-profile. Copy-link and view-kit live on each kit card below. */}
-                <div className="flex items-center shrink-0">
-                  <Link
-                    href="/profile"
-                    aria-label="Edit profile"
-                    title="Edit profile"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                    </svg>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Metrics bar — tiles built dynamically so there are no orphaned cells ── */}
-            {(() => {
-              const skel = (w: string) => <span className={`inline-block h-7 ${w} align-middle bg-muted animate-pulse rounded-full`} />;
-              type Tile = { key: string; label: string; sub: string; node: React.ReactNode };
-              const tiles: Tile[] = [];
-
-              const manualFollowers = !instagramStats && manual?.instagramFollowers ? manual.instagramFollowers : null;
-              tiles.push({
-                key: "followers",
-                label: "Followers",
-                sub: instagramStats ? "Instagram" : manualFollowers ? "Instagram · self-reported" : "Instagram",
-                node: !platformStats ? skel("w-20") : instagramStats ? <CountUp value={instagramStats.followers} duration={1400} /> : manualFollowers ? <CountUp value={manualFollowers} duration={1400} /> : <span className="text-muted-foreground text-base">—</span>,
-              });
-              if (youtubeStats || manual?.youtubeSubscribers) {
-                tiles.push({
-                  key: "subs",
-                  label: "Subscribers",
-                  sub: youtubeStats ? "YouTube" : "YouTube · self-reported",
-                  node: youtubeStats ? <CountUp value={youtubeStats.subscriberCount} duration={1400} /> : <CountUp value={manual?.youtubeSubscribers ?? 0} duration={1400} />,
-                });
-              }
-              // Only show engagement when it's a real, non-zero rate (0.0% reads as "no engagement").
-              if (instagramStats && instagramStats.avgEngagement > 0) {
-                tiles.push({ key: "eng", label: "Engagement", sub: "avg rate", node: <CountUp value={instagramStats.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
-              } else if (manual?.instagramEngagement) {
-                tiles.push({ key: "eng", label: "Engagement", sub: "avg rate · self-reported", node: <CountUp value={manual.instagramEngagement} decimals={1} suffix="%" duration={1000} /> });
-              }
-              tiles.push({
-                key: "week", label: "Views this week", sub: "kit page visits",
-                node: !kitViewsLoaded ? skel("w-12") : <CountUp value={kitViewsThisWeek} duration={1000} />,
-              });
-              tiles.push({
-                key: "all", label: "All time views", sub: "across all kits",
-                node: !kitViewsLoaded ? skel("w-14") : <CountUp value={totalViews} duration={1200} />,
-              });
-
-              const n = tiles.length;
-              const cols = n >= 5 ? "lg:grid-cols-5" : n === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3";
-              return (
-                <div className="bg-background border-border rounded-2xl border overflow-hidden">
-                  <div className={`grid grid-cols-2 ${cols} divide-x divide-y lg:divide-y-0 divide-border`}>
-                    {tiles.map((t) => (
-                      <div key={t.key} className="px-6 py-5">
-                        <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">{t.label}</p>
-                        <div className="font-display text-foreground text-2xl font-semibold tabular-nums tracking-tight leading-none">{t.node}</div>
-                        <p className="text-muted-foreground text-xs mt-1.5">{t.sub}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
-            <ReferralCard />
-
-            {/* ── Pipeline / Activity ── */}
-            {(kitViewsLoaded && kits.length > 0) || (tierId && tierId !== "free") ? (
-              <div id="activity">
-                <div className="mb-4 flex items-center gap-1">
-                  {tierId && tierId !== "free" && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("inbox")}
-                      className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                        activeTab === "inbox"
-                          ? "bg-foreground text-background"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      Pipeline
-                      {inquiries.filter((i) => !i.read).length > 0 && (
-                        <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                          activeTab === "inbox" ? "bg-white/20 text-white" : "bg-foreground text-background"
-                        }`}>
-                          {inquiries.filter((i) => !i.read).length}
-                        </span>
-                      )}
-                    </button>
-                  )}
-                  {kitViewsLoaded && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("activity")}
-                      className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                        activeTab === "activity"
-                          ? "bg-foreground text-background"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      Activity
-                    </button>
-                  )}
-                </div>
-
-                {activeTab === "inbox" && tierId && tierId !== "free" && (
-                  <div>
-                    {!inquiriesLoaded ? (
-                      <p className="text-muted-foreground text-sm">Loading…</p>
-                    ) : inquiries.length === 0 ? (
-                      <div className="border-border rounded-2xl border border-dashed p-8 text-center">
-                        <p className="text-foreground text-sm font-semibold">No inquiries yet</p>
-                        <p className="text-muted-foreground mt-1 text-sm">
-                          When brands fill out your inquiry form, they&apos;ll appear here as deals to track.
-                        </p>
-                      </div>
-                    ) : (
-                      <DealPipeline inquiries={inquiries} onUpdate={updateInquiryStatus} onMarkRead={markInquiryRead} />
-                    )}
-                  </div>
                 )}
 
-                {activeTab === "activity" && kitViewsLoaded && (
-                  <div>
-                    {kitViewsTotal === 0 ? (
-                      <div className="border-border rounded-2xl border border-dashed p-8 text-center">
-                        <p className="text-foreground text-sm font-semibold">No views yet</p>
-                        <p className="text-muted-foreground mt-1 text-sm">Share your kit link and views will appear here in real time.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <AnalyticsChart
-                          daily={kitViewsDaily}
-                          referrers={kitViewsReferrers}
-                          byKit={kitViewsByKit}
-                          total={kitViewsTotal}
-                          trend={kitViewsTrend}
-                          days={kitViewsDays}
-                          inquiryCount={inquiries.length}
-                          wonCount={inquiries.filter((i) => i.status === "won").length}
-                          onDaysChange={(d) => {
-                            setKitViewsDays(d);
-                            fetchKitViews(d);
-                          }}
-                        />
-                        <div className="bg-background border-border rounded-2xl border overflow-hidden">
-                          <p className="px-5 pt-5 pb-3 text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Recent visits</p>
-                          <div className="divide-y divide-border">
-                            {kitViews.slice(0, 10).map((view) => {
-                              const ago = timeAgo(view.viewedAt);
-                              const domain = referrerDomain(view.referrer);
-                              return (
-                                <div key={view.id} className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-muted/40 transition-colors">
-                                  <div className="min-w-0">
-                                    <p className="text-foreground text-sm font-medium truncate">{view.kit.name}</p>
-                                    {domain && <p className="text-muted-foreground text-xs mt-0.5 truncate">via {domain}</p>}
-                                  </div>
-                                  <p className="text-muted-foreground text-xs shrink-0">{ago}</p>
-                                </div>
-                              );
-                            })}
+                <div className="lg:hidden">{checklist}</div>
+
+                {/* ── Metrics bar — tiles built dynamically so there are no orphaned cells ── */}
+                {(() => {
+                  const skel = (w: string) => <span className={`inline-block h-7 ${w} align-middle bg-muted animate-pulse rounded-full`} />;
+                  type Tile = { key: string; label: string; sub: string; node: React.ReactNode };
+                  const tiles: Tile[] = [];
+
+                  const manualFollowers = !instagramStats && manual?.instagramFollowers ? manual.instagramFollowers : null;
+                  tiles.push({
+                    key: "followers",
+                    label: "Followers",
+                    sub: instagramStats ? "Instagram" : manualFollowers ? "Instagram · self-reported" : "Instagram",
+                    node: !platformStats ? skel("w-20") : instagramStats ? <CountUp value={instagramStats.followers} duration={1400} /> : manualFollowers ? <CountUp value={manualFollowers} duration={1400} /> : <span className="text-muted-foreground text-base">—</span>,
+                  });
+                  if (youtubeStats || manual?.youtubeSubscribers) {
+                    tiles.push({
+                      key: "subs",
+                      label: "Subscribers",
+                      sub: youtubeStats ? "YouTube" : "YouTube · self-reported",
+                      node: youtubeStats ? <CountUp value={youtubeStats.subscriberCount} duration={1400} /> : <CountUp value={manual?.youtubeSubscribers ?? 0} duration={1400} />,
+                    });
+                  }
+                  // Only show engagement when it's a real, non-zero rate (0.0% reads as "no engagement").
+                  if (instagramStats && instagramStats.avgEngagement > 0) {
+                    tiles.push({ key: "eng", label: "Engagement", sub: "avg rate", node: <CountUp value={instagramStats.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
+                  } else if (manual?.instagramEngagement) {
+                    tiles.push({ key: "eng", label: "Engagement", sub: "avg rate · self-reported", node: <CountUp value={manual.instagramEngagement} decimals={1} suffix="%" duration={1000} /> });
+                  }
+                  tiles.push({
+                    key: "all", label: "All time views", sub: "across all kits",
+                    node: !kitViewsLoaded ? skel("w-14") : <CountUp value={totalViews} duration={1200} />,
+                  });
+
+                  const n = tiles.length;
+                  const cols = n >= 5 ? "lg:grid-cols-5" : n === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3";
+                  return (
+                    <div className="bg-background border-border rounded-2xl border overflow-hidden">
+                      <div className={`grid grid-cols-2 ${cols} divide-x divide-y lg:divide-y-0 divide-border`}>
+                        {tiles.map((t) => (
+                          <div key={t.key} className="px-6 py-5">
+                            <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase mb-2">{t.label}</p>
+                            <div className="font-display text-foreground text-2xl font-semibold tabular-nums tracking-tight leading-none">{t.node}</div>
+                            <p className="text-muted-foreground text-xs mt-1.5">{t.sub}</p>
                           </div>
-                        </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+
+                {/* ── Pipeline / Activity ── */}
+                {(kitViewsLoaded && kits.length > 0) || (tierId && tierId !== "free") ? (
+                  <div id="activity">
+                    <div className="mb-4 flex items-center gap-1">
+                      {tierId && tierId !== "free" && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("inbox")}
+                          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                            activeTab === "inbox"
+                              ? "bg-foreground text-background"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          Pipeline
+                          {inquiries.filter((i) => !i.read).length > 0 && (
+                            <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                              activeTab === "inbox" ? "bg-white/20 text-white" : "bg-foreground text-background"
+                            }`}>
+                              {inquiries.filter((i) => !i.read).length}
+                            </span>
+                          )}
+                        </button>
+                      )}
+                      {kitViewsLoaded && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("activity")}
+                          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                            activeTab === "activity"
+                              ? "bg-foreground text-background"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          Activity
+                        </button>
+                      )}
+                    </div>
+
+                    {activeTab === "inbox" && tierId && tierId !== "free" && (
+                      <div>
+                        {!inquiriesLoaded ? (
+                          <p className="text-muted-foreground text-sm">Loading…</p>
+                        ) : inquiries.length === 0 ? (
+                          <div className="border-border rounded-2xl border border-dashed p-8 text-center">
+                            <p className="text-foreground text-sm font-semibold">No inquiries yet</p>
+                            <p className="text-muted-foreground mt-1 text-sm">
+                              When brands fill out your inquiry form, they&apos;ll appear here as deals to track.
+                            </p>
+                          </div>
+                        ) : (
+                          <DealPipeline inquiries={inquiries} onUpdate={updateInquiryStatus} onMarkRead={markInquiryRead} />
+                        )}
+                      </div>
+                    )}
+
+                    {activeTab === "activity" && kitViewsLoaded && (
+                      <div>
+                        {kitViewsTotal === 0 ? (
+                          <div className="border-border rounded-2xl border border-dashed p-8 text-center">
+                            <p className="text-foreground text-sm font-semibold">No views yet</p>
+                            <p className="text-muted-foreground mt-1 text-sm">Share your kit link and views will appear here in real time.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <AnalyticsChart
+                              daily={kitViewsDaily}
+                              referrers={kitViewsReferrers}
+                              byKit={kitViewsByKit}
+                              total={kitViewsTotal}
+                              trend={kitViewsTrend}
+                              days={kitViewsDays}
+                              inquiryCount={inquiries.length}
+                              wonCount={inquiries.filter((i) => i.status === "won").length}
+                              onDaysChange={(d) => {
+                                setKitViewsDays(d);
+                                fetchKitViews(d);
+                              }}
+                            />
+                            <div className="bg-background border-border rounded-2xl border overflow-hidden">
+                              <p className="px-5 pt-5 pb-3 text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Recent visits</p>
+                              <div className="divide-y divide-border">
+                                {kitViews.slice(0, 10).map((view) => {
+                                  const ago = timeAgo(view.viewedAt);
+                                  const domain = referrerDomain(view.referrer);
+                                  return (
+                                    <div key={view.id} className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-muted/40 transition-colors">
+                                      <div className="min-w-0">
+                                        <p className="text-foreground text-sm font-medium truncate">{view.kit.name}</p>
+                                        {domain && <p className="text-muted-foreground text-xs mt-0.5 truncate">via {domain}</p>}
+                                      </div>
+                                      <p className="text-muted-foreground text-xs shrink-0">{ago}</p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
-            ) : null}
+                ) : null}
 
-            {/* ── Kits ── */}
-            <div>
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Your kits</p>
-                {kits.length > 0 && kits.length < allowedKits && !showAddKit && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAddKit(true)}
-                    className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors"
-                  >
-                    + New kit
-                  </button>
-                )}
-              </div>
 
-              {/* Empty state — no plan */}
-              {subscriptionLoaded && kits.length === 0 && allowedKits === 0 && (
-                <div className="border-border rounded-2xl border border-dashed p-8 max-w-md text-center">
-                  <p className="text-foreground text-base font-semibold">Choose a plan to get started</p>
-                  <p className="text-muted-foreground mt-1 text-sm">Pick a plan and create your first media kit in minutes.</p>
-                  <Link
-                    href="/pricing"
-                    className="mt-5 inline-flex h-10 items-center rounded-full bg-foreground px-6 text-sm font-medium text-background hover:opacity-80 transition-opacity"
-                  >
-                    View plans
-                  </Link>
-                </div>
-              )}
-
-              {/* Empty state — has plan, no kit */}
-              {kits.length === 0 && allowedKits > 0 && (
-                <div className="border-border rounded-2xl border border-dashed p-8 max-w-md">
-                  <p className="text-foreground text-base font-semibold">Create your first kit</p>
-                  <p className="text-muted-foreground mt-1 text-sm">Give it a name and a URL. Connect Instagram or YouTube from the dashboard to show live stats.</p>
-                  <div className="mt-6 space-y-3">
-                    <TextInput value={newKitName} onChange={setNewKitName} placeholder="Kit name (e.g. Fashion & Lifestyle)" />
-                    <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
-                    {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
-                    <PrimaryBtn onClick={createKit}>Create &amp; edit</PrimaryBtn>
+                {/* ── Kits ── */}
+                <section id="kits" className="scroll-mt-24">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Your kits</h2>
+                    {kits.length > 0 && kits.length < allowedKits && !showAddKit && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAddKit(true)}
+                        className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors"
+                      >
+                        + New kit
+                      </button>
+                    )}
                   </div>
-                </div>
-              )}
+                  {/* Empty state — no plan */}
+                  {subscriptionLoaded && kits.length === 0 && allowedKits === 0 && (
+                    <div className="border-border rounded-2xl border border-dashed p-8 max-w-md text-center">
+                      <p className="text-foreground text-base font-semibold">Choose a plan to get started</p>
+                      <p className="text-muted-foreground mt-1 text-sm">Pick a plan and create your first media kit in minutes.</p>
+                      <Link
+                        href="/pricing"
+                        className="mt-5 inline-flex h-10 items-center rounded-full bg-foreground px-6 text-sm font-medium text-background hover:opacity-80 transition-opacity"
+                      >
+                        View plans
+                      </Link>
+                    </div>
+                  )}
 
-              {/* Kit cards */}
-              {!subscriptionLoaded ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <KitCardSkeleton /><KitCardSkeleton />
-                </div>
-              ) : kits.length > 0 && (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {kits.map((kit) => (
-                    <KitCard
-                      key={kit.id}
-                      kit={kit}
-                      onDelete={() => { setDeleteError(null); setKitToDelete({ id: kit.id, name: kit.name }); }}
-                      onSlugChange={(id, newSlug) => setKits((prev) => prev.map((k) => k.id === id ? { ...k, slug: newSlug } : k))}
-                      onPasswordChange={(id, hp) => setKits((prev) => prev.map((k) => k.id === id ? { ...k, hasPassword: hp } : k))}
-                    />
-                  ))}
-                </div>
-              )}
+                  {/* Empty state — has plan, no kit */}
+                  {kits.length === 0 && allowedKits > 0 && (
+                    <div className="border-border rounded-2xl border border-dashed p-8 max-w-md">
+                      <p className="text-foreground text-base font-semibold">Create your first kit</p>
+                      <p className="text-muted-foreground mt-1 text-sm">Give it a name and a URL. Connect Instagram or YouTube from the dashboard to show live stats.</p>
+                      <div className="mt-6 space-y-3">
+                        <TextInput value={newKitName} onChange={setNewKitName} placeholder="Kit name (e.g. Fashion & Lifestyle)" />
+                        <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
+                        {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
+                        <PrimaryBtn onClick={createKit}>Create &amp; edit</PrimaryBtn>
+                      </div>
+                    </div>
+                  )}
 
-              {/* Add kit form */}
-              {showAddKit && kits.length > 0 && (
-                <div className="border-border mt-4 space-y-3 rounded-2xl border p-5 max-w-md">
-                  <p className="text-foreground text-sm font-semibold">New kit</p>
-                  <TextInput value={newKitName} onChange={setNewKitName} placeholder="Kit name" />
-                  <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
-                  {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
-                  <div className="flex gap-2">
-                    <PrimaryBtn onClick={createKit}>Create &amp; edit</PrimaryBtn>
-                    <SecondaryBtn onClick={() => { setShowAddKit(false); setNewKitName(""); setNewKitSlug(""); }}>Cancel</SecondaryBtn>
-                  </div>
-                </div>
-              )}
+                  {/* Kit cards */}
+                  {!subscriptionLoaded ? (
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                      <KitCardSkeleton /><KitCardSkeleton />
+                    </div>
+                  ) : kits.length > 0 && (
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                      {kits.map((kit) => (
+                        <KitCard
+                          key={kit.id}
+                          kit={kit}
+                          onDelete={() => { setDeleteError(null); setKitToDelete({ id: kit.id, name: kit.name }); }}
+                          onSlugChange={(id, newSlug) => setKits((prev) => prev.map((k) => k.id === id ? { ...k, slug: newSlug } : k))}
+                          onPasswordChange={(id, hp) => setKits((prev) => prev.map((k) => k.id === id ? { ...k, hasPassword: hp } : k))}
+                        />
+                      ))}
+                    </div>
+                  )}
 
-              {/* At limit message */}
-              {kits.length >= allowedKits && kits.length > 0 && !showAddKit && (
-                <p className="text-muted-foreground mt-4 text-sm">
-                  At kit limit ({allowedKits}).{" "}
-                  <Link href="/pricing" className="text-foreground underline underline-offset-4 hover:no-underline">Upgrade for more</Link>.
-                </p>
-              )}
+                  {/* Add kit form */}
+                  {showAddKit && kits.length > 0 && (
+                    <div className="border-border mt-4 space-y-3 rounded-2xl border p-5 max-w-md">
+                      <p className="text-foreground text-sm font-semibold">New kit</p>
+                      <TextInput value={newKitName} onChange={setNewKitName} placeholder="Kit name" />
+                      <TextInput value={newKitSlug} onChange={setNewKitSlug} placeholder="URL slug (e.g. my-fashion-kit)" />
+                      {addKitError && <p className="text-sm text-red-600">{addKitError}</p>}
+                      <div className="flex gap-2">
+                        <PrimaryBtn onClick={createKit}>Create &amp; edit</PrimaryBtn>
+                        <SecondaryBtn onClick={() => { setShowAddKit(false); setNewKitName(""); setNewKitSlug(""); }}>Cancel</SecondaryBtn>
+                      </div>
+                    </div>
+                  )}
 
-              {/* Free tier upgrade nudge */}
-              {subscriptionLoaded && tierId === "free" && kits.length > 0 && (
-                <div className="mt-4 rounded-2xl border border-border bg-muted/30 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">You&apos;re on the Free plan</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Upgrade to Starter to unlock live Instagram stats, growth charts, audience demographics, and section visibility controls.
+                  {/* At limit message */}
+                  {kits.length >= allowedKits && kits.length > 0 && !showAddKit && (
+                    <p className="text-muted-foreground mt-4 text-sm">
+                      At kit limit ({allowedKits}).{" "}
+                      <Link href="/pricing" className="text-foreground underline underline-offset-4 hover:no-underline">Upgrade for more</Link>.
                     </p>
-                  </div>
-                  <Link
-                    href="/pricing?plan=starter"
-                    className="shrink-0 bg-foreground text-background rounded-full px-5 py-2 text-sm font-medium hover:opacity-80 transition-opacity"
-                  >
-                    Upgrade to Starter
-                  </Link>
-                </div>
-              )}
-
-              {/* ── Integrations ── */}
-              <div className="border-border rounded-2xl border overflow-hidden mt-4">
-                <p className="px-5 pt-5 pb-3 text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">Integrations</p>
-                {!isPaidTier && (
-                  <p className="px-5 pb-3 -mt-1 text-xs text-muted-foreground">
-                    Live stats are a Starter feature. You can connect now; your data starts appearing after you upgrade.
-                  </p>
-                )}
-
-                {/* YouTube */}
-                <div className="flex items-center justify-between gap-4 px-5 py-4 border-t border-border">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="#FF0000" aria-hidden="true">
-                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-foreground text-sm font-semibold">YouTube</p>
-                      {youtubeConnected && youtubeStats ? (
-                        <p className="text-muted-foreground text-xs mt-0.5">
-                          {youtubeStats.channelTitle} · {youtubeStats.subscriberCount.toLocaleString()} subscribers
-                        </p>
-                      ) : youtubeConnected ? (
-                        <p className="text-muted-foreground text-xs mt-0.5">Connected · live stats on Starter and above</p>
-                      ) : (
-                        <p className="text-muted-foreground text-xs mt-0.5">Show subscriber count on your kit</p>
-                      )}
-                    </div>
-                  </div>
-                  {youtubeConnected ? (
-                    <button
-                      type="button"
-                      onClick={handleDisconnectYoutube}
-                      disabled={disconnectingYoutube}
-                      className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-colors disabled:opacity-50"
-                    >
-                      {disconnectingYoutube ? "…" : "Disconnect"}
-                    </button>
-                  ) : (
-                    <a
-                      href="/api/youtube/connect"
-                      className="bg-foreground text-background inline-flex h-8 items-center rounded-full px-3 text-xs font-medium transition-opacity hover:opacity-80"
-                    >
-                      Connect
-                    </a>
                   )}
-                </div>
 
-                {/* Instagram */}
-                <div className="flex items-center justify-between gap-4 px-5 py-4 border-t border-border">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-pink-50 dark:bg-pink-950/30 flex items-center justify-center shrink-0">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="url(#ig-grad)" aria-hidden="true">
-                        <defs>
-                          <linearGradient id="ig-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#f09433"/>
-                            <stop offset="25%" stopColor="#e6683c"/>
-                            <stop offset="50%" stopColor="#dc2743"/>
-                            <stop offset="75%" stopColor="#cc2366"/>
-                            <stop offset="100%" stopColor="#bc1888"/>
-                          </linearGradient>
-                        </defs>
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-foreground text-sm font-semibold">Instagram</p>
-                      {instagramConnected ? (
-                        <p className="text-muted-foreground text-xs mt-0.5">Connected · stats syncing</p>
-                      ) : (
-                        <p className="text-muted-foreground text-xs mt-0.5">Show live follower count and engagement</p>
-                      )}
-                    </div>
-                  </div>
-                  {instagramConnected ? (
-                    <button
-                      type="button"
-                      onClick={handleDisconnectInstagram}
-                      disabled={disconnectingInstagram}
-                      className="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-colors disabled:opacity-50"
-                    >
-                      {disconnectingInstagram ? "…" : "Disconnect"}
-                    </button>
-                  ) : (
-                    <a
-                      href="/api/instagram/connect"
-                      className="bg-foreground text-background inline-flex h-8 items-center rounded-full px-3 text-xs font-medium transition-opacity hover:opacity-80"
-                    >
-                      Connect
-                    </a>
-                  )}
-                </div>
+                </section>
               </div>
 
-              {/* Toasts */}
-              {youtubeParam === "connected" && (
-                <p className="text-emerald-600 text-sm mt-2">YouTube connected successfully.</p>
-              )}
-              {youtubeParam === "error" && (
-                <p className="text-red-600 text-sm mt-2">YouTube connection failed. Please try again.</p>
-              )}
-              {youtubeParam === "no_channel" && (
-                <p className="text-red-600 text-sm mt-2">No YouTube channel found on this Google account.</p>
-              )}
+              {/* ── Right rail ── */}
+              <aside className="min-w-0 space-y-6">
 
-              {/* Pro upgrade prompt for Starter users */}
-              {tierId === "starter" && (
-                <div className="border-border bg-background mt-4 flex items-center justify-between gap-4 rounded-2xl border p-5">
-                  <div>
-                    <p className="text-foreground text-sm font-semibold">Unlock Brand Kit Vibes</p>
-                    <p className="text-muted-foreground mt-0.5 text-xs">Pro gives you 5 signature styles, three kits, and a brand inquiry inbox with deal tracking.</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={upgradeToPro}
-                    disabled={upgradeToProLoading}
-                    className="bg-foreground text-background shrink-0 inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
-                  >
-                    {upgradeToProLoading ? "…" : "Upgrade"}
-                  </button>
-                </div>
-              )}
+                <div className="hidden lg:block">{checklist}</div>
+
+                <OpportunitiesPanel niches={profile?.niches ?? []} />
+
+                <ConnectionsPanel
+                  instagram={{ connected: instagramConnected, detail: instagramConnected ? "Connected · stats syncing" : undefined }}
+                  youtube={{
+                    connected: youtubeConnected,
+                    detail: youtubeConnected && youtubeStats ? `${youtubeStats.channelTitle} · ${youtubeStats.subscriberCount.toLocaleString()} subscribers` : undefined,
+                  }}
+                  isPaidTier={isPaidTier}
+                  onDisconnectInstagram={handleDisconnectInstagram}
+                  onDisconnectYoutube={handleDisconnectYoutube}
+                  busy={{ instagram: disconnectingInstagram, youtube: disconnectingYoutube }}
+                />
+                {/* Toasts */}
+                {youtubeParam === "connected" && (
+                  <p className="text-emerald-600 text-sm mt-2">YouTube connected successfully.</p>
+                )}
+                {youtubeParam === "error" && (
+                  <p className="text-red-600 text-sm mt-2">YouTube connection failed. Please try again.</p>
+                )}
+                {youtubeParam === "no_channel" && (
+                  <p className="text-red-600 text-sm mt-2">No YouTube channel found on this Google account.</p>
+                )}
+
+
+                <PlanPanel
+                  tierId={tierId}
+                  tierName={tierName}
+                  kitsUsed={kits.length}
+                  kitsAllowed={allowedKits}
+                  onManageBilling={hasSubscription ? openPortal : null}
+                  managing={portalLoading}
+                  onUpgradeToPro={upgradeToPro}
+                  upgrading={upgradeToProLoading}
+                />
+
+                <ReferralCard compact />
+              </aside>
             </div>
-
           </div>
         )}
-      </main>
-      </div>
-    </div>
+    </WorkspaceShell>
   );
 }
 

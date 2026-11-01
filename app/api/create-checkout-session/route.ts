@@ -51,11 +51,11 @@ export async function POST(req: Request) {
     // Where to land after checkout, per entry point.
     const returnBase =
       returnTo === "onboarding" ? "/onboarding" :
-      returnTo === "brand" ? "/brand/settings" :
+      returnTo === "brand" ? "/settings" :
       "/dashboard";
     const cancelBase =
       returnTo === "onboarding" ? "/onboarding" :
-      returnTo === "brand" ? "/brand/settings" :
+      returnTo === "brand" ? "/settings" :
       "/pricing";
     const successUrl = `${baseUrl}${returnBase}?success=true&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${baseUrl}${cancelBase}?canceled=true`;

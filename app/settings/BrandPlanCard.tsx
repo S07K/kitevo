@@ -69,7 +69,7 @@ export function BrandPlanCard() {
       });
       const d = await res.json().catch(() => ({}));
       if (res.status === 401) {
-        window.location.href = `/login?callbackUrl=${encodeURIComponent("/brand/settings")}`;
+        window.location.href = `/login?callbackUrl=${encodeURIComponent("/settings")}`;
         return;
       }
       if (res.status === 409) {

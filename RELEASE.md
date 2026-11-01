@@ -18,8 +18,9 @@ The branches are stacked; each contains the one before it.
 | 3 | `feat/referrals` | Referral program, payout details, admin payouts page, referral marketing (hero badge, `/referral-program`, dashboard card, sidebars) |
 | 4 | `feat/onboarding` | 3-step onboarding with live kit preview, auto-created kit, no plan step; admin payouts page without CSV; username rules |
 | 5 | `feat/workspace-sidebar` | One sidebar for the whole app: dashboard top links removed; Campaigns/Messages grouped under Social; Plan & billing, Settings, View my kit in the sidebar footer |
+| 6 | `feat/workspace-ui` | One route per tab (`/campaigns`, `/messages`, `/discover`, `/settings`; old URLs 301), shared page shell/headers on every tab, dashboard redesigned as a creator workspace |
 
-Merge the last branch (`feat/workspace-sidebar`) and it brings everything above it.
+Merge the last branch (`feat/workspace-ui`) and it brings everything above it.
 
 ---
 
@@ -76,6 +77,8 @@ Nothing else changes. `DATABASE_URL` / `DIRECT_URL` (Vercel + GitHub secrets) ar
 - [ ] Homepage shows the **"NEW · Earn 20%"** badge; `/referral-program` loads.
 - [ ] Log in → dashboard shows the **Invite creators** card with your link; Copy works.
 - [ ] `/referrals` → add a PayPal payout method → it shows as **Active**.
+- [ ] **Routes**: `/social/campaigns`, `/social/inbox`, `/brand`, `/brand/*` and `/profile` redirect to `/campaigns`, `/messages`, `/discover`, `/settings`. Dodo/Stripe checkout and billing-portal returns for brands now land on `/settings`.
+- [ ] **Dashboard**: greeting, your kit card (Edit / View / Copy link), Finish-your-kit checklist, Opportunities, Connections, Plan.
 - [ ] **Navigation**: dashboard has no links in the top bar; the left sidebar shows Home · Social (Campaigns, Messages) · Grow · Plan & billing · Settings; on a phone it's a bottom tab bar. Brand accounts see Discover · Campaigns · Inbox.
 - [ ] **Onboarding**: sign up a fresh test account → role picker → creator → username is pre-filled → Continue → Skip → "Your media kit is live" with a working link. Delete the test account after.
 - [ ] `/admin/payouts` loads for you; in a private window (logged out or another

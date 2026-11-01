@@ -7,10 +7,9 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { recordCampaignView } from "@/lib/campaign-views";
 import { ApplySection } from "./ApplySection";
-import { AppNav } from "@/app/components/AppNav";
 import { Badge } from "@/app/components/Badge";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
+import { WorkspaceShell } from "@/app/components/workspace/WorkspaceShell";
 
 type Params = { id: string };
 
@@ -121,18 +120,11 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
     : null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppNav
-        links={[{ href: "/dashboard", label: "Dashboard" }]}
-        onLogout={undefined}
-      />
-      <WorkspaceSidebar />
-
-      <main className="md:ml-56 px-5 pt-[73px] pb-[72px] md:pb-20 sm:px-8">
-        <div className="mx-auto max-w-2xl space-y-8 py-6">
+    <WorkspaceShell width="narrow">
+        <div className="space-y-8">
           {/* Back */}
           <Link
-            href="/social/campaigns"
+            href="/campaigns"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -242,7 +234,6 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </WorkspaceShell>
   );
 }

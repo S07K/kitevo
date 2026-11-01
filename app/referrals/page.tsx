@@ -2,10 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AppNav } from "../components/AppNav";
 import { PayoutDetailsCard, type PayoutProfile } from "./PayoutDetailsCard";
 import { PayoutMark } from "../components/PayoutLogos";
-import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
+import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
 
 type Totals = Record<string, number>;
 type Summary = {
@@ -81,16 +80,8 @@ export default function ReferralsPage() {
   const minPayout = data ? money(data.terms.minPayout.USD ?? data.terms.defaultMinPayout, "USD") : "$25.00";
 
   return (
-    <div className="min-h-screen bg-muted/20 md:pl-56">
-      <AppNav />
-      <WorkspaceSidebar />
-
-      <main className="mx-auto max-w-3xl px-4 pb-24 pt-24 sm:px-8">
-
-        <h1 className="font-display text-foreground mt-4 text-2xl font-semibold tracking-tight">Invite &amp; earn</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Earn {rate}% of what every creator you invite pays Kitevo, for their first {data?.terms.months ?? 12} months.
-        </p>
+    <WorkspaceShell width="narrow">
+        <PageHeader eyebrow="Grow" title="Invite & earn" description={<>Earn {rate}% of what every creator you invite pays Kitevo, for their first {data?.terms.months ?? 12} months.</>} />
 
         {loadError && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -207,7 +198,6 @@ export default function ReferralsPage() {
           Each one is held {data?.terms.holdDays ?? 30} days in case of a refund. Refunded payments don&apos;t earn commission. Referring
           yourself or your own accounts doesn&apos;t count.
         </p>
-      </main>
-    </div>
+    </WorkspaceShell>
   );
 }

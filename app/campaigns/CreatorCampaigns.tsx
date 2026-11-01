@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { AppNav } from "@/app/components/AppNav";
 import { Badge } from "@/app/components/Badge";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
+import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
 
 const NICHES = ["All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 
@@ -55,16 +54,8 @@ export default function CreatorCampaigns() {
 
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppNav />
-      <WorkspaceSidebar variant="creator" />
-
-      <main className="md:ml-56 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">
-        <div className="mx-auto max-w-2xl">
-        <div className="mb-6">
-          <h1 className="text-lg font-semibold text-foreground">Open Campaigns</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Browse brand briefs and apply with your pitch.</p>
-        </div>
+    <WorkspaceShell variant="creator">
+        <PageHeader eyebrow="Social" title="Campaigns" description="Open briefs from brands. Apply with your kit and a short pitch." />
 
         {/* Niche filter */}
         <div className="flex gap-2 flex-wrap mb-6">
@@ -161,8 +152,6 @@ export default function CreatorCampaigns() {
             })}
           </div>
         )}
-        </div>
-      </main>
-    </div>
+    </WorkspaceShell>
   );
 }

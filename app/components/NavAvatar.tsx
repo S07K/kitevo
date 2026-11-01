@@ -49,7 +49,7 @@ export function NavAvatar() {
 
   if (!profile) return null;
 
-  const settingsHref = profile.accountType === "brand" ? "/brand/settings" : "/profile";
+  const settingsHref = profile.accountType === "brand" ? "/settings" : "/settings";
   const initials = (profile.name ?? "?").charAt(0).toUpperCase();
   const isDark = theme === "dark";
 

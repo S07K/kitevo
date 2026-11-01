@@ -27,7 +27,7 @@ Stack: Next.js 16 App Router, Prisma + Supabase (Postgres), NextAuth, payments v
 - **Kit page honesty rules**: never render fabricated stats. No placeholder/synthetic growth curves on live kits (empty state instead; `buildSyntheticGrowthFromFollowers` is demo-only), hide stats that are 0/unavailable (e.g. engagement), growth chart = cumulative followers over last 30 days rebuilt from Meta's daily `follower_count` deltas (needs ≥7 days). "Live — synced from Instagram" indicator only shows for real connected kits. Manual stats (`Kit.manualStats`, `lib/manual-stats.ts`) are headline-only and always labelled "Self-reported by creator" — they never feed growth/audience charts and never say "live". Live data replaces manual values per connected platform, and only for Starter+ owners (see `app/kit/[username]/page.tsx`).
 - **Kit page layout**: hero → combined stats block (total audience headline when IG+YT both connected; platform-tagged tiles — IG: followers/engagement/30d growth, YT: subscribers/total views/avg views-per-video) → typical post performance (avg likes/comments/reach) → growth chart + audience-age donut (2-col, equal height) → Instagram posts (one row of 3 + "See more" → profile via `stats.extra.username`) → YouTube videos → brands → rates → contact. Hero shows niches + location.
 - **Kit charts**: audience age uses a fixed-size `PieChart` (donut), NOT ResponsiveContainer (measures 0 inside flex/centered parents). Audience gender = CSS segmented split bar; top countries = CSS flag + progress-bar list (ISO code → name via `Intl.DisplayNames`, flag emoji from code). IG demographics fetch age/gender/country breakdowns in parallel (`fetchBreakdownPayload`). YouTube analytics from Data API: subscribers, total views, video count, per-video views/likes (demographics need the heavier YouTube Analytics API).
-- **Creator dashboard** (`app/dashboard/page.tsx`): Activity tab is the default active tab (`#inbox` hash opens Inbox); kit views load on mount. Every authenticated creator gets the dashboard — the Free plan includes one kit; live platform stats are only fetched for paid tiers (`isPaidTier`), and metric tiles fall back to the creator's self-reported manual stats (labelled) when a platform isn't connected.
+- **Creator dashboard** (`app/dashboard/page.tsx`): a workspace — greeting header, KitSpotlight (main kit + edit/view/copy), stats, Activity/Pipeline, Your kits; right rail: Finish-your-kit checklist (also shown under the kit on mobile), Opportunities (campaigns matching niches), Connections, Plan, referral card. Activity tab is the default active tab (`#inbox` hash opens Inbox); kit views load on mount. Every authenticated creator gets the dashboard — the Free plan includes one kit; live platform stats are only fetched for paid tiers (`isPaidTier`), and metric tiles fall back to the creator's self-reported manual stats (labelled) when a platform isn't connected.
 
 ---
 
@@ -87,6 +87,8 @@ Stack: Next.js 16 App Router, Prisma + Supabase (Postgres), NextAuth, payments v
 - **Shortlist/save creators**: `SavedCreator` table; bookmark toggle + "Saved" filter on brand discover (`/api/social/saved`). Available to all brands
 
 ### UI / UX
+- **Workspace routes (one per tab):** `/dashboard` (creator home) · `/discover` (brand home) · `/campaigns` · `/messages` · `/referrals` · `/settings` · `/pricing`. `/campaigns`, `/messages`, `/settings` are server pages that render the creator or brand view (`lib/workspace-user.ts`). Old URLs (`/social/*`, `/brand/*`, `/profile`) 301 in `next.config.ts`. New top-level routes must also go in `RESERVED_USERNAMES`.
+- **Every workspace page renders inside `WorkspaceShell`** (`app/components/workspace/WorkspaceShell.tsx`: canvas, sidebar, width scale narrow/default/wide/full) and starts with `PageHeader` (eyebrow · serif title · description · actions); cards use `Panel`. Don't hand-roll page wrappers.
 - `AppNav`: logo + NavAvatar only — never page links. **All in-app navigation is `WorkspaceSidebar`** (grouped left sidebar on desktop, 5-tab bottom bar on mobile). Creator: Home · Social (Campaigns, Messages) · Grow (Invite & earn) · footer (View my kit, Plan & billing, Settings). Brand: Discover · Campaigns · Inbox · Grow · Settings. Pages pass `variant`; shared pages omit it and it reads `/api/me/profile`. Content wraps in `md:pl-56`
 - `NavAvatar` popup: name, role, Dashboard, Settings (role-aware), theme toggle, logout
 - Brand accounts show `companyName` + `logoUrl` in NavAvatar (not personal name/avatar)
@@ -163,16 +165,16 @@ Phase 3 — Business tier:
 | `app/components/Badge.tsx` | Semantic badge/tag component |
 | `app/components/ProfileForm.tsx` | Creator profile form — avatar upload, username check, bio, links, niches picker |
 | `app/components/VerifiedBadge.tsx` | Verified tick: blue (creator_pro), gold (top_creator), purple (brand_verified) |
+| `app/dashboard/WorkspaceWidgets.tsx` | Dashboard building blocks: KitSpotlight, SetupChecklist, OpportunitiesPanel, ConnectionsPanel, PlanPanel |
 | `app/[username]/page.tsx` | Public profile — brand-aware (campaigns for brands, kits for creators) |
 | `app/u/[username]/page.tsx` | Same, alternate route |
-| `app/profile/page.tsx` | Creator settings: profile form + Connections section + Plan card |
-| `app/brand/settings/page.tsx` | Brand settings with logo upload + `BrandPlanCard` |
-| `app/brand/BrandPlanCard.tsx` | Brand Pro plan status + upgrade CTA (monthly/yearly checkout, manage billing) |
-| `app/brand/page.tsx` | Creator discover (brand side) — Message gated by Brand Pro |
+| `app/settings/CreatorSettings.tsx` / `BrandSettings.tsx` | `/settings` views per role |
+| `app/settings/BrandPlanCard.tsx` | Brand Pro plan status + upgrade CTA (monthly/yearly checkout, manage billing) |
+| `app/discover/page.tsx` | Creator discover (brand home) — Message gated by Brand Pro |
 | `app/components/AvatarImg.tsx` | Avatar `<img>` with initials fallback on load error |
 | `app/campaigns/[id]/page.tsx` | Campaign detail + ApplySection timeline (brand verified tick) |
 | `app/campaigns/[id]/ApplySection.tsx` | Application timeline UI |
-| `app/social/campaigns/page.tsx` | Creator campaign feed — brand tick + "Featured" tag |
+| `app/campaigns/CreatorCampaigns.tsx` / `BrandCampaigns.tsx` | `/campaigns` views: creator feed (brand tick + "Featured") / brand campaign manager |
 | `config/subscriptions.ts` | Tier definitions (incl. `brand`), price/tier/verifiedTier resolvers |
 | `app/api/social/campaigns/route.ts` | Campaigns GET/POST — free-brand cap, priority placement sort |
 | `app/api/social/conversations/route.ts` | Conversations — cold-message Brand Pro gate |

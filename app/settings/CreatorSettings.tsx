@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { AppNav } from "../components/AppNav";
 import { ProfileForm, type ProfileFormProfile } from "../components/ProfileForm";
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import { signOut } from "next-auth/react";
 import type { ProfilePayload } from "@/app/api/me/profile/route";
-import { WorkspaceSidebar } from "@/app/components/WorkspaceSidebar";
+import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileFormProfile | null>(null);
@@ -160,14 +159,8 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/20 md:pl-56">
-      <AppNav />
-      <WorkspaceSidebar variant="creator" />
-
-      <main className="mx-auto max-w-4xl px-5 pb-28 pt-24 sm:px-8 md:pb-24">
-
-        <h1 className="font-display text-foreground mt-4 text-2xl font-semibold tracking-tight">Profile & settings</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Manage your public profile, connected accounts, and billing.</p>
+    <WorkspaceShell variant="creator" width="narrow">
+        <PageHeader eyebrow="Settings" title="Profile & settings" description="Your public profile, connected accounts and plan." />
 
         {saved && (
           <div className="mt-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
@@ -330,7 +323,7 @@ export default function ProfilePage() {
             </div>
             <p className="text-muted-foreground text-sm mb-3">Update your company info, industry, and campaign budget range.</p>
             <a
-              href="/brand?tab=settings"
+              href="/settings"
               className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
             >
               Edit brand profile
@@ -522,7 +515,6 @@ export default function ProfilePage() {
             <p className="mt-3 text-sm text-muted-foreground">Account deleted. Signing you out…</p>
           )}
         </div>
-      </main>
-    </div>
+    </WorkspaceShell>
   );
 }

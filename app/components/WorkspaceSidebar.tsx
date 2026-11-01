@@ -10,8 +10,9 @@ import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
  * The one navigation for the signed-in app. Every workspace page renders this instead of
  * top-bar links: a grouped left sidebar on desktop, a bottom tab bar on phones.
  *
- * Creator: Home · Social (Campaigns, Messages) · Grow (Invite & earn) · footer (View my
- * kit, Plan & billing, Settings). Brand: Discover · Campaigns · Inbox · Grow · Settings.
+ * Every tab is one top-level route: /dashboard (creator home), /discover (brand home),
+ * /campaigns, /messages, /referrals, /settings, /pricing. /campaigns, /messages and
+ * /settings render the creator or brand view server-side.
  *
  * Pages that know the account type pass `variant`; shared pages (e.g. /referrals) omit
  * it and the sidebar asks /api/me/profile.
@@ -63,12 +64,12 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
         title: "Social",
         items: [
           {
-            href: "/social/campaigns",
+            href: "/campaigns",
             label: "Campaigns",
             icon: <Megaphone {...ICON} />,
-            match: (p) => p.startsWith("/social/campaigns") || p.startsWith("/campaigns/"),
+            match: (p) => p.startsWith("/campaigns"),
           },
-          { href: "/social/inbox", label: "Messages", icon: <MessageCircle {...ICON} />, badge },
+          { href: "/messages", label: "Messages", icon: <MessageCircle {...ICON} />, badge },
         ],
       },
       { title: "Grow", items: [earn] },
@@ -76,7 +77,7 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
     footer: [
       ...(kitSlug ? [{ href: `/kit/${kitSlug}`, label: "View my kit", icon: <ArrowUpRight {...ICON} />, external: true }] : []),
       { href: "/pricing", label: "Plan & billing", icon: <CreditCard {...ICON} /> },
-      { href: "/profile", label: "Settings", icon: <Settings {...ICON} /> },
+      { href: "/settings", label: "Settings", icon: <Settings {...ICON} /> },
     ],
     mobile: [],
   };
@@ -85,27 +86,27 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
     creator.sections[1].items[0],
     { ...creator.sections[1].items[1], label: "Messages" },
     { ...earn, label: "Earn" },
-    { href: "/profile", label: "Settings", icon: <Settings {...ICON} /> },
+    { href: "/settings", label: "Settings", icon: <Settings {...ICON} /> },
   ];
 
-  const brandInbox: Item = { href: "/brand/inbox", label: "Inbox", icon: <MessageCircle {...ICON} />, badge };
+  const brandInbox: Item = { href: "/messages", label: "Messages", icon: <MessageCircle {...ICON} />, badge };
   const brand: { sections: Section[]; footer: Item[]; mobile: Item[] } = {
     sections: [
       {
         items: [
-          { href: "/brand", label: "Discover", icon: <Compass {...ICON} /> },
+          { href: "/discover", label: "Discover", icon: <Compass {...ICON} /> },
           {
-            href: "/brand/campaigns",
+            href: "/campaigns",
             label: "Campaigns",
             icon: <Megaphone {...ICON} />,
-            match: (p) => p.startsWith("/brand/campaigns") || p.startsWith("/campaigns/"),
+            match: (p) => p.startsWith("/campaigns"),
           },
           brandInbox,
         ],
       },
       { title: "Grow", items: [earn] },
     ],
-    footer: [{ href: "/brand/settings", label: "Settings", icon: <Settings {...ICON} /> }],
+    footer: [{ href: "/settings", label: "Settings", icon: <Settings {...ICON} /> }],
     mobile: [],
   };
   brand.mobile = [...brand.sections[0].items, { ...earn, label: "Earn" }, brand.footer[0]];
