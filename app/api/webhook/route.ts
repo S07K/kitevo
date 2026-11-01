@@ -60,9 +60,12 @@ export async function POST(req: Request) {
             where: { id: event.userId },
             data: { stripeCustomerId: event.customerId, verifiedTier },
           });
+          // Dodo reports every renewal as checkout.completed too, so dedupe per user+price:
+          // the funnel counts the first upgrade to each plan, not each billing cycle.
           await trackEvent("upgrade", {
             userId: event.userId,
             props: { tier: getTierByPriceId(event.priceId)?.id ?? null },
+            dedupeKey: `upgrade:${event.userId}:${event.priceId ?? "unknown"}`,
           });
           console.log(
             `[webhook] Linked customer ${event.customerId} to user ${event.userId}, granted ${verifiedTier ?? "no"} tier`
