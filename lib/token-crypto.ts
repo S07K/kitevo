@@ -5,7 +5,8 @@ import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
  *
  * Format: `enc:v1:<keyId>:<iv>:<ciphertext+authTag>` (base64url parts), AES-256-GCM.
  *
- * Keys come from TOKEN_ENCRYPTION_KEYS = "<id>:<base64 32-byte key>[,<id>:<key>...]".
+ * Keys come from TOKEN_ENCRYPTION_KEYS = "<id>:<base64 32-byte key>[,<id>:<key>...]"; a single
+ * bare "<base64 key>" also works and is treated as id "k1".
  * The FIRST entry encrypts; every entry can decrypt, so rotation = prepend a new key,
  * run `scripts/encrypt-platform-tokens.ts` to re-encrypt, then drop the old key.
  * Generate a key: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`
@@ -36,11 +37,12 @@ export function parseKeyring(raw: string | undefined): Keyring {
   const keys = new Map<string, Buffer>();
   let activeId: string | null = null;
   for (const entry of raw.split(",").map((s) => s.trim()).filter(Boolean)) {
+    // A bare key (no "<id>:" prefix) is accepted as id "k1" — base64 never contains ":",
+    // so this is unambiguous, and it's the natural thing to paste for a single key.
     const idx = entry.indexOf(":");
-    if (idx <= 0) throw new Error("TOKEN_ENCRYPTION_KEYS entry must be '<id>:<base64 key>'");
-    const id = entry.slice(0, idx);
+    const id = idx > 0 ? entry.slice(0, idx) : "k1";
     if (!/^[A-Za-z0-9_-]+$/.test(id)) throw new Error(`TOKEN_ENCRYPTION_KEYS: invalid key id "${id}"`);
-    const key = Buffer.from(entry.slice(idx + 1), "base64");
+    const key = Buffer.from(idx > 0 ? entry.slice(idx + 1) : entry, "base64");
     if (key.length !== 32) throw new Error(`TOKEN_ENCRYPTION_KEYS: key "${id}" must be 32 bytes (base64)`);
     if (keys.has(id)) throw new Error(`TOKEN_ENCRYPTION_KEYS: duplicate key id "${id}"`);
     keys.set(id, key);

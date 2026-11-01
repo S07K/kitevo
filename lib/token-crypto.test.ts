@@ -74,6 +74,12 @@ describe("token-crypto", () => {
     expect(encryptToken("tok")).toBe("tok");
   });
 
+  it("accepts a bare key as id k1", () => {
+    vi.stubEnv("TOKEN_ENCRYPTION_KEYS", KEY_A);
+    expect(activeTokenKeyId()).toBe("k1");
+    expect(decryptToken(encryptToken("tok"))).toBe("tok");
+  });
+
   it("rejects malformed keyrings", () => {
     expect(() => parseKeyring("nokey")).toThrow();
     expect(() => parseKeyring(`a:${Buffer.alloc(16).toString("base64")}`)).toThrow();
