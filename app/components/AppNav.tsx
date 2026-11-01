@@ -9,8 +9,11 @@ type NavLink = { href: string; label: string; primary?: boolean; external?: bool
 
 export function AppNav({
   links = [],
+  avatarOnMobileOnly = false,
 }: {
   links?: NavLink[];
+  /** Workspace pages: the sidebar shows the account on desktop, so only phones need it here. */
+  avatarOnMobileOnly?: boolean;
   onLogout?: () => void; // kept for API compat, handled by NavAvatar now
   tabs?: unknown;        // kept for API compat, unused
 }) {
@@ -45,7 +48,7 @@ export function AppNav({
       )}
 
       {/* Avatar menu — pushed to the right */}
-      <div className="ml-auto flex items-center gap-2">
+      <div className={`ml-auto flex items-center gap-2 ${avatarOnMobileOnly ? "md:hidden" : ""}`}>
         <NavAvatar />
       </div>
 

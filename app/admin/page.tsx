@@ -114,7 +114,7 @@ export default async function AdminPage({
       title="Users & ops"
       description={`Look up an account, change its comp, resync its plan from ${payments.id}, and watch payment webhooks.`}
     >
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         {stats.map((s) => (
           <div key={s.label} className={`${adminCard} p-4 ${s.alert ? "border-red-500/40" : ""}`}>
             <div className={adminEyebrow}>{s.label}</div>

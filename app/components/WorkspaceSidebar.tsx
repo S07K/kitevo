@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
-import { ArrowUpRight, Compass, CreditCard, Gift, House, Megaphone, MessageCircle, Settings, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTheme } from "next-themes";
+import { signOut } from "next-auth/react";
+import { ArrowUpRight, ChevronsUpDown, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
+import { AvatarImg } from "./AvatarImg";
 import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
 import { Skeleton } from "@/app/components/Skeleton";
 
@@ -22,6 +25,7 @@ import { Skeleton } from "@/app/components/Skeleton";
 type Variant = "creator" | "brand";
 type Item = { href: string; label: string; icon: ReactNode; badge?: number; external?: boolean; match?: (p: string) => boolean };
 type Section = { title?: string; items: Item[] };
+type Account = { name: string | null; email: string | null; avatarUrl: string | null; accountType: Variant };
 
 const ICON = { size: 17, strokeWidth: 1.8, "aria-hidden": true } as const;
 
@@ -31,6 +35,32 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
   const [unread, setUnread] = useState(0);
   const [kitSlug, setKitSlug] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [account, setAccount] = useState<Account | null>(null);
+
+  // Profile for the account row (and the variant, when the page didn't pass one).
+  // For brands the API already returns companyName as `name` and the logo as `avatarUrl`.
+  useEffect(() => {
+    fetch("/api/me/profile", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => {
+        if (!p) return;
+        setAccount({ name: p.name ?? null, email: p.email ?? null, avatarUrl: p.avatarUrl ?? null, accountType: p.accountType === "brand" ? "brand" : "creator" });
+        if (!variantProp) setVariant(p.accountType === "brand" ? "brand" : "creator");
+      })
+      .catch(() => {
+        if (!variantProp) setVariant("creator");
+      });
+  }, [variantProp]);
+
+  // Avatar/logo uploads elsewhere fire this; keep the row in sync without a refetch.
+  useEffect(() => {
+    const onUpdate = (e: Event) => {
+      const url = (e as CustomEvent<{ avatarUrl: string }>).detail?.avatarUrl;
+      setAccount((a) => (a ? { ...a, avatarUrl: url || null } : a));
+    };
+    window.addEventListener("kitevo:avatar-updated", onUpdate);
+    return () => window.removeEventListener("kitevo:avatar-updated", onUpdate);
+  }, []);
 
   // Admin-only footer link. Non-admins get { admin: false } and never see it.
   useEffect(() => {
@@ -39,14 +69,6 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
       .then((d) => setIsAdmin(d?.admin === true))
       .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (variantProp) return;
-    fetch("/api/me/profile", { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((p) => setVariant(p?.accountType === "brand" ? "brand" : "creator"))
-      .catch(() => setVariant("creator"));
-  }, [variantProp]);
 
   useEffect(() => {
     if (inboxBadge !== undefined) return;
@@ -166,6 +188,9 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
                 <NavItem key={it.href} item={it} active={isActive(it)} />
               ))}
             </div>
+            <div className="border-t border-border p-3">
+              <AccountRow account={account} />
+            </div>
           </>
         ) : (
           // Same shape as the creator nav: Home · Social (2) · Grow (1), then the footer.
@@ -228,6 +253,98 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
         </nav>
       )}
     </>
+  );
+}
+
+/** Signed-in account at the foot of the sidebar: avatar, name, role; opens theme + log out. */
+function AccountRow({ account }: { account: Account | null }) {
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
+  const wrap = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => !wrap.current?.contains(e.target as Node) && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  if (!account) {
+    return (
+      <div className="flex items-center gap-2.5 px-2 py-1.5" aria-hidden>
+        <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+        <div className="flex-1 space-y-1.5">
+          <Skeleton className="h-3 w-24 rounded-full" />
+          <Skeleton className="h-2.5 w-14 rounded-full" />
+        </div>
+      </div>
+    );
+  }
+
+  const label = account.name || account.email || "Account";
+  const isDark = mounted && resolvedTheme === "dark";
+  const item = "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none";
+
+  return (
+    <div ref={wrap} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-muted ${open ? "bg-muted" : ""}`}
+      >
+        <AvatarImg
+          src={account.avatarUrl}
+          alt=""
+          className={`h-8 w-8 shrink-0 border border-border object-cover ${account.accountType === "brand" ? "rounded-lg" : "rounded-full"}`}
+          fallback={
+            <span
+              className={`flex h-8 w-8 shrink-0 items-center justify-center bg-muted text-xs font-semibold text-foreground ${account.accountType === "brand" ? "rounded-lg" : "rounded-full"}`}
+            >
+              {label.charAt(0).toUpperCase()}
+            </span>
+          }
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-foreground">{label}</span>
+          <span className="block truncate text-xs capitalize text-muted-foreground">{account.accountType}</span>
+        </span>
+        <ChevronsUpDown size={14} className="shrink-0 text-muted-foreground" aria-hidden />
+      </button>
+
+      {open && (
+        <div role="menu" aria-label="Account" className="absolute bottom-[calc(100%+6px)] left-0 right-0 z-50 overflow-hidden rounded-xl border border-border bg-background p-1 shadow-lg">
+          {account.email && <p className="truncate px-3 pb-1.5 pt-2 text-xs text-muted-foreground">{account.email}</p>}
+          {mounted && (
+            <button role="menuitem" type="button" className={`${item} text-foreground hover:bg-muted`} onClick={() => setTheme(isDark ? "light" : "dark")}>
+              {isDark ? <Sun size={15} aria-hidden /> : <Moon size={15} aria-hidden />}
+              {isDark ? "Light mode" : "Dark mode"}
+            </button>
+          )}
+          <div className="my-1 h-px bg-border" />
+          <button
+            role="menuitem"
+            type="button"
+            className={`${item} text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30`}
+            onClick={async () => {
+              setOpen(false);
+              await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
+              signOut({ callbackUrl: "/" });
+            }}
+          >
+            <LogOut size={15} aria-hidden /> Log out
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -89,7 +89,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
         </>
       }
     >
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <section className={`${adminCard} p-5`}>
           <h2 className={adminEyebrow}>Plan</h2>
           <dl className="mt-3 grid grid-cols-2 gap-4">

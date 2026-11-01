@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { AppNav } from "@/app/components/AppNav";
+import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
 
-/** Shared chrome for /admin pages: top nav, section tabs, title. Admin-only, so plain on purpose. */
+/** Shared chrome for /admin pages: the normal workspace shell (sidebar), an "Admin" header and section tabs. */
 export const adminCard = "rounded-2xl border border-border bg-background";
 export const adminEyebrow = "text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground";
 
@@ -23,31 +23,24 @@ export function AdminFrame({
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-muted/20">
-      <AppNav />
-      <main className="mx-auto max-w-6xl px-4 pb-24 pt-24 sm:px-8">
-        <nav className="mb-6 flex gap-1 text-sm" aria-label="Admin sections">
-          {TABS.map((t) => (
-            <Link
-              key={t.href}
-              href={t.href}
-              aria-current={t.href === active ? "page" : undefined}
-              className={`rounded-full px-3 py-1.5 font-medium transition-colors ${
-                t.href === active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {t.label}
-            </Link>
-          ))}
-          <Link href="/dashboard" className="ml-auto rounded-full px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-            ← Back to workspace
+    <WorkspaceShell width="wide">
+      <nav className="mb-6 flex flex-wrap gap-1 rounded-full bg-muted p-1 text-sm sm:w-fit" aria-label="Admin sections">
+        {TABS.map((t) => (
+          <Link
+            key={t.href}
+            href={t.href}
+            aria-current={t.href === active ? "page" : undefined}
+            className={`rounded-full px-3.5 py-1.5 font-medium transition-colors ${
+              t.href === active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t.label}
           </Link>
-        </nav>
-        <h1 className="font-display text-foreground text-2xl font-semibold tracking-tight">{title}</h1>
-        {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
-        {children}
-      </main>
-    </div>
+        ))}
+      </nav>
+      <PageHeader eyebrow="Admin" title={title} description={description} />
+      {children}
+    </WorkspaceShell>
   );
 }
 

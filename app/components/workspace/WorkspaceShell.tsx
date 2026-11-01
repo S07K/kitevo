@@ -25,7 +25,7 @@ export function WorkspaceShell({
 }) {
   return (
     <div className="min-h-screen bg-muted/30">
-      <AppNav />
+      <AppNav avatarOnMobileOnly />
       <WorkspaceSidebar variant={variant} inboxBadge={inboxBadge} />
       <div className="md:pl-56">
         {width === "full" ? (

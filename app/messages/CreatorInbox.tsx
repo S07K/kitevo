@@ -146,7 +146,7 @@ export default function CreatorInbox() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
-      <AppNav />
+      <AppNav avatarOnMobileOnly />
       <WorkspaceSidebar variant="creator" inboxBadge={unreadCount} />
 
       <div className="flex-1 overflow-hidden mt-[57px] md:ml-56 pb-[52px] md:pb-0">
