@@ -264,7 +264,7 @@ export default function BrandDiscover() {
   }
 
   return (
-    <WorkspaceShell variant="brand">
+    <WorkspaceShell variant="brand" width="wide">
         <PageHeader eyebrow="Discover" title="Find creators" description="Live media kits with verified stats. Save the ones you like, message them, or invite them to a campaign." />
         {coldMessageLocked && (
           <div className="mb-6 rounded-2xl border border-[#7c3aed]/40 bg-[#7c3aed]/5 px-5 py-4 flex items-center justify-between gap-4">
