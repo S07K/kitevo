@@ -25,7 +25,7 @@ export default function BlogIndex() {
   const posts = getAllPosts();
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-canvas min-h-screen">
       <BlogHeader />
 
       <main className="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-20">

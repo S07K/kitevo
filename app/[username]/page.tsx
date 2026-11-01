@@ -135,7 +135,7 @@ export default async function CreatorProfilePage({
   const bio = isBrand ? (user.brandProfile?.description ?? user.bio) : user.bio;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-canvas">
       {/* Nav */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-5 sm:px-8">

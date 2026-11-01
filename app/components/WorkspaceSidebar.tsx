@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useTheme } from "next-themes";
+import { PalettePicker, useAppearance } from "./Appearance";
 import { signOut } from "next-auth/react";
 import { ArrowUpRight, ChevronsUpDown, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
 import { AvatarImg } from "./AvatarImg";
@@ -283,11 +283,9 @@ export function WorkspaceSidebar({
 /** Signed-in account at the foot of the sidebar: avatar, name, role; opens theme + log out. */
 function AccountRow({ account }: { account: Account | null }) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const { resolvedTheme, setTheme } = useTheme();
+  const { mounted, isDark, toggleDark } = useAppearance();
   const wrap = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => !wrap.current?.contains(e.target as Node) && setOpen(false);
@@ -313,7 +311,6 @@ function AccountRow({ account }: { account: Account | null }) {
   }
 
   const label = account.name || account.email || "Account";
-  const isDark = mounted && resolvedTheme === "dark";
   const item = "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none";
 
   return (
@@ -348,11 +345,15 @@ function AccountRow({ account }: { account: Account | null }) {
         <div role="menu" aria-label="Account" className="absolute bottom-[calc(100%+6px)] left-0 right-0 z-50 overflow-hidden rounded-xl border border-border bg-background p-1 shadow-lg">
           {account.email && <p className="truncate px-3 pb-1.5 pt-2 text-xs text-muted-foreground">{account.email}</p>}
           {mounted && (
-            <button role="menuitem" type="button" className={`${item} text-foreground hover:bg-muted`} onClick={() => setTheme(isDark ? "light" : "dark")}>
+            <button role="menuitem" type="button" className={`${item} text-foreground hover:bg-muted`} onClick={toggleDark}>
               {isDark ? <Sun size={15} aria-hidden /> : <Moon size={15} aria-hidden />}
               {isDark ? "Light mode" : "Dark mode"}
             </button>
           )}
+          <div className="px-3 pb-2 pt-1.5">
+            <p className="mb-2 text-xs text-muted-foreground">Colour palette</p>
+            <PalettePicker />
+          </div>
           <div className="my-1 h-px bg-border" />
           <button
             role="menuitem"

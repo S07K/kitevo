@@ -55,7 +55,7 @@ const ghostBtn = "inline-flex h-11 items-center gap-1.5 rounded-full px-4 text-s
 
 export default function OnboardingPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-muted/20" />}>
+    <Suspense fallback={<div className="min-h-screen bg-canvas" />}>
       <Onboarding />
     </Suspense>
   );
@@ -669,7 +669,7 @@ function Onboarding() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-muted/20">
+    <div className="min-h-screen bg-canvas">
       <AppNav />
       <main className="mx-auto max-w-5xl px-5 pb-24 pt-24 sm:px-8">{children}</main>
     </div>

@@ -5,6 +5,7 @@ import { LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Panel } from "@/app/components/workspace/WorkspaceShell";
 import { Button } from "@/app/components/workspace/Button";
+import { PalettePicker } from "@/app/components/Appearance";
 
 /** Settings rail footer shared by creators and brands: who's signed in + delete account. */
 export function AccountPanels({ email }: { email: string | null }) {
@@ -148,5 +149,17 @@ export function AccountPanels({ email }: { email: string | null }) {
         </div>
       </section>
     </>
+  );
+}
+
+/** Settings rail: pick the app's light colour palette (dark mode lives in the account menu). */
+export function AppearancePanel() {
+  return (
+    <Panel title="Appearance">
+      <p className="mb-4 text-sm text-muted-foreground">
+        Colour palette for your workspace. Your public kit keeps its own vibe.
+      </p>
+      <PalettePicker size="md" showLabels />
+    </Panel>
   );
 }

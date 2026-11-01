@@ -46,7 +46,7 @@ function ResetPasswordForm() {
     );
   }
 
-  const inputCls = "w-full rounded-xl border border-border bg-muted/50 dark:bg-white/[0.06] text-foreground placeholder:text-muted-foreground px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition";
+  const inputCls = "w-full rounded-xl border border-border bg-background dark:bg-white/[0.06] text-foreground placeholder:text-muted-foreground px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition";
 
   return (
     <AuthLayout title="Set new password" subtitle="Choose a strong password for your account.">

@@ -19,7 +19,7 @@ export function WorkspaceFrame({ viewer, children }: { viewer: SidebarViewer; ch
 
   return (
     <FrameContext.Provider value={api}>
-      <div className="min-h-screen bg-muted/30">
+      <div className="min-h-screen bg-canvas">
         <AppNav avatarOnMobileOnly />
         <WorkspaceSidebar viewer={viewer} inboxBadge={inboxBadge} />
         <div className="md:pl-56">{children}</div>
