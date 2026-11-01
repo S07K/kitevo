@@ -6,10 +6,14 @@ import Link from "next/link";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { Badge } from "@/app/components/Badge";
 import { DatePicker } from "@/app/components/DatePicker";
-import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
+import { ChevronDown, Download, Plus } from "lucide-react";
+import { WorkspaceShell, PageHeader, Panel, Eyebrow } from "@/app/components/workspace/WorkspaceShell";
+import { Button, ButtonLink } from "@/app/components/workspace/Button";
 import { Skeleton, ListCardSkeleton } from "@/app/components/Skeleton";
+import { AvatarImg } from "@/app/components/AvatarImg";
+import { CREATOR_NICHES } from "@/lib/niches";
 
-const NICHES = ["Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
+const NICHES = CREATOR_NICHES;
 const BUDGET_OPTIONS = ["< $500", "$500–$2k", "$2k–$10k", "$10k–$50k", "$50k+"];
 
 type Campaign = {
@@ -56,13 +60,15 @@ export default function BrandCampaigns() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loadingApps, setLoadingApps] = useState(false);
   const [isPro, setIsPro] = useState(false);
+  const [proLoaded, setProLoaded] = useState(false);
   const [showCapNotice, setShowCapNotice] = useState(false);
 
   useEffect(() => {
     fetch("/api/me/account-type", { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => d && setIsPro(d.verifiedTier === "brand_verified"))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setProLoaded(true));
   }, []);
 
   const openCampaignCount = campaigns.filter((c) => c.status === "open").length;
@@ -164,24 +170,20 @@ export default function BrandCampaigns() {
   }
 
   return (
-    <WorkspaceShell variant="brand">
+    <WorkspaceShell variant="brand" width="wide">
         <PageHeader
           eyebrow="Campaigns"
           title="Your campaigns"
-          description={`${campaigns.length} campaign${campaigns.length !== 1 ? "s" : ""}. Post a brief and creators apply with their kit.`}
+          description="Post a brief and creators apply with their kit."
           actions={
-          <button
-            type="button"
-            onClick={handleNewCampaign}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 transition-opacity"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            New campaign
-          </button>
+            <Button variant="primary" onClick={handleNewCampaign} aria-expanded={showForm}>
+              <Plus size={14} aria-hidden /> New campaign
+            </Button>
           }
         />
+
+      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="min-w-0 lg:col-span-2">
 
         {actionError && (
           <div className="mb-4 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/20 px-4 py-3">
@@ -219,10 +221,10 @@ export default function BrandCampaigns() {
 
         {/* Create form */}
         {showForm && !capReached && (
-          <div className="mb-6 rounded-2xl border border-border bg-muted/20 p-6 space-y-4">
+          <div className="mb-6 space-y-4 rounded-2xl border border-border bg-background p-5 sm:p-6">
             <div>
-              <p className="text-base font-semibold text-foreground">Create a campaign</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Creators will see this and apply with a pitch.</p>
+              <h2 className="text-sm font-semibold text-foreground">Create a campaign</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">Creators will see this and apply with a pitch.</p>
             </div>
             {formError && (
               <div className="text-xs text-red-500">
@@ -235,17 +237,19 @@ export default function BrandCampaigns() {
             <div className="space-y-3">
               <input
                 type="text"
+                aria-label="Campaign title"
                 placeholder="Campaign title *"
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 className="w-full px-4 py-3 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
               />
               <textarea
+                aria-label="Campaign description"
                 placeholder="Describe the campaign — what you're looking for, deliverables, and goals. *"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 rows={5}
-                className="w-full px-4 py-3 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 resize-none"
+                className="w-full px-4 py-3 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 resize-y"
               />
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -280,22 +284,11 @@ export default function BrandCampaigns() {
                 />
               </div>
             </div>
-            <div className="flex gap-2 pt-1">
-              <button
-                type="button"
-                onClick={createCampaign}
-                disabled={saving}
-                className="h-10 px-6 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-50"
-              >
+            <div className="flex justify-end gap-2 pt-1">
+              <Button onClick={() => { setShowForm(false); setFormError(null); }}>Cancel</Button>
+              <Button variant="primary" onClick={createCampaign} disabled={saving}>
                 {saving ? "Publishing…" : "Publish campaign"}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setFormError(null); }}
-                className="h-10 px-4 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -306,16 +299,12 @@ export default function BrandCampaigns() {
             {Array.from({ length: 3 }).map((_, i) => <ListCardSkeleton key={i} height="h-36" />)}
           </div>
         ) : campaigns.length === 0 ? (
-          <div className="text-center py-24 border border-dashed border-border rounded-2xl">
-            <p className="text-foreground font-medium mb-1">No campaigns yet</p>
-            <p className="text-sm text-muted-foreground mb-5">Post a brief and let creators come to you.</p>
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
-              className="h-9 px-5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 transition-opacity"
-            >
-              Create your first campaign
-            </button>
+          <div className="rounded-2xl border border-dashed border-border bg-background px-6 py-16 text-center">
+            <p className="mb-1 text-sm font-medium text-foreground">No campaigns yet</p>
+            <p className="mb-5 text-sm text-muted-foreground">Post a brief and let creators come to you.</p>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus size={14} aria-hidden /> Create your first campaign
+            </Button>
           </div>
         ) : (
           <div className="space-y-4">
@@ -325,7 +314,20 @@ export default function BrandCampaigns() {
               return (
                 <div key={c.id} className={`rounded-2xl border transition-all ${isOpen ? "border-foreground/60 shadow-sm" : "border-border hover:border-foreground/30"} bg-background overflow-hidden`}>
                   {/* Card header */}
-                  <div className="p-6 cursor-pointer" onClick={() => setSelectedId(isOpen ? null : c.id)}>
+                  <div
+                    className="cursor-pointer p-5 sm:p-6"
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isOpen}
+                    onClick={() => setSelectedId(isOpen ? null : c.id)}
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedId(isOpen ? null : c.id);
+                      }
+                    }}
+                  >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2.5 mb-2">
@@ -352,13 +354,10 @@ export default function BrandCampaigns() {
                       </div>
                       <div className="shrink-0 flex flex-col items-end gap-3">
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-foreground tabular-nums">{c._count.applications}</p>
+                          <p className="font-display text-2xl font-semibold text-foreground tabular-nums">{c._count.applications}</p>
                           <p className="text-xs text-muted-foreground">applicant{c._count.applications !== 1 ? "s" : ""}</p>
                         </div>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                          className={`text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}>
-                          <path d="M6 9l6 6 6-6"/>
-                        </svg>
+                        <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} aria-hidden />
                       </div>
                     </div>
 
@@ -378,10 +377,10 @@ export default function BrandCampaigns() {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); toggleStatus(c.id, c.status); }}
-                        className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                        className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-colors ${
                           c.status === "open"
-                            ? "border-yellow-300 text-yellow-700 hover:bg-yellow-50 dark:hover:bg-yellow-950/20"
-                            : "border-green-300 text-green-700 hover:bg-green-50 dark:hover:bg-green-950/20"
+                            ? "border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-900/60 dark:text-amber-400 dark:hover:bg-amber-950/20"
+                            : "border-green-300 text-green-700 hover:bg-green-50 dark:border-green-900/60 dark:text-green-400 dark:hover:bg-green-950/20"
                         }`}
                       >
                         {c.status === "open" ? "Close campaign" : "Reopen campaign"}
@@ -414,11 +413,9 @@ export default function BrandCampaigns() {
                           <p className="text-xs font-medium text-muted-foreground">{applications.length} applicant{applications.length !== 1 ? "s" : ""}</p>
                           <a
                             href={`/api/social/campaigns/${c.id}/applications/export`}
-                            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
                           >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
+                            <Download size={12} aria-hidden />
                             Export CSV
                           </a>
                         </div>
@@ -430,15 +427,16 @@ export default function BrandCampaigns() {
                             return (
                               <div key={a.id} className="p-5">
                                 <div className="flex items-start gap-3">
-                                  <div className="h-10 w-10 rounded-full overflow-hidden bg-muted border border-border shrink-0">
-                                    {a.creator.avatarUrl ? (
-                                      <img src={a.creator.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                                    ) : (
-                                      <div className="h-full w-full flex items-center justify-center text-sm font-semibold text-muted-foreground">
+                                  <AvatarImg
+                                    src={a.creator.avatarUrl}
+                                    alt=""
+                                    className="h-10 w-10 shrink-0 rounded-full border border-border object-cover"
+                                    fallback={
+                                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
                                         {displayName.charAt(0).toUpperCase()}
-                                      </div>
-                                    )}
-                                  </div>
+                                      </span>
+                                    }
+                                  />
                                   <div className="min-w-0 flex-1">
                                     <div className="flex items-center justify-between gap-2 mb-1">
                                       <div className="flex items-center gap-1.5 min-w-0">
@@ -457,19 +455,19 @@ export default function BrandCampaigns() {
                                     )}
                                     {a.message && (
                                       <p className="text-sm text-muted-foreground bg-background border border-border rounded-xl px-4 py-3 mb-3 leading-relaxed">
-                                        "{a.message}"
+                                        &ldquo;{a.message}&rdquo;
                                       </p>
                                     )}
                                     <div className="flex items-center gap-3 flex-wrap">
                                       {a.status === "pending" && (
                                         <>
                                           <button type="button" onClick={() => updateApplicationStatus(c.id, a.id, "accepted")} className="h-8 px-4 rounded-full bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition-colors">Accept</button>
-                                          <button type="button" onClick={() => updateApplicationStatus(c.id, a.id, "rejected")} className="h-8 px-4 rounded-full border border-red-300 text-red-600 text-xs font-semibold hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">Decline</button>
+                                          <Button size="sm" variant="danger-outline" onClick={() => updateApplicationStatus(c.id, a.id, "rejected")}>Decline</Button>
                                           <span className="text-muted-foreground/30">·</span>
                                         </>
                                       )}
-                                      {kit && <Link href={`/kit/${kit.slug}`} target="_blank" className="text-xs text-muted-foreground hover:text-foreground transition-colors">View kit</Link>}
-                                      <button type="button" onClick={() => startConversation(a.creator.id)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Message</button>
+                                      {kit && <ButtonLink href={`/kit/${kit.slug}`} target="_blank" size="sm" variant="ghost">View kit</ButtonLink>}
+                                      <Button size="sm" variant="ghost" onClick={() => startConversation(a.creator.id)}>Message</Button>
                                     </div>
                                   </div>
                                 </div>
@@ -486,6 +484,69 @@ export default function BrandCampaigns() {
             })}
           </div>
         )}
+      </div>
+
+      {/* ── Rail: plan usage + totals ── */}
+      <aside className="min-w-0 space-y-6">
+        <Panel title="Plan">
+          {!proLoaded ? (
+            <div aria-hidden>
+              <Skeleton className="h-5 w-20 rounded-full" />
+              <Skeleton className="mt-3 h-1.5 w-full rounded-full" />
+              <Skeleton className="mt-4 h-9 w-full rounded-full" />
+            </div>
+          ) : isPro ? (
+            <>
+              <p className="flex items-center gap-1.5 font-display text-lg font-semibold text-foreground">
+                Brand Pro <VerifiedBadge tier="brand_verified" size="sm" />
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Unlimited open campaigns, featured placement in the creator feed, and direct messages to any creator.
+              </p>
+              <p className="mt-3 text-sm text-foreground">
+                <span className="font-semibold tabular-nums">{openCampaignCount}</span> open now
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-baseline justify-between">
+                <p className="font-display text-lg font-semibold text-foreground">Free</p>
+                <p className="text-xs tabular-nums text-muted-foreground">{Math.min(openCampaignCount, 1)}/1 open</p>
+              </div>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+                <div className="h-full rounded-full bg-foreground transition-all" style={{ width: `${Math.min(openCampaignCount, 1) * 100}%` }} />
+              </div>
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                Free brands keep one campaign open at a time. Brand Pro removes the cap and pins your briefs above others.
+              </p>
+              <ButtonLink href="/settings" variant="primary" className="mt-4 w-full">
+                Upgrade to Brand Pro
+              </ButtonLink>
+            </>
+          )}
+        </Panel>
+
+        <Panel title="Across all campaigns" bodyClassName="">
+          <div className="grid grid-cols-2 gap-px bg-border">
+            {[
+              { label: "Views", value: campaigns.reduce((n, c) => n + c.views, 0) },
+              { label: "Applicants", value: campaigns.reduce((n, c) => n + c._count.applications, 0) },
+              { label: "Accepted", value: campaigns.reduce((n, c) => n + c.acceptedCount, 0) },
+              { label: "Open", value: openCampaignCount },
+            ].map((t) => (
+              <div key={t.label} className="bg-background px-5 py-4">
+                <Eyebrow>{t.label}</Eyebrow>
+                {loading ? (
+                  <Skeleton className="mt-2 h-6 w-10 rounded-full" />
+                ) : (
+                  <p className="mt-1.5 font-display text-2xl font-semibold tabular-nums text-foreground">{t.value.toLocaleString()}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </aside>
+      </div>
     </WorkspaceShell>
   );
 }

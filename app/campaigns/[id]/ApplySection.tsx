@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/app/components/workspace/Button";
 
 type Props = {
   campaignId: string;
@@ -144,12 +146,8 @@ export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt,
     const isAccepted = status === "accepted";
 
     return (
-      <div className="space-y-5">
+      <div>
         <div>
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
-            Application timeline
-          </h2>
-
           <div className="relative space-y-0">
             {steps.map((step, i) => {
               const isLast = i === steps.length - 1;
@@ -181,7 +179,7 @@ export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt,
                         {step.label}
                       </p>
                       {step.date && (
-                        <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                        <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                           {fmt(step.date)}
                         </span>
                       )}
@@ -195,9 +193,7 @@ export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt,
                         className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
                       >
                         Open inbox
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
+                        <ArrowRight size={11} aria-hidden />
                       </Link>
                     )}
                     {step.key === "decision" && isAccepted && (
@@ -206,9 +202,7 @@ export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt,
                         className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline mt-1"
                       >
                         Check inbox
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
+                        <ArrowRight size={11} aria-hidden />
                       </Link>
                     )}
                   </div>
@@ -224,50 +218,51 @@ export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt,
   // Pitch form
   if (showForm) {
     return (
-      <div className="rounded-2xl border border-border bg-muted/20 p-5 space-y-4">
+      <div className="space-y-3">
         <div>
-          <h2 className="text-sm font-semibold text-foreground mb-0.5">Your pitch</h2>
-          <p className="text-xs text-muted-foreground">Tell the brand why you're a great fit. Keep it real and specific.</p>
+          <label htmlFor="apply-pitch" className="text-sm font-semibold text-foreground">
+            Your pitch
+          </label>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+            Why you&apos;re a fit: your niche, your audience, similar work. The brand also sees your kit.
+          </p>
         </div>
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
         <textarea
+          id="apply-pitch"
           value={pitch}
           onChange={(e) => setPitch(e.target.value)}
-          placeholder="Tell the brand why you're a great fit — your niche, audience, past work…"
-          rows={5}
-          className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 resize-none"
+          placeholder="Hi! I make … for an audience of … I'd love to …"
+          rows={6}
+          autoFocus
+          className="w-full resize-y rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
         />
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={submit}
-            disabled={submitting || !pitch.trim()}
-            className="h-10 px-6 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-50"
-          >
-            {submitting ? "Submitting…" : "Submit application"}
-          </button>
-          <button
-            type="button"
-            onClick={() => { setShowForm(false); setPitch(""); setError(null); }}
-            className="h-10 px-4 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setShowForm(false);
+              setPitch("");
+              setError(null);
+            }}
           >
             Cancel
-          </button>
+          </Button>
+          <Button variant="primary" className="flex-1" onClick={submit} disabled={submitting || !pitch.trim()}>
+            {submitting ? "Submitting…" : "Submit application"}
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-4">
-      <button
-        type="button"
-        onClick={() => setShowForm(true)}
-        className="h-11 px-8 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity"
-      >
+    <div>
+      <p className="text-sm text-muted-foreground">Send a short pitch. The brand sees it alongside your media kit.</p>
+      <Button variant="primary" size="lg" className="mt-4 w-full" onClick={() => setShowForm(true)}>
         Apply to this campaign
-      </button>
-      <p className="text-xs text-muted-foreground">Free · No commitments</p>
+      </Button>
+      <p className="mt-2 text-center text-xs text-muted-foreground">Free · No commitment</p>
     </div>
   );
 }

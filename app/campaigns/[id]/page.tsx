@@ -9,7 +9,9 @@ import { recordCampaignView } from "@/lib/campaign-views";
 import { ApplySection } from "./ApplySection";
 import { Badge } from "@/app/components/Badge";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { WorkspaceShell } from "@/app/components/workspace/WorkspaceShell";
+import { ArrowLeft, ExternalLink } from "lucide-react";
+import { WorkspaceShell, Panel } from "@/app/components/workspace/WorkspaceShell";
+import { ButtonLink } from "@/app/components/workspace/Button";
 
 type Params = { id: string };
 
@@ -119,121 +121,125 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
     ? Math.ceil((new Date(campaign.deadline).getTime() - Date.now()) / 86_400_000)
     : null;
 
+  const applicants = campaign._count.applications;
+  const facts: Array<{ label: string; value: string }> = [
+    ...(campaign.budget ? [{ label: "Budget", value: campaign.budget }] : []),
+    ...(campaign.niche ? [{ label: "Niche", value: campaign.niche }] : []),
+    ...(campaign.deadline
+      ? [
+          {
+            label: "Apply by",
+            value: `${new Date(campaign.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}${
+              daysLeft !== null ? (daysLeft > 0 ? ` · ${daysLeft}d left` : " · closing soon") : ""
+            }`,
+          },
+        ]
+      : []),
+    { label: "Applicants", value: String(applicants) },
+    { label: "Posted", value: new Date(campaign.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) },
+  ];
+  const website = campaign.brand.brandProfile?.website ?? null;
+
   return (
-    <WorkspaceShell width="narrow">
-        <div className="space-y-8">
-          {/* Back */}
-          <Link
-            href="/campaigns"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H5M12 5l-7 7 7 7"/>
-            </svg>
-            Back to campaigns
-          </Link>
+    <WorkspaceShell width="wide">
+      <Link
+        href="/campaigns"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft size={15} aria-hidden /> Back to campaigns
+      </Link>
 
-          {/* Brand card */}
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl overflow-hidden bg-muted border border-border shrink-0">
-              {logo ? (
-                <img src={logo} alt={company} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center text-xl font-bold text-muted-foreground">
-                  {company.charAt(0).toUpperCase()}
-                </div>
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <p className="text-base font-semibold text-foreground">{company}</p>
-                <VerifiedBadge tier={campaign.brand.verifiedTier} size="md" />
-              </div>
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                {campaign.brand.brandProfile?.industry && (
-                  <span className="text-xs text-muted-foreground">{campaign.brand.brandProfile.industry}</span>
-                )}
-                {campaign.brand.brandProfile?.website && (
-                  <>
-                    <span className="text-muted-foreground/30 text-xs">·</span>
-                    <a
-                      href={campaign.brand.brandProfile.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {campaign.brand.brandProfile.website.replace(/^https?:\/\//, "")}
-                    </a>
-                  </>
-                )}
-              </div>
-            </div>
+      {/* Header: brand + title, like a PageHeader */}
+      <header className="mb-8">
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+            {logo ? (
+              // eslint-disable-next-line @next/next/no-img-element -- base64 data URL
+              <img src={logo} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-muted-foreground">{company.charAt(0).toUpperCase()}</div>
+            )}
           </div>
+          <p className="text-sm font-medium text-foreground">{company}</p>
+          <VerifiedBadge tier={campaign.brand.verifiedTier} size="sm" />
+          {campaign.brand.brandProfile?.industry && <span className="text-sm text-muted-foreground">· {campaign.brand.brandProfile.industry}</span>}
+        </div>
+        <h1 className="mt-3 font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground sm:text-[32px]">{campaign.title}</h1>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {campaign.niche && <Badge variant="default">{campaign.niche}</Badge>}
+          {campaign.budget && <Badge variant="accent">{campaign.budget}</Badge>}
+          {daysLeft !== null && <Badge variant={daysLeft <= 3 ? "danger" : "warning"}>{daysLeft > 0 ? `${daysLeft}d left` : "Closing soon"}</Badge>}
+        </div>
+      </header>
 
-          {/* Title + meta chips */}
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight leading-snug mb-4">
-              {campaign.title}
-            </h1>
-            <div className="flex flex-wrap gap-2">
-              {campaign.niche && <Badge variant="default">{campaign.niche}</Badge>}
-              {campaign.budget && <Badge variant="accent">{campaign.budget}</Badge>}
-              {daysLeft !== null && (
-                <Badge variant={daysLeft <= 3 ? "danger" : "warning"}>
-                  {daysLeft > 0 ? `${daysLeft}d left` : "Closing soon"}
-                </Badge>
-              )}
-              <Badge variant="default">{campaign._count.applications} applicant{campaign._count.applications !== 1 ? "s" : ""}</Badge>
-            </div>
-          </div>
-
-          <div className="border-t border-border" />
-
-          {/* Brief */}
-          <div>
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Campaign Brief</h2>
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* ── Main: the brief ── */}
+        <div className="min-w-0 space-y-6 lg:col-span-2">
+          <Panel title="Campaign brief">
             <div className="space-y-3">
-              {campaign.description.split("\n").filter(Boolean).map((para, i) => (
-                <p key={i} className="text-sm text-foreground leading-relaxed">{para}</p>
-              ))}
+              {campaign.description
+                .split("\n")
+                .filter(Boolean)
+                .map((para, i) => (
+                  <p key={i} className="text-sm leading-relaxed text-foreground">
+                    {para}
+                  </p>
+                ))}
             </div>
-          </div>
+          </Panel>
 
-          {/* About brand */}
-          {campaign.brand.brandProfile?.description && (
-            <>
-              <div className="border-t border-border" />
-              <div>
-                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">About {company}</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">{campaign.brand.brandProfile.description}</p>
-              </div>
-            </>
-          )}
-
-          <div className="border-t border-border" />
-
-          {/* Apply — client component handles interactivity */}
-          {session?.user ? (
-            <ApplySection
-              campaignId={id}
-              initialStatus={myApplication?.status ?? null}
-              appliedAt={myApplication?.createdAt?.toISOString() ?? null}
-              reviewedAt={null}
-              hasConversation={hasConversation}
-            />
-          ) : (
-            <div className="rounded-2xl border border-border bg-muted/20 p-5">
-              <p className="text-sm font-semibold text-foreground mb-1">Want to apply?</p>
-              <p className="text-xs text-muted-foreground mb-4">Create a free creator account to pitch to this brand.</p>
-              <Link
-                href={`/auth?next=/campaigns/${id}`}
-                className="inline-flex h-10 items-center px-6 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity"
-              >
-                Sign up free
-              </Link>
-            </div>
+          {(campaign.brand.brandProfile?.description || website) && (
+            <Panel title={`About ${company}`}>
+              {campaign.brand.brandProfile?.description && (
+                <p className="text-sm leading-relaxed text-muted-foreground">{campaign.brand.brandProfile.description}</p>
+              )}
+              {website && (
+                <a
+                  href={website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline ${campaign.brand.brandProfile?.description ? "mt-3" : ""}`}
+                >
+                  {website.replace(/^https?:\/\//, "").replace(/\/$/, "")} <ExternalLink size={12} aria-hidden />
+                </a>
+              )}
+            </Panel>
           )}
         </div>
+
+        {/* ── Rail: apply + facts ── */}
+        <aside className="min-w-0 space-y-6 lg:sticky lg:top-[89px] lg:self-start">
+          <Panel title={myApplication ? "Your application" : "Apply"}>
+            {session?.user ? (
+              <ApplySection
+                campaignId={id}
+                initialStatus={myApplication?.status ?? null}
+                appliedAt={myApplication?.createdAt?.toISOString() ?? null}
+                reviewedAt={null}
+                hasConversation={hasConversation}
+              />
+            ) : (
+              <div>
+                <p className="text-sm text-muted-foreground">Create a free creator account to pitch to this brand.</p>
+                <ButtonLink href={`/auth?next=/campaigns/${id}`} variant="primary" size="lg" className="mt-4 w-full">
+                  Sign up free
+                </ButtonLink>
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="At a glance">
+            <dl className="divide-y divide-border">
+              {facts.map((f) => (
+                <div key={f.label} className="flex items-baseline justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+                  <dt className="text-xs text-muted-foreground">{f.label}</dt>
+                  <dd className="text-right text-sm font-medium tabular-nums text-foreground">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </Panel>
+        </aside>
+      </div>
     </WorkspaceShell>
   );
 }
