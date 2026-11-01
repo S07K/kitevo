@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AppNav } from "@/app/components/AppNav";
+import { AdminFrame } from "../AdminFrame";
 import { getAdmin } from "@/lib/admin";
 import { formatDestination, getDuePayouts, minPayoutFor, REFERRAL_TERMS } from "@/lib/referrals";
 import { prisma } from "@/lib/prisma";
@@ -78,16 +78,17 @@ export default async function AdminPayoutsPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <AppNav />
-      <main className="mx-auto max-w-6xl px-4 pb-24 pt-24 sm:px-8">
-        <h1 className="font-display text-foreground text-2xl font-semibold tracking-tight">Referral payouts</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
+    <AdminFrame
+      active="/admin/payouts"
+      title="Referral payouts"
+      description={
+        <>
           {REFERRAL_TERMS.rateBps / 100}% for {REFERRAL_TERMS.months} months · {REFERRAL_TERMS.holdDays}-day hold · minimum{" "}
           ${(REFERRAL_TERMS.minPayout.USD ?? REFERRAL_TERMS.defaultMinPayout) / 100}. Send each payment yourself, then mark it paid here.
-        </p>
-        <AdminPayoutsClient rows={rows} recent={recent} history={history} stats={stats} />
-      </main>
-    </div>
+        </>
+      }
+    >
+      <AdminPayoutsClient rows={rows} recent={recent} history={history} stats={stats} />
+    </AdminFrame>
   );
 }

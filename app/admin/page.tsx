@@ -14,6 +14,11 @@ export const metadata = { title: "Admin", robots: { index: false, follow: false 
 const WEBHOOK_FILTERS = ["problems", "all"] as const;
 type WebhookFilter = (typeof WEBHOOK_FILTERS)[number];
 
+/** Request-time cutoff (this page is force-dynamic, so "now" is per request by design). */
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+}
+
 /** Pull a user id or customer id out of a stored domain event, to link a delivery to its user. */
 function eventRefs(payload: string | null): { userId?: string; customerId?: string } {
   if (!payload) return {};
@@ -38,7 +43,7 @@ export default async function AdminPage({
   const q = (sp.q ?? "").trim();
   const filter: WebhookFilter = WEBHOOK_FILTERS.includes(sp.webhooks as WebhookFilter) ? (sp.webhooks as WebhookFilter) : "problems";
 
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const weekAgo = daysAgo(7);
   const userWhere: Prisma.UserWhereInput | null = q
     ? {
         OR: [

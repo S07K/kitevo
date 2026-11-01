@@ -17,10 +17,18 @@ function summarize(details: string | null): string {
   try {
     const d = JSON.parse(details) as { before?: Record<string, unknown>; after?: Record<string, unknown>; result?: { status?: string } };
     if (d.before && d.after) {
-      const keys = Object.keys(d.after).filter((k) => JSON.stringify(d.before?.[k]) !== JSON.stringify(d.after?.[k]));
-      return keys.length
-        ? keys.map((k) => `${k}: ${String(d.before?.[k] ?? "—")} → ${String(d.after?.[k] ?? "—")}`).join(" · ")
-        : "no change";
+      const show = (v: unknown) => String(v ?? "—");
+      const parts: string[] = [];
+      for (const [k, after] of Object.entries(d.after)) {
+        if (!(k in d.before)) {
+          // Context the action observed (e.g. the provider's status on a resync), not a change.
+          parts.push(`${k}: ${show(after)}`);
+        } else if ((d.before[k] ?? null) !== (after ?? null)) {
+          parts.push(`${k}: ${show(d.before[k])} → ${show(after)}`);
+        }
+      }
+      const changed = Object.keys(d.after).some((k) => k in d.before! && (d.before![k] ?? null) !== (d.after![k] ?? null));
+      return `${changed ? "" : "no change · "}${parts.join(" · ")}`.replace(/ · $/, "");
     }
     if (d.result?.status) return `result: ${d.result.status}`;
     return details;
