@@ -11,14 +11,7 @@ export type ProfileFormProfile = ProfilePayload & {
   accountType?: string;
 };
 
-const CREATOR_NICHES = [
-  "Fashion", "Beauty", "Food", "Tech", "Health", "Travel",
-  "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance",
-  "Education", "Photography", "Music", "Sports", "Comedy",
-  "DIY", "Art", "Pets", "Business",
-];
-
-const MAX_NICHES = 5;
+import { CREATOR_NICHES, MAX_NICHES } from "@/lib/niches";
 
 /** Must stay under API limit (see app/api/me/avatar/route.ts) so Neon/pg updates don't time out. */
 const MAX_AVATAR_DATA_URL_CHARS = 180_000;

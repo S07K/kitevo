@@ -574,3 +574,13 @@ Sources: [Stan Help Center](https://help.stan.store), [Sell a Digital Download](
 
 **Open:** accountant review of cross-border commission payments (TDS / equalisation levy, records per payee); Stripe refunds aren't mapped automatically yet (reverse from admin).
 
+---
+
+## 14. Onboarding redesign — 2026-11-01
+
+**Why:** every referral and SEO visitor lands here; the old flow asked for a full profile (photo, bio, 20 niches, links), showed a plan picker before the user had built anything, and made them type a URL slug.
+
+**Now:** role picker → creators: **You** (name, username suggested from their name and checked live, up to 5 niches) → **Connect** (Instagram/YouTube optional; the Business/Creator + Facebook Page requirement is explained before they click) → **Your kit is live** (kit auto-created at `/kit/<username>`, copy link, open editor, view as a brand, invite link for the referral program). A live phone preview fills in beside the form and never shows sample numbers. No plan step; upgrades happen after they've seen their kit. Brands: one screen (company, industry, budget) → Discover.
+
+**Measure:** `scripts/funnel-report.ts` — compare signup → onboarding_complete → kit_created → kit_first_view before and after the deploy.
+

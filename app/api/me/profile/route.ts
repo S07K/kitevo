@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { normalizeUsername, usernameProblem } from "@/lib/username";
 
 export type ProfileLink = { label: string; url: string };
 
@@ -87,8 +88,13 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = (await req.json().catch(() => ({}))) as Partial<ProfilePayload>;
-  const username = typeof body.username === "string" ? body.username.trim().toLowerCase().replace(/\s+/g, "-") : undefined;
+  const username = typeof body.username === "string" ? normalizeUsername(body.username) : undefined;
   if (username !== undefined && username.length > 0) {
+    // Validate only a *changed* username, so users who already hold one that is now
+    // reserved can still save the rest of their profile.
+    const current = await prisma.user.findUnique({ where: { id: session.user.id }, select: { username: true } });
+    const problem = current?.username === username ? null : usernameProblem(username);
+    if (problem) return NextResponse.json({ error: problem }, { status: 400 });
     const existing = await prisma.user.findFirst({
       where: { username, id: { not: session.user.id } },
     });

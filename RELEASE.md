@@ -3,7 +3,7 @@
 A running checklist for the work currently on feature branches. Updated as each branch
 lands. Tick items off as you go; delete the section once it's live.
 
-**Last updated:** 2026-11-01
+**Last updated:** 2026-11-01 (onboarding added)
 
 ---
 
@@ -16,9 +16,9 @@ The branches are stacked; each contains the one before it.
 | 1 | `feat/token-encryption` | Encrypt Instagram/YouTube tokens at rest; plan docs |
 | 2 | `feat/analytics-events` | Funnel analytics events; privacy policy fixes |
 | 3 | `feat/referrals` | Referral program, payout details, admin payouts page, referral marketing (hero badge, `/referral-program`, dashboard card, sidebars) |
-| 4 | `feat/onboarding` *(in progress)* | Shorter onboarding with live preview |
+| 4 | `feat/onboarding` | 3-step onboarding with live kit preview, auto-created kit, no plan step; admin payouts page without CSV; username rules |
 
-Merging `feat/referrals` alone brings 1–3. Merge 4 after it when it's ready.
+Merging `feat/onboarding` brings all four (it's built on top of the others).
 
 ---
 
@@ -75,6 +75,7 @@ Nothing else changes. `DATABASE_URL` / `DIRECT_URL` (Vercel + GitHub secrets) ar
 - [ ] Homepage shows the **"NEW · Earn 20%"** badge; `/referral-program` loads.
 - [ ] Log in → dashboard shows the **Invite creators** card with your link; Copy works.
 - [ ] `/referrals` → add a PayPal payout method → it shows as **Active**.
+- [ ] **Onboarding**: sign up a fresh test account → role picker → creator → username is pre-filled → Continue → Skip → "Your media kit is live" with a working link. Delete the test account after.
 - [ ] `/admin/payouts` loads for you; in a private window (logged out or another
   account) it's a 404.
 - [ ] Reconnect Instagram on a test account → kit still shows live stats (tokens now encrypted).
