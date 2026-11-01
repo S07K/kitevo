@@ -35,12 +35,13 @@
 .dark {
   --background: #0f1a2b;
   --canvas: #0b1422;
-  --foreground: #eef4f9;
-  --muted: #172539;
-  --muted-foreground: #8ea3bb;
-  --border: #223450;
+  --foreground: #f5f8fc;
+  --muted: #1a2a40;
+  /* Secondary text kept bright on navy (~9.5:1 on cards): #8ea3bb read as too dim. */
+  --muted-foreground: #b3c3d6;
+  --border: #2b3e5a;
   --ring: #60c1e5;
-  --surface: #eef4f9;
+  --surface: #f5f8fc;
   --surface-foreground: #0f1a2b;
 
   --primary: #60c1e5;
@@ -96,6 +97,13 @@ body {
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Grayscale smoothing thins light-on-dark text on macOS; let dark mode use the default
+   rendering so body copy keeps its weight. (Beats the `antialiased` class on <body>.) */
+.dark body {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
 button,
