@@ -133,6 +133,28 @@ describe("validatePayoutProfile", () => {
   it("rejects a PayPal profile without an email", () => {
     expect(R.validatePayoutProfile({ method: "paypal", destination: "nope", legalName: "Jane", country: "US" }).ok).toBe(false);
   });
+  it("accepts structured bank details and normalises IBAN/SWIFT", () => {
+    const r = R.validatePayoutProfile({
+      method: "bank",
+      bank: { accountHolder: "Jane Doe", accountNumber: "gb33 bukb 2020 1555 5555 55", bankName: "Barclays", swift: "bukbgb22" },
+      legalName: "Jane Doe",
+      country: "GB",
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(JSON.parse(r.value.destination)).toMatchObject({ accountNumber: "GB33BUKB20201555555555", swift: "BUKBGB22" });
+      expect(R.formatDestination("bank", r.value.destination)).toContain("SWIFT/BIC: BUKBGB22");
+    }
+  });
+  it("rejects a malformed SWIFT code", () => {
+    const r = R.validatePayoutProfile({
+      method: "bank",
+      bank: { accountHolder: "Jane", accountNumber: "12345678", bankName: "Bank", swift: "XYZ" },
+      legalName: "Jane",
+      country: "IN",
+    });
+    expect(r).toEqual({ ok: false, error: "Enter a valid 8 or 11 character SWIFT/BIC code." });
+  });
   it("rejects unknown methods", () => {
     expect(R.validatePayoutProfile({ method: "venmo", destination: "x", legalName: "Jane", country: "US" }).ok).toBe(false);
   });

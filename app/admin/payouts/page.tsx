@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { AppNav } from "@/app/components/AppNav";
 import { getAdmin } from "@/lib/admin";
-import { getDuePayouts, minPayoutFor, REFERRAL_TERMS } from "@/lib/referrals";
+import { formatDestination, getDuePayouts, minPayoutFor, REFERRAL_TERMS } from "@/lib/referrals";
 import { prisma } from "@/lib/prisma";
 import { AdminPayoutsClient, type AdminRow, type AdminCommission, type AdminPayout } from "./AdminPayoutsClient";
 
@@ -39,7 +39,7 @@ export default async function AdminPayoutsPage() {
     commissionCount: r.commissionCount,
     meetsMinimum: r.meetsMinimum,
     minimum: minPayoutFor(r.currency),
-    profile: r.profile,
+    profile: r.profile ? { ...r.profile, destination: formatDestination(r.profile.method, r.profile.destination) } : null,
   }));
   const recent: AdminCommission[] = commissions.map((c) => ({
     id: c.id,

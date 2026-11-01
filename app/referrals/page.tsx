@@ -3,16 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AppNav } from "../components/AppNav";
+import { PayoutDetailsCard, type PayoutProfile } from "./PayoutDetailsCard";
+import { PayoutMark } from "../components/PayoutLogos";
 
 type Totals = Record<string, number>;
-type PayoutProfile = {
-  method: "paypal" | "wise" | "bank";
-  destination: string;
-  legalName: string;
-  country: string;
-  taxId: string | null;
-  updatedAt: string;
-};
 type Summary = {
   code: string;
   terms: { rateBps: number; months: number; holdDays: number; defaultMinPayout: number; minPayout: Record<string, number> };
@@ -28,7 +22,6 @@ type Summary = {
 
 const inputCls =
   "mt-1 w-full px-3 py-2.5 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition";
-const labelCls = "text-xs font-medium text-muted-foreground";
 const cardCls = "bg-background border-border mt-6 rounded-2xl border p-6";
 const eyebrowCls = "text-[11px] font-semibold tracking-[0.16em] uppercase text-muted-foreground";
 
@@ -46,16 +39,6 @@ function totalText(t: Totals) {
   return entries.length ? entries.map(([c, v]) => money(v, c)).join(" + ") : money(0, "USD");
 }
 
-const COUNTRIES = (() => {
-  try {
-    const names = new Intl.DisplayNames(["en"], { type: "region" });
-    const codes =
-      "AE AR AT AU BD BE BR CA CH CL CN CO CZ DE DK EG ES FI FR GB GH GR HK HU ID IE IL IN IT JP KE KR LK MX MY NG NL NO NP NZ PE PH PK PL PT RO SA SE SG TH TR TW UA US VN ZA".split(" ");
-    return codes.map((c) => ({ code: c, name: names.of(c) ?? c })).sort((a, b) => a.name.localeCompare(b.name));
-  } catch {
-    return [{ code: "US", name: "United States" }];
-  }
-})();
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "On hold",
@@ -69,25 +52,11 @@ export default function ReferralsPage() {
   const [loadError, setLoadError] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const [form, setForm] = useState({ method: "paypal", destination: "", legalName: "", country: "", taxId: "" });
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/referrals", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d: Summary) => {
-        setData(d);
-        if (d.payoutProfile) {
-          setForm({
-            method: d.payoutProfile.method,
-            destination: d.payoutProfile.destination,
-            legalName: d.payoutProfile.legalName,
-            country: d.payoutProfile.country,
-            taxId: d.payoutProfile.taxId ?? "",
-          });
-        }
-      })
+      .then((d: Summary) => setData(d))
       .catch(() => setLoadError(true));
   }, []);
 
@@ -104,28 +73,6 @@ export default function ReferralsPage() {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       /* clipboard blocked — the link is visible to copy by hand */
-    }
-  };
-
-  const save = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setSaveMsg(null);
-    try {
-      const res = await fetch("/api/referrals/payout-profile", {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error ?? "Could not save");
-      setData((d) => (d ? { ...d, payoutProfile: body.payoutProfile } : d));
-      setSaveMsg({ ok: true, text: "Payout details saved." });
-    } catch (err) {
-      setSaveMsg({ ok: false, text: err instanceof Error ? err.message : "Could not save" });
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -231,120 +178,16 @@ export default function ReferralsPage() {
         </section>
 
         {/* Payout details */}
-        <section className={cardCls}>
-          <p className={eyebrowCls}>Payout details</p>
-          <p className="text-muted-foreground mt-2 text-sm">
-            Where we send your earnings. Payouts go out once a month when your balance is over {minPayout}.
-          </p>
-          {data && !data.payoutProfile && (Object.keys(data.available).length > 0 || Object.keys(data.pending).length > 0) && (
-            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              Add your payout details so we can pay you.
-            </div>
-          )}
-          <form onSubmit={save} className="mt-4 space-y-4">
-            <div>
-              <span className={labelCls}>Payout method</span>
-              <div className="mt-1 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Payout method">
-                {[
-                  { id: "paypal", label: "PayPal" },
-                  { id: "wise", label: "Wise" },
-                  { id: "bank", label: "Bank transfer" },
-                ].map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={form.method === m.id}
-                    onClick={() => setForm((f) => ({ ...f, method: m.id }))}
-                    className={`h-10 rounded-xl border text-sm font-medium transition-colors ${
-                      form.method === m.id ? "border-foreground bg-foreground text-background" : "border-border text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <label className="block">
-              <span className={labelCls}>
-                {form.method === "paypal" ? "PayPal email" : form.method === "wise" ? "Wise account email" : "Bank details"}
-              </span>
-              {form.method === "bank" ? (
-                <textarea
-                  required
-                  rows={4}
-                  value={form.destination}
-                  onChange={(e) => setForm((f) => ({ ...f, destination: e.target.value }))}
-                  placeholder={"Account holder name\nAccount number or IBAN\nBank name and SWIFT/BIC (or IFSC / routing number)"}
-                  className={inputCls}
-                />
-              ) : (
-                <input
-                  required
-                  type="email"
-                  value={form.destination}
-                  onChange={(e) => setForm((f) => ({ ...f, destination: e.target.value }))}
-                  placeholder="you@example.com"
-                  className={inputCls}
-                />
-              )}
-            </label>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className={labelCls}>Full legal name</span>
-                <input
-                  required
-                  value={form.legalName}
-                  onChange={(e) => setForm((f) => ({ ...f, legalName: e.target.value }))}
-                  className={inputCls}
-                />
-              </label>
-              <label className="block">
-                <span className={labelCls}>Country</span>
-                <select
-                  required
-                  value={form.country}
-                  onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
-                  className={inputCls}
-                >
-                  <option value="">Select…</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <label className="block">
-              <span className={labelCls}>Tax ID (optional)</span>
-              <input
-                value={form.taxId}
-                onChange={(e) => setForm((f) => ({ ...f, taxId: e.target.value }))}
-                placeholder="e.g. PAN, VAT or TIN — if your country requires one"
-                className={inputCls}
-              />
-            </label>
-
-            <p className="text-muted-foreground text-xs">Stored encrypted. Only used to send you your earnings.</p>
-
-            {saveMsg && (
-              <p className={`text-sm ${saveMsg.ok ? "text-green-700" : "text-red-700"}`} role="status">
-                {saveMsg.text}
-              </p>
-            )}
-            <button
-              type="submit"
-              disabled={saving}
-              className="h-10 rounded-full bg-foreground px-8 text-sm font-medium text-background transition-opacity hover:opacity-80 disabled:opacity-50"
-            >
-              {saving ? "Saving…" : "Save payout details"}
-            </button>
-          </form>
-        </section>
+        {data ? (
+          <PayoutDetailsCard
+            profile={data.payoutProfile}
+            hasEarnings={Object.keys(data.available).length > 0 || Object.keys(data.pending).length > 0}
+            minPayoutLabel={minPayout}
+            onSaved={(p) => setData((d) => (d ? { ...d, payoutProfile: p } : d))}
+          />
+        ) : (
+          <div className="bg-background border-border mt-6 h-56 animate-pulse rounded-2xl border" />
+        )}
 
         {data && data.payouts.length > 0 && (
           <section className={cardCls}>
@@ -352,9 +195,12 @@ export default function ReferralsPage() {
             <ul className="mt-3 divide-y divide-border">
               {data.payouts.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                  <span className="tabular-nums">{new Date(p.paidAt).toLocaleDateString()}</span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {p.method} · {p.reference}
+                  <span className="flex min-w-0 items-center gap-3">
+                    <PayoutMark method={p.method} size={28} />
+                    <span className="min-w-0">
+                      <span className="block tabular-nums">{new Date(p.paidAt).toLocaleDateString()}</span>
+                      <span className="text-muted-foreground block truncate text-xs">Ref {p.reference}</span>
+                    </span>
                   </span>
                   <span className="font-medium tabular-nums">{money(p.amount, p.currency)}</span>
                 </li>

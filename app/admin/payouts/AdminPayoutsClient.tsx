@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PayoutMark } from "@/app/components/PayoutLogos";
 
 export type AdminRow = {
   referrerId: string;
@@ -159,10 +160,13 @@ export function AdminPayoutsClient({ rows, recent, history }: { rows: AdminRow[]
                       </td>
                       <td className="py-3 pr-4">
                         {r.profile ? (
-                          <>
-                            <p className="text-xs font-medium">{METHOD_LABEL[r.profile.method] ?? r.profile.method}</p>
-                            <p className="text-muted-foreground whitespace-pre-line break-all text-xs">{r.profile.destination}</p>
-                          </>
+                          <div className="flex items-start gap-2.5">
+                            <PayoutMark method={r.profile.method} size={28} />
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium">{METHOD_LABEL[r.profile.method] ?? r.profile.method}</p>
+                              <p className="text-muted-foreground whitespace-pre-line break-all font-mono text-[11px]">{r.profile.destination}</p>
+                            </div>
+                          </div>
                         ) : (
                           <span className="text-xs text-amber-700">No payout details</span>
                         )}
@@ -272,7 +276,8 @@ export function AdminPayoutsClient({ rows, recent, history }: { rows: AdminRow[]
               <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
                 <span className="tabular-nums">{new Date(p.paidAt).toLocaleDateString()}</span>
                 <span className="text-xs">{p.referrerEmail}</span>
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted-foreground flex items-center gap-2 text-xs">
+                  <PayoutMark method={p.method} size={22} />
                   {METHOD_LABEL[p.method] ?? p.method} · {p.reference}
                 </span>
                 <span className="font-medium tabular-nums">{money(p.amount, p.currency)}</span>

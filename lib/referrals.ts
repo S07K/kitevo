@@ -316,19 +316,68 @@ export type PayoutProfileView = Omit<PayoutProfileInput, "taxId"> & { taxId: str
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
+/** Structured bank details. Stored (encrypted) as JSON in PayoutProfile.destination. */
+export type BankDetails = {
+  accountHolder: string;
+  accountNumber: string; // account number or IBAN
+  bankName: string;
+  swift: string; // SWIFT/BIC
+  routing?: string; // routing / sort code / IFSC / BSB — where the country uses one
+};
+
+const clean = (v: unknown, max = 120) => (typeof v === "string" ? v.trim().replace(/\s+/g, " ").slice(0, max) : "");
+
+export function parseBankDetails(destination: string): BankDetails | null {
+  try {
+    const v = JSON.parse(destination) as BankDetails;
+    return v && typeof v === "object" && typeof v.accountNumber === "string" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Human-readable destination, one field per line (admin table + CSV). */
+export function formatDestination(method: string, destination: string): string {
+  if (method !== "bank") return destination;
+  const b = parseBankDetails(destination);
+  if (!b) return destination; // legacy free text
+  return [
+    `Account holder: ${b.accountHolder}`,
+    `Account / IBAN: ${b.accountNumber}`,
+    `Bank: ${b.bankName}`,
+    `SWIFT/BIC: ${b.swift}`,
+    b.routing ? `Routing / sort / IFSC: ${b.routing}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 /** Validate user input. Returns the cleaned profile or an error message. */
 export function validatePayoutProfile(raw: unknown): { ok: true; value: PayoutProfileInput } | { ok: false; error: string } {
   const b = (raw ?? {}) as Record<string, unknown>;
   const method = b.method as PayoutMethod;
   if (!PAYOUT_METHODS.includes(method)) return { ok: false, error: "Choose PayPal, Wise or bank transfer." };
-  const destination = typeof b.destination === "string" ? b.destination.trim() : "";
-  if ((method === "paypal" || method === "wise") && !EMAIL_RE.test(destination)) {
-    return { ok: false, error: `Enter the email address on your ${method === "paypal" ? "PayPal" : "Wise"} account.` };
+  let destination = "";
+  if (method === "paypal" || method === "wise") {
+    destination = clean(b.destination, 254).toLowerCase();
+    if (!EMAIL_RE.test(destination)) {
+      return { ok: false, error: `Enter the email address on your ${method === "paypal" ? "PayPal" : "Wise"} account.` };
+    }
+  } else {
+    const raw = (b.bank ?? {}) as Record<string, unknown>;
+    const bank: BankDetails = {
+      accountHolder: clean(raw.accountHolder),
+      accountNumber: clean(raw.accountNumber, 64).replace(/\s/g, "").toUpperCase(),
+      bankName: clean(raw.bankName),
+      swift: clean(raw.swift, 11).replace(/\s/g, "").toUpperCase(),
+      routing: clean(raw.routing, 32) || undefined,
+    };
+    if (bank.accountHolder.length < 2) return { ok: false, error: "Enter the account holder's name." };
+    if (!/^[A-Z0-9]{5,34}$/.test(bank.accountNumber)) return { ok: false, error: "Enter a valid account number or IBAN." };
+    if (bank.bankName.length < 2) return { ok: false, error: "Enter your bank's name." };
+    if (!/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(bank.swift)) return { ok: false, error: "Enter a valid 8 or 11 character SWIFT/BIC code." };
+    destination = JSON.stringify(bank);
   }
-  if (method === "bank" && destination.length < 8) {
-    return { ok: false, error: "Enter your bank details (account holder, account number/IBAN, bank and SWIFT/IFSC)." };
-  }
-  if (destination.length > 1000) return { ok: false, error: "Payout details are too long." };
   const legalName = typeof b.legalName === "string" ? b.legalName.trim() : "";
   if (legalName.length < 2 || legalName.length > 200) return { ok: false, error: "Enter your full legal name." };
   const country = typeof b.country === "string" ? b.country.trim().toUpperCase() : "";
@@ -499,7 +548,7 @@ export function payoutsCsv(rows: DueRow[], format: "paypal" | "all", periodLabel
       r.email,
       r.profile?.country ?? "",
       r.profile?.method ?? "",
-      r.profile?.destination ?? "",
+      r.profile ? formatDestination(r.profile.method, r.profile.destination) : "",
       r.profile?.taxId ?? "",
       formatMinor(r.amount),
       r.currency,
