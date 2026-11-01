@@ -190,7 +190,7 @@ export default function CreatorInbox() {
                               </div>
                             )}
                           </div>
-                          {c.unread && <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-blue-500 border-2 border-background" />}
+                          {c.unread && <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-primary border-2 border-background" />}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-1 mb-0.5">
@@ -306,7 +306,7 @@ export default function CreatorInbox() {
                               <div className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5">{inner}</div>
                             );
                           })()}
-                          <div className={`max-w-[68%] px-4 py-2.5 text-sm leading-relaxed ${mine ? "bg-foreground text-background rounded-2xl rounded-br-md" : "bg-muted text-foreground rounded-2xl rounded-bl-md"}`}>
+                          <div className={`max-w-[68%] px-4 py-2.5 text-sm leading-relaxed ${mine ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md" : "bg-muted text-foreground rounded-2xl rounded-bl-md"}`}>
                             {m.body}
                           </div>
                         </div>
@@ -330,7 +330,7 @@ export default function CreatorInbox() {
                       type="button"
                       onClick={sendMessage}
                       disabled={!msgInput.trim() || sending}
-                      className="shrink-0 h-8 w-8 rounded-xl bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-opacity disabled:opacity-30"
+                      className="shrink-0 h-8 w-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:opacity-80 transition-opacity disabled:opacity-30"
                     >
                       {sending ? (
                         <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/></svg>

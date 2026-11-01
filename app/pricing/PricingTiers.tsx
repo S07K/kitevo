@@ -72,7 +72,7 @@ function SubscribeButton({
         disabled={loading}
         className={`w-full px-6 py-3 font-medium rounded-full transition-opacity disabled:opacity-70 disabled:cursor-not-allowed ${
           isHighlighted
-            ? "bg-foreground text-background hover:opacity-80"
+            ? "bg-primary text-primary-foreground hover:opacity-80"
             : "border border-border text-foreground hover:bg-muted"
         }`}
       >
@@ -103,7 +103,7 @@ export function PricingTiers({
             type="button"
             onClick={() => setBilling("monthly")}
             className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
-              billing === "monthly" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+              billing === "monthly" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Monthly
@@ -112,7 +112,7 @@ export function PricingTiers({
             type="button"
             onClick={() => setBilling("yearly")}
             className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-colors ${
-              billing === "yearly" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+              billing === "yearly" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Yearly
@@ -140,11 +140,11 @@ export function PricingTiers({
             <div
               key={tier.id}
               className={`relative p-8 rounded-2xl border bg-background text-left transition-shadow ${
-                isHighlighted ? "border-foreground ring-2 ring-foreground shadow-lg" : "border-border"
+                isHighlighted ? "border-primary ring-2 ring-primary shadow-lg shadow-primary/10" : "border-border"
               }`}
             >
               {isHighlighted && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-foreground text-background text-xs font-medium rounded-full">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-primary text-primary-foreground text-xs font-medium rounded-full">
                   {highlightTierId ? "Selected plan" : "Most popular"}
                 </span>
               )}

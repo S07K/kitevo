@@ -27,6 +27,22 @@ const THEMES: Record<KitAppearancePreset, PdfTheme> = {
     bg: "#111110", surface: "#1E1E1C", accent: "#F5F0E8",
     text: "#F5F0E8", textMuted: "#9A9490", border: "#2A2A28", label: "Noir",
   },
+  sage: {
+    bg: "#EEF3EA", surface: "#FFFFFF", accent: "#2F5D50",
+    text: "#18211A", textMuted: "#5C6959", border: "#D9E3D2", label: "Sage",
+  },
+  mist: {
+    bg: "#EDF2F8", surface: "#FFFFFF", accent: "#2B4C7E",
+    text: "#141B26", textMuted: "#5A6575", border: "#D8E1ED", label: "Mist",
+  },
+  blush: {
+    bg: "#F8EEEB", surface: "#FFFFFF", accent: "#A3485A",
+    text: "#241816", textMuted: "#74605B", border: "#ECDAD5", label: "Blush",
+  },
+  lavender: {
+    bg: "#F1EFF9", surface: "#FFFFFF", accent: "#5B4B9A",
+    text: "#1B1828", textMuted: "#625D77", border: "#DEDAEE", label: "Lavender",
+  },
   editorial: {
     bg: "#111110", surface: "#1E1E1C", accent: "#F5F0E8",
     text: "#F5F0E8", textMuted: "#B0A99E", border: "#2A2A28", label: "Editorial",

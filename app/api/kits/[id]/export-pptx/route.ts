@@ -24,6 +24,10 @@ const THEME: Record<string, { coverBg: string; coverFg: string; coverMuted: stri
   warm:      { coverBg: "1A1A18", coverFg: "F0EBE2", coverMuted: "888878", accent: "8B7355", accentLight: "F0EBE2" },
   cool:      { coverBg: "1E3A5F", coverFg: "C8DAF0", coverMuted: "507090", accent: "1E3A5F", accentLight: "D8E8F8" },
   paper:     { coverBg: "111111", coverFg: "FAFAF8", coverMuted: "666666", accent: "333333", accentLight: "F0F0EE" },
+  sage:      { coverBg: "1A332C", coverFg: "EEF3EA", coverMuted: "A9C2B5", accent: "2F5D50", accentLight: "E0E7E5" },
+  mist:      { coverBg: "182A45", coverFg: "EDF2F8", coverMuted: "B3C3DB", accent: "2B4C7E", accentLight: "DFE4EC" },
+  blush:     { coverBg: "5A2832", coverFg: "F8EEEB", coverMuted: "E3B9C1", accent: "A3485A", accentLight: "F1E4E6" },
+  lavender:  { coverBg: "322955", coverFg: "F1EFF9", coverMuted: "C3BBE3", accent: "5B4B9A", accentLight: "E6E4F0" },
 };
 
 const DEFAULT_THEME = THEME.warm;

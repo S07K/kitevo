@@ -84,7 +84,7 @@ export default function CreatorCampaigns() {
                   aria-pressed={on}
                   onClick={() => setNiche(n)}
                   className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-colors ${
-                    on ? "border-foreground bg-foreground text-background" : "border-transparent bg-muted text-muted-foreground hover:border-border hover:text-foreground"
+                    on ? "border-primary bg-primary text-primary-foreground" : "border-transparent bg-muted text-muted-foreground hover:border-border hover:text-foreground"
                   }`}
                 >
                   {n}

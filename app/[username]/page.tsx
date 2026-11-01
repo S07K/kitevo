@@ -143,7 +143,7 @@ export default async function CreatorProfilePage({
             <LogoMark size={20} on="auto" />
             Kitevo
           </Link>
-          <Link href="/signup" className="bg-foreground text-background rounded-full px-4 py-1.5 text-xs font-medium hover:opacity-80 transition-opacity">
+          <Link href="/signup" className="bg-primary text-primary-foreground rounded-full px-4 py-1.5 text-xs font-medium hover:opacity-80 transition-opacity">
             Create your kit
           </Link>
         </div>
@@ -230,7 +230,7 @@ export default async function CreatorProfilePage({
                       </div>
                       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
                         {c.niche && (
-                          <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full px-2.5 py-0.5">{c.niche}</span>
+                          <span className="text-[10px] font-medium bg-primary-soft text-primary-soft-foreground rounded-full px-2.5 py-0.5">{c.niche}</span>
                         )}
                         {c.budget && (
                           <span className="text-xs text-muted-foreground flex items-center gap-1">

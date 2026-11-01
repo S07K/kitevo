@@ -20,7 +20,7 @@ export function BlogHeader() {
           </Link>
           <Link
             href="/signup"
-            className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
+            className="bg-primary text-primary-foreground inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
           >
             Get started free
           </Link>

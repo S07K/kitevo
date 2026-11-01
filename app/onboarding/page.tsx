@@ -48,7 +48,7 @@ const inputCls =
   "mt-1.5 w-full h-11 px-3.5 border border-border rounded-xl bg-background text-foreground placeholder:text-muted-foreground/70 text-sm focus:outline-none focus:border-foreground/40 focus:ring-4 focus:ring-ring/10 transition";
 const labelCls = "text-[13px] font-medium text-foreground";
 const primaryBtn =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-7 text-sm font-medium text-background transition-opacity hover:opacity-85 disabled:opacity-40";
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-7 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-85 disabled:opacity-40";
 const secondaryBtn =
   "inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-background px-7 text-sm font-medium text-foreground transition-colors hover:bg-muted";
 const ghostBtn = "inline-flex h-11 items-center gap-1.5 rounded-full px-4 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground";
@@ -326,7 +326,7 @@ function Onboarding() {
                 onClick={() => chooseType(o.type)}
                 className="group flex flex-col items-start rounded-2xl border border-border bg-background p-6 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/40 hover:shadow-lg"
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-foreground text-background">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
                   <o.Icon size={20} strokeWidth={1.8} aria-hidden />
                 </span>
                 <span className="mt-5 text-lg font-semibold text-foreground">{o.title}</span>
@@ -588,7 +588,7 @@ function Onboarding() {
               {kit && (
                 <div className="mt-8 flex items-center gap-2 rounded-2xl border border-border bg-background p-2 pl-4">
                   <span className="min-w-0 flex-1 truncate font-mono text-sm text-foreground">{kitUrl.replace(/^https?:\/\//, "")}</span>
-                  <button type="button" onClick={() => copy("kit", kitUrl)} className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-85">
+                  <button type="button" onClick={() => copy("kit", kitUrl)} className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-85">
                     {copied === "kit" ? <Check size={15} aria-hidden /> : <Copy size={15} aria-hidden />}
                     {copied === "kit" ? "Copied" : "Copy"}
                   </button>
@@ -620,7 +620,7 @@ function Onboarding() {
               </div>
 
               {referralCode && (
-                <div className="mt-6 flex items-start gap-3 rounded-2xl bg-foreground p-5 text-background">
+                <div className="mt-6 flex items-start gap-3 rounded-2xl bg-primary p-5 text-primary-foreground">
                   <Gift size={20} className="mt-0.5 shrink-0" aria-hidden />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold">Know other creators? Earn {REFERRAL_RATE_PCT}% when they join.</p>
@@ -682,7 +682,7 @@ function Progress({ step }: { step: Step }) {
       <div className="flex gap-1.5" aria-hidden>
         {STEPS.map((_, i) => (
           <div key={i} className="h-1 flex-1 overflow-hidden rounded-full bg-border">
-            <div className={`h-full rounded-full bg-foreground transition-all duration-500 ${i <= step ? "w-full" : "w-0"}`} />
+            <div className={`h-full rounded-full bg-primary transition-all duration-500 ${i <= step ? "w-full" : "w-0"}`} />
           </div>
         ))}
       </div>
@@ -701,7 +701,7 @@ function Chip({ on, disabled, onClick, children }: { on: boolean; disabled?: boo
       disabled={disabled}
       onClick={onClick}
       className={`h-9 rounded-full border px-3.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-        on ? "border-foreground bg-foreground text-background" : "border-border bg-background text-foreground hover:border-foreground/40"
+        on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-foreground hover:border-foreground/40"
       }`}
     >
       {children}
@@ -743,7 +743,7 @@ function PlatformCard({
             <Check size={13} aria-hidden /> Connected
           </span>
         ) : (
-          <a href={href} className="inline-flex h-9 shrink-0 items-center rounded-full bg-foreground px-4 text-xs font-medium text-background transition-opacity hover:opacity-85">
+          <a href={href} className="inline-flex h-9 shrink-0 items-center rounded-full bg-primary px-4 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-85">
             Connect
           </a>
         )}

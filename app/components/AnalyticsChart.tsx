@@ -185,7 +185,7 @@ export function AnalyticsChart({
                   <span className="text-muted-foreground text-[10px] w-16 shrink-0">{row.label}</span>
                   <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-foreground/70 transition-all duration-700"
+                      className="h-full rounded-full bg-primary/70 transition-all duration-700"
                       style={{ width: `${Math.max(row.pct, row.value > 0 ? 2 : 0)}%` }}
                     />
                   </div>
@@ -212,7 +212,7 @@ export function AnalyticsChart({
                       </div>
                       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-foreground/60 transition-all duration-500"
+                          className="h-full rounded-full bg-primary/60 transition-all duration-500"
                           style={{ width: `${pct}%` }}
                         />
                       </div>

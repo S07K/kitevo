@@ -1,16 +1,22 @@
 "use client";
 
-import { useAppearance } from "./Appearance";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 export function ThemeToggle({ className }: { className?: string }) {
-  const { mounted, isDark, toggleDark } = useAppearance();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMounted(true); }, []);
 
   if (!mounted) return <div className="h-8 w-8" />;
+
+  const isDark = theme === "dark";
 
   return (
     <button
       type="button"
-      onClick={toggleDark}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       className={`h-8 w-8 inline-flex items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors ${className ?? ""}`}
     >

@@ -180,14 +180,14 @@ export function SetupChecklist({ items }: { items: ChecklistItem[] }) {
     >
       <div className="px-3 pb-2 pt-2">
         <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-foreground transition-all duration-700" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${pct}%` }} />
         </div>
       </div>
       <ul>
         {items.map((it) => {
           const inner = (
             <>
-              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${it.done ? "bg-foreground text-background" : "text-muted-foreground"}`}>
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${it.done ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
                 {it.done ? <Check size={12} strokeWidth={3} aria-hidden /> : <CircleDashed size={18} strokeWidth={1.6} aria-hidden />}
               </span>
               <span className={`min-w-0 flex-1 truncate text-sm ${it.done ? "text-muted-foreground line-through decoration-muted-foreground/40" : "text-foreground"}`}>

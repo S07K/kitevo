@@ -110,7 +110,7 @@ export function PricingSection(): ReactNode {
               onClick={() => setYearly(false)}
               className={cn(
                 "focus-ring rounded-full px-5 py-2 text-sm font-medium transition-colors",
-                !yearly ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                !yearly ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               Monthly
@@ -120,7 +120,7 @@ export function PricingSection(): ReactNode {
               onClick={() => setYearly(true)}
               className={cn(
                 "focus-ring flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-medium transition-colors",
-                yearly ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                yearly ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               Yearly
@@ -146,7 +146,7 @@ export function PricingSection(): ReactNode {
               className={cn(
                 "relative flex h-full flex-col rounded-3xl p-7",
                 plan.highlight
-                  ? "bg-foreground text-background"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-background border-border border"
               )}
             >
@@ -162,13 +162,13 @@ export function PricingSection(): ReactNode {
               <div className="flex items-start justify-between gap-4">
                 <p className={cn(
                   "text-sm font-semibold tracking-wide uppercase",
-                  plan.highlight ? "text-background/50" : "text-muted-foreground"
+                  plan.highlight ? "text-primary-foreground/80" : "text-muted-foreground"
                 )}>
                   {plan.name}
                 </p>
                 <span className={cn(
                   "rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                  plan.highlight ? "bg-background/15 text-background/70" : "bg-muted text-muted-foreground"
+                  plan.highlight ? "bg-primary-foreground/15 text-primary-foreground/90" : "bg-muted text-muted-foreground"
                 )}>
                   {plan.kits}
                 </span>
@@ -180,17 +180,17 @@ export function PricingSection(): ReactNode {
                   {plan.monthlyPrice === 0 ? "Free" : `$${yearly ? plan.yearlyPrice : plan.monthlyPrice}`}
                 </span>
                 {plan.monthlyPrice > 0 && (
-                  <span className={cn("text-sm", plan.highlight ? "text-background/50" : "text-muted-foreground")}>
+                  <span className={cn("text-sm", plan.highlight ? "text-primary-foreground/80" : "text-muted-foreground")}>
                     /mo{yearly ? ", billed yearly" : ""}
                   </span>
                 )}
               </div>
-              <p className={cn("mt-2 text-sm leading-relaxed", plan.highlight ? "text-background/65" : "text-muted-foreground")}>
+              <p className={cn("mt-2 text-sm leading-relaxed", plan.highlight ? "text-primary-foreground/85" : "text-muted-foreground")}>
                 {plan.description}
               </p>
 
               {/* Divider */}
-              <div className={cn("my-6 h-px", plan.highlight ? "bg-background/15" : "bg-border")} />
+              <div className={cn("my-6 h-px", plan.highlight ? "bg-primary-foreground/20" : "bg-border")} />
 
               {/* Features */}
               <ul className="flex flex-1 flex-col gap-3">
@@ -199,7 +199,7 @@ export function PricingSection(): ReactNode {
                     <span className={cn(
                       "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
                       plan.highlight
-                        ? "bg-background/15 text-background"
+                        ? "bg-primary-foreground/15 text-primary-foreground"
                         : plan.proOnly[fi]
                           ? "bg-foreground/10 text-foreground"
                           : "bg-muted text-muted-foreground"
@@ -208,7 +208,7 @@ export function PricingSection(): ReactNode {
                     </span>
                     <span className={cn(
                       "text-sm",
-                      plan.highlight ? "text-background/85" : "",
+                      plan.highlight ? "text-primary-foreground" : "",
                       !plan.highlight && plan.proOnly[fi] ? "text-foreground font-medium" : ""
                     )}>
                       {f}
@@ -228,7 +228,7 @@ export function PricingSection(): ReactNode {
                   "focus-ring mt-8 inline-flex h-12 items-center justify-center rounded-full text-sm font-medium transition-opacity hover:opacity-80",
                   plan.highlight
                     ? "bg-background text-foreground"
-                    : "bg-foreground text-background"
+                    : "bg-primary text-primary-foreground"
                 )}
               >
                 {plan.cta}

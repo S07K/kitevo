@@ -207,7 +207,7 @@ export default function BrandCampaigns() {
                   Free brands can keep <strong>1 campaign open</strong> at a time. Close your current campaign to post a new one, or upgrade to Brand Pro for unlimited open campaigns.
                 </p>
                 <div className="flex items-center gap-2 mt-4">
-                  <Link href="/settings" className="h-9 px-4 inline-flex items-center rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-80 transition-opacity">
+                  <Link href="/settings" className="h-9 px-4 inline-flex items-center rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:opacity-80 transition-opacity">
                     Upgrade to Brand Pro
                   </Link>
                   <button type="button" onClick={() => setShowCapNotice(false)} className="h-9 px-4 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -514,7 +514,7 @@ export default function BrandCampaigns() {
                 <p className="text-xs tabular-nums text-muted-foreground">{Math.min(openCampaignCount, 1)}/1 open</p>
               </div>
               <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
-                <div className="h-full rounded-full bg-foreground transition-all" style={{ width: `${Math.min(openCampaignCount, 1) * 100}%` }} />
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(openCampaignCount, 1) * 100}%` }} />
               </div>
               <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                 Free brands keep one campaign open at a time. Brand Pro removes the cap and pins your briefs above others.

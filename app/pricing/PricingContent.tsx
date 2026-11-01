@@ -75,7 +75,7 @@ export function PricingContent() {
         <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/dashboard"
-            className="inline-flex justify-center px-6 py-3 bg-foreground text-background font-medium rounded-full hover:opacity-80 transition-opacity"
+            className="inline-flex justify-center px-6 py-3 bg-primary text-primary-foreground font-medium rounded-full hover:opacity-80 transition-opacity"
           >
             Go to Dashboard
           </Link>

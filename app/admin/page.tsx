@@ -135,7 +135,7 @@ export default async function AdminPage({
             className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm"
           />
           {filter !== "problems" && <input type="hidden" name="webhooks" value={filter} />}
-          <button className="h-10 rounded-lg bg-foreground px-4 text-sm font-semibold text-background">Search</button>
+          <button className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground">Search</button>
         </form>
         {results && (
           results.length === 0 ? (
@@ -188,7 +188,7 @@ export default async function AdminPage({
                 key={f}
                 href={{ pathname: "/admin", query: { ...(q ? { q } : {}), webhooks: f } }}
                 aria-current={f === filter ? "true" : undefined}
-                className={`rounded-full px-2.5 py-1 font-medium ${f === filter ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
+                className={`rounded-full px-2.5 py-1 font-medium ${f === filter ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
               >
                 {f === "problems" ? "Failed & rejected" : "All"}
               </Link>

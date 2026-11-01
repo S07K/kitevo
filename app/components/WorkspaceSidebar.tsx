@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { PalettePicker, useAppearance } from "./Appearance";
+import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
 import { ArrowUpRight, ChevronsUpDown, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
 import { AvatarImg } from "./AvatarImg";
@@ -237,11 +237,11 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
                 key={it.href}
                 href={it.href}
                 className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors ${
-                  active ? "text-foreground" : "text-muted-foreground"
+                  active ? "text-primary dark:text-primary-soft-foreground" : "text-muted-foreground"
                 }`}
               >
                 {it.badge ? (
-                  <span className="absolute right-1/4 top-1.5 flex h-4 min-w-4 translate-x-2 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">
+                  <span className="absolute right-1/4 top-1.5 flex h-4 min-w-4 translate-x-2 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
                     {it.badge > 9 ? "9+" : it.badge}
                   </span>
                 ) : null}
@@ -259,9 +259,11 @@ export function WorkspaceSidebar({ variant: variantProp, inboxBadge }: { variant
 /** Signed-in account at the foot of the sidebar: avatar, name, role; opens theme + log out. */
 function AccountRow({ account }: { account: Account | null }) {
   const [open, setOpen] = useState(false);
-  const { mounted, isDark, toggleDark } = useAppearance();
+  const [mounted, setMounted] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
   const wrap = useRef<HTMLDivElement>(null);
 
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => !wrap.current?.contains(e.target as Node) && setOpen(false);
@@ -287,6 +289,7 @@ function AccountRow({ account }: { account: Account | null }) {
   }
 
   const label = account.name || account.email || "Account";
+  const isDark = mounted && resolvedTheme === "dark";
   const item = "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none";
 
   return (
@@ -321,15 +324,11 @@ function AccountRow({ account }: { account: Account | null }) {
         <div role="menu" aria-label="Account" className="absolute bottom-[calc(100%+6px)] left-0 right-0 z-50 overflow-hidden rounded-xl border border-border bg-background p-1 shadow-lg">
           {account.email && <p className="truncate px-3 pb-1.5 pt-2 text-xs text-muted-foreground">{account.email}</p>}
           {mounted && (
-            <button role="menuitem" type="button" className={`${item} text-foreground hover:bg-muted`} onClick={toggleDark}>
+            <button role="menuitem" type="button" className={`${item} text-foreground hover:bg-muted`} onClick={() => setTheme(isDark ? "light" : "dark")}>
               {isDark ? <Sun size={15} aria-hidden /> : <Moon size={15} aria-hidden />}
               {isDark ? "Light mode" : "Dark mode"}
             </button>
           )}
-          <div className="px-3 pb-2 pt-1.5">
-            <p className="mb-2 text-xs text-muted-foreground">Colour palette</p>
-            <PalettePicker />
-          </div>
           <div className="my-1 h-px bg-border" />
           <button
             role="menuitem"
@@ -361,16 +360,16 @@ function NavItemSkeleton({ width }: { width: string }) {
 
 function NavItem({ item, active }: { item: Item; active: boolean }) {
   const cls = `relative flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
-    active ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+    active ? "bg-primary-soft text-primary-soft-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
   }`;
   const inner = (
     <>
       <span className="flex min-w-0 items-center gap-2.5">
-        <span className="shrink-0 opacity-80">{item.icon}</span>
+        <span className={`shrink-0 ${active ? "text-primary dark:text-primary-soft-foreground" : "opacity-80"}`}>{item.icon}</span>
         <span className="truncate">{item.label}</span>
       </span>
       {item.badge ? (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-bold text-white">
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground">
           {item.badge > 9 ? "9+" : item.badge}
         </span>
       ) : null}

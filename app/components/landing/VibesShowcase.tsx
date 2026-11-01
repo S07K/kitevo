@@ -248,7 +248,7 @@ export function VibesShowcase(): ReactNode {
                   key={v.id}
                   className={cn(
                     "h-1.5 rounded-full transition-all duration-500",
-                    i === active ? "bg-foreground w-5" : "bg-border w-1.5"
+                    i === active ? "bg-primary w-5" : "bg-border w-1.5"
                   )}
                 />
               ))}
@@ -259,7 +259,7 @@ export function VibesShowcase(): ReactNode {
 
       {/* Pro badge — shrink-0 + nowrap, or the pill collapses and wraps to two lines */}
       <InView className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-        <div className="bg-foreground text-background inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide">
+        <div className="bg-primary text-primary-foreground inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide">
           Pro feature
         </div>
         <p className="text-muted-foreground text-sm text-pretty">

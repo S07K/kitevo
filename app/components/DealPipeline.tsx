@@ -31,7 +31,7 @@ export interface InquiryRecord {
 }
 
 const COLUMNS: { id: DealStatus; label: string; color: string; dot: string }[] = [
-  { id: "new",         label: "New",         color: "bg-blue-50 dark:bg-blue-950/30",      dot: "bg-blue-400" },
+  { id: "new",         label: "New",         color: "bg-primary-soft",      dot: "bg-primary" },
   { id: "reviewing",   label: "Reviewing",   color: "bg-amber-50 dark:bg-amber-950/30",    dot: "bg-amber-400" },
   { id: "negotiating", label: "Negotiating", color: "bg-violet-50 dark:bg-violet-950/30",  dot: "bg-violet-400" },
   { id: "won",         label: "Won",         color: "bg-emerald-50 dark:bg-emerald-950/30", dot: "bg-emerald-500" },
@@ -82,7 +82,7 @@ function DealCard({ inq, onExpand, isDragging }: CardProps) {
           )}
         </div>
         {!inq.read && (
-          <span className="bg-foreground text-background shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide">
+          <span className="bg-primary text-primary-foreground shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide">
             New
           </span>
         )}
@@ -213,7 +213,7 @@ function DetailModal({ inq, onClose, onMove }: DetailModalProps) {
                 onClick={() => { onMove(inq.id, col.id); onClose(); }}
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all border ${
                   inq.status === col.id
-                    ? "border-foreground bg-foreground text-background"
+                    ? "border-primary bg-primary text-primary-foreground"
                     : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
                 }`}
               >
@@ -227,7 +227,7 @@ function DetailModal({ inq, onClose, onMove }: DetailModalProps) {
         <div className="mt-5 flex gap-2">
           <a
             href={`mailto:${inq.email}?subject=Re: collaboration inquiry`}
-            className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
+            className="bg-primary text-primary-foreground inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
           >
             Reply via email
           </a>
@@ -249,7 +249,7 @@ function DetailModal({ inq, onClose, onMove }: DetailModalProps) {
 // ── List view ─────────────────────────────────────────────────────────────────
 
 const STATUS_BADGE: Record<DealStatus, string> = {
-  new:         "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
+  new:         "bg-primary-soft text-primary-soft-foreground",
   reviewing:   "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
   negotiating: "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300",
   won:         "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
@@ -272,7 +272,7 @@ function InboxList({ inquiries, onExpand }: { inquiries: InquiryRecord[]; onExpa
           onClick={() => onExpand(inq)}
           className={`w-full text-left px-5 py-4 flex items-start gap-4 hover:bg-muted/40 transition-colors ${!inq.read ? "bg-muted/20" : ""}`}
         >
-          <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${!inq.read ? "bg-foreground" : "bg-transparent"}`} />
+          <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${!inq.read ? "bg-primary" : "bg-transparent"}`} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-semibold text-foreground">{inq.name}</span>
@@ -376,11 +376,11 @@ export function DealPipeline({ inquiries, onUpdate, onMarkRead }: Props) {
         </div>
         <div className="flex items-center gap-1 border border-border rounded-full p-0.5">
           <button type="button" onClick={() => setView("list")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${view === "list" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
             List
           </button>
           <button type="button" onClick={() => setView("kanban")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${view === "kanban" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${view === "kanban" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
             Kanban
           </button>
         </div>

@@ -781,7 +781,7 @@ function DashboardContent() {
                       >
                         Pipeline
                         {unreadInquiries > 0 && (
-                          <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1.5 text-[11px] font-semibold text-background">
+                          <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
                             <span className="sr-only">, </span>
                             {unreadInquiries}
                             <span className="sr-only"> unread</span>

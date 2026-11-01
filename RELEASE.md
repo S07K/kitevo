@@ -22,7 +22,7 @@ The branches are stacked; each contains the one before it.
 | 7 | `feat/dashboard-polish` | Design-critique pass across the workspace: dashboard (main kit shown once via spotlight + "…" menu, verified tick, honest audience-numbers prompt, banners in one place, ARIA tabs), shimmer skeletons matching every layout, redesigned profile + brand settings forms with unsaved-changes save bar, two-column wide layout for Settings, Invite & earn and Campaigns (feed, manager, detail), shared `Button`/`Modal`/`AccountPanels`, dark-mode fixes. No deploy steps. *(Committed on `feat/workspace-ui`; `feat/dashboard-polish` points at the same commit.)* |
 | 8 | `feat/admin-ops` | `/admin` user lookup, comp + plan resync controls, payment webhook log with replay, admin audit log. Adds migration `20261101130000_admin_ops` (new tables only). *(Merged into `feat/workspace-ui`.)* |
 
-| 9 | `feat/color-palettes` | Warmer default light theme ("Paper" cream instead of near-white) plus five more light palettes (Sage, Mist, Blush, Lavender, Classic) picked from the account menus or Settings → Appearance; full-page backgrounds use a tinted `canvas` token. Public kits are unaffected. No deploy steps. |
+| 9 | `feat/color-palettes` | Kitevo brand colour: one app theme on a cream canvas with terracotta (from the logo) for buttons, active nav, tags, toggles and highlights (dark mode: lighter terracotta with dark text). Four new free kit styles (Sage, Mist, Blush, Lavender) across the kit page, PDF/PPTX export and dashboard card, with colour swatches in the editor. No deploy steps. |
 
 Merge `feat/color-palettes`: it contains `feat/workspace-ui` and everything above it, including dashboard polish and admin ops.
 

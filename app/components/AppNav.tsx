@@ -37,7 +37,7 @@ export function AppNav({
           {links.map((link) => {
             const key = `${link.href}-${link.label}`;
             const base = link.primary
-              ? "bg-foreground text-background inline-flex h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
+              ? "bg-primary text-primary-foreground inline-flex h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
               : "text-muted-foreground hover:text-foreground inline-flex h-9 items-center px-3 text-sm transition-colors";
             if (link.external) {
               return <a key={key} href={link.href} target="_blank" rel="noopener noreferrer" className={base}>{link.label}</a>;
@@ -80,7 +80,7 @@ export function AppNav({
                 {links.map((link) => {
                   const key = `${link.href}-${link.label}`;
                   const cls = link.primary
-                    ? "bg-foreground text-background flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium"
+                    ? "bg-primary text-primary-foreground flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium"
                     : "text-foreground hover:bg-muted flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors";
                   if (link.external) {
                     return <a key={key} href={link.href} target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)} className={cls}>{link.label}</a>;

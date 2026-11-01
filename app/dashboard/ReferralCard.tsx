@@ -47,7 +47,7 @@ export function ReferralCard({ compact = false }: { compact?: boolean } = {}) {
 
   if (compact) {
     return (
-      <div className="overflow-hidden rounded-2xl bg-foreground p-5 text-background">
+      <div className="overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground">
         <div className="flex items-center gap-2">
           <Gift size={16} strokeWidth={1.8} aria-hidden />
           <p className="text-sm font-semibold">Earn {REFERRAL_RATE_PCT}% for a year</p>
@@ -79,7 +79,7 @@ export function ReferralCard({ compact = false }: { compact?: boolean } = {}) {
     <div className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-muted/60 to-background">
       <div className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-4">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-foreground text-background">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Gift size={20} strokeWidth={1.8} aria-hidden />
           </span>
           <div>
@@ -104,7 +104,7 @@ export function ReferralCard({ compact = false }: { compact?: boolean } = {}) {
             type="button"
             onClick={copy}
             disabled={!data}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-foreground px-5 text-sm font-medium text-background transition-opacity hover:opacity-85 disabled:opacity-50"
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-85 disabled:opacity-50"
           >
             {copied ? <Check size={15} aria-hidden /> : <Copy size={15} aria-hidden />}
             {copied ? "Copied" : "Copy link"}

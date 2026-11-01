@@ -100,7 +100,7 @@ function KitEditContent() {
                 href={liveUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background px-3 py-1 text-xs font-medium hover:opacity-80 transition-opacity"
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3 py-1 text-xs font-medium hover:opacity-80 transition-opacity"
               >
                 Open in new tab ↗
               </a>
