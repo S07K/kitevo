@@ -48,6 +48,8 @@ const AudienceDonutChart = dynamic(
 
 interface MediaKitClientProps {
   username: string;
+  /** Kit owner's referral code, appended to the "Create yours" links. */
+  referralCode?: string | null;
   creator: { name: string; username: string; bio: string; avatarUrl?: string | null; verifiedTier?: string | null; niches?: string[]; location?: string | null };
   links: { label: string; url: string }[];
   platformStats: Record<string, PlatformStatsWithCharts>;
@@ -284,7 +286,10 @@ export function MediaKitClient({
   inquiryEnabled = false,
   isOwner = false,
   instagramPosts = [],
+  referralCode = null,
 }: MediaKitClientProps) {
+  // Footer/header "Create yours" links credit the kit owner as the referrer.
+  const homeHref = referralCode ? `/?ref=${encodeURIComponent(referralCode)}` : "/";
   const sectionVisibility = initialSectionVisibility ?? DEFAULT_SECTION_VISIBILITY;
   const showConnectInstagramOverlay = !isDemoKit && !instagramConnected && isOwner;
   const [selectedPost, setSelectedPost] = useState<FetchedPost | null>(null);
@@ -483,7 +488,7 @@ export function MediaKitClient({
             Kitevo
           </span>
           <Link
-            href="/"
+            href={homeHref}
             className="text-xs text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors font-medium tracking-wide"
           >
             Create yours
@@ -1073,7 +1078,7 @@ export function MediaKitClient({
           {/* 10. Footer — links home so every shared kit is an acquisition channel */}
           <div className="pt-6 pb-2 text-center">
             <Link
-              href="/"
+              href={homeHref}
               className="text-xs text-[var(--mk-text-soft)] font-sans hover:text-[var(--mk-text)] transition-colors inline-flex items-center gap-1.5"
             >
               {/*

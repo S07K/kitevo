@@ -90,6 +90,28 @@ interface DodoSubscriptionLike {
   metadata?: Record<string, string> | null;
 }
 
+/** The fields of Dodo's Payment object the webhook reads (see dodopayments Payment type). */
+interface DodoPaymentLike {
+  payment_id?: string;
+  total_amount?: number;
+  tax?: number | null;
+  currency?: string;
+  settlement_amount?: number;
+  settlement_tax?: number | null;
+  settlement_currency?: string;
+  is_update_payment_method?: boolean;
+  customer?: { customer_id?: string } | null;
+  metadata?: Record<string, string> | null;
+}
+
+/** The fields of Dodo's Refund object the webhook reads. */
+interface DodoRefundLike {
+  refund_id?: string;
+  payment_id?: string;
+  amount?: number | null;
+  is_partial?: boolean;
+}
+
 function toSnapshot(sub: DodoSubscriptionLike): SubscriptionSnapshot {
   const status = toStatus(sub.status);
   return {
@@ -234,6 +256,40 @@ export const dodoProvider: PaymentProvider = {
           customerId: snapshot.customerId || null,
           subscriptionId: snapshot.id || null,
         };
+
+      case "payment.succeeded": {
+        const p = payload.data as unknown as DodoPaymentLike;
+        // A zero-amount "update payment method" charge is not revenue.
+        if (p.is_update_payment_method || !p.payment_id) {
+          return { type: "ignored", providerEventType: "payment.succeeded (non-revenue)" };
+        }
+        // Prefer the settlement figures (what lands in Kitevo's balance, after adaptive
+        // currency conversion); fall back to the charged amount.
+        const gross = p.settlement_amount ?? p.total_amount ?? 0;
+        const tax = (p.settlement_amount != null ? p.settlement_tax : p.tax) ?? 0;
+        return {
+          type: "payment.succeeded",
+          paymentId: p.payment_id,
+          customerId: p.customer?.customer_id ?? null,
+          userId: p.metadata?.[USER_ID_KEY] ?? null,
+          amount: Math.max(0, gross - tax),
+          currency: String(p.settlement_currency ?? p.currency ?? "USD").toUpperCase(),
+        };
+      }
+
+      case "refund.succeeded": {
+        const r = payload.data as unknown as DodoRefundLike;
+        if (!r.payment_id || !r.refund_id) {
+          return { type: "ignored", providerEventType: "refund.succeeded (missing ids)" };
+        }
+        return {
+          type: "payment.refunded",
+          paymentId: r.payment_id,
+          refundId: r.refund_id,
+          // Partial refunds carry an amount; a full refund may not.
+          amount: r.is_partial && typeof r.amount === "number" ? r.amount : null,
+        };
+      }
 
       default:
         return { type: "ignored", providerEventType: payload.type ?? "unknown" };

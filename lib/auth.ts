@@ -5,6 +5,8 @@ import { betaCompFieldsForNewUser } from "@/lib/beta-comp";
 import { compare } from "bcryptjs";
 import { prisma } from "./prisma";
 import { trackEvent } from "@/lib/analytics";
+import { cookies } from "next/headers";
+import { attributeReferral, REF_COOKIE } from "@/lib/referrals";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -69,7 +71,14 @@ export const authOptions: NextAuthOptions = {
             },
           });
           user.id = newUser.id;
-          await trackEvent("signup", { userId: newUser.id, props: { method: "google" } });
+          let refCode: string | undefined;
+          try {
+            refCode = (await cookies()).get(REF_COOKIE)?.value;
+          } catch {
+            /* not in a request scope */
+          }
+          const referred = await attributeReferral({ newUserId: newUser.id, newUserEmail: user.email, code: refCode });
+          await trackEvent("signup", { userId: newUser.id, props: { method: "google", referred } });
         }
       }
       return true;

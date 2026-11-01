@@ -1,6 +1,6 @@
 # Kitevo Product & Growth Plan
 
-**Status:** Phase 0 in progress (8/11 done) — profit plan added (§11)
+**Status:** Phase 0 in progress (8/11 done) · R1 referral program shipped (manual payouts) — profit plan added (§11)
 **Last updated:** 2026-11-01
 **Scope:** Competitive strategy, pricing architecture, feature roadmap, and the Phase 0 execution checklist.
 
@@ -203,7 +203,7 @@ Workstreams:
 - [x] **Live-stat gating.** Public kits only show live IG/YT data when the owner has a paid plan; free kits use manual stats. (2026-10-31)
 - [x] **Migrations.** Versioned baseline in `prisma/migrations`; `migrate deploy` runs automatically on every deploy (GitHub Action gated on tests + Vercel build before `next build`). Prod baselined + first deploys verified 2026-10-31.
 - [x] **Token encryption.** AES-256-GCM with key-id prefix for rotation (`lib/token-crypto.ts`), backfill script, build guard. Google sign-in tokens no longer stored. (2026-11-01; prod key + backfill per DEPLOY.md)
-- [ ] **Admin/ops.** Minimal admin view for users, comps, subscriptions, and failed webhooks.
+- [ ] **Admin/ops.** Minimal admin view for users, comps, subscriptions, and failed webhooks. *(Started: `lib/admin.ts` gate + `/admin/payouts`.)*
 - [ ] **Trials and coupons.** Provider-backed trial and coupon support, with abuse limits.
 - [x] **Analytics baseline.** First-party `AnalyticsEvent` table + `lib/analytics.ts`: signup → onboarding → kit created → first outside kit view (≈ shared) → checkout started → upgrade, plus cancel. Cohort report: `scripts/funnel-report.ts [days]`. (2026-11-01)
 - [ ] **Custom domains.** Design and ship the domain model and verification flow for paid plans.
@@ -555,3 +555,20 @@ Top → bottom: avatar + handle + one-line tagline → icon-only social links �
 Onboarding steps after signup, dashboard home layout, analytics screens, the Income/cash-out screen, email-marketing UI, and how the referral program is presented in-app.
 
 Sources: [Stan Help Center](https://help.stan.store), [Sell a Digital Download](https://help.stan.store/article/14-sell-a-digital-download-product), [Coaching Call product](https://help.stan.store/article/15-book-time-on-your-calendar-product), [Connect Stripe](https://help.stan.store/article/7-how-to-connect-stan-with-stripe), [Connect PayPal](https://help.stan.store/article/53-how-to-connect-stan-with-paypal), [Affiliate payouts](https://help.stan.store/article/402-how-do-affiliates-get-paid), [AutoDM setup](https://help.stan.store/article/377-stan-auto-dm), [Example store page](https://stan.store/DIAS_global/p/book-a-11-call-with-me-crj68y91).
+
+---
+
+## 13. Referral program (R1) — shipped 2026-11-01
+
+**Terms** (`REFERRAL_TERMS` in `lib/referrals.ts`): 20% of the pre-tax amount a referred user pays, for 12 months from their first payment; 30-day hold; $25 minimum payout; self-referrals blocked (same email alias, or same payment customer). Open to every account (creators and brands).
+
+**How it works:** `?ref=CODE` → first-touch 60-day cookie → credited at signup (email + Google) → each `payment.succeeded` webhook writes a `ReferralCommission` → available after the hold → paid. Refunds reverse unpaid commissions or claw back paid ones against the next payout. Every kit's "Create yours" link carries its owner's code, so every shared kit is a referral link.
+
+**Surfaces:** `/referrals` (link, earnings, payout details: PayPal / Wise / bank, legal name, country, tax ID, encrypted) · `/admin/payouts` (`ADMIN_EMAILS` only: due table, PayPal-bulk and full-details CSV, record a whole batch with one reference, reverse a commission, history) · monthly "payouts due" email (Vercel cron, 1st of the month) · receipt email to each referrer when a payout is recorded.
+
+**Payouts are manual by decision (2026-11-01):** Kitevo pays referrers worldwide, so no India-only rail (RazorpayX/Cashfree) — and PayPal Payouts / Wise Business APIs don't appear available to an India-registered business. For now: export → pay in PayPal/Wise → record.
+
+**Later — automate with ONE global payout vendor** once volume justifies the fee (rough trigger: >$300–500/month in payouts or >20 referrers per batch). Candidates that work with Dodo and pay internationally: **Rekomi** (150+ countries, tax forms, refund clawback), **Dub Partners** (Stripe Express payouts, embedded referral dashboard, ~$90/mo + ~5% reported), **Affonso** (PayPal/Wise). Integration plan: keep our ledger as the source of truth; add `lib/payouts` behind an interface (same pattern as `lib/payments`); the vendor's payout webhooks mark `ReferralPayout`s paid automatically, replacing the manual "record" step. The same vendor decision should cover creator payouts for Phase 1 commerce (R2/R3) — evaluate both needs together.
+
+**Open:** accountant review of cross-border commission payments (TDS / equalisation levy, records per payee); Stripe refunds aren't mapped automatically yet (reverse from admin).
+

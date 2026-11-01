@@ -54,6 +54,7 @@ export const metadata: Metadata = {
 
 import type { Viewport } from 'next'
 import { APP_URL } from "@/lib/app-url";
+import { ReferralCapture } from "@/app/components/ReferralCapture";
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -78,6 +79,7 @@ export default function RootLayout({
       >
         <Providers>{children}</Providers>
         <Analytics />
+        <ReferralCapture />
         <Script
           src="https://troopy.ai/api/support/widget.js"
           data-bot-id="6ae2fb0cee6ad29d94ccdc6b"

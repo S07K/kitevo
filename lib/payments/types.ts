@@ -82,6 +82,21 @@ export type PaymentWebhookEvent =
       isActive: boolean;
     }
   | { type: "subscription.canceled"; customerId: string | null; subscriptionId: string | null }
+  /**
+   * Money actually collected (first charge or a renewal). Feeds referral commissions.
+   * amount is PRE-TAX, in minor units of `currency` — the provider's settlement currency
+   * where it has one, so every commission is in the currency Kitevo is paid in.
+   */
+  | {
+      type: "payment.succeeded";
+      paymentId: string;
+      customerId: string | null;
+      userId: string | null;
+      amount: number;
+      currency: string;
+    }
+  /** A refund of a previously succeeded payment. amount null = unknown (treat as full). */
+  | { type: "payment.refunded"; paymentId: string; refundId: string; amount: number | null }
   | { type: "ignored"; providerEventType: string };
 
 /** Thrown when a webhook fails signature verification. The route answers 400, never 500. */

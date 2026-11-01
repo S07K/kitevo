@@ -187,6 +187,26 @@ export const stripeProvider: PaymentProvider = {
         };
       }
 
+      case "invoice.paid": {
+        const inv = event.data.object as Stripe.Invoice;
+        if (!inv.id || !inv.amount_paid) {
+          return { type: "ignored", providerEventType: "invoice.paid (zero amount)" };
+        }
+        return {
+          type: "payment.succeeded",
+          paymentId: inv.id,
+          customerId: typeof inv.customer === "string" ? inv.customer : inv.customer?.id ?? null,
+          userId: (inv.metadata?.userId as string) || null,
+          amount: Math.min(inv.amount_paid, inv.total_excluding_tax ?? inv.amount_paid),
+          currency: inv.currency.toUpperCase(),
+        };
+      }
+
+      // Refunds are NOT mapped for Stripe yet: since API 2025-03 a Charge no longer links
+      // to its invoice, so a refund can't be matched to the invoice-keyed commission
+      // without an extra InvoicePayment lookup. Dodo (the live provider) maps refunds.
+      // Until then, reverse a Stripe-refunded commission from the admin payouts page.
+
       default:
         return { type: "ignored", providerEventType: event.type };
     }

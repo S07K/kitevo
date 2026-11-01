@@ -122,6 +122,8 @@ Settings → Secrets and variables → Actions → `DATABASE_URL`, `DIRECT_URL`)
 | `RESEND_API_KEY` | Transactional email. |
 | `RESEND_FROM_EMAIL` | `Kitevo <hello@mail.getkitevo.com>` — see the note below. Guarded. |
 | `TOKEN_ENCRYPTION_KEYS` | **New for prod.** `k1:<base64 32 bytes>` — encrypts IG/YT tokens at rest. See "Token encryption" below. |
+| `ADMIN_EMAILS` | Your email(s), comma-separated. Unlocks `/admin/payouts` and the monthly payouts email. |
+| `CRON_SECRET` | `openssl rand -base64 32`. Authenticates the monthly `/api/cron/payouts-digest` cron (vercel.json). |
 
 The price ids are read dynamically as
 `STRIPE_PRICE_ID_${tierId.toUpperCase()}${suffix}` (`config/subscriptions.ts`),
@@ -142,6 +144,16 @@ on `send.mail.getkitevo.com`, MX to `feedback-smtp.eu-west-1.amazonses.com`,
 DMARC `v=DMARC1; p=none;` on the **root** (`_dmarc.getkitevo.com`), which covers
 `mail.getkitevo.com` too: a root DMARC policy applies to subdomains unless an `sp=`
 tag overrides it.
+
+### Referral payouts (Dodo webhook events)
+
+Referral commissions are created from **`payment.succeeded`** and reversed by
+**`refund.succeeded`**. In the Dodo dashboard → Webhooks, make sure the endpoint
+`https://getkitevo.com/api/webhook` is subscribed to both (in addition to the
+`subscription.*` events). If the endpoint is set to "all events", nothing to do.
+Payouts are manual for now: `/admin/payouts` → export CSV → pay in PayPal/Wise →
+record the batch reference. Stripe refunds aren't mapped to commissions yet; reverse
+those from the admin page.
 
 ### Token encryption (`TOKEN_ENCRYPTION_KEYS`)
 

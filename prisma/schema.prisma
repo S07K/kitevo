@@ -104,6 +104,16 @@ model User {
   // Relations for Phase 8 (kits)
   kits      Kit[]
   analyticsEvents AnalyticsEvent[]
+  // Referral program (lib/referrals.ts)
+  referralCode         String?              @unique
+  referredById         String?
+  referredBy           User?                @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals            User[]               @relation("Referrals")
+  referredAt           DateTime?
+  payoutProfile        PayoutProfile?
+  commissionsEarned    ReferralCommission[] @relation("CommissionReferrer")
+  commissionsGenerated ReferralCommission[] @relation("CommissionReferred")
+  referralPayouts      ReferralPayout[]
 
   // Shortlist / save creators (brand saves creators)
   savedCreators SavedCreator[] @relation("BrandSaved")   // as brand: creators I saved
@@ -300,4 +310,56 @@ model AnalyticsEvent {
 
   @@index([name, createdAt])
   @@index([userId])
+}
+
+// Where a referrer wants to be paid. destination + taxId are encrypted (lib/token-crypto).
+model PayoutProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  method      String   // "paypal" | "wise" | "bank"
+  destination String   // encrypted: PayPal/Wise email, or bank details text
+  legalName   String
+  country     String   // ISO-3166 alpha-2
+  taxId       String?  // encrypted
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+
+// One row per referred payment. amount is the referrer's commission in minor units of
+// currency (the provider's settlement currency). "Available" = pending && availableAt <= now.
+model ReferralCommission {
+  id             String          @id @default(cuid())
+  referrerId     String
+  referrer       User            @relation("CommissionReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUserId String
+  referredUser   User            @relation("CommissionReferred", fields: [referredUserId], references: [id], onDelete: Cascade)
+  paymentId      String          @unique
+  baseAmount     Int             // pre-tax amount the referred user paid
+  amount         Int             // commission
+  currency       String
+  status         String          @default("pending") // "pending" | "paid" | "reversed"
+  availableAt    DateTime
+  reversedAt     DateTime?
+  payoutId       String?
+  payout         ReferralPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now())
+
+  @@index([referrerId, status])
+  @@index([referredUserId])
+}
+
+// A payment sent to a referrer (manually via PayPal/Wise/bank for now).
+model ReferralPayout {
+  id          String               @id @default(cuid())
+  referrerId  String
+  referrer    User                 @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+  amount      Int
+  currency    String
+  method      String
+  reference   String               // PayPal/Wise batch or transaction reference
+  paidAt      DateTime             @default(now())
+  commissions ReferralCommission[]
+
+  @@index([referrerId])
 }

@@ -115,10 +115,25 @@ describe("stripeProvider.parseWebhook", () => {
   });
 
   it("reports unrecognised events as ignored rather than dropping them", async () => {
-    constructEvent.mockReturnValue({ type: "invoice.paid", data: { object: {} } });
+    constructEvent.mockReturnValue({ type: "customer.created", data: { object: {} } });
     expect(await stripeProvider.parseWebhook("{}", headers())).toEqual({
       type: "ignored",
-      providerEventType: "invoice.paid",
+      providerEventType: "customer.created",
+    });
+  });
+
+  it("maps invoice.paid to payment.succeeded with the pre-tax amount (referral commissions)", async () => {
+    constructEvent.mockReturnValue({
+      type: "invoice.paid",
+      data: { object: { id: "in_1", amount_paid: 1800, total_excluding_tax: 1500, currency: "usd", customer: "cus_1", metadata: {} } },
+    });
+    expect(await stripeProvider.parseWebhook("{}", headers())).toEqual({
+      type: "payment.succeeded",
+      paymentId: "in_1",
+      customerId: "cus_1",
+      userId: null,
+      amount: 1500,
+      currency: "USD",
     });
   });
 

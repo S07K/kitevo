@@ -159,6 +159,69 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   }, "password-reset");
 }
 
+function money(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount / 100);
+  } catch {
+    return `${(amount / 100).toFixed(2)} ${currency}`;
+  }
+}
+
+/** Receipt to a referrer after the admin records a payout. */
+export async function sendReferralPayoutReceipt({
+  email,
+  name,
+  amount,
+  currency,
+  reference,
+}: {
+  email: string;
+  name: string | null;
+  amount: number;
+  currency: string;
+  reference: string;
+}) {
+  await send({
+    from: FROM,
+    to: email,
+    subject: `You've been paid ${money(amount, currency)} in referral earnings · Kitevo`,
+    html: emailHtml({
+      heading: `${money(amount, currency)} is on its way`,
+      body: `Hi ${escapeHtml(name ?? "there")}, we've sent your Kitevo referral earnings of <strong>${money(amount, currency)}</strong> to the payout account in your settings.<br><br>Reference: <strong>${escapeHtml(reference)}</strong>. Depending on the method it can take a few days to arrive.`,
+      ctaLabel: "See your earnings",
+      ctaUrl: `${APP_URL}/referrals`,
+      footer: "You received this because you referred creators to Kitevo.",
+    }),
+  }, "referral-payout");
+}
+
+/** Monthly heads-up to the admin that referral payouts are due. */
+export async function sendPayoutsDueDigest({
+  to,
+  totals,
+  payableCount,
+  missingDetailsCount,
+}: {
+  to: string[];
+  totals: Record<string, number>;
+  payableCount: number;
+  missingDetailsCount: number;
+}) {
+  const totalText = Object.entries(totals).map(([c, a]) => money(a, c)).join(" + ") || "nothing";
+  await send({
+    from: FROM,
+    to,
+    subject: `Referral payouts due: ${totalText} to ${payableCount} referrer${payableCount === 1 ? "" : "s"}`,
+    html: emailHtml({
+      heading: `${totalText} due to ${payableCount} referrer${payableCount === 1 ? "" : "s"}`,
+      body: `Export the CSV, pay the batch in PayPal or Wise, then record it with the batch reference.${missingDetailsCount ? `<br><br>${missingDetailsCount} more referrer${missingDetailsCount === 1 ? " is" : "s are"} over the minimum but haven't added payout details yet.` : ""}`,
+      ctaLabel: "Review payouts",
+      ctaUrl: `${APP_URL}/admin/payouts`,
+      footer: "Sent on the 1st of each month while referral payouts are due.",
+    }),
+  }, "payouts-digest");
+}
+
 function emailHtml({ heading, body, ctaLabel, ctaUrl, footer }: {
   heading: string;
   body: string;
@@ -203,4 +266,8 @@ function emailHtml({ heading, body, ctaLabel, ctaUrl, footer }: {
   </table>
 </body>
 </html>`;
+}
+
+function escapeHtml(v: string): string {
+  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

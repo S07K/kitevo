@@ -131,6 +131,46 @@ describe("dodoProvider.parseWebhook event mapping", () => {
     }
   );
 
+  it("maps payment.succeeded to a pre-tax amount in the settlement currency", async () => {
+    const payment = {
+      payment_id: "pay_1",
+      total_amount: 1800,
+      tax: 300,
+      currency: "INR",
+      settlement_amount: 1500,
+      settlement_tax: 250,
+      settlement_currency: "USD",
+      is_update_payment_method: false,
+      customer: { customer_id: "cus_dodo_1" },
+      metadata: { kitevo_user_id: "user_1" },
+    };
+    expect(await dodoProvider.parseWebhook(body("payment.succeeded", payment), HEADERS())).toEqual({
+      type: "payment.succeeded",
+      paymentId: "pay_1",
+      customerId: "cus_dodo_1",
+      userId: "user_1",
+      amount: 1250,
+      currency: "USD",
+    });
+  });
+
+  it("ignores zero-amount update-payment-method charges", async () => {
+    const ev = await dodoProvider.parseWebhook(
+      body("payment.succeeded", { payment_id: "pay_2", total_amount: 0, is_update_payment_method: true }),
+      HEADERS()
+    );
+    expect(ev.type).toBe("ignored");
+  });
+
+  it("maps refunds: partial carries the amount, full is null", async () => {
+    expect(
+      await dodoProvider.parseWebhook(body("refund.succeeded", { refund_id: "rf_1", payment_id: "pay_1", amount: 500, is_partial: true }), HEADERS())
+    ).toEqual({ type: "payment.refunded", paymentId: "pay_1", refundId: "rf_1", amount: 500 });
+    expect(
+      await dodoProvider.parseWebhook(body("refund.succeeded", { refund_id: "rf_2", payment_id: "pay_1", amount: 1800, is_partial: false }), HEADERS())
+    ).toEqual({ type: "payment.refunded", paymentId: "pay_1", refundId: "rf_2", amount: null });
+  });
+
   it("reports unrecognised events as ignored rather than dropping them", async () => {
     const event = await dodoProvider.parseWebhook(body("payment.processing"), HEADERS());
     expect(event).toEqual({ type: "ignored", providerEventType: "payment.processing" });

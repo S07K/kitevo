@@ -24,6 +24,7 @@ import { DEFAULT_KIT_APPEARANCE } from "@/lib/kit-appearance";
 import { cookies } from "next/headers";
 import { APP_URL } from "@/lib/app-url";
 import { trackKitFirstView } from "@/lib/analytics";
+import { ensureReferralCode } from "@/lib/referrals";
 
 const DEMO_SLUGS = ["demo", "alexchen", "my-kit"];
 
@@ -145,7 +146,7 @@ export default async function MediaKitPage({
       Promise.resolve(getEnabledPlatformIds()),
       prisma.user.findUnique({
         where: { id: result.kit.userId },
-        select: { instagramUserId: true, instagramAccessToken: true, stripeCustomerId: true, compedTier: true, youtubeChannelId: true, youtubeAccessToken: true },
+        select: { instagramUserId: true, instagramAccessToken: true, stripeCustomerId: true, compedTier: true, youtubeChannelId: true, youtubeAccessToken: true, referralCode: true },
       }),
     ]);
 
@@ -211,6 +212,10 @@ export default async function MediaKitPage({
         : "none";
     const enabledPlatformIds = Object.keys(platformStats) as import("@/lib/platforms/types").PlatformId[];
     const instagramConnected = instagramConnectedForKit;
+    // The "Create yours" links carry the owner's referral code: every shared kit is the
+    // owner's referral link. Codes are created lazily, once per user.
+    const referralCode =
+      user?.referralCode ?? (await ensureReferralCode(result.kit.userId).catch(() => null));
     return (
       <MediaKitClient
         username={result.creator.username}
@@ -236,6 +241,7 @@ export default async function MediaKitPage({
         kitId={result.kit.id}
         inquiryEnabled={inquiryEnabled}
         isOwner={isOwner && !previewMode}
+        referralCode={referralCode}
       />
     );
   }

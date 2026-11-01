@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getTierByPriceId, getVerifiedTierForPriceId, resolveVerifiedTier } from "@/config/subscriptions";
 import { payments, WebhookVerificationError } from "@/lib/payments";
 import { trackEvent } from "@/lib/analytics";
+import { applyRefundToCommission, recordCommissionForPayment } from "@/lib/referrals";
 
 /**
  * Payment provider webhook.
@@ -105,6 +106,24 @@ export async function POST(req: Request) {
             `[webhook] Subscription canceled — verifiedTier ${tier ? `kept at comp ${tier}` : "cleared"} for user ${user.id}`
           );
         }
+        break;
+      }
+
+      case "payment.succeeded": {
+        const result = await recordCommissionForPayment(event);
+        if (result === "created") {
+          console.log(`[webhook] Referral commission recorded for payment ${event.paymentId}`);
+        }
+        break;
+      }
+
+      case "payment.refunded": {
+        const result = await applyRefundToCommission({
+          paymentId: event.paymentId,
+          refundId: event.refundId,
+          refundAmount: event.amount,
+        });
+        if (result !== "none") console.log(`[webhook] Refund ${event.refundId}: referral commission ${result}`);
         break;
       }
 

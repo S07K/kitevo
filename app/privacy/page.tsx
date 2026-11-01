@@ -87,6 +87,15 @@ export default function PrivacyPolicy() {
                 processor — we never see or store full card numbers.
               </li>
               <li>
+                <strong className="text-foreground">Referral payout data:</strong>{" "}
+                If you join the referral program and add payout details, we store
+                your payout method and account (PayPal or Wise email, or bank
+                details), legal name, country and optional tax ID — encrypted —
+                along with which signups you referred and the commissions earned.
+                We use this only to calculate and send your earnings and to keep
+                the records tax law requires.
+              </li>
+              <li>
                 <strong className="text-foreground">Usage data:</strong> Kit view
                 counts and referrer information (which URL sent a visitor to your
                 kit), used to display analytics in your dashboard. We also record
