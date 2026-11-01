@@ -8,7 +8,7 @@ import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/Wo
 import { Button } from "@/app/components/workspace/Button";
 import { Skeleton, FieldSkeleton } from "@/app/components/Skeleton";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { AccountPanels } from "./AccountPanels";
+import { AccountPanels, AppearancePanel } from "./AccountPanels";
 
 async function resizeToJpegDataUrl(file: File, maxPx = 400): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -414,6 +414,7 @@ export default function BrandSettings() {
         {/* ── Rail: plan, account ── */}
         <aside className="min-w-0 space-y-6">
           <BrandPlanCard />
+          <AppearancePanel />
           <AccountPanels email={account.email} />
         </aside>
       </div>

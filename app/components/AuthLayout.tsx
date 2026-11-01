@@ -82,7 +82,7 @@ export function AuthLayout({ children, title, subtitle }: {
       </div>
 
       {/* ── Right panel — form ── */}
-      <div className="flex-1 flex flex-col bg-background">
+      <div className="flex-1 flex flex-col bg-canvas">
         {/* Mobile header */}
         <header className="lg:hidden border-b border-border bg-background/95 px-5 py-4 backdrop-blur-md">
           <Link href="/" className="font-display text-foreground inline-flex items-center gap-2 text-lg font-semibold tracking-tight hover:opacity-70 transition-opacity">

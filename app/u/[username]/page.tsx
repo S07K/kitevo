@@ -79,7 +79,7 @@ export default async function CreatorProfilePage({ params }: { params: Promise<P
   const kit = creator.kits[0];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-canvas">
       <MarketingNav />
 
       <main className="mx-auto max-w-2xl px-5 pt-28 pb-20 sm:px-8">
