@@ -49,3 +49,6 @@ prisma/dev.db
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code worktrees (other sessions)
+.claude/worktrees/
