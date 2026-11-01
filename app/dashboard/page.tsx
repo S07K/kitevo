@@ -31,6 +31,8 @@ interface KitViewRecord {
 import { DealPipeline, type InquiryRecord, type DealStatus } from "../components/DealPipeline";
 import { VerifiedBadge } from "../components/VerifiedBadge";
 import { AvatarImg } from "../components/AvatarImg";
+import { ReferralCard } from "./ReferralCard";
+import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1020,6 +1022,7 @@ function DashboardContent() {
           { href: "/pricing", label: "Pricing" },
           { href: "/social/inbox", label: "Social" },
           { href: kits[0] ? `/kit/${kits[0].slug}` : "/kit/demo", label: "View Kit", external: true },
+          { href: "/referrals", label: `Earn ${REFERRAL_RATE_PCT}%` },
         ]}
         onLogout={async () => {
           await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
@@ -1149,6 +1152,8 @@ function DashboardContent() {
                 </div>
               );
             })()}
+
+            <ReferralCard />
 
             {/* ── Pipeline / Activity ── */}
             {(kitViewsLoaded && kits.length > 0) || (tierId && tierId !== "free") ? (

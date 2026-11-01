@@ -6,6 +6,7 @@ import Link from "next/link";
 import { LogoMark } from "@/app/components/Logo";
 import { ThemeToggle } from "@/app/components/ThemeToggle";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
 
 type NavUser = { name: string | null; avatarUrl: string | null; username: string | null; accountType: string | null } | null;
 
@@ -17,6 +18,7 @@ const NAV_LINKS = [
   { label: "Vibes", href: "#vibes" },
   { label: "Pricing", href: "#pricing" },
   { label: "Blog", href: "/blog" },
+  { label: `Earn ${REFERRAL_RATE_PCT}%`, href: "/referral-program" },
   { label: "FAQ", href: "#faq" },
 ];
 

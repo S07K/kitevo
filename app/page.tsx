@@ -7,6 +7,7 @@ import { HowItWorks } from "./components/landing/HowItWorks";
 import { VibesShowcase } from "./components/landing/VibesShowcase";
 import { Testimonials } from "./components/landing/Testimonials";
 import { PricingSection } from "./components/landing/PricingSection";
+import { ReferralSection } from "./components/landing/ReferralSection";
 import { FaqSection } from "./components/landing/FaqSection";
 import { FinalCta } from "./components/landing/FinalCta";
 import { MarketingFooter } from "./components/landing/MarketingFooter";
@@ -24,6 +25,7 @@ export default function Home() {
           <VibesShowcase />
           <Testimonials />
           <PricingSection />
+          <ReferralSection />
           <FaqSection />
           <FinalCta />
         </main>

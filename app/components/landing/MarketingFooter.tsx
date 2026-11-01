@@ -21,6 +21,7 @@ const ACCOUNT = [
   { label: "Log in", href: "/login" },
   { label: "Dashboard", href: "/dashboard" },
   { label: "Instagram help", href: "/help/instagram" },
+  { label: "Referral program", href: "/referral-program" },
 ];
 
 const LEGAL = [

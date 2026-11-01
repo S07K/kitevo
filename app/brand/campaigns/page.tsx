@@ -8,7 +8,7 @@ import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { Badge } from "@/app/components/Badge";
 import { DatePicker } from "@/app/components/DatePicker";
-import { DiscoverIcon, CampaignsIcon, InboxIcon } from "@/app/components/NavIcons";
+import { DiscoverIcon, CampaignsIcon, InboxIcon, GiftIcon } from "@/app/components/NavIcons";
 
 const NICHES = ["Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 const BUDGET_OPTIONS = ["< $500", "$500–$2k", "$2k–$10k", "$10k–$50k", "$50k+"];
@@ -171,6 +171,7 @@ export default function BrandCampaigns() {
         { href: "/brand", label: "Discover", icon: <DiscoverIcon /> },
         { href: "/brand/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
         { href: "/brand/inbox", label: "Inbox", icon: <InboxIcon /> },
+        { href: "/referrals", label: "Earn", icon: <GiftIcon /> },
       ]} />
 
       <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-16 sm:px-8">

@@ -16,17 +16,8 @@ import { randomInt } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { decryptToken, encryptToken } from "@/lib/token-crypto";
 
-export const REFERRAL_TERMS = {
-  /** Commission rate in basis points (2000 = 20%). */
-  rateBps: 2000,
-  /** Commission is earned on the referred user's payments for this many months after their first one. */
-  months: 12,
-  /** Days a commission waits before it can be paid out (refund protection). */
-  holdDays: 30,
-  /** Minimum balance before a payout is due, in minor units per currency. */
-  minPayout: { USD: 2500 } as Record<string, number>,
-  defaultMinPayout: 2500,
-} as const;
+import { REFERRAL_TERMS } from "@/lib/referral-terms";
+export { REFERRAL_TERMS };
 
 export { REF_COOKIE, REF_COOKIE_MAX_AGE } from "@/lib/referral-cookie";
 

@@ -564,6 +564,8 @@ Sources: [Stan Help Center](https://help.stan.store), [Sell a Digital Download](
 
 **How it works:** `?ref=CODE` → first-touch 60-day cookie → credited at signup (email + Google) → each `payment.succeeded` webhook writes a `ReferralCommission` → available after the hold → paid. Refunds reverse unpaid commissions or claw back paid ones against the next payout. Every kit's "Create yours" link carries its owner's code, so every shared kit is a referral link.
 
+**Visibility (2026-11-01):** landing hero "New · Earn 20%" badge, nav "Earn 20%", a full landing section (`#earn`), FAQ entry, footer link, public `/referral-program` page with an earnings estimator (in sitemap); in-app: dashboard card (copy link + earnings) and nav link, "Earn" tab in every creator/brand sidebar, avatar menu. All numbers come from `lib/referral-terms.ts`.
+
 **Surfaces:** `/referrals` (link, earnings, payout details: PayPal / Wise / bank, legal name, country, tax ID, encrypted) · `/admin/payouts` (`ADMIN_EMAILS` only: due table, PayPal-bulk and full-details CSV, record a whole batch with one reference, reverse a commission, history) · monthly "payouts due" email (Vercel cron, 1st of the month) · receipt email to each referrer when a payout is recorded.
 
 **Payouts are manual by decision (2026-11-01):** Kitevo pays referrers worldwide, so no India-only rail (RazorpayX/Cashfree) — and PayPal Payouts / Wise Business APIs don't appear available to an India-registered business. For now: export → pay in PayPal/Wise → record.

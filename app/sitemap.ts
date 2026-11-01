@@ -5,7 +5,7 @@ import { APP_URL } from "@/lib/app-url";
 const BASE = APP_URL.replace(/\/$/, "");
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const staticRoutes = ["", "/pricing", "/blog", "/privacy", "/terms"].map((p) => ({
+  const staticRoutes = ["", "/pricing", "/referral-program", "/blog", "/privacy", "/terms"].map((p) => ({
     url: `${BASE}${p}`,
     lastModified: new Date(),
     changeFrequency: "weekly" as const,

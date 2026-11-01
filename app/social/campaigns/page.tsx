@@ -6,7 +6,7 @@ import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { Badge } from "@/app/components/Badge";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { CampaignsIcon, InboxIcon } from "@/app/components/NavIcons";
+import { CampaignsIcon, InboxIcon, GiftIcon } from "@/app/components/NavIcons";
 
 const NICHES = ["All", "Fashion", "Beauty", "Food", "Tech", "Health", "Travel", "Fitness", "Lifestyle", "Gaming", "Parenting", "Finance", "Education"];
 
@@ -57,6 +57,7 @@ export default function CreatorCampaigns() {
   const sidebarTabs = [
     { href: "/social/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
     { href: "/social/inbox", label: "Inbox", icon: <InboxIcon />, badge: unreadCount },
+    { href: "/referrals", label: "Earn", icon: <GiftIcon /> },
   ];
 
   return (

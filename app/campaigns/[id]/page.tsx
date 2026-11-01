@@ -11,7 +11,7 @@ import { AppSidebar } from "@/app/components/AppSidebar";
 import { AppNav } from "@/app/components/AppNav";
 import { Badge } from "@/app/components/Badge";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import { CampaignsIcon, InboxIcon } from "@/app/components/NavIcons";
+import { CampaignsIcon, InboxIcon, GiftIcon } from "@/app/components/NavIcons";
 
 type Params = { id: string };
 
@@ -130,6 +130,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
       <AppSidebar tabs={[
         { href: "/social/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
         { href: "/social/inbox", label: "Inbox", icon: <InboxIcon /> },
+        { href: "/referrals", label: "Earn", icon: <GiftIcon /> },
       ]} />
 
       <main className="md:ml-52 px-5 pt-[73px] pb-[72px] md:pb-20 sm:px-8">

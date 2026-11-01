@@ -4,6 +4,7 @@ import { softEase, useReducedMotion } from "@/lib/motion";
 import { motion, useScroll, useTransform, type Variants } from "motion/react";
 import Link from "next/link";
 import { useRef, type ReactNode } from "react";
+import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
 
 const HEADLINE = "Your media kit should close deals";
 const WORDS = HEADLINE.split(" ");
@@ -170,6 +171,30 @@ export function Hero(): ReactNode {
         style={{ y: prefersReducedMotion ? 0 : scrollY, opacity: scrollFade }}
         className="relative z-10 flex max-w-3xl flex-col items-center px-6 pt-20 pb-16 text-center sm:pt-28 sm:pb-20"
       >
+        {/* Referral program announcement — the program is the main acquisition loop, so it
+            gets the first thing on the page. Numbers come from lib/referral-terms. */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: softEase, delay: 0 }}
+          className="mb-7"
+        >
+          <Link
+            href="/referral-program"
+            className="focus-ring group border-border bg-background/70 hover:border-foreground/30 inline-flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-xs font-medium backdrop-blur transition-colors"
+          >
+            <span className="bg-foreground text-background rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+              New
+            </span>
+            <span className="text-foreground">
+              Earn {REFERRAL_RATE_PCT}% for every creator you refer
+            </span>
+            <span className="text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden>
+              →
+            </span>
+          </Link>
+        </motion.div>
+
         <motion.p
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

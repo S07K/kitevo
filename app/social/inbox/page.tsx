@@ -6,7 +6,7 @@ import { AppNav } from "@/app/components/AppNav";
 import { AppSidebar } from "@/app/components/AppSidebar";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { useRealtimeStream } from "@/app/hooks/useRealtimeStream";
-import { CampaignsIcon, InboxIcon } from "@/app/components/NavIcons";
+import { CampaignsIcon, InboxIcon, GiftIcon } from "@/app/components/NavIcons";
 
 type Conversation = {
   id: string;
@@ -146,6 +146,7 @@ export default function CreatorInbox() {
   const sidebarTabs = [
     { href: "/social/campaigns", label: "Campaigns", icon: <CampaignsIcon /> },
     { href: "/social/inbox", label: "Inbox", icon: <InboxIcon />, badge: unreadCount },
+    { href: "/referrals", label: "Earn", icon: <GiftIcon /> },
   ];
 
   return (
