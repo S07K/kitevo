@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { betaCompFieldsForNewUser } from "@/lib/beta-comp";
 import { compare } from "bcryptjs";
 import { prisma } from "./prisma";
+import { trackEvent } from "@/lib/analytics";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -68,6 +69,7 @@ export const authOptions: NextAuthOptions = {
             },
           });
           user.id = newUser.id;
+          await trackEvent("signup", { userId: newUser.id, props: { method: "google" } });
         }
       }
       return true;

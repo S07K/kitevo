@@ -23,6 +23,7 @@ import { PasswordWall } from "./PasswordWall";
 import { DEFAULT_KIT_APPEARANCE } from "@/lib/kit-appearance";
 import { cookies } from "next/headers";
 import { APP_URL } from "@/lib/app-url";
+import { trackKitFirstView } from "@/lib/analytics";
 
 const DEMO_SLUGS = ["demo", "alexchen", "my-kit"];
 
@@ -138,6 +139,8 @@ export default async function MediaKitPage({
       }
     }
     const isOwner = session?.user?.id === result.kit.userId;
+    // Activation signal: the first time anyone other than the owner opens this kit.
+    if (!previewMode && !isOwner) await trackKitFirstView(result.kit.id, result.kit.userId);
     const [, user] = await Promise.all([
       Promise.resolve(getEnabledPlatformIds()),
       prisma.user.findUnique({

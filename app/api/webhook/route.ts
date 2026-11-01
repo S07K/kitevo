@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getVerifiedTierForPriceId, resolveVerifiedTier } from "@/config/subscriptions";
+import { getTierByPriceId, getVerifiedTierForPriceId, resolveVerifiedTier } from "@/config/subscriptions";
 import { payments, WebhookVerificationError } from "@/lib/payments";
+import { trackEvent } from "@/lib/analytics";
 
 /**
  * Payment provider webhook.
@@ -59,6 +60,10 @@ export async function POST(req: Request) {
             where: { id: event.userId },
             data: { stripeCustomerId: event.customerId, verifiedTier },
           });
+          await trackEvent("upgrade", {
+            userId: event.userId,
+            props: { tier: getTierByPriceId(event.priceId)?.id ?? null },
+          });
           console.log(
             `[webhook] Linked customer ${event.customerId} to user ${event.userId}, granted ${verifiedTier ?? "no"} tier`
           );
@@ -92,6 +97,7 @@ export async function POST(req: Request) {
           // Fall back to the comp if there is one, rather than clearing outright.
           const tier = resolveVerifiedTier(null, user.compedTier);
           await prisma.user.update({ where: { id: user.id }, data: { verifiedTier: tier } });
+          await trackEvent("subscription_canceled", { userId: user.id });
           console.log(
             `[webhook] Subscription canceled — verifiedTier ${tier ? `kept at comp ${tier}` : "cleared"} for user ${user.id}`
           );

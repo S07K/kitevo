@@ -103,6 +103,7 @@ model User {
 
   // Relations for Phase 8 (kits)
   kits      Kit[]
+  analyticsEvents AnalyticsEvent[]
 
   // Shortlist / save creators (brand saves creators)
   savedCreators SavedCreator[] @relation("BrandSaved")   // as brand: creators I saved
@@ -282,5 +283,21 @@ model Account {
   expiresAt         Int?
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// First-party product funnel events (lib/analytics.ts). Names are a closed set
+// (ANALYTICS_EVENTS); props is a small JSON object with no PII. dedupeKey makes
+// "first time" events (e.g. a kit's first outside view) idempotent.
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  props     String?
+  dedupeKey String?  @unique
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
   @@index([userId])
 }

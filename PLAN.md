@@ -1,6 +1,6 @@
 # Kitevo Product & Growth Plan
 
-**Status:** Phase 0 in progress (7/11 done) — profit plan added (§11)
+**Status:** Phase 0 in progress (8/11 done) — profit plan added (§11)
 **Last updated:** 2026-11-01
 **Scope:** Competitive strategy, pricing architecture, feature roadmap, and the Phase 0 execution checklist.
 
@@ -205,7 +205,7 @@ Workstreams:
 - [x] **Token encryption.** AES-256-GCM with key-id prefix for rotation (`lib/token-crypto.ts`), backfill script, build guard. Google sign-in tokens no longer stored. (2026-11-01; prod key + backfill per DEPLOY.md)
 - [ ] **Admin/ops.** Minimal admin view for users, comps, subscriptions, and failed webhooks.
 - [ ] **Trials and coupons.** Provider-backed trial and coupon support, with abuse limits.
-- [ ] **Analytics baseline.** Track signup → kit created → kit shared → upgrade.
+- [x] **Analytics baseline.** First-party `AnalyticsEvent` table + `lib/analytics.ts`: signup → onboarding → kit created → first outside kit view (≈ shared) → checkout started → upgrade, plus cancel. Cohort report: `scripts/funnel-report.ts [days]`. (2026-11-01)
 - [ ] **Custom domains.** Design and ship the domain model and verification flow for paid plans.
 
 **Exit criteria:**

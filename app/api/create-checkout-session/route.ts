@@ -4,6 +4,7 @@ import { payments } from "@/lib/payments";
 import { authOptions } from "@/lib/auth";
 import { getPriceIdForTier, type BillingInterval } from "@/config/subscriptions";
 import { prisma } from "@/lib/prisma";
+import { trackEvent } from "@/lib/analytics";
 
 async function hasPaidSubscription(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { stripeCustomerId: true } });
@@ -67,6 +68,7 @@ export async function POST(req: Request) {
       cancelUrl,
     });
 
+    await trackEvent("checkout_started", { userId: authSession.user.id, props: { tier, interval } });
     return NextResponse.json({ url });
   } catch (err: unknown) {
     console.error("Checkout error:", err);

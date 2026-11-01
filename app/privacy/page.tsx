@@ -88,7 +88,12 @@ export default function PrivacyPolicy() {
               <li>
                 <strong className="text-foreground">Usage data:</strong> Kit view
                 counts and referrer information (which URL sent a visitor to your
-                kit), used to display analytics in your dashboard.
+                kit), used to display analytics in your dashboard. We also record
+                product milestones on our own servers (for example: account
+                created, onboarding finished, kit created, first outside view of a
+                kit, checkout started, plan upgraded or canceled) to understand how
+                people use Kitevo. These records contain no message content or
+                platform tokens and are deleted with your account.
               </li>
             </ul>
           </section>

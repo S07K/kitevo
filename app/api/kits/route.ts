@@ -9,6 +9,7 @@ import type { SectionVisibility } from "@/lib/kit-storage";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
 import { parseKitAppearance } from "@/lib/kit-appearance";
 import { parseManualStats } from "@/lib/manual-stats";
+import { trackEvent } from "@/lib/analytics";
 
 function defaultVisibility(): SectionVisibility {
   return { ...DEFAULT_SECTION_VISIBILITY };
@@ -90,6 +91,7 @@ export async function POST(req: Request) {
       sectionVisibility: sectionVisibilityJson,
     },
   });
+  await trackEvent("kit_created", { userId: session.user.id, props: { kitId: kit.id, kitNumber: count + 1 } });
 
   return NextResponse.json({
     id: kit.id,
