@@ -15,14 +15,19 @@ const NAV_LINKS = [
   // A real page, not an in-page anchor. Rendered with <a> like the rest, which is fine:
   // it is a full navigation away from the landing page either way.
   { label: "Live example", href: "/kit/demo" },
-  { label: "Vibes", href: "#vibes" },
+  { label: "Ways to earn", href: "#ways-to-earn" },
   { label: "Pricing", href: "#pricing" },
   { label: "Blog", href: "/blog" },
   { label: `Earn ${REFERRAL_RATE_PCT}%`, href: "/referral-program" },
   { label: "FAQ", href: "#faq" },
 ];
 
-export function MarketingNav(): ReactNode {
+/**
+ * `overDark`: the page opens on a dark band (the homepage hero). Until the visitor scrolls,
+ * the header renders in the dark token set (class "dark" flips every token inside it), so
+ * logo, links and buttons stay legible on navy without per-element overrides.
+ */
+export function MarketingNav({ overDark = false }: { overDark?: boolean } = {}): ReactNode {
   const prefersReducedMotion = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -68,6 +73,7 @@ export function MarketingNav(): ReactNode {
         className={[
           "fixed inset-x-0 z-50 transition-all duration-300",
           scrolled ? "bg-background/95 backdrop-blur-md border-b border-border" : "bg-transparent",
+          overDark && !scrolled && !menuOpen ? "dark" : "",
         ].join(" ")}
       >
         <div className="mx-auto flex h-[57px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-10">

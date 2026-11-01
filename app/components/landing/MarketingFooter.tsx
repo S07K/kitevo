@@ -11,7 +11,7 @@ const VIBE_STRIP = [
 
 const NAV = [
   { label: "How it works", href: "#how-it-works" },
-  { label: "Vibes", href: "#vibes" },
+  { label: "Ways to earn", href: "#ways-to-earn" },
   { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
 ];
@@ -121,16 +121,16 @@ export function MarketingFooter(): ReactNode {
               </ul>
             </div>
 
-            {/* Kit Vibes */}
+            {/* Kit styles (examples section) */}
             <div>
               <h3 className="text-foreground mb-4 text-xs font-semibold tracking-[0.15em] uppercase">
-                Kit Vibes
+                Kit styles
               </h3>
               <ul className="space-y-2.5">
                 {VIBE_STRIP.map((v) => (
                   <li key={v.name}>
                     <a
-                      href="#vibes"
+                      href="#examples"
                       className="focus-ring text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm transition-colors"
                     >
                       <span

@@ -4,8 +4,7 @@ import { LaunchBanner } from "./components/LaunchBanner";
 import { MarketingNav } from "./components/landing/MarketingNav";
 import { Hero } from "./components/landing/Hero";
 import { HowItWorks } from "./components/landing/HowItWorks";
-import { VibesShowcase } from "./components/landing/VibesShowcase";
-import { Testimonials } from "./components/landing/Testimonials";
+import { NoCut, WaysToEarn, ExampleKits, OneLink, InboxWall } from "./components/landing/EarnSections";
 import { PricingSection } from "./components/landing/PricingSection";
 import { ReferralSection } from "./components/landing/ReferralSection";
 import { FaqSection } from "./components/landing/FaqSection";
@@ -17,15 +16,19 @@ export default function Home() {
     <ReducedMotionProvider>
       <SmoothScroll>
         <LaunchBanner />
-        <MarketingNav />
+        {/* The hero opens on a navy band: the nav starts in its light-on-dark form. */}
+        <MarketingNav overDark />
         {/* paddingTop shifts content down by the banner height (0 when hidden). */}
         <main style={{ paddingTop: "var(--ph-banner, 0px)" }}>
           <Hero />
+          <NoCut />
+          <WaysToEarn />
+          <ExampleKits />
+          <OneLink />
+          <InboxWall />
           <HowItWorks />
-          <VibesShowcase />
-          <Testimonials />
-          <PricingSection />
           <ReferralSection />
+          <PricingSection />
           <FaqSection />
           <FinalCta />
         </main>
