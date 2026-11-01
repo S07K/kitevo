@@ -82,7 +82,7 @@ function DealCard({ inq, onExpand, isDragging }: CardProps) {
           )}
         </div>
         {!inq.read && (
-          <span className="bg-primary text-primary-foreground shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide">
+          <span className="bg-accent text-accent-foreground shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide">
             New
           </span>
         )}

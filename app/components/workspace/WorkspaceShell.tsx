@@ -91,7 +91,7 @@ export function Panel({
   bodyClassName?: string;
 }) {
   return (
-    <section className={`overflow-hidden rounded-2xl border border-border bg-background shadow-[0_1px_2px_rgba(28,25,20,0.04)] ${className}`}>
+    <section className={`overflow-hidden rounded-2xl border border-border bg-background shadow-[0_1px_2px_rgba(27,54,93,0.05)] ${className}`}>
       {(title || action) && (
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5 sm:px-6">
           {title && <SectionTitle>{title}</SectionTitle>}

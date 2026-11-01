@@ -183,7 +183,7 @@ export function Hero(): ReactNode {
             href="/referral-program"
             className="focus-ring group border-border bg-background/70 hover:border-foreground/30 inline-flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-xs font-medium backdrop-blur transition-colors"
           >
-            <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+            <span className="bg-accent text-accent-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
               New
             </span>
             <span className="text-foreground">

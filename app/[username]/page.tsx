@@ -111,6 +111,10 @@ const VIBE_COLORS: Record<string, { bg: string; accent: string }> = {
   bloom:     { bg: "#f5ede4", accent: "#8b4513" },
   electric:  { bg: "#0A0A14", accent: "#6366f1" },
   noir:      { bg: "#1a1a18", accent: "#c9a84c" },
+  sage:      { bg: "#EEF3EA", accent: "#2F5D50" },
+  mist:      { bg: "#EDF2F8", accent: "#2B4C7E" },
+  blush:     { bg: "#F8EEEB", accent: "#A3485A" },
+  lavender:  { bg: "#F1EFF9", accent: "#5B4B9A" },
 };
 
 export default async function CreatorProfilePage({
