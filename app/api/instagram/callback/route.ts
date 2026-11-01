@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createHmac, timingSafeEqual } from "crypto";
 import { invalidatePlatformCache } from "@/lib/platform-cache";
+import { encryptToken } from "@/lib/token-crypto";
 
 const META_APP_ID = process.env.META_APP_ID;
 const META_APP_SECRET = process.env.META_APP_SECRET;
@@ -140,7 +141,7 @@ export async function GET(req: Request) {
       where: { id: session.user.id },
       data: {
         instagramUserId: igUserId,
-        instagramAccessToken: accessToken,
+        instagramAccessToken: encryptToken(accessToken),
         instagramTokenExpiresAt: tokenExpiresAt,
       },
     });

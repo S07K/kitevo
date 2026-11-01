@@ -121,6 +121,7 @@ Settings → Secrets and variables → Actions → `DATABASE_URL`, `DIRECT_URL`)
 | `GOOGLE_CLIENT_SECRET` | Google SSO + YouTube. |
 | `RESEND_API_KEY` | Transactional email. |
 | `RESEND_FROM_EMAIL` | `Kitevo <hello@mail.getkitevo.com>` — see the note below. Guarded. |
+| `TOKEN_ENCRYPTION_KEYS` | **New for prod.** `k1:<base64 32 bytes>` — encrypts IG/YT tokens at rest. See "Token encryption" below. |
 
 The price ids are read dynamically as
 `STRIPE_PRICE_ID_${tierId.toUpperCase()}${suffix}` (`config/subscriptions.ts`),
@@ -141,6 +142,24 @@ on `send.mail.getkitevo.com`, MX to `feedback-smtp.eu-west-1.amazonses.com`,
 DMARC `v=DMARC1; p=none;` on the **root** (`_dmarc.getkitevo.com`), which covers
 `mail.getkitevo.com` too: a root DMARC policy applies to subdomains unless an `sp=`
 tag overrides it.
+
+### Token encryption (`TOKEN_ENCRYPTION_KEYS`)
+
+Instagram/YouTube access + refresh tokens are sealed with AES-256-GCM in
+`lib/token-crypto.ts` (`enc:v1:<keyId>:…`). Rollout, once:
+
+1. Generate a key: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
+2. Set `TOKEN_ENCRYPTION_KEYS=k1:<that key>` on Vercel **Production** and redeploy.
+   New connects and token refreshes are now encrypted; existing plaintext rows keep
+   working (plaintext passes through on read).
+3. Encrypt existing rows with the **same** value (dry run first):
+   `TOKEN_ENCRYPTION_KEYS=k1:… DATABASE_URL=<session pooler> npx tsx scripts/encrypt-platform-tokens.ts --dry-run`,
+   then without `--dry-run`. It also clears the unused Google sign-in tokens on `Account`.
+
+**Back the key up somewhere other than Vercel** (password manager). Lose it and every
+encrypted token decrypts to null — creators show as disconnected and must reconnect;
+nothing else breaks. Rotation: set `k2:<new>,k1:<old>`, redeploy, re-run the script,
+then remove `k1`. A malformed value fails the build; a missing one only warns.
 
 Two vars are guarded — `scripts/vercel-build.cjs` fails a **production** build
 (preview and local only warn) because both fall back to something that looks fine

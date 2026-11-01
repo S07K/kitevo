@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { cachedPlatformCall } from "@/lib/platform-cache";
+import { decryptPlatformTokens, encryptToken } from "@/lib/token-crypto";
 
 const YOUTUBE_API = "https://www.googleapis.com/youtube/v3";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -62,7 +63,7 @@ async function refreshAccessToken(userId: string, refreshToken: string): Promise
   const expiresAt = new Date(Date.now() + (data.expires_in ?? 3600) * 1000);
   await prisma.user.update({
     where: { id: userId },
-    data: { youtubeAccessToken: data.access_token, youtubeTokenExpiresAt: expiresAt },
+    data: { youtubeAccessToken: encryptToken(data.access_token), youtubeTokenExpiresAt: expiresAt },
   });
   return data.access_token;
 }
@@ -128,7 +129,7 @@ async function getRecentVideos(uploadsPlaylistId: string, token: string): Promis
 }
 
 async function fetchYouTubeStatsForUser(userId: string): Promise<YouTubeStats | null> {
-  const user = await prisma.user.findUnique({
+  const user = decryptPlatformTokens(await prisma.user.findUnique({
     where: { id: userId },
     select: {
       youtubeChannelId: true,
@@ -136,7 +137,7 @@ async function fetchYouTubeStatsForUser(userId: string): Promise<YouTubeStats | 
       youtubeRefreshToken: true,
       youtubeTokenExpiresAt: true,
     },
-  });
+  }));
 
   if (!user?.youtubeAccessToken || !user?.youtubeChannelId) return null;
 

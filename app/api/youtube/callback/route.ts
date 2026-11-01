@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { invalidatePlatformCache } from "@/lib/platform-cache";
+import { encryptToken } from "@/lib/token-crypto";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const YOUTUBE_API = "https://www.googleapis.com/youtube/v3";
@@ -81,8 +82,8 @@ export async function GET(req: NextRequest) {
     where: { id: userId },
     data: {
       youtubeChannelId: channelId,
-      youtubeAccessToken: tokens.access_token,
-      youtubeRefreshToken: tokens.refresh_token ?? null,
+      youtubeAccessToken: encryptToken(tokens.access_token),
+      youtubeRefreshToken: encryptToken(tokens.refresh_token ?? null),
       youtubeTokenExpiresAt: expiresAt,
     },
   });

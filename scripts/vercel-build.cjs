@@ -165,6 +165,40 @@ function checkBetaComp() {
   }
 }
 
+/**
+ * Platform-token encryption key (lib/token-crypto.ts). Malformed keys fail the build in any
+ * environment: the app would throw on the first Instagram/YouTube call. A missing key only
+ * warns — tokens are then stored in plaintext, which is how it worked before encryption —
+ * so a deploy never breaks while the key is being set up. Set it, then run
+ * scripts/encrypt-platform-tokens.ts to encrypt existing rows.
+ */
+function checkTokenKeys() {
+  const raw = (process.env.TOKEN_ENCRYPTION_KEYS ?? "").trim();
+  if (!raw) {
+    if (process.env.VERCEL_ENV === "production") {
+      console.log(
+        "\n[vercel-build] Note: TOKEN_ENCRYPTION_KEYS is not set on PRODUCTION.\n" +
+          "  Instagram/YouTube tokens are stored in plaintext. See DEPLOY.md (token encryption).\n"
+      );
+    }
+    return;
+  }
+  const ids = new Set();
+  for (const entry of raw.split(",").map((s) => s.trim()).filter(Boolean)) {
+    const idx = entry.indexOf(":");
+    const id = idx > 0 ? entry.slice(0, idx) : "";
+    const key = idx > 0 ? Buffer.from(entry.slice(idx + 1), "base64") : Buffer.alloc(0);
+    if (!/^[A-Za-z0-9_-]+$/.test(id) || key.length !== 32 || ids.has(id)) {
+      console.error(
+        "\n[vercel-build] TOKEN_ENCRYPTION_KEYS is malformed. Expected '<id>:<base64 32-byte key>'\n" +
+          "  entries separated by commas, unique ids. The first entry is the active key.\n"
+      );
+      process.exit(1);
+    }
+    ids.add(id);
+  }
+}
+
 /** Host of a URL, or null if it isn't parseable. */
 function safeHost(url) {
   try {
@@ -179,6 +213,7 @@ checkFromEmail();
 
 checkPaymentProvider();
 checkBetaComp();
+checkTokenKeys();
 
 run("npx prisma generate");
 
