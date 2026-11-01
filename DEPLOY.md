@@ -151,7 +151,7 @@ Referral commissions are created from **`payment.succeeded`** and reversed by
 **`refund.succeeded`**. In the Dodo dashboard → Webhooks, make sure the endpoint
 `https://getkitevo.com/api/webhook` is subscribed to both (in addition to the
 `subscription.*` events). If the endpoint is set to "all events", nothing to do.
-Payouts are manual for now: `/admin/payouts` → export CSV → pay in PayPal/Wise →
+Payouts are manual for now: `/admin/payouts` shows who is owed what and where → pay in PayPal/Wise/bank →
 record the batch reference. Stripe refunds aren't mapped to commissions yet; reverse
 those from the admin page.
 

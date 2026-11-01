@@ -327,7 +327,7 @@ export function parseBankDetails(destination: string): BankDetails | null {
   }
 }
 
-/** Human-readable destination, one field per line (admin table + CSV). */
+/** Human-readable destination, one field per line (admin payouts page). */
 export function formatDestination(method: string, destination: string): string {
   if (method !== "bank") return destination;
   const b = parseBankDetails(destination);
@@ -503,50 +503,4 @@ export async function reverseCommission(commissionId: string): Promise<boolean> 
     data: { status: "reversed", reversedAt: new Date() },
   });
   return res.count === 1;
-}
-
-// ─── CSV export ──────────────────────────────────────────────────────────────
-
-function csvCell(v: string | number): string {
-  const s = String(v);
-  // Neutralise spreadsheet formula injection and quote everything.
-  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
-  return `"${safe.replace(/"/g, '""')}"`;
-}
-
-export function formatMinor(amount: number): string {
-  return (amount / 100).toFixed(2);
-}
-
-/**
- * CSV for paying the batch.
- * - "paypal": PayPal Payouts bulk upload columns (email, amount, currency, id, note).
- * - "all": every payable row with full details, for Wise/bank or bookkeeping.
- */
-export function payoutsCsv(rows: DueRow[], format: "paypal" | "all", periodLabel: string): string {
-  const note = `Kitevo referral earnings ${periodLabel}`;
-  if (format === "paypal") {
-    return rows
-      .filter((r) => r.profile?.method === "paypal")
-      .map((r) => [r.profile!.destination, formatMinor(r.amount), r.currency, r.referrerId, note].map(csvCell).join(","))
-      .join("\n");
-  }
-  const header = ["referrer_id", "legal_name", "account_email", "country", "method", "destination", "tax_id", "amount", "currency", "note"];
-  const lines = rows.map((r) =>
-    [
-      r.referrerId,
-      r.profile?.legalName ?? "",
-      r.email,
-      r.profile?.country ?? "",
-      r.profile?.method ?? "",
-      r.profile ? formatDestination(r.profile.method, r.profile.destination) : "",
-      r.profile?.taxId ?? "",
-      formatMinor(r.amount),
-      r.currency,
-      note,
-    ]
-      .map(csvCell)
-      .join(",")
-  );
-  return [header.join(","), ...lines].join("\n");
 }

@@ -159,32 +159,3 @@ describe("validatePayoutProfile", () => {
     expect(R.validatePayoutProfile({ method: "venmo", destination: "x", legalName: "Jane", country: "US" }).ok).toBe(false);
   });
 });
-
-describe("payoutsCsv", () => {
-  const row = (over: Partial<import("./referrals").DueRow> = {}): import("./referrals").DueRow => ({
-    referrerId: "ref1",
-    name: "Jane",
-    email: "jane@x.com",
-    currency: "USD",
-    amount: 4320,
-    commissionCount: 3,
-    meetsMinimum: true,
-    profile: { method: "paypal", destination: "jane@pp.com", legalName: "Jane Doe", country: "US", taxId: null, updatedAt: "" },
-    ...over,
-  });
-
-  it("writes PayPal bulk rows for PayPal recipients only", () => {
-    const csv = R.payoutsCsv(
-      [row(), row({ referrerId: "ref2", profile: { method: "wise", destination: "w@x.com", legalName: "W", country: "GB", taxId: null, updatedAt: "" } })],
-      "paypal",
-      "Nov 2026"
-    );
-    expect(csv).toBe('"jane@pp.com","43.20","USD","ref1","Kitevo referral earnings Nov 2026"');
-  });
-
-  it("neutralises spreadsheet formulas in user-supplied fields", () => {
-    const csv = R.payoutsCsv([row({ profile: { method: "bank", destination: "=HYPERLINK(1)", legalName: "+cmd", country: "US", taxId: null, updatedAt: "" } })], "all", "Nov");
-    expect(csv).toContain(`"'=HYPERLINK(1)"`);
-    expect(csv).toContain(`"'+cmd"`);
-  });
-});

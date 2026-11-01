@@ -12,7 +12,7 @@ export default async function AdminPayoutsPage() {
   if (!(await getAdmin())) notFound();
 
   const now = new Date();
-  const [due, commissions, payouts] = await Promise.all([
+  const [due, commissions, payouts, onHold, paidTotals, referredUsers, referrers] = await Promise.all([
     getDuePayouts(now),
     prisma.referralCommission.findMany({
       orderBy: { createdAt: "desc" },
@@ -28,7 +28,26 @@ export default async function AdminPayoutsPage() {
       take: 50,
       select: { id: true, amount: true, currency: true, method: true, reference: true, paidAt: true, referrer: { select: { email: true } } },
     }),
+    prisma.referralCommission.groupBy({
+      by: ["currency"],
+      where: { status: "pending", availableAt: { gt: now } },
+      _sum: { amount: true },
+      _count: { _all: true },
+    }),
+    prisma.referralPayout.groupBy({ by: ["currency"], _sum: { amount: true } }),
+    prisma.user.count({ where: { referredById: { not: null } } }),
+    prisma.user.count({ where: { referrals: { some: {} } } }),
   ]);
+
+  const totals = (rows: Array<{ currency: string; _sum: { amount: number | null } }>) =>
+    Object.fromEntries(rows.map((r) => [r.currency, r._sum.amount ?? 0]));
+  const stats = {
+    onHold: totals(onHold),
+    onHoldCount: onHold.reduce((n, r) => n + r._count._all, 0),
+    paid: totals(paidTotals),
+    referredUsers,
+    referrers,
+  };
 
   const rows: AdminRow[] = due.map((r) => ({
     referrerId: r.referrerId,
@@ -64,10 +83,10 @@ export default async function AdminPayoutsPage() {
       <main className="mx-auto max-w-6xl px-4 pb-24 pt-24 sm:px-8">
         <h1 className="font-display text-foreground text-2xl font-semibold tracking-tight">Referral payouts</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          {REFERRAL_TERMS.rateBps / 100}% for {REFERRAL_TERMS.months} months · {REFERRAL_TERMS.holdDays}-day hold · paid manually
-          (PayPal / Wise / bank), then recorded here.
+          {REFERRAL_TERMS.rateBps / 100}% for {REFERRAL_TERMS.months} months · {REFERRAL_TERMS.holdDays}-day hold · minimum{" "}
+          ${(REFERRAL_TERMS.minPayout.USD ?? REFERRAL_TERMS.defaultMinPayout) / 100}. Send each payment yourself, then mark it paid here.
         </p>
-        <AdminPayoutsClient rows={rows} recent={recent} history={history} />
+        <AdminPayoutsClient rows={rows} recent={recent} history={history} stats={stats} />
       </main>
     </div>
   );

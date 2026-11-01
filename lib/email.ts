@@ -214,7 +214,7 @@ export async function sendPayoutsDueDigest({
     subject: `Referral payouts due: ${totalText} to ${payableCount} referrer${payableCount === 1 ? "" : "s"}`,
     html: emailHtml({
       heading: `${totalText} due to ${payableCount} referrer${payableCount === 1 ? "" : "s"}`,
-      body: `Export the CSV, pay the batch in PayPal or Wise, then record it with the batch reference.${missingDetailsCount ? `<br><br>${missingDetailsCount} more referrer${missingDetailsCount === 1 ? " is" : "s are"} over the minimum but haven't added payout details yet.` : ""}`,
+      body: `Open the payouts page, send each payment in PayPal, Wise or your bank, then mark them paid with the reference.${missingDetailsCount ? `<br><br>${missingDetailsCount} more referrer${missingDetailsCount === 1 ? " is" : "s are"} over the minimum but haven't added payout details yet.` : ""}`,
       ctaLabel: "Review payouts",
       ctaUrl: `${APP_URL}/admin/payouts`,
       footer: "Sent on the 1st of each month while referral payouts are due.",
