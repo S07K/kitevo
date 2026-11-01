@@ -186,12 +186,12 @@ function checkTokenKeys() {
   const ids = new Set();
   for (const entry of raw.split(",").map((s) => s.trim()).filter(Boolean)) {
     const idx = entry.indexOf(":");
-    const id = idx > 0 ? entry.slice(0, idx) : "";
-    const key = idx > 0 ? Buffer.from(entry.slice(idx + 1), "base64") : Buffer.alloc(0);
+    const id = idx > 0 ? entry.slice(0, idx) : "k1"; // bare key = id "k1" (matches lib/token-crypto)
+    const key = Buffer.from(idx > 0 ? entry.slice(idx + 1) : entry, "base64");
     if (!/^[A-Za-z0-9_-]+$/.test(id) || key.length !== 32 || ids.has(id)) {
       console.error(
-        "\n[vercel-build] TOKEN_ENCRYPTION_KEYS is malformed. Expected '<id>:<base64 32-byte key>'\n" +
-          "  entries separated by commas, unique ids. The first entry is the active key.\n"
+        "\n[vercel-build] TOKEN_ENCRYPTION_KEYS is malformed. Expected a base64 32-byte key, or\n" +
+          "  '<id>:<base64 key>' entries separated by commas, unique ids. The first entry is the active key.\n"
       );
       process.exit(1);
     }

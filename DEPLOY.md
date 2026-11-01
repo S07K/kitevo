@@ -161,7 +161,7 @@ Instagram/YouTube access + refresh tokens are sealed with AES-256-GCM in
 `lib/token-crypto.ts` (`enc:v1:<keyId>:…`). Rollout, once:
 
 1. Generate a key: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
-2. Set `TOKEN_ENCRYPTION_KEYS=k1:<that key>` on Vercel **Production** and redeploy.
+2. Set `TOKEN_ENCRYPTION_KEYS` on Vercel **Production** to that key (a bare key is fine; it becomes key id `k1`; `k1:<key>` is equivalent) and redeploy.
    New connects and token refreshes are now encrypted; existing plaintext rows keep
    working (plaintext passes through on read).
 3. Encrypt existing rows with the **same** value (dry run first):
