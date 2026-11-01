@@ -1,6 +1,6 @@
 # Kitevo Product & Growth Plan
 
-**Status:** Phase 0 in progress (8/11 done) · R1 referral program shipped (manual payouts) — profit plan added (§11)
+**Status:** Phase 0 in progress (9/11 done) · R1 referral program shipped (manual payouts) — profit plan added (§11)
 **Last updated:** 2026-11-01
 **Scope:** Competitive strategy, pricing architecture, feature roadmap, and the Phase 0 execution checklist.
 
@@ -203,7 +203,7 @@ Workstreams:
 - [x] **Live-stat gating.** Public kits only show live IG/YT data when the owner has a paid plan; free kits use manual stats. (2026-10-31)
 - [x] **Migrations.** Versioned baseline in `prisma/migrations`; `migrate deploy` runs automatically on every deploy (GitHub Action gated on tests + Vercel build before `next build`). Prod baselined + first deploys verified 2026-10-31.
 - [x] **Token encryption.** AES-256-GCM with key-id prefix for rotation (`lib/token-crypto.ts`), backfill script, build guard. Google sign-in tokens no longer stored. (2026-11-01; prod key + backfill per DEPLOY.md)
-- [ ] **Admin/ops.** Minimal admin view for users, comps, subscriptions, and failed webhooks. *(Started: `lib/admin.ts` gate + `/admin/payouts`.)*
+- [x] **Admin/ops.** `/admin`: user lookup, comp + plan resync (live provider subscription), payment webhook log with replay, admin audit log; `/admin/payouts` for referrals. (2026-11-01)
 - [ ] **Trials and coupons.** Provider-backed trial and coupon support, with abuse limits.
 - [x] **Analytics baseline.** First-party `AnalyticsEvent` table + `lib/analytics.ts`: signup → onboarding → kit created → first outside kit view (≈ shared) → checkout started → upgrade, plus cancel. Cohort report: `scripts/funnel-report.ts [days]`. (2026-11-01)
 - [ ] **Custom domains.** Design and ship the domain model and verification flow for paid plans.
@@ -316,7 +316,10 @@ Original spec:
 - Keep key rotation possible with a key id prefix.
 - Never log tokens or include them in client payloads.
 
-### P0-6. Admin and ops
+### P0-6. Admin and ops ✅ (2026-11-01)
+
+Shipped: `WebhookEvent` (every delivery logged as its domain event, not the raw PII-bearing body; retries of applied deliveries acknowledged without re-applying; signature failures bucketed one row per provider per hour), `AdminAuditLog`, `lib/admin-actions.ts` (setComp/resyncPlan shared with `scripts/comp-user.ts`), `/admin` + `/admin/users/[id]`. Original scope:
+
 
 - Admin-only route for user lookup, plan/comp changes, and subscription status.
 - Webhook failure visibility and replay instructions.

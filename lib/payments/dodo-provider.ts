@@ -136,6 +136,11 @@ export const dodoProvider: PaymentProvider = {
     return false;
   },
 
+  webhookDeliveryId(_rawBody, headers) {
+    // Standard Webhooks: webhook-id is the message id, identical on every retry.
+    return headers.get("webhook-id") || null;
+  },
+
   async createCheckout({ priceId, userId, email, successUrl }: CreateCheckoutParams) {
     const session = await dodoClient().checkoutSessions.create({
       product_cart: [{ product_id: priceId, quantity: 1 }],

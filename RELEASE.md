@@ -3,7 +3,7 @@
 A running checklist for the work currently on feature branches. Updated as each branch
 lands. Tick items off as you go; delete the section once it's live.
 
-**Last updated:** 2026-11-01 (dashboard polish added)
+**Last updated:** 2026-11-01 (dashboard polish + admin ops added)
 
 ---
 
@@ -19,9 +19,10 @@ The branches are stacked; each contains the one before it.
 | 4 | `feat/onboarding` | 3-step onboarding with live kit preview, auto-created kit, no plan step; admin payouts page without CSV; username rules |
 | 5 | `feat/workspace-sidebar` | One sidebar for the whole app: dashboard top links removed; Campaigns/Messages grouped under Social; Plan & billing, Settings, View my kit in the sidebar footer |
 | 6 | `feat/workspace-ui` | One route per tab (`/campaigns`, `/messages`, `/discover`, `/settings`; old URLs 301), shared page shell/headers on every tab, dashboard redesigned as a creator workspace |
-| 7 | `feat/dashboard-polish` | Dashboard design-critique fixes: main kit shown once (spotlight + "…" menu), honest audience-numbers prompt, banners in one place, shared `Button`/`Modal`, accessible dialogs/tabs, dark-mode fixes. No deploy steps |
+| 7 | `feat/dashboard-polish` | Dashboard design-critique fixes: main kit shown once (spotlight + "…" menu), honest audience-numbers prompt, banners in one place, shared `Button`/`Modal`, accessible dialogs/tabs, dark-mode fixes. No deploy steps. *(Committed on `feat/workspace-ui`.)* |
+| 8 | `feat/admin-ops` | `/admin` user lookup, comp + plan resync controls, payment webhook log with replay, admin audit log. Adds migration `20261101130000_admin_ops` (new tables only). *(Merged into `feat/workspace-ui`.)* |
 
-Merge the last branch (`feat/dashboard-polish`) and it brings everything above it.
+Merge `feat/workspace-ui`: it now contains everything above it, including dashboard polish and admin ops.
 
 ---
 
@@ -49,8 +50,8 @@ Nothing else changes. `DATABASE_URL` / `DIRECT_URL` (Vercel + GitHub secrets) ar
 
 - [ ] Merge to `main` (PR or fast-forward).
 - [ ] Watch **GitHub Actions → db-migrate**: tests run, then `prisma migrate deploy` applies
-  two new migrations: `20261101073730_analytics_events` and `20261101120000_referrals`. Both only
-  **add** tables/columns; nothing is dropped or rewritten.
+  three new migrations: `20261101073730_analytics_events`, `20261101120000_referrals` and
+  `20261101130000_admin_ops`. All only **add** tables/columns; nothing is dropped or rewritten.
 - [ ] Watch the **Vercel production build**. It also runs `migrate deploy` (no-ops if the
   Action got there first). It **fails on purpose** if `TOKEN_ENCRYPTION_KEYS` is malformed.
 
@@ -84,6 +85,10 @@ Nothing else changes. `DATABASE_URL` / `DIRECT_URL` (Vercel + GitHub secrets) ar
 - [ ] **Onboarding**: sign up a fresh test account → role picker → creator → username is pre-filled → Continue → Skip → "Your media kit is live" with a working link. Delete the test account after.
 - [ ] `/admin/payouts` loads for you; in a private window (logged out or another
   account) it's a 404.
+- [ ] `/admin` loads: search your own email → user page shows the live Dodo subscription
+  (not "Lookup failed"). Comp a test account to Pro and back to None; both changes appear
+  in the audit log. Within a day of real traffic the webhook table (filter **All**) shows
+  `processed` Dodo deliveries; any `rejected` row means the webhook secret is wrong.
 - [ ] Reconnect Instagram on a test account → kit still shows live stats (tokens now encrypted).
 - [ ] Open your kit in a private window → `npx tsx scripts/funnel-report.ts 1` (prod
   `DATABASE_URL`) shows a `kit_first_view`.

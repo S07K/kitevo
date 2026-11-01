@@ -349,6 +349,42 @@ model ReferralCommission {
   @@index([referredUserId])
 }
 
+// One row per payment-provider webhook delivery (lib/webhook-log.ts). payload is our
+// provider-agnostic domain event (ids + amounts, no emails), which is what an admin
+// replay re-applies. Signature failures collapse into one row per provider per hour
+// (deliveryId "rejected:<hour>") so an unauthenticated flood can't grow the table.
+model WebhookEvent {
+  id           String   @id @default(cuid())
+  provider     String
+  deliveryId   String?  // provider's delivery/event id; null when it didn't send one
+  type         String   // domain event type, or "rejected"
+  providerType String?  // provider's own event name, for ignored events
+  status       String   // "processed" | "ignored" | "failed" | "rejected"
+  error        String?
+  payload      String?  // JSON domain event; null for ignored/rejected
+  attempts     Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([provider, deliveryId])
+  @@index([status, createdAt])
+  @@index([createdAt])
+}
+
+// Who changed what from the admin side (comps, plan resyncs, webhook replays).
+// targetUserId is deliberately not a relation, so history survives account deletion.
+model AdminAuditLog {
+  id           String   @id @default(cuid())
+  actor        String   // admin email, or "script:<name>"
+  action       String   // "comp.set" | "plan.resync" | "webhook.replay"
+  targetUserId String?
+  details      String?  // JSON { before, after, ... }
+  createdAt    DateTime @default(now())
+
+  @@index([targetUserId, createdAt])
+  @@index([createdAt])
+}
+
 // A payment sent to a referrer (manually via PayPal/Wise/bank for now).
 model ReferralPayout {
   id          String               @id @default(cuid())

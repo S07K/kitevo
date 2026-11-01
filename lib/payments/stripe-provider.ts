@@ -69,6 +69,16 @@ export const stripeProvider: PaymentProvider = {
     return value.startsWith("cs_");
   },
 
+  webhookDeliveryId(rawBody) {
+    // Stripe retries resend the same Event, so its evt_ id identifies the delivery.
+    try {
+      const id = (JSON.parse(rawBody) as { id?: unknown }).id;
+      return typeof id === "string" && id ? id : null;
+    } catch {
+      return null;
+    }
+  },
+
   async createCheckout({ priceId, userId, email, successUrl, cancelUrl }: CreateCheckoutParams) {
     const session = await stripeClient().checkout.sessions.create({
       mode: "subscription",
