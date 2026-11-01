@@ -84,7 +84,7 @@ export async function sendInquiryNotification({
   kitSlug: string;
   from: { name: string; email: string; company?: string | null; message: string };
 }) {
-  const dashboardUrl = `${APP_URL}/dashboard`;
+  const pipelineUrl = `${APP_URL}/pipeline`;
   const company = from.company ? ` (${from.company})` : "";
   await send({
     from: FROM,
@@ -93,8 +93,8 @@ export async function sendInquiryNotification({
     html: emailHtml({
       heading: `New inquiry on your brand kit: "${kitName}"`,
       body: `<strong>${from.name}${company}</strong> &lt;${from.email}&gt; sent you a message:<br><br><blockquote style="margin:0;padding:12px 16px;border-left:3px solid #e8e4e0;color:#6b6560;font-style:italic">${from.message.replace(/\n/g, "<br>")}</blockquote><br>Reply directly to <a href="mailto:${from.email}" style="color:#111110">${from.email}</a>.`,
-      ctaLabel: "View dashboard",
-      ctaUrl: dashboardUrl,
+      ctaLabel: "Open your pipeline",
+      ctaUrl: pipelineUrl,
       footer: `You received this because someone submitted an inquiry on your ${kitName} media kit. To stop these emails, contact us via your dashboard.`,
     }),
     replyTo: from.email,

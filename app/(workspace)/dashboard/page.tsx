@@ -9,13 +9,13 @@ import { type ProfileFormProfile } from "@/app/components/ProfileForm";
 import { DashboardSkeleton, KitSpotlightSkeleton, MetricsSkeleton, ActivitySkeleton, PanelSkeleton, Skeleton, CountUp } from "@/app/components/Skeleton";
 import { AnalyticsChart } from "@/app/components/AnalyticsChart";
 import type { KitRecord } from "@/lib/kit-storage";
-import { DealPipeline, type InquiryRecord, type DealStatus } from "@/app/components/DealPipeline";
+import { type InquiryRecord } from "@/app/components/DealPipeline";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { ReferralCard } from "./ReferralCard";
 import { WorkspaceShell, PageHeader, SectionTitle, Eyebrow } from "@/app/components/workspace/WorkspaceShell";
 import { Button, ButtonLink } from "@/app/components/workspace/Button";
 import { Modal } from "@/app/components/workspace/Modal";
-import { KitSpotlight, SetupChecklist, OpportunitiesPanel, ConnectionsPanel, PlanPanel } from "./WorkspaceWidgets";
+import { KitSpotlight, SetupChecklist, OpportunitiesPanel, ConnectionsPanel, PlanPanel, InquiriesPanel } from "./WorkspaceWidgets";
 import { KitActionsMenu, vibeFor } from "./KitActions";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -180,9 +180,6 @@ function DashboardContent() {
   const [youtubeConnected, setYoutubeConnected] = useState(false);
   const [youtubeStats, setYoutubeStats] = useState<{ subscriberCount: number; viewCount: number; videoCount: number; channelTitle: string } | null>(null);
   const [disconnectingYoutube, setDisconnectingYoutube] = useState(false);
-  const [activeTab, setActiveTab] = useState<"inbox" | "activity">(() =>
-    typeof window !== "undefined" && window.location.hash === "#inbox" ? "inbox" : "activity"
-  );
   const searchParams = useSearchParams();
   const success = searchParams.get("success") === "true";
   const sessionId = searchParams.get("session_id") ?? null;
@@ -254,8 +251,8 @@ function DashboardContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Inquiries feed the rail summary + status line; the full pipeline lives at /pipeline.
   useEffect(() => {
-    if (!tierId || tierId === "free") return;
     let cancelled = false;
     fetch("/api/inquiries", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
@@ -264,7 +261,12 @@ function DashboardContent() {
       })
       .catch(() => { if (!cancelled) setInquiriesLoaded(true); });
     return () => { cancelled = true; };
-  }, [tierId]);
+  }, []);
+
+  // Old links to the dashboard's inbox tab (/dashboard#inbox) now open the pipeline.
+  useEffect(() => {
+    if (window.location.hash === "#inbox") router.replace("/pipeline");
+  }, [router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -485,28 +487,6 @@ function DashboardContent() {
     }
   };
 
-  const updateInquiryStatus = async (id: string, status: DealStatus) => {
-    setInquiries((prev) =>
-      prev.map((i) => i.id === id ? { ...i, status, read: status !== "new" ? true : i.read } : i)
-    );
-    fetch(`/api/inquiries/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-      credentials: "include",
-    }).catch(() => {});
-  };
-
-  const markInquiryRead = async (id: string) => {
-    setInquiries((prev) => prev.map((i) => i.id === id ? { ...i, read: true } : i));
-    fetch(`/api/inquiries/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ read: true }),
-      credentials: "include",
-    }).catch(() => {});
-  };
-
   // Time-of-day greeting + date, computed on the client only (no SSR/locale mismatch).
   useEffect(() => {
     const now = new Date();
@@ -651,12 +631,7 @@ function DashboardContent() {
     );
   })();
 
-  const effectiveTab = isPaidTier ? activeTab : "activity";
-  const showActivity = (kitViewsLoaded && kits.length > 0) || isPaidTier;
-  const tabCls = (on: boolean) =>
-    `inline-flex h-8 items-center rounded-full px-3.5 text-sm font-medium transition-colors ${
-      on ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-    }`;
+  const showActivity = kits.length > 0;
 
   const youtubeNotice =
     youtubeParam === "connected" ? (
@@ -756,76 +731,19 @@ function DashboardContent() {
 
               {metrics}
 
-              {/* ── Pipeline / Activity ── */}
-              {!showActivity && !kitViewsLoaded && kits.length > 0 && <ActivitySkeleton />}
+              {/* ── Activity (the deal pipeline has its own tab: /pipeline) ── */}
               {showActivity && (
                 <section id="activity">
-                  {isPaidTier && kitViewsLoaded ? (
-                    <div role="tablist" aria-label="Dashboard views" className="mb-4 flex items-center gap-1">
-                      <button
-                        type="button"
-                        role="tab"
-                        id="tab-activity"
-                        aria-selected={effectiveTab === "activity"}
-                        aria-controls="panel-activity"
-                        onClick={() => setActiveTab("activity")}
-                        className={tabCls(effectiveTab === "activity")}
-                      >
-                        Activity
-                      </button>
-                      <button
-                        type="button"
-                        role="tab"
-                        id="tab-inbox"
-                        aria-selected={effectiveTab === "inbox"}
-                        aria-controls="panel-inbox"
-                        onClick={() => setActiveTab("inbox")}
-                        className={tabCls(effectiveTab === "inbox")}
-                      >
-                        Pipeline
-                        {unreadInquiries > 0 && (
-                          <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1.5 text-[11px] font-semibold text-background">
-                            <span className="sr-only">, </span>
-                            {unreadInquiries}
-                            <span className="sr-only"> unread</span>
-                          </span>
-                        )}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="mb-4">
-                      <SectionTitle>{effectiveTab === "inbox" ? "Pipeline" : "Activity"}</SectionTitle>
-                    </div>
-                  )}
-
-                  {effectiveTab === "inbox" && (
-                    <div role="tabpanel" id="panel-inbox" aria-labelledby="tab-inbox">
-                      {!inquiriesLoaded ? (
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-hidden>
-                          {[0, 1, 2].map((i) => (
-                            <Skeleton key={i} className="h-28 rounded-2xl" />
-                          ))}
-                        </div>
-                      ) : inquiries.length === 0 ? (
-                        <div className="border-border rounded-2xl border border-dashed p-8 text-center">
-                          <p className="text-foreground text-sm font-semibold">No inquiries yet</p>
-                          <p className="text-muted-foreground mt-1 text-sm">
-                            When brands fill out your inquiry form, they&apos;ll appear here as deals to track.
-                          </p>
-                        </div>
-                      ) : (
-                        <DealPipeline inquiries={inquiries} onUpdate={updateInquiryStatus} onMarkRead={markInquiryRead} />
-                      )}
-                    </div>
-                  )}
-
-                  {effectiveTab === "activity" && !kitViewsLoaded && (
+                  <div className="mb-4">
+                    <SectionTitle>Activity</SectionTitle>
+                  </div>
+                  {!kitViewsLoaded && (
                     <div className="h-[260px]" aria-hidden>
                       <Skeleton className="h-full w-full rounded-2xl" />
                     </div>
                   )}
-                  {effectiveTab === "activity" && kitViewsLoaded && (
-                    <div role={isPaidTier ? "tabpanel" : undefined} id="panel-activity" aria-labelledby={isPaidTier ? "tab-activity" : undefined}>
+                  {kitViewsLoaded && (
+                    <div>
                       {kitViewsTotal === 0 ? (
                         <div className="border-border rounded-2xl border border-dashed p-8 text-center">
                           <p className="text-foreground text-sm font-semibold">No views yet</p>
@@ -980,6 +898,10 @@ function DashboardContent() {
             {/* ── Right rail ── */}
             <aside className="min-w-0 space-y-6">
               <div className="hidden lg:block">{checklist}</div>
+
+              {/* Inquiries come from the Pro-only kit contact form; show the card to Pro creators,
+                  or to anyone who already has inquiries (e.g. after a downgrade). */}
+              {(tierId === "pro" || inquiries.length > 0) && <InquiriesPanel inquiries={inquiries} loaded={inquiriesLoaded} />}
 
               <OpportunitiesPanel niches={profile?.niches ?? []} />
 

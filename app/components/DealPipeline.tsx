@@ -15,6 +15,9 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { Columns3, List, Mail } from "lucide-react";
+import { Modal } from "@/app/components/workspace/Modal";
+import { Button, buttonClass } from "@/app/components/workspace/Button";
 
 export type DealStatus = "new" | "reviewing" | "negotiating" | "won" | "lost";
 
@@ -30,13 +33,22 @@ export interface InquiryRecord {
   kit: { id: string; name: string; slug: string };
 }
 
-const COLUMNS: { id: DealStatus; label: string; color: string; dot: string }[] = [
-  { id: "new",         label: "New",         color: "bg-blue-50 dark:bg-blue-950/30",      dot: "bg-blue-400" },
-  { id: "reviewing",   label: "Reviewing",   color: "bg-amber-50 dark:bg-amber-950/30",    dot: "bg-amber-400" },
-  { id: "negotiating", label: "Negotiating", color: "bg-violet-50 dark:bg-violet-950/30",  dot: "bg-violet-400" },
-  { id: "won",         label: "Won",         color: "bg-emerald-50 dark:bg-emerald-950/30", dot: "bg-emerald-500" },
-  { id: "lost",        label: "Lost",        color: "bg-muted/60",                          dot: "bg-muted-foreground/40" },
+const COLUMNS: { id: DealStatus; label: string; dot: string }[] = [
+  { id: "new",         label: "New",         dot: "bg-blue-500" },
+  { id: "reviewing",   label: "Reviewing",   dot: "bg-amber-500" },
+  { id: "negotiating", label: "Negotiating", dot: "bg-violet-500" },
+  { id: "won",         label: "Won",         dot: "bg-green-500" },
+  { id: "lost",        label: "Lost",        dot: "bg-muted-foreground/50" },
 ];
+
+const STATUS_BADGE: Record<DealStatus, string> = {
+  new:         "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
+  reviewing:   "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300",
+  negotiating: "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300",
+  won:         "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300",
+  lost:        "bg-muted text-muted-foreground",
+};
+const LABEL = Object.fromEntries(COLUMNS.map((c) => [c.id, c.label])) as Record<DealStatus, string>;
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -48,7 +60,13 @@ function timeAgo(iso: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-// ── Draggable card ────────────────────────────────────────────────────────────
+const initialOf = (inq: InquiryRecord) => (inq.company || inq.name || "?").trim().charAt(0).toUpperCase();
+
+function StageBadge({ status }: { status: DealStatus }) {
+  return <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_BADGE[status]}`}>{LABEL[status]}</span>;
+}
+
+// ── Draggable card (board) ────────────────────────────────────────────────────
 
 interface CardProps {
   inq: InquiryRecord;
@@ -58,10 +76,7 @@ interface CardProps {
 
 function DealCard({ inq, onExpand, isDragging }: CardProps) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: inq.id });
-
-  const style = transform
-    ? { transform: `translate(${transform.x}px, ${transform.y}px)` }
-    : undefined;
+  const style = transform ? { transform: `translate(${transform.x}px, ${transform.y}px)` } : undefined;
 
   return (
     <div
@@ -70,31 +85,17 @@ function DealCard({ inq, onExpand, isDragging }: CardProps) {
       {...listeners}
       {...attributes}
       onClick={() => !isDragging && onExpand(inq)}
-      className={`bg-background border-border rounded-xl border p-4 cursor-grab active:cursor-grabbing select-none transition-shadow ${
-        isDragging ? "opacity-40" : "hover:shadow-md"
+      className={`cursor-grab select-none rounded-xl border border-border bg-background p-3.5 transition-shadow active:cursor-grabbing ${
+        isDragging ? "opacity-40" : "hover:shadow-sm"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-foreground text-sm font-semibold truncate">{inq.name}</p>
-          {inq.company && (
-            <p className="text-muted-foreground text-xs truncate">{inq.company}</p>
-          )}
-        </div>
-        {!inq.read && (
-          <span className="bg-foreground text-background shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide">
-            New
-          </span>
-        )}
+      <div className="flex items-center gap-2">
+        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{inq.company || inq.name}</p>
+        {!inq.read && <span className="h-2 w-2 shrink-0 rounded-full bg-blue-600" aria-label="Unread" />}
       </div>
-      <p className="text-muted-foreground text-xs mt-2 line-clamp-2 leading-relaxed">
-        {inq.message}
-      </p>
-      <div className="flex items-center mt-3 pt-3 border-t border-border">
-        <p className="text-muted-foreground text-[10px]">
-          {inq.kit.name} · {timeAgo(inq.createdAt)}
-        </p>
-      </div>
+      {inq.company && <p className="truncate text-xs text-muted-foreground">{inq.name}</p>}
+      <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{inq.message}</p>
+      <p className="mt-2.5 text-[11px] text-muted-foreground">{timeAgo(inq.createdAt)}</p>
     </div>
   );
 }
@@ -102,14 +103,9 @@ function DealCard({ inq, onExpand, isDragging }: CardProps) {
 // Ghost card shown under the cursor while dragging
 function DragGhostCard({ inq }: { inq: InquiryRecord }) {
   return (
-    <div className="bg-background border-foreground/20 rounded-xl border p-4 shadow-2xl w-52 rotate-2 opacity-95">
-      <p className="text-foreground text-sm font-semibold truncate">{inq.name}</p>
-      {inq.company && (
-        <p className="text-muted-foreground text-xs truncate">{inq.company}</p>
-      )}
-      <p className="text-muted-foreground text-xs mt-2 line-clamp-2 leading-relaxed">
-        {inq.message}
-      </p>
+    <div className="w-56 rotate-2 rounded-xl border border-foreground/20 bg-background p-3.5 opacity-95 shadow-2xl">
+      <p className="truncate text-sm font-semibold text-foreground">{inq.company || inq.name}</p>
+      <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{inq.message}</p>
     </div>
   );
 }
@@ -117,7 +113,7 @@ function DragGhostCard({ inq }: { inq: InquiryRecord }) {
 // ── Droppable column ──────────────────────────────────────────────────────────
 
 interface ColumnProps {
-  col: typeof COLUMNS[number];
+  col: (typeof COLUMNS)[number];
   cards: InquiryRecord[];
   draggingId: string | null;
   onExpand: (inq: InquiryRecord) => void;
@@ -125,35 +121,23 @@ interface ColumnProps {
 
 function KanbanColumn({ col, cards, draggingId, onExpand }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
-
   return (
-    <div className="min-w-0">
-      <div className="flex items-center gap-2 mb-3">
-        <span className={`h-2 w-2 rounded-full ${col.dot}`} />
-        <p className="text-foreground text-xs font-semibold">{col.label}</p>
-        {cards.length > 0 && (
-          <span className="text-muted-foreground text-[10px] ml-auto">{cards.length}</span>
-        )}
+    <div className="flex w-64 shrink-0 flex-col lg:w-auto lg:min-w-0">
+      <div className="mb-2.5 flex items-center gap-2 px-1">
+        <span className={`h-2 w-2 rounded-full ${col.dot}`} aria-hidden />
+        <p className="text-sm font-medium text-foreground">{col.label}</p>
+        <span className="ml-auto text-xs tabular-nums text-muted-foreground">{cards.length}</span>
       </div>
       <div
         ref={setNodeRef}
-        className={`min-h-[120px] rounded-2xl p-3 space-y-3 transition-colors ${col.color} ${
-          isOver ? "ring-2 ring-foreground/20 brightness-95" : ""
+        className={`min-h-[160px] flex-1 space-y-2.5 rounded-2xl border p-2.5 transition-colors ${
+          isOver ? "border-foreground/30 bg-muted" : "border-transparent bg-muted/50"
         }`}
       >
-        {cards.length === 0 && !isOver ? (
-          <p className="text-muted-foreground/50 text-[11px] text-center pt-6">Empty</p>
-        ) : (
-          cards.map((inq) => (
-            <DealCard
-              key={inq.id}
-              inq={inq}
-              onExpand={onExpand}
-              isDragging={draggingId === inq.id}
-            />
-          ))
-        )}
-        {/* Drop target hint */}
+        {cards.map((inq) => (
+          <DealCard key={inq.id} inq={inq} onExpand={onExpand} isDragging={draggingId === inq.id} />
+        ))}
+        {cards.length === 0 && !isOver && <p className="pt-8 text-center text-xs text-muted-foreground/70">Drop here</p>}
         {isOver && draggingId && !cards.some((c) => c.id === draggingId) && (
           <div className="h-16 rounded-xl border-2 border-dashed border-foreground/20" />
         )}
@@ -162,99 +146,71 @@ function KanbanColumn({ col, cards, draggingId, onExpand }: ColumnProps) {
   );
 }
 
-// ── Detail modal ──────────────────────────────────────────────────────────────
+// ── Detail dialog ─────────────────────────────────────────────────────────────
 
-interface DetailModalProps {
-  inq: InquiryRecord;
+function DetailDialog({
+  inq,
+  onClose,
+  onMove,
+}: {
+  inq: InquiryRecord | null;
   onClose: () => void;
   onMove: (id: string, status: DealStatus) => void;
-}
-
-function DetailModal({ inq, onClose, onMove }: DetailModalProps) {
+}) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-      onClick={onClose}
+    <Modal
+      open={!!inq}
+      onClose={onClose}
+      size="md"
+      title={inq ? inq.company || inq.name : ""}
+      description={
+        inq ? (
+          <>
+            {inq.company ? `${inq.name} · ` : ""}
+            {inq.email} · via {inq.kit.name} · {new Date(inq.createdAt).toLocaleDateString()}
+          </>
+        ) : undefined
+      }
     >
-      <div
-        className="bg-background border-border w-full max-w-md rounded-2xl border p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h3 className="font-display text-foreground text-lg font-semibold">{inq.name}</h3>
-            <p className="text-muted-foreground text-sm mt-0.5">
-              {inq.email}{inq.company ? ` · ${inq.company}` : ""}
-            </p>
-            <p className="text-muted-foreground text-xs mt-0.5">
-              {inq.kit.name} · {new Date(inq.createdAt).toLocaleDateString()}
-            </p>
+      {inq && (
+        <>
+          <p className="whitespace-pre-line rounded-xl bg-muted/50 p-4 text-sm leading-relaxed text-foreground">{inq.message}</p>
+
+          <p className="mb-2 mt-5 text-xs font-medium text-muted-foreground">Stage</p>
+          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Stage">
+            {COLUMNS.map((col) => {
+              const on = inq.status === col.id;
+              return (
+                <button
+                  key={col.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => onMove(inq.id, col.id)}
+                  className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
+                    on ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${col.dot}`} aria-hidden />
+                  {col.label}
+                </button>
+              );
+            })}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground p-1 transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
 
-        <p className="text-foreground text-sm leading-relaxed">{inq.message}</p>
-
-        <div className="mt-5 pt-5 border-t border-border">
-          <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase mb-3">Move to stage</p>
-          <div className="flex flex-wrap gap-2">
-            {COLUMNS.map((col) => (
-              <button
-                key={col.id}
-                type="button"
-                onClick={() => { onMove(inq.id, col.id); onClose(); }}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all border ${
-                  inq.status === col.id
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
-                }`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${col.dot}`} />
-                {col.label}
-              </button>
-            ))}
+          <div className="mt-6 flex justify-end gap-2">
+            <Button onClick={onClose}>Close</Button>
+            <a href={`mailto:${inq.email}?subject=Re: collaboration inquiry`} className={buttonClass({ variant: "primary" })}>
+              <Mail size={14} aria-hidden /> Reply by email
+            </a>
           </div>
-        </div>
-
-        <div className="mt-5 flex gap-2">
-          <a
-            href={`mailto:${inq.email}?subject=Re: collaboration inquiry`}
-            className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
-          >
-            Reply via email
-          </a>
-          <button
-            type="button"
-            onClick={onClose}
-            className="border-border text-muted-foreground hover:text-foreground inline-flex h-9 items-center rounded-full border px-4 text-sm font-medium transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+        </>
+      )}
+    </Modal>
   );
 }
 
-// ── Main pipeline ─────────────────────────────────────────────────────────────
-
 // ── List view ─────────────────────────────────────────────────────────────────
-
-const STATUS_BADGE: Record<DealStatus, string> = {
-  new:         "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
-  reviewing:   "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
-  negotiating: "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300",
-  won:         "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
-  lost:        "bg-muted text-muted-foreground",
-};
 
 function InboxList({ inquiries, onExpand }: { inquiries: InquiryRecord[]; onExpand: (inq: InquiryRecord) => void }) {
   const sorted = [...inquiries].sort((a, b) => {
@@ -263,30 +219,38 @@ function InboxList({ inquiries, onExpand }: { inquiries: InquiryRecord[]; onExpa
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
+  if (sorted.length === 0) {
+    return <p className="rounded-2xl border border-dashed border-border bg-background px-6 py-12 text-center text-sm text-muted-foreground">Nothing in this stage.</p>;
+  }
+
   return (
-    <div className="divide-y divide-border rounded-2xl border border-border overflow-hidden">
+    <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-background">
       {sorted.map((inq) => (
-        <button
-          key={inq.id}
-          type="button"
-          onClick={() => onExpand(inq)}
-          className={`w-full text-left px-5 py-4 flex items-start gap-4 hover:bg-muted/40 transition-colors ${!inq.read ? "bg-muted/20" : ""}`}
-        >
-          <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${!inq.read ? "bg-foreground" : "bg-transparent"}`} />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-foreground">{inq.name}</span>
-              {inq.company && <span className="text-xs text-muted-foreground">{inq.company}</span>}
-              <span className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${STATUS_BADGE[inq.status ?? "new"]}`}>
-                {inq.status ?? "new"}
+        <li key={inq.id}>
+          <button
+            type="button"
+            onClick={() => onExpand(inq)}
+            className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors hover:bg-muted/50 sm:px-5"
+          >
+            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
+              {initialOf(inq)}
+              {!inq.read && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-blue-600" aria-label="Unread" />}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-baseline gap-2">
+                <span className={`truncate text-sm ${inq.read ? "font-medium text-foreground" : "font-semibold text-foreground"}`}>{inq.company || inq.name}</span>
+                {inq.company && <span className="hidden truncate text-xs text-muted-foreground sm:inline">{inq.name}</span>}
               </span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">{inq.message}</p>
-            <p className="text-[10px] text-muted-foreground/60 mt-1">{inq.kit.name} · {timeAgo(inq.createdAt)}</p>
-          </div>
-        </button>
+              <span className="mt-0.5 block truncate text-sm text-muted-foreground">{inq.message}</span>
+            </span>
+            <span className="flex shrink-0 flex-col items-end gap-1">
+              <StageBadge status={inq.status ?? "new"} />
+              <span className="text-[11px] text-muted-foreground">{timeAgo(inq.createdAt)}</span>
+            </span>
+          </button>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -298,107 +262,119 @@ interface Props {
   onMarkRead: (id: string) => void;
 }
 
+const VIEW_KEY = "kitevo-pipeline-view";
+
 export function DealPipeline({ inquiries, onUpdate, onMarkRead }: Props) {
-  const [expanded, setExpanded] = useState<InquiryRecord | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [view, setView] = useState<"list" | "kanban">("list");
+  const [view, setView] = useState<"list" | "board">("list");
+  const [stage, setStage] = useState<DealStatus | "all">("all");
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    try {
+      if (localStorage.getItem(VIEW_KEY) === "board") setView("board");
+    } catch {
+      /* storage blocked: default view */
+    }
+  }, []);
+
+  const chooseView = (v: "list" | "board") => {
+    setView(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const handleExpand = (inq: InquiryRecord) => {
-    setExpanded(inq);
+    setExpandedId(inq.id);
     if (!inq.read) onMarkRead(inq.id);
   };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor),
   );
 
-  const byStatus = (status: DealStatus) =>
-    inquiries.filter((i) => (i.status ?? "new") === status);
+  const byStatus = (status: DealStatus) => inquiries.filter((i) => (i.status ?? "new") === status);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setDraggingId(event.active.id as string);
-  };
-
+  const handleDragStart = (event: DragStartEvent) => setDraggingId(event.active.id as string);
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setDraggingId(null);
     if (!over) return;
     const newStatus = over.id as DealStatus;
     const inq = inquiries.find((i) => i.id === active.id);
-    if (inq && newStatus !== inq.status) {
-      onUpdate(inq.id, newStatus);
-    }
+    if (inq && newStatus !== inq.status) onUpdate(inq.id, newStatus);
   };
 
   const draggingInq = draggingId ? inquiries.find((i) => i.id === draggingId) : null;
-  const total = inquiries.length;
-  const wonCount = byStatus("won").length;
-  const unreadCount = inquiries.filter((i) => !i.read).length;
+  const expanded = expandedId ? (inquiries.find((i) => i.id === expandedId) ?? null) : null;
 
   const board = (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-      {COLUMNS.map((col) => (
-        <KanbanColumn
-          key={col.id}
-          col={col}
-          cards={byStatus(col.id)}
-          draggingId={draggingId}
-          onExpand={handleExpand}
-        />
-      ))}
+    // Five fixed-width columns that scroll sideways on smaller screens, instead of wrapping.
+    <div className="-mx-1 overflow-x-auto px-1 pb-2">
+      <div className="flex gap-3 lg:grid lg:grid-cols-5">
+        {COLUMNS.map((col) => (
+          <KanbanColumn key={col.id} col={col} cards={byStatus(col.id)} draggingId={draggingId} onExpand={handleExpand} />
+        ))}
+      </div>
     </div>
   );
 
+  const seg = (on: boolean) =>
+    `inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors ${
+      on ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+    }`;
+
   return (
     <>
-      {expanded && (
-        <DetailModal
-          inq={expanded}
-          onClose={() => setExpanded(null)}
-          onMove={(id, status) => {
-            onUpdate(id, status);
-            setExpanded((prev) => prev ? { ...prev, status } : null);
-          }}
-        />
-      )}
+      <DetailDialog inq={expanded} onClose={() => setExpandedId(null)} onMove={onUpdate} />
 
-      {/* Header row */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">{total} inquiry{total !== 1 ? "s" : ""}</span>
-          {wonCount > 0 && <span className="text-xs font-medium text-emerald-600">{wonCount} won</span>}
-          {unreadCount > 0 && <span className="text-xs font-medium text-foreground">{unreadCount} unread</span>}
-        </div>
-        <div className="flex items-center gap-1 border border-border rounded-full p-0.5">
-          <button type="button" onClick={() => setView("list")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${view === "list" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>
-            List
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        {view === "list" ? (
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by stage">
+            {[{ id: "all" as const, label: "All", count: inquiries.length }, ...COLUMNS.map((c) => ({ id: c.id, label: c.label, count: byStatus(c.id).length }))].map((f) => {
+              const on = stage === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setStage(f.id)}
+                  className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
+                    on ? "border-foreground bg-foreground text-background" : "border-transparent bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {f.label}
+                  <span className={`tabular-nums ${on ? "opacity-70" : "opacity-60"}`}>{f.count}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Drag a card to move it to another stage.</p>
+        )}
+        <div className="flex rounded-full bg-muted p-0.5" role="radiogroup" aria-label="View">
+          <button type="button" role="radio" aria-checked={view === "list"} onClick={() => chooseView("list")} className={seg(view === "list")}>
+            <List size={13} aria-hidden /> List
           </button>
-          <button type="button" onClick={() => setView("kanban")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${view === "kanban" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>
-            Kanban
+          <button type="button" role="radio" aria-checked={view === "board"} onClick={() => chooseView("board")} className={seg(view === "board")}>
+            <Columns3 size={13} aria-hidden /> Board
           </button>
         </div>
       </div>
 
       {view === "list" ? (
-        <InboxList inquiries={inquiries} onExpand={handleExpand} />
+        <InboxList inquiries={stage === "all" ? inquiries : byStatus(stage)} onExpand={handleExpand} />
       ) : mounted ? (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           {board}
-          <DragOverlay>
-            {draggingInq && <DragGhostCard inq={draggingInq} />}
-          </DragOverlay>
+          <DragOverlay>{draggingInq && <DragGhostCard inq={draggingInq} />}</DragOverlay>
         </DndContext>
       ) : (
         board

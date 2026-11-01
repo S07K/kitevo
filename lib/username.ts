@@ -8,7 +8,7 @@
 export const RESERVED_USERNAMES = new Set([
   "admin", "api", "app", "discover", "earn", "feed", "messages", "blog", "brand", "brands", "campaigns", "components", "dashboard",
   "favicon.ico", "forgot-password", "help", "kit", "kits", "login", "logout", "onboarding",
-  "pricing", "privacy", "profile", "referral-program", "referrals", "reset-password",
+  "pipeline", "inquiries", "pricing", "privacy", "profile", "referral-program", "referrals", "reset-password",
   "robots.txt", "settings", "signup", "sitemap.xml", "social", "support", "terms", "u",
   "www", "kitevo", "icon.svg",
 ]);

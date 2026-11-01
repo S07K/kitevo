@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PalettePicker, useAppearance } from "./Appearance";
 import { signOut } from "next-auth/react";
 import { AvatarImg } from "./AvatarImg";
-import { CreditCard } from "lucide-react";
+import { CreditCard, SquareKanban } from "lucide-react";
 
 type Profile = {
   name: string | null;
@@ -115,6 +115,17 @@ export function NavAvatar({ initial }: { initial?: Profile }) {
               </svg>
               Invite &amp; earn
             </Link>
+
+            {profile.accountType !== "brand" && (
+              <Link
+                href="/pipeline"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+              >
+                <SquareKanban size={14} aria-hidden />
+                Pipeline
+              </Link>
+            )}
 
             {profile.accountType !== "brand" && (
               <Link

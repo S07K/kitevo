@@ -438,3 +438,74 @@ export function PlanPanel({
     </Panel>
   );
 }
+
+/* ─── Inquiries (summary; the full pipeline is /pipeline) ────────────────── */
+
+type InquirySummary = { id: string; name: string; company: string | null; status: string; read: boolean; createdAt: string };
+
+const STAGE_LABEL: Record<string, string> = { new: "New", reviewing: "Reviewing", negotiating: "Negotiating", won: "Won", lost: "Lost" };
+const STAGE_TONE: Record<string, "accent" | "warning" | "default" | "success"> = {
+  new: "accent",
+  reviewing: "warning",
+  negotiating: "warning",
+  won: "success",
+  lost: "default",
+};
+
+/** Latest brand inquiries at a glance, linking to the full pipeline. */
+export function InquiriesPanel({ inquiries, loaded }: { inquiries: InquirySummary[]; loaded: boolean }) {
+  const unread = inquiries.filter((i) => !i.read).length;
+  const latest = [...inquiries]
+    .sort((a, b) => Number(a.read) - Number(b.read) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 3);
+
+  return (
+    <Panel
+      title={
+        <span className="inline-flex items-center gap-2">
+          Inquiries
+          {unread > 0 && (
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-semibold text-white">
+              {unread}
+              <span className="sr-only"> unread</span>
+            </span>
+          )}
+        </span>
+      }
+      action={
+        <Link href="/pipeline" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+          Open pipeline
+        </Link>
+      }
+      bodyClassName="p-2"
+    >
+      {!loaded ? (
+        <div className="space-y-2 p-3" aria-hidden>
+          {[0, 1].map((i) => (
+            <Skeleton key={i} className="h-10 rounded-xl" />
+          ))}
+        </div>
+      ) : latest.length === 0 ? (
+        <p className="px-3 py-4 text-sm text-muted-foreground">No inquiries yet. Brands that use the contact form on your kit show up here.</p>
+      ) : (
+        <ul>
+          {latest.map((i) => (
+            <li key={i.id}>
+              <Link href="/pipeline" className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted/60">
+                <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+                  {(i.company || i.name || "?").charAt(0).toUpperCase()}
+                  {!i.read && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-blue-600" aria-hidden />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className={`block truncate text-sm ${i.read ? "text-foreground" : "font-semibold text-foreground"}`}>{i.company || i.name}</span>
+                  {i.company && <span className="block truncate text-xs text-muted-foreground">{i.name}</span>}
+                </span>
+                <Badge variant={STAGE_TONE[i.status] ?? "default"}>{STAGE_LABEL[i.status] ?? i.status}</Badge>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+}

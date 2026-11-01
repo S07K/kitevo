@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PalettePicker, useAppearance } from "./Appearance";
 import { signOut } from "next-auth/react";
-import { ArrowUpRight, ChevronsUpDown, Loader2, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
+import { ArrowUpRight, ChevronsUpDown, Loader2, SquareKanban, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
 import { AvatarImg } from "./AvatarImg";
 import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
 import { Skeleton } from "@/app/components/Skeleton";
@@ -126,6 +126,7 @@ export function WorkspaceSidebar({
             match: (p) => p.startsWith("/campaigns"),
           },
           { href: "/messages", label: "Messages", icon: <MessageCircle {...ICON} />, badge },
+          { href: "/pipeline", label: "Pipeline", icon: <SquareKanban {...ICON} /> },
         ],
       },
       { title: "Grow", items: [earn] },
@@ -214,11 +215,11 @@ export function WorkspaceSidebar({
             </div>
           </>
         ) : (
-          // Same shape as the creator nav: Home · Social (2) · Grow (1), then the footer.
+          // Same shape as the creator nav: Home · Social (3) · Grow (1), then the account row.
           <div className="flex flex-1 flex-col" aria-hidden>
             <div className="flex flex-1 flex-col gap-5 p-3 pt-5">
               <NavItemSkeleton width="w-14" />
-              {[2, 1].map((n, g) => (
+              {[3, 1].map((n, g) => (
                 <div key={g}>
                   <Skeleton className="mb-2.5 ml-3 h-2.5 w-12 rounded-full" />
                   <div className="flex flex-col gap-0.5">
