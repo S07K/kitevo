@@ -28,7 +28,9 @@ The branches are stacked; each contains the one before it.
 
 | 12 | `feat/custom-domains` | Custom domains on Starter/Pro: "Custom domain" in each kit's "…" menu (connect → DNS record to copy → auto-checked until live over HTTPS), routing in `middleware.ts`, served by `/custom-domain/[host]`; paused (redirect to the Kitevo URL) if the plan lapses. Migration `20261102085600_custom_domains` (new table only). Steps: §6 |
 
-Merge `feat/custom-domains` once it's reviewed: it contains everything above. (Previously: merge `feat/trials-coupons` once it's reviewed: it contains `feat/persistent-shell`. Until then, merge `feat/persistent-shell`: it contains `feat/color-palettes`, `feat/workspace-ui` and everything above them, including dashboard polish and admin ops.
+| 13 | `feat/calculators` | Free tools: `/tools` hub, rate calculator, engagement-rate calculator (no login; formulas shown; FAQ + JSON-LD; in sitemap, blog header, landing footer). Rate calculator results can be imported in the kit editor's Rates section after sign-up. No migration, no env vars, no deploy steps |
+
+Merge `feat/calculators` once it's reviewed: it contains everything above. (Before it: `feat/custom-domains`, which contains everything above it.) (Previously: merge `feat/trials-coupons` once it's reviewed: it contains `feat/persistent-shell`. Until then, merge `feat/persistent-shell`: it contains `feat/color-palettes`, `feat/workspace-ui` and everything above them, including dashboard polish and admin ops.
 
 Since row 10, these branches were fast-forwarded into `feat/persistent-shell` (each is contained in it; none needs a deploy step, migration or new env var): `feat/kit-create-modal` (kit creation modal), `feat/landing-earn` + `feat/landing-theme` + `feat/hero-dots` + `feat/kit-avatars` (landing revamp), `feat/kit-editor` (itemised rates, editor rebuild, autosave), `feat/editor-mobile-preview` + `feat/editor-live-kit` (live kit preview, container-query kit), `feat/campaign-emails` (campaign emails, application ownership fix, email escaping), `docs/plan-status-rollback` (PLAN status, migration rollback plan). Summary: PLAN.md §15. Rollback for any deploy: DEPLOY.md §8a.
 

@@ -18,6 +18,7 @@ import {
 import { normalizeManualStats, type ManualStats } from "@/lib/manual-stats";
 import { EMPTY_RATES, MAX_RATE_ITEMS, normalizeRates } from "@/lib/kit-rates";
 import { KitEditorSkeleton } from "@/app/components/Skeleton";
+import { CalculatorRatesOffer } from "./CalculatorRatesOffer";
 import { Button, ButtonLink } from "@/app/components/workspace/Button";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -387,6 +388,13 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
         hint="What you charge per deliverable. Brands decide faster when prices are on the kit."
         badge={<Switch checked={rates.show} onChange={(show) => update("rates", (r) => ({ ...r, show }))} label="Show rates on my kit" />}
       >
+        {!(rates.items ?? []).some((it) => it.label.trim() && typeof it.price === "number") && (
+          <CalculatorRatesOffer
+            onUse={(items) =>
+              update("rates", (r) => ({ ...r, show: true, items: items.slice(0, MAX_RATE_ITEMS).map((i) => ({ id: newId(), label: i.label, price: i.price })) }))
+            }
+          />
+        )}
         {!rates.show ? (
           <p className="text-sm text-muted-foreground">Rates are hidden on your kit. Turn them on to add your prices.</p>
         ) : (

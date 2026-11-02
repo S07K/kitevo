@@ -15,6 +15,8 @@ const ACCOUNT = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Instagram help", href: "/help/instagram" },
   { label: "Referral program", href: "/referral-program" },
+  { label: "Rate calculator", href: "/tools/rate-calculator" },
+  { label: "Engagement calculator", href: "/tools/engagement-rate-calculator" },
 ];
 
 const LEGAL = [
