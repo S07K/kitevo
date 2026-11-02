@@ -103,6 +103,7 @@ model User {
 
   // Relations for Phase 8 (kits)
   kits      Kit[]
+  customDomains CustomDomain[]
   analyticsEvents AnalyticsEvent[]
   // Referral program (lib/referrals.ts)
   referralCode         String?              @unique
@@ -142,6 +143,31 @@ model Kit {
   // Phase 12.3: Kit analytics (views)
   views     KitView[]
   inquiries Inquiry[]
+  customDomain CustomDomain?
+}
+
+/// A creator's own domain pointing at one kit (Starter+). Served via the Vercel project's
+/// domain list; see lib/custom-domains.ts.
+model CustomDomain {
+  id            String    @id @default(cuid())
+  hostname      String    @unique // lowercase, punycode, no port/trailing dot
+  kitId         String    @unique
+  kit           Kit       @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apexName      String?   // registrable domain, from Vercel (decides CNAME vs A record)
+  status        String    @default("pending") // "pending" | "active"
+  verified      Boolean   @default(false) // Vercel ownership check (only needed if the domain is on another Vercel account)
+  verification  String    @default("[]") // JSON: TXT records Vercel asks for when not verified
+  dnsConfigured Boolean   @default(false) // DNS points at Vercel
+  tlsReady      Boolean   @default(false) // HTTPS answered
+  lastError     String?
+  lastCheckedAt DateTime?
+  activatedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
 }
 
 model KitView {

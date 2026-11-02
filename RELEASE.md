@@ -26,7 +26,9 @@ The branches are stacked; each contains the one before it.
 
 | 11 | `feat/trials-coupons` | 14-day Pro free trial (one per account, verified email, card up front, `PRO_TRIAL_DAYS`) on pricing, landing and the dashboard Plan panel; discount codes at checkout (`/pricing?code=XYZ` pre-applies; unknown codes never block checkout) on both Dodo and Stripe. No migration. Steps: §5 |
 
-Merge `feat/trials-coupons` once it's reviewed: it contains `feat/persistent-shell`. Until then, merge `feat/persistent-shell`: it contains `feat/color-palettes`, `feat/workspace-ui` and everything above them, including dashboard polish and admin ops.
+| 12 | `feat/custom-domains` | Custom domains on Starter/Pro: "Custom domain" in each kit's "…" menu (connect → DNS record to copy → auto-checked until live over HTTPS), routing in `middleware.ts`, served by `/custom-domain/[host]`; paused (redirect to the Kitevo URL) if the plan lapses. Migration `20261102085600_custom_domains` (new table only). Steps: §6 |
+
+Merge `feat/custom-domains` once it's reviewed: it contains everything above. (Previously: merge `feat/trials-coupons` once it's reviewed: it contains `feat/persistent-shell`. Until then, merge `feat/persistent-shell`: it contains `feat/color-palettes`, `feat/workspace-ui` and everything above them, including dashboard polish and admin ops.
 
 Since row 10, these branches were fast-forwarded into `feat/persistent-shell` (each is contained in it; none needs a deploy step, migration or new env var): `feat/kit-create-modal` (kit creation modal), `feat/landing-earn` + `feat/landing-theme` + `feat/hero-dots` + `feat/kit-avatars` (landing revamp), `feat/kit-editor` (itemised rates, editor rebuild, autosave), `feat/editor-mobile-preview` + `feat/editor-live-kit` (live kit preview, container-query kit), `feat/campaign-emails` (campaign emails, application ownership fix, email escaping), `docs/plan-status-rollback` (PLAN status, migration rollback plan). Summary: PLAN.md §15. Rollback for any deploy: DEPLOY.md §8a.
 
@@ -97,9 +99,33 @@ Nothing else changes. `DATABASE_URL` / `DIRECT_URL` (Vercel + GitHub secrets) ar
 - [ ] **Leave product-level trials off in Dodo.** The app always sends the trial length
   (0 when not eligible), so a trial set on the product is overridden anyway.
 
+
 ---
 
-## 5. Smoke test on production (10 minutes)
+## 6. Custom domains (`feat/custom-domains`)
+
+Do the env vars **before** merging: the pricing pages list "Your own domain" on Starter as
+soon as this ships, and without them the dialog says "not switched on yet".
+
+- [ ] **Vercel token**: Vercel → Account Settings → Tokens → create one scoped to the
+  account that owns the `kitevo` project (no expiry, or set a reminder). Add it in Vercel →
+  Project → Settings → Environment Variables (Production) as **`VERCEL_API_TOKEN`**.
+- [ ] **`VERCEL_PROJECT_ID`**: Vercel → Project → Settings → General → Project ID (`prj_…`).
+  Personal (Hobby) account: leave `VERCEL_TEAM_ID` unset.
+- [ ] **Domain limit**: check Vercel's current per-project domain limit for your plan
+  (Vercel → Docs → Limits). Each connected creator domain uses one.
+- [ ] Merge; the migration adds one table (`CustomDomain`), nothing else changes.
+- [ ] **Test with a real subdomain you own** (e.g. `kit.<a domain you have>`): on a Starter+
+  account, kit "…" → Custom domain → connect → add the CNAME shown → within minutes the
+  dialog shows Live. Open it: the kit renders, the address bar keeps your domain, and
+  `/signup` on that domain redirects to getkitevo.com/signup.
+- [ ] Optional cleanup later: domains whose kit/account was deleted are detached from the
+  Vercel project automatically; anything left behind can be removed in Vercel → Project →
+  Domains.
+
+---
+
+## 7. Smoke test on production (10 minutes)
 
 - [ ] Homepage shows the **"NEW · Earn 20%"** badge; `/referral-program` loads.
 - [ ] Log in → dashboard shows the **Invite creators** card with your link; Copy works.
@@ -124,7 +150,7 @@ Nothing else changes. `DATABASE_URL` / `DIRECT_URL` (Vercel + GitHub secrets) ar
 
 ---
 
-## 6. Not code, but needed before the first payout
+## 8. Not code, but needed before the first payout
 
 - [ ] Ask your accountant how to handle **cross-border referral payouts** from an Indian
   business (TDS / equalisation levy, records per payee). Every payout is logged with

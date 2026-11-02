@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { releaseDomains } from "@/lib/custom-domains";
 import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import { normalizeRates } from "@/lib/kit-rates";
 import type { SectionVisibility } from "@/lib/kit-storage";
@@ -156,6 +157,7 @@ export async function DELETE(
   if (!kit) {
     return NextResponse.json({ error: "Kit not found" }, { status: 404 });
   }
+  await releaseDomains({ kitId: id }).catch((e) => console.error("[kit delete] domain release failed:", e));
   await prisma.kit.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

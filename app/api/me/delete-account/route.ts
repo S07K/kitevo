@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendDeleteAccountCodeEmail } from "@/lib/email";
+import { releaseDomains } from "@/lib/custom-domains";
 
 function generateCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -78,6 +79,7 @@ export async function POST(req: Request) {
     }
 
     // All good — delete the account (cascade deletes kits, inquiries, conversations etc.)
+    await releaseDomains({ userId: session.user.id }).catch((e) => console.error("[delete account] domain release failed:", e));
     await prisma.user.delete({ where: { id: session.user.id } });
 
     return NextResponse.json({ ok: true, deleted: true });

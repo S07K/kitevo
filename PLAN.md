@@ -1,6 +1,6 @@
 # Kitevo Product & Growth Plan
 
-**Status (2026-11-02):** Phase 0 — 10/11 checklist items done (open: custom domains); all exit criteria met. R1 referral program shipped. Workspace + landing revamp shipped — see §15. Phases 1–3 not started.
+**Status (2026-11-02):** Phase 0 — **complete** (11/11 checklist items, all exit criteria met). R1 referral program shipped. Workspace + landing revamp shipped — see §15. Phases 1–3 not started.
 **Last updated:** 2026-11-02
 **Scope:** Competitive strategy, pricing architecture, feature roadmap, and the Phase 0 execution checklist.
 
@@ -206,7 +206,7 @@ Workstreams:
 - [x] **Admin/ops.** `/admin`: user lookup, comp + plan resync (live provider subscription), payment webhook log with replay, admin audit log; `/admin/payouts` for referrals. (2026-11-01)
 - [x] **Trials and coupons.** Provider-backed trial and coupon support, with abuse limits. ✅ (2026-11-02) 14-day Pro trial (`lib/trials.ts`, `PRO_TRIAL_DAYS`): one per account (any past checkout disqualifies), verified email, creators only, card up front, eligibility checked server-side at checkout. Discount codes live in the provider dashboard; `/pricing?code=` pre-applies, unknown codes fall back to a normal checkout. Known gap: deleting an account and signing up again with the same email gets a new trial.
 - [x] **Analytics baseline.** First-party `AnalyticsEvent` table + `lib/analytics.ts`: signup → onboarding → kit created → first outside kit view (≈ shared) → checkout started → upgrade, plus cancel. Cohort report: `scripts/funnel-report.ts [days]`. (2026-11-01)
-- [ ] **Custom domains.** Design and ship the domain model and verification flow for paid plans.
+- [x] **Custom domains.** Design and ship the domain model and verification flow for paid plans. ✅ (2026-11-02) `CustomDomain` (one per kit; hostname, Vercel verification records, DNS/TLS state, status), Vercel project-domain API (it issues TLS), routing in `middleware.ts` → `/custom-domain/[host]`. DNS instructions with copy buttons, auto re-check while open, auto-activation on first HTTPS visit. Starter+ (comp or active sub), checked on connect and on every visit (lapsed plan → redirect to the Kitevo URL). Anti-squatting: unverified claims older than 7 days can be taken over. Listed on Starter in both pricing surfaces.
 
 **Exit criteria:**
 
@@ -607,5 +607,5 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - **Campaign emails.** Brands hear about new applications; creators hear when they're accepted or declined.
 - **Fixes found along the way.** A brand could change applications on other brands' campaigns (now scoped to the campaign); the kit inquiry email inserted visitor input unescaped (all email templates now escape user text).
 
-**Still open from this plan:** Phase 0 trials & coupons and custom domains; Sprint 2 calculators; Sprint 3 comparison pages and payout-rail decision; Phases 1–3. Smaller gaps tracked in CLAUDE.md "Other Pending": report/block, downgrade handling for the kit cap, DB indexes, Supabase Storage for images, brand team seats.
+**Still open from this plan:** Sprint 2 calculators; Sprint 3 comparison pages and payout-rail decision; Phases 1–3. Smaller gaps tracked in CLAUDE.md "Other Pending": report/block, downgrade handling for the kit cap, DB indexes, Supabase Storage for images, brand team seats.
 

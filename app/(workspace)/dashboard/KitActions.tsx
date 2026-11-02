@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Download, ExternalLink, FileText, Link2, Loader2, Lock, MoreHorizontal, Share, Trash2 } from "lucide-react";
+import { Check, Copy, Download, ExternalLink, FileText, Globe, Link2, Loader2, Lock, MoreHorizontal, Share, Trash2 } from "lucide-react";
+import { DomainDialog } from "./DomainDialog";
 import { APP_HOST } from "@/lib/app-url";
 import { Modal } from "@/app/components/workspace/Modal";
 import { Button, IconButton } from "@/app/components/workspace/Button";
@@ -33,8 +34,8 @@ export type ManagedKit = { id: string; slug: string; name: string; hasPassword?:
 const ITEM = "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted focus:bg-muted focus:outline-none";
 
 /**
- * Everything you do to a kit besides editing it: share & download, change URL, password,
- * delete. One "…" menu so the kit's own surface carries only Edit / View / Copy link.
+ * Everything you do to a kit besides editing it: share & download, change URL, custom
+ * domain, password, delete. One "…" menu so the kit's own surface carries only Edit / View / Copy link.
  */
 export function KitActionsMenu({
   kit,
@@ -48,7 +49,7 @@ export function KitActionsMenu({
   onPasswordChange: (id: string, hasPassword: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [dialog, setDialog] = useState<"share" | "slug" | "password" | null>(null);
+  const [dialog, setDialog] = useState<"share" | "slug" | "password" | "domain" | null>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const hasPassword = kit.hasPassword ?? false;
 
@@ -85,6 +86,9 @@ export function KitActionsMenu({
           <button role="menuitem" type="button" className={ITEM} onClick={pick(() => setDialog("slug"))}>
             <Link2 size={15} className="text-muted-foreground" aria-hidden /> Change URL
           </button>
+          <button role="menuitem" type="button" className={ITEM} onClick={pick(() => setDialog("domain"))}>
+            <Globe size={15} className="text-muted-foreground" aria-hidden /> Custom domain
+          </button>
           <button role="menuitem" type="button" className={ITEM} onClick={pick(() => setDialog("password"))}>
             <Lock size={15} className={hasPassword ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"} aria-hidden />
             {hasPassword ? "Manage password" : "Password protect"}
@@ -99,6 +103,7 @@ export function KitActionsMenu({
       <ShareDialog kit={kit} open={dialog === "share"} onClose={() => setDialog(null)} />
       <SlugDialog kit={kit} open={dialog === "slug"} onClose={() => setDialog(null)} onSaved={onSlugChange} />
       <PasswordDialog kit={kit} open={dialog === "password"} onClose={() => setDialog(null)} onSaved={onPasswordChange} />
+      <DomainDialog kit={kit} open={dialog === "domain"} onClose={() => setDialog(null)} />
     </div>
   );
 }

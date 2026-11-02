@@ -50,7 +50,7 @@ const PLANS: Plan[] = [
       "Live Instagram stats",
       "Audience demographics",
       "Growth charts",
-      "Section visibility controls",
+      "Your own domain",
     ],
     proOnly: [false, false, false, false, false],
     cta: "Get Starter",
