@@ -230,10 +230,16 @@ const YT_ICON = (
   </svg>
 );
 
+/**
+ * What each part of the kit is, for the editor's preview: hovering or tapping an element with
+ * data-kit-section opens the matching part of the editor (app/kit/edit).
+ */
+export type KitSectionKind = "profile" | "numbers" | "audience" | "posts" | "youtube" | "growth" | "brands" | "rates" | "contact";
+
 /** A titled block of the kit. No card: sections are separated by space and a hairline. */
-function Section({ title, icon, children, id }: { title: string; icon?: React.ReactNode; children: React.ReactNode; id?: string }) {
+function Section({ title, icon, children, id, kind }: { title: string; icon?: React.ReactNode; children: React.ReactNode; id?: string; kind: KitSectionKind }) {
   return (
-    <section id={id} className="scroll-mt-20 border-t border-[var(--mk-border-hairline)] pt-8 @min-[640px]:pt-10">
+    <section id={id} data-kit-section={kind} className="scroll-mt-20 border-t border-[var(--mk-border-hairline)] pt-8 @min-[640px]:pt-10">
       <h2 className="mb-5 flex items-center gap-2 font-display text-xl font-semibold tracking-tight text-[var(--mk-text)] @min-[640px]:text-2xl">
         {icon}
         {title}
@@ -252,7 +258,7 @@ function SubHeading({ children }: { children: React.ReactNode }) {
 function RateCard({ rates, ctaTarget, ctaLabel }: { rates: KitRates; ctaTarget: string | null; ctaLabel: string }) {
   const items = publicRateItems(rates);
   return (
-    <div className="rounded-2xl bg-[var(--mk-rates-bg)] p-5 text-[var(--mk-rates-text)] @min-[640px]:p-6">
+    <div data-kit-section="rates" className="rounded-2xl bg-[var(--mk-rates-bg)] p-5 text-[var(--mk-rates-text)] @min-[640px]:p-6">
       <p className="font-display text-lg font-semibold tracking-tight">Rates</p>
       {items.length > 0 ? (
         <ul className="mt-3 divide-y divide-[var(--mk-rates-muted)]/30">
@@ -417,6 +423,8 @@ export function MediaKitClient({
     return typeof handle === "string" && handle ? `https://instagram.com/${handle}` : instagramPosts.find((p) => p.permalink)?.permalink;
   })();
   const postsToShow = instagramPosts.filter((p) => p.thumbnailUrl).slice(0, 3);
+  /** Recent posts + YouTube videos ("workSamples" in section visibility). */
+  const showWork = sectionVisibility.workSamples !== false;
 
   return (
     <div
@@ -566,7 +574,7 @@ export function MediaKitClient({
         <main className="relative mx-auto max-w-6xl px-5 pt-14 @min-[640px]:px-8">
           <div className="pt-8 @min-[1024px]:grid @min-[1024px]:grid-cols-[300px_minmax(0,1fr)] @min-[1024px]:gap-14 @min-[1024px]:pt-12">
             {/* ── Identity rail: sticky on wide screens so price + contact stay in view ── */}
-            <aside className="@min-[1024px]:sticky @min-[1024px]:top-20 @min-[1024px]:self-start">
+            <aside data-kit-section="profile" className="@min-[1024px]:sticky @min-[1024px]:top-20 @min-[1024px]:self-start">
               <div className="flex items-center gap-4 @min-[1024px]:block">
                 {creator.avatarUrl ? (
                   <img
@@ -637,7 +645,7 @@ export function MediaKitClient({
             {/* ── The case for working together ── */}
             <div className="min-w-0 space-y-10 pb-16 pt-8 @min-[640px]:space-y-12 @min-[1024px]:pt-0">
               {(summary.length > 0 || stats.length > 0) && (
-                <div>
+                <div data-kit-section="numbers">
                   {summary.length > 0 && (
                     <p className="max-w-[34ch] text-balance font-display text-[clamp(1.5rem,5.2cqw,2.6rem)] font-normal leading-[1.18] tracking-tight text-[var(--mk-text)] @min-[1024px]:text-[clamp(1.8rem,3.4cqw,2.6rem)]">
                       {summary.map((sentence, i) => (
@@ -708,7 +716,7 @@ export function MediaKitClient({
 
               {/* ── Audience ── */}
               {showAudienceSection && (
-                <Section title="Audience">
+                <Section title="Audience" kind="audience">
                   {showAge || showGender || showCountries ? (
                     <div className="grid gap-8 @min-[768px]:grid-cols-2 @min-[768px]:gap-10">
                       {(showAge || showGender) && (
@@ -783,8 +791,8 @@ export function MediaKitClient({
               )}
 
               {/* ── Recent posts ── */}
-              {measured && (postsToShow.length > 0 || showConnectInstagramOverlay) && (
-                <Section title="Recent posts" icon={IG_ICON}>
+              {showWork && measured && (postsToShow.length > 0 || showConnectInstagramOverlay) && (
+                <Section title="Recent posts" icon={IG_ICON} kind="posts">
                   {postsToShow.length > 0 ? (
                     <div className="grid grid-cols-3 gap-2">
                       {postsToShow.map((post) => (
@@ -822,8 +830,8 @@ export function MediaKitClient({
               )}
 
               {/* ── YouTube ── */}
-              {yt && enabledPlatformIds.includes("youtube" as PlatformId) && (
-                <Section title="YouTube" icon={YT_ICON}>
+              {showWork && yt && enabledPlatformIds.includes("youtube" as PlatformId) && (
+                <Section title="YouTube" icon={YT_ICON} kind="youtube">
                   <dl className="mb-5 flex flex-wrap gap-x-8 gap-y-2 font-sans text-sm">
                     <div className="flex items-baseline gap-1.5"><dd className="font-semibold tabular-nums">{compactNumber(yt.followers)}</dd><dt className="text-[var(--mk-text-muted)]">subscribers</dt></div>
                     {ytTotalViews != null && <div className="flex items-baseline gap-1.5"><dd className="font-semibold tabular-nums">{compactNumber(ytTotalViews)}</dd><dt className="text-[var(--mk-text-muted)]">total views</dt></div>}
@@ -857,7 +865,7 @@ export function MediaKitClient({
 
               {/* ── Growth ── */}
               {showGrowthChart && (growthData.length > 0 || showConnectInstagramOverlay || measured) && (
-                <Section title="Follower growth">
+                <Section title="Follower growth" kind="growth">
                   <div className="relative min-h-[220px]">
                     {measured && growthData.length > 0 ? (
                       <GrowthAreaChart data={growthData} preset={preset} stroke={chartColors.stroke} fillOpacity={chartColors.fillOpacity} />
@@ -872,7 +880,7 @@ export function MediaKitClient({
 
               {/* ── Brands ── */}
               {sectionVisibility.brands && brands.length > 0 && (
-                <Section title="Brands I've worked with">
+                <Section title="Brands I've worked with" kind="brands">
                   <ul className="grid grid-cols-2 gap-x-4 gap-y-6 @min-[640px]:grid-cols-3 @min-[1024px]:grid-cols-4">
                     {brands.map((brand) => (
                       <li key={brand.id} className="min-w-0">
@@ -900,7 +908,7 @@ export function MediaKitClient({
               {/* ── Contact ── */}
               {showContact && (
                 <div id="contact-area" className="space-y-6">
-                  <Section title={`Work with ${first}`} id="contact">
+                  <Section title={`Work with ${first}`} id="contact" kind="contact">
                     {sectionVisibility.links && links.length > 0 && (
                       <ul className="divide-y divide-[var(--mk-border-hairline)] overflow-hidden rounded-2xl border border-[var(--mk-border)]">
                         {links.map((link, i) => (

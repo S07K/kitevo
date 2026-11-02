@@ -11,12 +11,29 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
  * The content is `inert`: links, buttons and focus inside the preview never fire, so taps
  * only ever scroll.
  */
-export function TouchScroller({ children, scale = 1, className = "" }: { children: ReactNode; scale?: number; className?: string }) {
+export function TouchScroller({
+  children,
+  scale = 1,
+  className = "",
+  onTap,
+  onHover,
+}: {
+  children: ReactNode;
+  scale?: number;
+  className?: string;
+  /** A press that didn't move (not a drag), in viewport coordinates. */
+  onTap?: (clientX: number, clientY: number) => void;
+  /** Pointer position while hovering (mouse/pen), or null when it leaves or a drag starts. */
+  onHover?: (point: { x: number; y: number } | null) => void;
+}) {
   const outer = useRef<HTMLDivElement>(null); // receives pointers, hosts the fingertip
   const box = useRef<HTMLDivElement>(null); // the scrolling area
   const drag = useRef<{ id: number; y: number; top: number; t: number; v: number } | null>(null);
   const raf = useRef<number | null>(null);
   const [finger, setFinger] = useState<{ x: number; y: number; down: boolean } | null>(null);
+  // Where a press started (any pointer type), to tell a tap from a drag.
+  const press = useRef<{ id: number; x: number; y: number; t: number } | null>(null);
+  const lastPoint = useRef<{ x: number; y: number } | null>(null);
   const reduceMotion = useRef(false);
 
   useEffect(() => {
@@ -56,6 +73,7 @@ export function TouchScroller({ children, scale = 1, className = "" }: { childre
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button === 0) press.current = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
     if (e.pointerType === "touch" || e.button !== 0 || !box.current) return; // touch: native scroll
     stopGlide();
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -66,6 +84,8 @@ export function TouchScroller({ children, scale = 1, className = "" }: { childre
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === "touch") return;
+    lastPoint.current = { x: e.clientX, y: e.clientY };
+    onHover?.(drag.current && Math.abs(e.clientY - (press.current?.y ?? e.clientY)) > 6 ? null : lastPoint.current);
     const p = local(e);
     setFinger((f) => ({ x: p.x, y: p.y, down: f?.down ?? false }));
     const d = drag.current;
@@ -87,21 +107,39 @@ export function TouchScroller({ children, scale = 1, className = "" }: { childre
     if (performance.now() - d.t < 80) glide(d.v); // only flick if the pointer was still moving
   };
 
+  const endPress = (e: React.PointerEvent<HTMLDivElement>) => {
+    const pr = press.current;
+    press.current = null;
+    if (pr && pr.id === e.pointerId && Math.hypot(e.clientX - pr.x, e.clientY - pr.y) < 6 && performance.now() - pr.t < 600) {
+      onTap?.(e.clientX, e.clientY);
+    }
+    endDrag(e);
+  };
+
   return (
     <div
       ref={outer}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={endDrag}
-      onPointerCancel={endDrag}
+      onPointerUp={endPress}
+      onPointerCancel={(e) => {
+        press.current = null;
+        endDrag(e);
+      }}
       onPointerLeave={(e) => {
+        lastPoint.current = null;
+        onHover?.(null);
         if (!drag.current) setFinger(null);
         if (e.pointerType !== "touch" && drag.current?.id === e.pointerId) endDrag(e);
       }}
       onWheel={stopGlide}
       className={`relative h-full w-full cursor-none select-none overflow-hidden ${className}`}
     >
-      <div ref={box} className="h-full w-full overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        ref={box}
+        data-touch-scroller
+        onScroll={() => lastPoint.current && !drag.current && onHover?.(lastPoint.current)}
+        className="h-full w-full overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div inert>{children}</div>
       </div>
       {finger && (

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { normalizeLinks, MAX_LOCATION } from "@/lib/profile-links";
+import { CREATOR_NICHES, MAX_NICHES } from "@/lib/niches";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -14,6 +16,7 @@ export type ProfilePayload = {
   verifiedTier?: string | null;
   links: ProfileLink[];
   niches?: string[];
+  location?: string | null;
 };
 
 function parseLinks(linksJson: string | null): ProfileLink[] {
@@ -46,6 +49,7 @@ export async function GET() {
       avatarUrl: true,
       links: true,
       niches: true,
+      location: true,
       email: true,
       onboardingCompletedAt: true,
       instagramUserId: true,
@@ -74,6 +78,7 @@ export async function GET() {
     email: user.email,
     links: parseLinks(user.links),
     niches: user.niches ? (JSON.parse(user.niches) as string[]) : [],
+    location: user.location ?? null,
     onboardingCompletedAt: user.onboardingCompletedAt?.toISOString() ?? null,
     instagramConnected: !!user.instagramUserId,
     accountType: user.accountType,
@@ -102,17 +107,13 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Username is already taken" }, { status: 409 });
     }
   }
-  const linksJson =
-    Array.isArray(body.links) ?
-      JSON.stringify(
-        body.links
-          .filter((x) => x && typeof x.label === "string" && typeof x.url === "string")
-          .map((x) => ({ label: x.label, url: x.url }))
-      )
-    : undefined;
+  // Links render as <a href> on public kits: only web and email URLs are kept (lib/profile-links).
+  const linksJson = Array.isArray(body.links) ? JSON.stringify(normalizeLinks(body.links)) : undefined;
   const nichesJson =
     Array.isArray(body.niches)
-      ? JSON.stringify(body.niches.filter((n): n is string => typeof n === "string").slice(0, 5))
+      ? JSON.stringify(
+          [...new Set(body.niches.filter((n): n is string => typeof n === "string" && (CREATOR_NICHES as readonly string[]).includes(n)))].slice(0, MAX_NICHES),
+        )
       : undefined;
 
   const user = await prisma.user.update({
@@ -120,12 +121,13 @@ export async function PUT(req: Request) {
     data: {
       ...(typeof body.name === "string" && { name: body.name.trim() || null }),
       ...(username !== undefined && { username: username || null }),
-      ...(typeof body.bio === "string" && { bio: body.bio.trim() || null }),
+      ...(typeof body.bio === "string" && { bio: body.bio.trim().slice(0, 500) || null }),
+      ...(typeof body.location === "string" && { location: body.location.trim().slice(0, MAX_LOCATION) || null }),
       ...(typeof body.avatarUrl === "string" && { avatarUrl: body.avatarUrl.trim() || null }),
       ...(linksJson !== undefined && { links: linksJson }),
       ...(nichesJson !== undefined && { niches: nichesJson }),
     },
-    select: { name: true, username: true, bio: true, avatarUrl: true, links: true },
+    select: { name: true, username: true, bio: true, avatarUrl: true, links: true, niches: true, location: true },
   });
   return NextResponse.json({
     name: user.name,
@@ -133,5 +135,7 @@ export async function PUT(req: Request) {
     bio: user.bio,
     avatarUrl: user.avatarUrl,
     links: parseLinks(user.links),
+    niches: user.niches ? (JSON.parse(user.niches) as string[]) : [],
+    location: user.location ?? null,
   });
 }

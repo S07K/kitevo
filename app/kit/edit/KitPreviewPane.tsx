@@ -1,12 +1,13 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Monitor, Smartphone } from "lucide-react";
+import { useCallback, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Monitor, Pencil, Smartphone } from "lucide-react";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Iphone } from "@/components/ui/iphone";
 import { LiveKit, type KitPreviewData } from "./LiveKit";
 import { TouchScroller } from "./TouchScroller";
-import type { KitDraft } from "./KitEditor";
+import { EDITOR_TARGET, EDIT_SECTION_EVENT, type KitDraft } from "./KitEditor";
+import type { KitSectionKind } from "@/app/kit/[username]/MediaKitClient";
 
 type Device = "mobile" | "desktop";
 
@@ -61,6 +62,49 @@ export function KitPreviewPane({ data, draft, error }: { data: KitPreviewData | 
 
   const choose = (d: Device) => deviceStore.set(d);
 
+  // Click-to-edit: the smallest kit section under the pointer (sections nest, e.g. rates in the profile rail).
+  const [hover, setHover] = useState<{ top: number; left: number; width: number; height: number; label: string } | null>(null);
+  const sectionAt = useCallback((x: number, y: number) => {
+    const root = stage.current;
+    if (!root) return null;
+    let best: HTMLElement | null = null;
+    let bestArea = Infinity;
+    root.querySelectorAll<HTMLElement>("[data-kit-section]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom && r.width * r.height < bestArea) {
+        best = el;
+        bestArea = r.width * r.height;
+      }
+    });
+    return best as HTMLElement | null;
+  }, []);
+  const onHover = useCallback(
+    (pt: { x: number; y: number } | null) => {
+      const root = stage.current;
+      const el = pt ? sectionAt(pt.x, pt.y) : null;
+      const target = el ? EDITOR_TARGET[el.dataset.kitSection as KitSectionKind] : null;
+      if (!root || !el || !target) return setHover(null);
+      const s = root.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      // Clip to the visible scroll area so the outline never spills over the phone frame.
+      const view = root.querySelector("[data-touch-scroller]")?.getBoundingClientRect() ?? s;
+      const top = Math.max(r.top, view.top) - 4;
+      const bottom = Math.min(r.bottom, view.bottom) + 4;
+      const left = Math.max(r.left, view.left) - 4;
+      const right = Math.min(r.right, view.right) + 4;
+      setHover({ top: top - s.top, left: left - s.left, width: right - left, height: bottom - top, label: target.label });
+    },
+    [sectionAt],
+  );
+  const onTap = useCallback(
+    (x: number, y: number) => {
+      const el = sectionAt(x, y);
+      const target = el ? EDITOR_TARGET[el.dataset.kitSection as KitSectionKind] : null;
+      if (target) window.dispatchEvent(new CustomEvent(EDIT_SECTION_EVENT, { detail: { section: target.section, row: target.row } }));
+    },
+    [sectionAt],
+  );
+
   // Fit the phone into the stage (never upscale past 1:1).
   useLayoutEffect(() => {
     const el = stage.current;
@@ -93,7 +137,7 @@ export function KitPreviewPane({ data, draft, error }: { data: KitPreviewData | 
             <Monitor size={13} aria-hidden /> Desktop
           </button>
         </div>
-        <span className="text-xs text-muted-foreground">Updates as you edit. Drag to scroll.</span>
+        <span className="text-xs text-muted-foreground">Click any part to edit it. Drag to scroll.</span>
       </div>
 
       <div ref={stage} className="relative min-h-0 flex-1 overflow-hidden">
@@ -107,7 +151,7 @@ export function KitPreviewPane({ data, draft, error }: { data: KitPreviewData | 
           // translateZ makes this box the containing block for the kit's position:fixed header,
           // so it pins to the top of the preview instead of the browser window.
           <div className="absolute inset-0" style={{ transform: "translateZ(0)" }}>
-            <TouchScroller>{kit}</TouchScroller>
+            <TouchScroller onTap={onTap} onHover={onHover}>{kit}</TouchScroller>
           </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -115,9 +159,20 @@ export function KitPreviewPane({ data, draft, error }: { data: KitPreviewData | 
               {/* Real 390×844 viewport, scaled with the phone. The transform also anchors the
                   kit's fixed header to the phone screen. */}
               <div className="origin-top-left" style={{ width: VIEWPORT.w, height: VIEWPORT.h, transform: `scale(${scale})` }}>
-                <TouchScroller scale={scale}>{kit}</TouchScroller>
+                <TouchScroller scale={scale} onTap={onTap} onHover={onHover}>{kit}</TouchScroller>
               </div>
             </Iphone>
+          </div>
+        )}
+        {hover && kit && !error && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute z-10 rounded-2xl ring-2 ring-primary/80"
+            style={{ top: hover.top, left: hover.left, width: hover.width, height: hover.height }}
+          >
+            <span className="absolute -top-3 left-3 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground shadow-sm">
+              <Pencil size={11} aria-hidden /> {hover.label}
+            </span>
           </div>
         )}
       </div>

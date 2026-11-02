@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { MediaKitClient } from "@/app/kit/[username]/MediaKitClient";
 import { composeKitStats, type LiveKitStats } from "@/lib/kit-stats-compose";
 import type { FetchedPost } from "@/lib/platforms/instagram";
+import { normalizeLinks } from "@/lib/profile-links";
 import type { KitDraft } from "./KitEditor";
 
 /** Response of GET /api/kits/[id]/preview: the non-editable half of the kit. */
@@ -34,13 +35,28 @@ export type KitPreviewData = {
  */
 export function LiveKit({ data, draft }: { data: KitPreviewData; draft: KitDraft }) {
   const stats = useMemo(() => composeKitStats(draft.manualStats, data.live), [draft.manualStats, data.live]);
+  // The shared profile is edited in the same editor, so the preview shows the unsaved version.
+  const p = draft.profile;
+  const creator = useMemo(
+    () => ({
+      ...data.creator,
+      name: p.name.trim() || data.creator.name,
+      bio: p.bio,
+      location: p.location.trim() || null,
+      niches: p.niches,
+      avatarUrl: p.avatarUrl,
+    }),
+    [data.creator, p.name, p.bio, p.location, p.niches, p.avatarUrl],
+  );
+  // Same check the server applies, so an address that won't save doesn't show either.
+  const links = useMemo(() => normalizeLinks(p.links), [p.links]);
   return (
     <MediaKitClient
       embedded
       username={data.username}
       referralCode={data.referralCode}
-      creator={data.creator}
-      links={data.links}
+      creator={creator}
+      links={links}
       platformStats={stats.platformStats}
       enabledPlatformIds={stats.enabledPlatformIds}
       statsSource={stats.statsSource}
