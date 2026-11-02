@@ -88,12 +88,12 @@ export function MarketingNav({ overDark = false }: { overDark?: boolean } = {}):
           </Link>
 
           {/* Desktop nav links */}
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
+          <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Main navigation">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="focus-ring text-muted-foreground hover:text-foreground rounded-full px-4 py-2 text-sm font-medium transition-colors"
+                className="focus-ring text-muted-foreground hover:text-foreground whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-medium transition-colors"
               >
                 {link.label}
               </a>
@@ -121,14 +121,14 @@ export function MarketingNav({ overDark = false }: { overDark?: boolean } = {}):
                     </div>
                   )}
                 </div>
-                <span className="text-sm font-medium text-foreground">{displayName}</span>
+                <span className="max-w-[160px] truncate whitespace-nowrap text-sm font-medium text-foreground">{displayName}</span>
               </Link>
             ) : (
               <>
-                <Link href="/login" className="focus-ring text-muted-foreground hover:text-foreground hidden text-sm font-medium transition-colors md:inline-flex">
+                <Link href="/login" className="focus-ring text-muted-foreground hover:text-foreground hidden whitespace-nowrap text-sm font-medium transition-colors md:inline-flex">
                   Log in
                 </Link>
-                <Link href="/signup" className="focus-ring bg-primary text-primary-foreground hidden h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80 md:inline-flex">
+                <Link href="/signup" className="focus-ring bg-primary text-primary-foreground hidden h-9 items-center whitespace-nowrap rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80 md:inline-flex">
                   Get started free
                 </Link>
               </>
@@ -142,7 +142,7 @@ export function MarketingNav({ overDark = false }: { overDark?: boolean } = {}):
               aria-expanded={menuOpen}
               aria-controls="mobile-menu"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
-              className="focus-ring text-foreground hover:bg-muted flex h-9 w-9 flex-col items-center justify-center gap-[5px] rounded-full transition-colors md:hidden"
+              className="focus-ring text-foreground hover:bg-muted flex h-9 w-9 flex-col items-center justify-center gap-[5px] rounded-full transition-colors xl:hidden"
             >
               <motion.span animate={menuOpen ? { rotate: 45, y: 4.5 } : { rotate: 0, y: 0 }} transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.25, ease: softEase }} className="bg-current block h-px w-4.5 origin-center" />
               <motion.span animate={menuOpen ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }} transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.18 }} className="bg-current block h-px w-4.5" />
@@ -165,7 +165,7 @@ export function MarketingNav({ overDark = false }: { overDark?: boolean } = {}):
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.25, ease: softEase }}
-            className="bg-background fixed inset-0 z-40 flex flex-col md:hidden"
+            className="bg-background fixed inset-0 z-40 flex flex-col xl:hidden"
             style={{ paddingTop: 57 }}
           >
             <div className="flex flex-1 flex-col overflow-y-auto px-5 pt-6 pb-8">

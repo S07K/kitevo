@@ -1,10 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { SiInstagram, SiYoutube } from "@icons-pack/react-simple-icons";
+import { SiInstagram } from "@icons-pack/react-simple-icons";
 import { BadgeCheck, CalendarClock, Check, ChevronsRight, Eye, FileText, Link2, MessageCircle, Sheet, Sparkles, Tag, TrendingUp } from "lucide-react";
 import { getPublicTiers } from "@/config/subscriptions";
 import { exampleEarnings } from "@/lib/referral-terms";
-import { Cutout, ExampleTag, KitMock, PhoneFrame, Scribble, type KitLook } from "./cutouts";
+import { Cutout, ExampleTag, KitCard, Scribble, type KitLook } from "./cutouts";
 
 /* Shared pieces ─────────────────────────────────────────────────────────── */
 
@@ -63,6 +63,7 @@ function Band({ side, children }: { side: "left" | "right"; children: ReactNode 
   return (
     <div className="relative py-10 sm:py-14">
       <div
+        data-bleed
         className={`absolute inset-y-0 bg-primary-soft ${
           side === "left" ? "-left-[50vw] right-10 rounded-r-[40px]" : "-right-[50vw] left-10 rounded-l-[40px]"
         }`}
@@ -75,12 +76,12 @@ function Band({ side, children }: { side: "left" | "right"; children: ReactNode 
 
 function CampaignVisual() {
   return (
-    <div className="relative mx-auto h-[330px] max-w-[440px]" aria-hidden>
-      <Cutout className="absolute left-10 top-0 w-[300px] p-4 opacity-60" style={{ transform: "rotate(4deg)" }}>
+    <div className="relative mx-auto h-[300px] w-full max-w-[440px] sm:h-[410px]" aria-hidden>
+      <Cutout className="absolute left-10 top-0 w-[min(300px,calc(100%-2.5rem))] p-4 opacity-60" style={{ transform: "rotate(4deg)" }}>
         <p className="text-sm font-semibold">Trail week: hiking gear haul</p>
         <p className="text-[11px] text-[#556b84]">Northwind Outdoors</p>
       </Cutout>
-      <Cutout className="absolute left-0 top-10 w-[320px] p-5" style={{ transform: "rotate(-2deg)" }}>
+      <Cutout className="absolute left-0 top-10 w-[min(320px,100%)] p-5" style={{ transform: "rotate(-2deg)" }}>
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#e3f4fa] text-sm font-bold text-[#005a9c]">G</span>
           <div className="min-w-0 flex-1">
@@ -138,10 +139,9 @@ function PipelineVisual() {
     </div>
   );
   return (
-    // Form (top-left) → arrow → pipeline (bottom-right). The pipeline sits lower and to the
-    // right so all three columns stay visible; the form only overlaps its empty corner.
-    <div className="relative mx-auto max-w-[500px] pb-2" aria-hidden>
-      <Cutout className="relative z-10 w-[220px] p-4" style={{ transform: "rotate(-3deg)" }}>
+    // Form (top-left) → arrow → pipeline (bottom-right), stacked with no overlap.
+    <div className="relative mx-auto w-full max-w-[500px] pb-2" aria-hidden>
+      <Cutout className="relative z-10 w-[min(220px,80%)] p-4" style={{ transform: "rotate(-3deg)" }}>
         <p className="text-xs font-semibold">Work with Maya</p>
         <p className="text-[10px] text-[#556b84]">Contact form on her kit</p>
         {[
@@ -155,8 +155,10 @@ function PipelineVisual() {
         ))}
         <span className="mt-3 block rounded-full bg-[#005a9c] py-2 text-center text-[11px] font-semibold text-white">Send inquiry</span>
       </Cutout>
-      <ChevronsRight className="absolute left-[228px] top-[150px] z-10 hidden rotate-[20deg] text-[#60c1e5] sm:block" size={34} strokeWidth={2.5} />
-      <Cutout className="relative -mt-6 ml-auto w-[min(100%,340px)] p-3 sm:-mt-20" style={{ transform: "rotate(2deg)" }}>
+      <div className="flex justify-center py-1 sm:justify-start sm:pl-[44%]">
+        <ChevronsRight className="rotate-90 text-[#60c1e5]" size={30} strokeWidth={2.5} />
+      </div>
+      <Cutout className="relative ml-auto w-[min(100%,340px)] p-3" style={{ transform: "rotate(1.5deg)" }}>
         <div className="mb-2 flex items-center justify-between">
           <p className="text-xs font-semibold">Pipeline</p>
           <ExampleTag />
@@ -173,23 +175,24 @@ function PipelineVisual() {
 
 function ProofVisual() {
   return (
-    <div className="relative mx-auto h-[340px] max-w-[440px]" aria-hidden>
-      <Cutout className="absolute left-0 top-0 w-[270px] p-4" style={{ transform: "rotate(-2deg)" }}>
+    <div className="relative mx-auto h-[370px] w-full max-w-[440px]" aria-hidden>
+      <Cutout className="absolute left-0 top-0 w-[min(236px,54%)] p-4" style={{ transform: "rotate(-2deg)" }}>
         <div className="flex items-center justify-between">
-          <p className="flex items-center gap-1.5 text-[11px] text-[#556b84]">
-            <SiInstagram size={11} color="#E4405F" /> Followers, last 30 days
+          <p className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-[#556b84]">
+            <SiInstagram size={11} color="#E4405F" /> Followers
           </p>
           <ExampleTag />
         </div>
         <p className="mt-1 text-2xl font-semibold tabular-nums">
           48.2K <span className="text-xs font-medium text-[#15803d]">+1,204</span>
         </p>
+        <p className="text-[10px] text-[#556b84]">Last 30 days</p>
         <svg viewBox="0 0 240 70" className="mt-2 h-16 w-full" fill="none">
           <path d="M0 60 C30 56 50 52 75 48 S120 40 145 33 S195 20 240 8" stroke="#005A9C" strokeWidth="3" strokeLinecap="round" />
           <path d="M0 60 C30 56 50 52 75 48 S120 40 145 33 S195 20 240 8 V70 H0Z" fill="#60C1E5" opacity="0.18" />
         </svg>
       </Cutout>
-      <Cutout className="absolute right-0 top-16 w-[190px] p-4" style={{ transform: "rotate(3deg)" }}>
+      <Cutout className="absolute right-0 top-12 w-[min(184px,43%)] p-4" style={{ transform: "rotate(3deg)" }}>
         <p className="text-[11px] text-[#556b84]">Audience age</p>
         {[
           ["18–24", 34],
@@ -207,7 +210,7 @@ function ProofVisual() {
           </div>
         ))}
       </Cutout>
-      <Cutout className="absolute bottom-0 left-12 w-[260px] p-4" style={{ transform: "rotate(-1deg)" }}>
+      <Cutout className="absolute bottom-0 left-[8%] w-[min(260px,84%)] p-4" style={{ transform: "rotate(-1deg)" }}>
         <p className="flex items-center gap-1.5 text-xs font-semibold">
           <Tag size={13} className="text-[#005a9c]" /> Rates
         </p>
@@ -260,10 +263,10 @@ export function WaysToEarn(): ReactNode {
       <div className={`${shell} mt-14 space-y-20 sm:space-y-28`}>
         {rows.map((r) => (
           <div key={r.title} className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-            <div className={r.side === "right" ? "lg:order-2" : ""}>
+            <div className={`min-w-0 ${r.side === "right" ? "lg:order-2" : ""}`}>
               <Band side={r.side}>{r.visual}</Band>
             </div>
-            <div className={r.side === "right" ? "lg:order-1" : ""}>
+            <div className={`min-w-0 ${r.side === "right" ? "lg:order-1" : ""}`}>
               {r.pro && <span className="mb-4 inline-flex rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary-soft-foreground">Pro</span>}
               <h3 className="text-[clamp(24px,2.8vw,36px)] font-medium leading-[1.12] tracking-[-0.02em] text-foreground text-balance">{r.title}</h3>
               <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground">{r.body}</p>
@@ -289,7 +292,7 @@ const EXAMPLES: Array<{ look: KitLook; panel: string; ink: string }> = [
       accent: "#c9a84c",
       accentFg: "#17171a",
       followers: "112K",
-      engagement: "4.1%",
+      second: "4.1%",
       platform: "instagram",
       rates: [
         { label: "Instagram Reel", price: "$900" },
@@ -310,7 +313,7 @@ const EXAMPLES: Array<{ look: KitLook; panel: string; ink: string }> = [
       accent: "#005a9c",
       accentFg: "#ffffff",
       followers: "64.5K",
-      engagement: "28K",
+      second: "28K",
       platform: "youtube",
       rates: [
         { label: "YouTube integration", price: "$1,100" },
@@ -331,7 +334,7 @@ const EXAMPLES: Array<{ look: KitLook; panel: string; ink: string }> = [
       accent: "#c97b4b",
       accentFg: "#ffffff",
       followers: "29.8K",
-      engagement: "7.2%",
+      second: "7.2%",
       platform: "instagram",
       rates: [
         { label: "Recipe Reel", price: "$380" },
@@ -343,7 +346,7 @@ const EXAMPLES: Array<{ look: KitLook; panel: string; ink: string }> = [
   },
 ];
 
-/** Example kits by niche: a "portrait" panel (initials, no stock faces) with the kit beside it. */
+/** Example kits by niche: a cover strip (niche + Example tag) with the kit card set onto its empty lower half. */
 export function ExampleKits(): ReactNode {
   return (
     <section id="examples" className="scroll-mt-24 py-24 sm:py-32">
@@ -351,35 +354,20 @@ export function ExampleKits(): ReactNode {
         <Heading title="A kit that looks like your niche">
           Pick a style, connect your account and add your rates. These are examples; yours fills in with your real numbers.
         </Heading>
-        <div className="mt-14 grid gap-14 sm:gap-10 md:grid-cols-2 lg:grid-cols-3">
-          {EXAMPLES.map(({ look, panel, ink }) => {
-            const Icon = look.platform === "instagram" ? SiInstagram : SiYoutube;
-            return (
-              <div key={look.handle} className="relative pr-20 sm:pr-24" aria-hidden>
-                <div className="relative h-[360px] overflow-hidden rounded-[28px] p-6" style={{ background: panel, color: ink }}>
-                  <span className="pointer-events-none absolute -left-4 -top-8 font-display text-[190px] font-semibold leading-none opacity-15">
-                    {look.initials}
-                  </span>
-                  <div className="absolute bottom-6 left-6 right-24">
-                    <p className="text-2xl font-semibold leading-tight">{look.name}</p>
-                    <p className="text-sm opacity-75">@{look.handle}</p>
-                    <p className="mt-1 flex items-center gap-1.5 text-sm opacity-90">
-                      <Icon size={13} /> {look.followers} {look.platform === "instagram" ? "followers" : "subscribers"}
-                    </p>
-                    <span className="mt-4 inline-flex rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#1b365d]">
-                      {look.niche} creator
-                    </span>
-                  </div>
-                  <ExampleTag tone="dark" className="absolute right-4 top-4" />
-                </div>
-                <div className="absolute -bottom-6 right-0 w-[168px] rotate-3 sm:w-[180px]">
-                  <PhoneFrame>
-                    <KitMock look={look} compact />
-                  </PhoneFrame>
+        <div className="mx-auto mt-14 grid max-w-[400px] gap-10 lg:max-w-none lg:grid-cols-3 lg:gap-8">
+          {EXAMPLES.map(({ look, panel, ink }) => (
+            <div key={look.handle} aria-hidden>
+              <div className="relative h-36 overflow-hidden rounded-[28px] px-5 pt-4" style={{ background: panel, color: ink }}>
+                <div className="relative flex items-center justify-between gap-3">
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#1b365d]">{look.niche} creator</span>
+                  <ExampleTag tone="dark" />
                 </div>
               </div>
-            );
-          })}
+              <div className="relative -mt-20 px-3">
+                <KitCard look={look} showNiche={false} />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

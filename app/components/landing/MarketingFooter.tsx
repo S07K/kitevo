@@ -1,13 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-const VIBE_STRIP = [
-  { name: "Editorial", bg: "#111110", label: "#fff" },
-  { name: "Studio", bg: "#e8e6e1", label: "#2d2d2b" },
-  { name: "Noir", bg: "#1a1a18", label: "#c9a84c" },
-  { name: "Bloom", bg: "#f5ede4", label: "#c97b4b" },
-  { name: "Electric", bg: "#0d0d1a", label: "#6366f1" },
-];
 
 const NAV = [
   { label: "How it works", href: "#how-it-works" },
@@ -52,12 +45,6 @@ const SOCIALS = [
 export function MarketingFooter(): ReactNode {
   return (
     <footer>
-      {/* Vibe color strip */}
-      <div className="flex h-2 w-full overflow-hidden">
-        {VIBE_STRIP.map((v) => (
-          <div key={v.name} className="flex-1" style={{ backgroundColor: v.bg }} title={v.name} />
-        ))}
-      </div>
 
       {/* Statement bar */}
       <div className="bg-foreground text-background px-5 py-12 sm:px-8 lg:px-10">
@@ -82,7 +69,7 @@ export function MarketingFooter(): ReactNode {
       {/* Links grid */}
       <div className="border-border border-t">
         <div className="mx-auto max-w-[1440px] px-5 py-12 sm:px-8 lg:px-10">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3">
             {/* Product */}
             <div>
               <h3 className="text-foreground mb-4 text-xs font-semibold tracking-[0.15em] uppercase">
@@ -116,29 +103,6 @@ export function MarketingFooter(): ReactNode {
                     >
                       {l.label}
                     </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Kit styles (examples section) */}
-            <div>
-              <h3 className="text-foreground mb-4 text-xs font-semibold tracking-[0.15em] uppercase">
-                Kit styles
-              </h3>
-              <ul className="space-y-2.5">
-                {VIBE_STRIP.map((v) => (
-                  <li key={v.name}>
-                    <a
-                      href="#examples"
-                      className="focus-ring text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm transition-colors"
-                    >
-                      <span
-                        className="inline-block h-2.5 w-2.5 rounded-full border border-black/10"
-                        style={{ backgroundColor: v.bg }}
-                      />
-                      {v.name}
-                    </a>
                   </li>
                 ))}
               </ul>

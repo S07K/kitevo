@@ -20,11 +20,24 @@ export function ExampleTag({ className = "", tone = "light" }: { className?: str
   );
 }
 
+/**
+ * Cutouts are illustrations of the light app UI, so they stay white in dark mode. They pin
+ * the light values of the tokens their children use (ExampleTag etc.) so nothing inside
+ * flips to dark-mode colours.
+ */
+const LIGHT_TOKENS = {
+  "--muted": "#edf3f8",
+  "--muted-foreground": "#556b84",
+  "--border": "#dce6ef",
+  "--foreground": "#1b365d",
+  "--background": "#ffffff",
+} as CSSProperties;
+
 /** A floating white card with the soft lift used by every cutout. */
 export function Cutout({ children, className = "", style }: { children: ReactNode; className?: string; style?: CSSProperties }) {
   return (
     <div
-      style={style}
+      style={{ ...LIGHT_TOKENS, ...style }}
       className={`rounded-2xl border border-black/5 bg-white text-[#1b365d] shadow-[0_18px_40px_-12px_rgba(27,54,93,0.35)] ${className}`}
     >
       {children}
@@ -32,31 +45,6 @@ export function Cutout({ children, className = "", style }: { children: ReactNod
   );
 }
 
-/** Round "feature bubble" (aqua disc, icon, short label). */
-export function Bubble({ icon, label, className = "", style }: { icon: ReactNode; label: string; className?: string; style?: CSSProperties }) {
-  return (
-    <div
-      style={style}
-      className={`flex aspect-square flex-col items-center justify-center gap-1.5 rounded-full bg-[#a0e0ef]/90 p-4 text-center text-[#1b365d] shadow-[0_12px_30px_-10px_rgba(27,54,93,0.45)] ring-8 ring-[#a0e0ef]/25 ${className}`}
-    >
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">{icon}</span>
-      <span className="text-[11px] font-semibold leading-tight">{label}</span>
-    </div>
-  );
-}
-
-/** Phone chrome around a screen. Width drives everything; content scales with it. */
-export function PhoneFrame({ children, className = "", style }: { children: ReactNode; className?: string; style?: CSSProperties }) {
-  return (
-    <div
-      style={style}
-      className={`relative rounded-[2.4rem] bg-[#0e1c30] p-2 shadow-[0_30px_60px_-20px_rgba(14,28,48,0.6)] ${className}`}
-    >
-      <div className="absolute left-1/2 top-3.5 z-10 h-4 w-20 -translate-x-1/2 rounded-full bg-[#0e1c30]" aria-hidden />
-      <div className="relative overflow-hidden rounded-[1.9rem]">{children}</div>
-    </div>
-  );
-}
 
 export type KitLook = {
   name: string;
@@ -65,64 +53,88 @@ export type KitLook = {
   initials: string;
   bg: string;
   fg: string;
-  /** Avatar + buttons */
+  /** Avatar + button */
   accent: string;
   accentFg: string;
   followers: string;
-  engagement: string;
+  /** Second stat: engagement rate (Instagram) or average views (YouTube). */
+  second: string;
   platform: "instagram" | "youtube";
   rates: Array<{ label: string; price: string }>;
 };
 
-/** A media kit as it renders on a phone: header, live stats, rate card, contact button. */
-export function KitMock({ look, compact = false }: { look: KitLook; compact?: boolean }) {
+/**
+ * A media kit as a flat card (no device frame): header, two live stats, rates, contact
+ * button. Fixed internal proportions so labels never wrap or clip; the parent sets width
+ * (min 280px recommended).
+ */
+export function KitCard({
+  look,
+  className = "",
+  style,
+  showNiche = true,
+}: {
+  look: KitLook;
+  className?: string;
+  style?: CSSProperties;
+  /** Off when the surrounding UI already names the niche. */
+  showNiche?: boolean;
+}) {
   const PlatformIcon = look.platform === "instagram" ? SiInstagram : SiYoutube;
+  const platform = look.platform === "instagram" ? "Instagram" : "YouTube";
+  const stats = [
+    { label: look.platform === "instagram" ? "Followers" : "Subscribers", value: look.followers },
+    { label: look.platform === "instagram" ? "Engagement" : "Avg. views", value: look.second },
+  ];
   return (
-    <div className="flex flex-col px-4 pb-5 pt-9" style={{ backgroundColor: look.bg, color: look.fg }}>
-      <div className="flex flex-col items-center text-center">
+    <div
+      style={{ backgroundColor: look.bg, color: look.fg, ...style }}
+      className={`rounded-[26px] p-5 shadow-[0_24px_50px_-18px_rgba(14,28,48,0.55)] ${className}`}
+    >
+      <div className="flex items-center gap-3">
         <span
-          className="flex h-14 w-14 items-center justify-center rounded-full font-display text-xl font-semibold"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-display text-lg font-semibold"
           style={{ backgroundColor: look.accent, color: look.accentFg }}
         >
           {look.initials}
         </span>
-        <p className="mt-2 font-display text-xl font-semibold leading-tight">{look.name}</p>
-        <p className="text-[10px] opacity-60">
-          @{look.handle} · {look.niche}
-        </p>
+        <div className="min-w-0">
+          <p className="truncate font-display text-xl font-semibold leading-tight">{look.name}</p>
+          <p className="truncate text-xs opacity-65">@{look.handle}</p>
+        </div>
+        {showNiche && (
+          <span className="ml-auto shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ backgroundColor: `${look.fg}14` }}>
+            {look.niche}
+          </span>
+        )}
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-1.5">
-        {[
-          { v: look.followers, l: look.platform === "instagram" ? "Followers" : "Subscribers" },
-          { v: look.engagement, l: look.platform === "instagram" ? "Engagement" : "Avg views" },
-        ].map((s) => (
-          <div key={s.l} className="rounded-xl px-2.5 py-2" style={{ backgroundColor: `${look.fg}10` }}>
-            <p className="flex items-center gap-1 text-[9px] opacity-60">
-              <PlatformIcon size={8} aria-hidden /> {s.l}
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {stats.map((s) => (
+          <div key={s.label} className="min-w-0 rounded-2xl px-3 py-2.5" style={{ backgroundColor: `${look.fg}0f` }}>
+            <p className="flex items-center gap-1.5 whitespace-nowrap text-[11px] opacity-65">
+              <PlatformIcon size={10} aria-hidden /> {s.label}
             </p>
-            <p className="font-display text-lg font-semibold leading-none tabular-nums">{s.v}</p>
+            <p className="mt-0.5 font-display text-2xl font-semibold leading-none tabular-nums">{s.value}</p>
           </div>
         ))}
       </div>
-      <p className="mt-1.5 flex items-center justify-center gap-1 text-[9px] opacity-60">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e]" aria-hidden /> Live, synced from {look.platform === "instagram" ? "Instagram" : "YouTube"}
+      <p className="mt-2 flex items-center gap-1.5 text-[11px] opacity-65">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#22c55e]" aria-hidden /> Live, synced from {platform}
       </p>
 
-      {!compact && (
-        <div className="mt-3 rounded-xl px-3 py-2" style={{ backgroundColor: `${look.fg}10` }}>
-          <p className="text-[9px] font-semibold opacity-60">Rates</p>
-          {look.rates.map((r) => (
-            <p key={r.label} className="mt-1 flex items-center justify-between text-[11px]">
-              <span className="opacity-80">{r.label}</span>
-              <span className="font-semibold tabular-nums">{r.price}</span>
-            </p>
-          ))}
-        </div>
-      )}
+      <div className="mt-3 rounded-2xl px-3.5 py-2.5" style={{ backgroundColor: `${look.fg}0f` }}>
+        <p className="text-[11px] font-semibold opacity-65">Rates</p>
+        {look.rates.map((r) => (
+          <p key={r.label} className="mt-1.5 flex items-baseline justify-between gap-3 text-sm">
+            <span className="truncate opacity-85">{r.label}</span>
+            <span className="shrink-0 font-semibold tabular-nums">{r.price}</span>
+          </p>
+        ))}
+      </div>
 
       <span
-        className="mt-3 rounded-full py-2 text-center text-[11px] font-semibold"
+        className="mt-4 block rounded-full py-2.5 text-center text-sm font-semibold"
         style={{ backgroundColor: look.accent, color: look.accentFg }}
       >
         Work with me
