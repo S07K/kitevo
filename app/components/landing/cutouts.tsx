@@ -1,5 +1,10 @@
 import type { CSSProperties, ReactNode } from "react";
 import { SiInstagram, SiYoutube } from "@icons-pack/react-simple-icons";
+import { AvatarImg } from "@/app/components/AvatarImg";
+
+/** Small, face-cropped Unsplash portrait (hotlinked from their CDN, as their licence allows). */
+export const unsplashPortrait = (photoId: string) =>
+  `https://images.unsplash.com/${photoId}?w=160&h=160&fit=crop&crop=faces&auto=format&q=70`;
 
 /**
  * Building blocks for the landing page's "cutout" illustrations: miniature, non-interactive
@@ -40,6 +45,8 @@ export type KitLook = {
   handle: string;
   niche: string;
   initials: string;
+  /** Portrait URL; initials show if it is missing or fails to load. */
+  photo?: string;
   bg: string;
   fg: string;
   /** Avatar + button */
@@ -81,12 +88,19 @@ export function KitCard({
       className={`rounded-[26px] p-5 shadow-[0_24px_50px_-18px_rgba(14,28,48,0.55)] dark:ring-1 dark:ring-white/10 ${className}`}
     >
       <div className="flex items-center gap-3">
-        <span
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-display text-lg font-semibold"
-          style={{ backgroundColor: look.accent, color: look.accentFg }}
-        >
-          {look.initials}
-        </span>
+        <AvatarImg
+          src={look.photo}
+          alt=""
+          className="h-12 w-12 shrink-0 rounded-full object-cover"
+          fallback={
+            <span
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-display text-lg font-semibold"
+              style={{ backgroundColor: look.accent, color: look.accentFg }}
+            >
+              {look.initials}
+            </span>
+          }
+        />
         <div className="min-w-0">
           <p className="truncate font-display text-xl font-semibold leading-tight">{look.name}</p>
           <p className="truncate text-xs opacity-65">@{look.handle}</p>

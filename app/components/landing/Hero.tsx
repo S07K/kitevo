@@ -7,13 +7,14 @@ import type { ReactNode } from "react";
 import { SiInstagram } from "@icons-pack/react-simple-icons";
 import { Megaphone, SquareKanban, Tag } from "lucide-react";
 import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
-import { KitCard, type KitLook } from "./cutouts";
+import { KitCard, unsplashPortrait, type KitLook } from "./cutouts";
 
 const HERO_KIT: KitLook = {
   name: "Maya Okafor",
   handle: "maya.makes",
   niche: "Beauty",
   initials: "MO",
+  photo: unsplashPortrait("photo-1531123897727-8f129e1688ce"),
   bg: "#ffffff",
   fg: "#1b365d",
   accent: "#005a9c",

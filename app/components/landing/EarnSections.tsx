@@ -4,7 +4,7 @@ import { SiInstagram } from "@icons-pack/react-simple-icons";
 import { BadgeCheck, CalendarClock, Check, ChevronsRight, Eye, FileText, Link2, MessageCircle, Sheet, Sparkles, Tag, TrendingUp } from "lucide-react";
 import { getPublicTiers } from "@/config/subscriptions";
 import { exampleEarnings } from "@/lib/referral-terms";
-import { Cutout, KitCard, Scribble, type KitLook } from "./cutouts";
+import { Cutout, KitCard, Scribble, unsplashPortrait, type KitLook } from "./cutouts";
 
 /* Shared pieces ─────────────────────────────────────────────────────────── */
 
@@ -284,6 +284,7 @@ const EXAMPLES: Array<{ look: KitLook; panel: string; ink: string }> = [
       handle: "theolifts",
       niche: "Fitness",
       initials: "TB",
+      photo: unsplashPortrait("photo-1507003211169-0a1dd7228f2d"),
       bg: "#17171a",
       fg: "#f5f0e8",
       accent: "#c9a84c",
@@ -305,6 +306,7 @@ const EXAMPLES: Array<{ look: KitLook; panel: string; ink: string }> = [
       handle: "lenaroams",
       niche: "Travel",
       initials: "LR",
+      photo: unsplashPortrait("photo-1544005313-94ddf0286df2"),
       bg: "#eef5fb",
       fg: "#1b365d",
       accent: "#005a9c",
@@ -326,6 +328,7 @@ const EXAMPLES: Array<{ look: KitLook; panel: string; ink: string }> = [
       handle: "sanacooks",
       niche: "Food",
       initials: "SM",
+      photo: unsplashPortrait("photo-1494790108377-be9c29b29330"),
       bg: "#f7efe7",
       fg: "#3a2a20",
       accent: "#c97b4b",
