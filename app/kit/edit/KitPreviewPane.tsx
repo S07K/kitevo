@@ -1,9 +1,12 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Monitor, Smartphone } from "lucide-react";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Iphone } from "@/components/ui/iphone";
+import { LiveKit, type KitPreviewData } from "./LiveKit";
+import { TouchScroller } from "./TouchScroller";
+import type { KitDraft } from "./KitEditor";
 
 type Device = "mobile" | "desktop";
 
@@ -11,89 +14,52 @@ type Device = "mobile" | "desktop";
 const VIEWPORT = { w: 390, h: 844 };
 const FRAME = { w: 433, h: 882 };
 const DEVICE_KEY = "kitevo-editor-preview-device";
+const DEVICE_EVENT = "kitevo:preview-device";
 
 /**
- * Stack of iframes for the kit preview. A saved change loads the new version into a hidden
- * iframe and swaps it in once it has painted, so the preview never flashes blank.
+ * The saved Mobile/Desktop choice as an external store: the server snapshot (and so the
+ * first client render) is always "mobile", and React switches to the saved value after
+ * hydration, so a saved "desktop" never causes a hydration mismatch.
  */
-function Frames({ slug, version }: { slug: string; version: number }) {
-  const [frames, setFrames] = useState<Array<{ v: number; ready: boolean }>>([{ v: version, ready: false }]);
-  const [seenVersion, setSeenVersion] = useState(version);
-  const refs = useRef(new Map<number, HTMLIFrameElement>());
-
-  // A new saved version: add a hidden frame for it (React's "adjust state on prop change"
-  // pattern, during render rather than in an effect).
-  if (version !== seenVersion) {
-    setSeenVersion(version);
-    setFrames((fs) => (fs.some((f) => f.v === version) ? fs : [...fs, { v: version, ready: false }]));
-  }
-
-  const onLoad = (v: number) =>
-    setFrames((fs) => {
-      const next = fs.map((f) => (f.v === v ? { ...f, ready: true } : f));
-      const newestReady = Math.max(...next.filter((f) => f.ready).map((f) => f.v));
-      return next.filter((f) => f.v >= newestReady); // drop older frames once a newer one is ready
-    });
-
-  const visible = Math.max(-1, ...frames.filter((f) => f.ready).map((f) => f.v));
-
-  return (
-    <div className="relative h-full w-full overflow-hidden">
-      {visible === -1 && <Skeleton className="absolute inset-0 rounded-none" />}
-      {frames.map((f) => (
-        <iframe
-          key={f.v}
-          ref={(el) => {
-            if (el) refs.current.set(f.v, el);
-            else refs.current.delete(f.v);
-          }}
-          src={`/kit/${slug}?preview=1&v=${f.v}`}
-          title="Kit preview"
-          onLoad={() => onLoad(f.v)}
-          className={`pointer-events-none absolute inset-0 h-full w-full border-0 bg-white transition-opacity duration-200 ${
-            f.v === visible ? "opacity-100" : "opacity-0"
-          }`}
-          tabIndex={-1}
-          aria-hidden={f.v !== visible}
-        />
-      ))}
-      {/* Scroll the preview without letting clicks navigate inside it. */}
-      <div
-        className="absolute inset-0"
-        onWheel={(e) => refs.current.get(visible)?.contentWindow?.scrollBy({ top: e.deltaY, behavior: "instant" })}
-        aria-hidden
-      />
-    </div>
-  );
-}
-
-/**
- * The editor's preview column: a Desktop / Mobile switch and the live kit. Mobile renders the
- * kit at a real 390×844 phone viewport inside the Magic UI iPhone frame, scaled to fit the column,
- * so the creator sees the layout brands get on their phones.
- */
-export function KitPreviewPane({ slug, version }: { slug: string | null; version: number }) {
-  // Rendered client-side only (inside the editor's useSearchParams Suspense boundary), so
-  // reading the saved choice during the first render can't cause a hydration mismatch.
-  const [device, setDevice] = useState<Device>(() => {
+const deviceStore = {
+  subscribe(cb: () => void) {
+    window.addEventListener("storage", cb);
+    window.addEventListener(DEVICE_EVENT, cb);
+    return () => {
+      window.removeEventListener("storage", cb);
+      window.removeEventListener(DEVICE_EVENT, cb);
+    };
+  },
+  get(): Device {
     try {
-      const saved = typeof window !== "undefined" ? localStorage.getItem(DEVICE_KEY) : null;
-      return saved === "desktop" ? "desktop" : "mobile";
+      return localStorage.getItem(DEVICE_KEY) === "desktop" ? "desktop" : "mobile";
     } catch {
       return "mobile";
     }
-  });
-  const stage = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-
-  const choose = (d: Device) => {
-    setDevice(d);
+  },
+  set(d: Device) {
     try {
       localStorage.setItem(DEVICE_KEY, d);
     } catch {
-      /* ignore */
+      /* storage blocked: the choice just won't persist */
     }
-  };
+    window.dispatchEvent(new Event(DEVICE_EVENT));
+  },
+};
+
+/**
+ * The editor's preview column. Renders the real kit component (not an iframe) from the
+ * draft, so it updates as the creator types. Mobile puts it at a real 390×844 viewport
+ * inside the Magic UI iPhone, scaled to fit; Desktop gives it the pane's full width. The kit
+ * uses container queries, so it lays out for whichever width it's given. Both are touch
+ * areas: drag to scroll, taps never navigate.
+ */
+export function KitPreviewPane({ data, draft, error }: { data: KitPreviewData | null; draft: KitDraft | null; error?: string | null }) {
+  const device = useSyncExternalStore(deviceStore.subscribe, deviceStore.get, () => "mobile" as Device);
+  const stage = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  const choose = (d: Device) => deviceStore.set(d);
 
   // Fit the phone into the stage (never upscale past 1:1).
   useLayoutEffect(() => {
@@ -101,8 +67,7 @@ export function KitPreviewPane({ slug, version }: { slug: string | null; version
     if (!el || device !== "mobile") return;
     const fit = () => {
       const { width, height } = el.getBoundingClientRect();
-      const s = Math.min(1, (height - 48) / FRAME.h, (width - 48) / FRAME.w);
-      setScale(Math.max(0.4, s));
+      setScale(Math.max(0.4, Math.min(1, (height - 48) / FRAME.h, (width - 48) / FRAME.w)));
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -115,6 +80,8 @@ export function KitPreviewPane({ slug, version }: { slug: string | null; version
       on ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
     }`;
 
+  const kit = data && draft ? <LiveKit data={data} draft={draft} /> : null;
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between gap-3 border-b border-border bg-background px-5 py-2.5">
@@ -126,21 +93,29 @@ export function KitPreviewPane({ slug, version }: { slug: string | null; version
             <Monitor size={13} aria-hidden /> Desktop
           </button>
         </div>
-        <span className="text-xs text-muted-foreground">Updates after each save</span>
+        <span className="text-xs text-muted-foreground">Updates as you edit. Drag to scroll.</span>
       </div>
 
       <div ref={stage} className="relative min-h-0 flex-1 overflow-hidden">
-        {!slug ? (
+        {error ? (
+          <p role="alert" className="m-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+            {error}
+          </p>
+        ) : !kit ? (
           <Skeleton className="absolute inset-6 rounded-2xl" />
         ) : device === "desktop" ? (
-          <Frames slug={slug} version={version} />
+          // translateZ makes this box the containing block for the kit's position:fixed header,
+          // so it pins to the top of the preview instead of the browser window.
+          <div className="absolute inset-0" style={{ transform: "translateZ(0)" }}>
+            <TouchScroller>{kit}</TouchScroller>
+          </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            {/* Magic UI Iphone (components/ui/iphone.tsx) sized to the stage. The kit renders at a
-                real 390×844 viewport inside the screen, scaled with the phone. */}
             <Iphone style={{ width: FRAME.w * scale }} className="drop-shadow-[0_24px_40px_rgba(27,54,93,0.25)]">
+              {/* Real 390×844 viewport, scaled with the phone. The transform also anchors the
+                  kit's fixed header to the phone screen. */}
               <div className="origin-top-left" style={{ width: VIEWPORT.w, height: VIEWPORT.h, transform: `scale(${scale})` }}>
-                <Frames slug={slug} version={version} />
+                <TouchScroller scale={scale}>{kit}</TouchScroller>
               </div>
             </Iphone>
           </div>

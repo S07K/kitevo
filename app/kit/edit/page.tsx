@@ -6,7 +6,8 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowLeft, Check, ExternalLink, Loader2 } from "lucide-react";
 import { WorkspaceShell } from "@/app/components/workspace/WorkspaceShell";
 import { Skeleton } from "@/app/components/Skeleton";
-import { KitEditor, type LoadedKit, type SaveStatus } from "./KitEditor";
+import { KitEditor, type KitDraft, type LoadedKit, type SaveStatus } from "./KitEditor";
+import type { KitPreviewData } from "./LiveKit";
 import { KitPreviewPane } from "./KitPreviewPane";
 
 /** Header status chip for autosave. */
@@ -40,7 +41,9 @@ function KitEditContent() {
   const [tierId, setTierId] = useState<string | null | undefined>(undefined);
   const [kit, setKit] = useState<LoadedKit | null>(null);
   const [status, setStatus] = useState<SaveStatus>("idle");
-  const [version, setVersion] = useState(0);
+  const [draft, setDraft] = useState<KitDraft | null>(null);
+  const [preview, setPreview] = useState<KitPreviewData | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const retryRef = useRef<() => void>(() => {});
   const registerRetry = useCallback((fn: () => void) => {
     retryRef.current = fn;
@@ -52,6 +55,19 @@ function KitEditContent() {
       .then((d) => setTierId(d?.tierId ?? null))
       .catch(() => setTierId(null));
   }, []);
+
+  // The non-editable half of the kit (creator, links, live stats, posts) for the live preview.
+  useEffect(() => {
+    if (!kitId) return;
+    let cancelled = false;
+    fetch(`/api/kits/${kitId}/preview`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: KitPreviewData) => !cancelled && setPreview(d))
+      .catch(() => !cancelled && setPreviewError("Couldn't load the preview. Your edits still save; refresh to try again."));
+    return () => {
+      cancelled = true;
+    };
+  }, [kitId]);
 
   // "Saved" fades back to the neutral hint after a moment.
   useEffect(() => {
@@ -100,10 +116,8 @@ function KitEditContent() {
               kitId={kitId}
               tierId={tierId}
               onLoaded={setKit}
-              onSaved={(slug) => {
-                setKit((k) => (k ? { ...k, slug } : k));
-                setVersion((v) => v + 1);
-              }}
+              onSaved={(slug) => setKit((k) => (k ? { ...k, slug } : k))}
+              onDraftChange={setDraft}
               onStatusChange={setStatus}
               registerRetry={registerRetry}
             />
@@ -113,7 +127,7 @@ function KitEditContent() {
 
       {/* Preview column (desktop) */}
       <div className="hidden min-h-0 flex-1 flex-col bg-muted/40 lg:flex">
-        <KitPreviewPane slug={kit?.slug || null} version={version} />
+        <KitPreviewPane data={preview} draft={draft} error={previewError} />
       </div>
     </div>
   );

@@ -128,9 +128,12 @@ interface KitEditorProps {
   onStatusChange?: (status: SaveStatus) => void;
   /** Lets the page header offer "Retry" after a failed save. */
   registerRetry?: (retry: () => void) => void;
+  /** Every change (and the initial load), so the live preview can render the draft. */
+  onDraftChange?: (draft: KitDraft) => void;
 }
 
-type Draft = {
+/** The editable part of a kit; the live preview renders straight from it. */
+export type KitDraft = {
   rates: KitRates;
   brands: BrandPartner[];
   sectionVisibility: SectionVisibility;
@@ -138,11 +141,11 @@ type Draft = {
   manualStats: ManualStats;
 };
 
-export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, registerRetry }: KitEditorProps) {
+export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, registerRetry, onDraftChange }: KitEditorProps) {
   const isPro = tierId === "pro";
   const isFree = !tierId || tierId === "free";
 
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [draft, setDraft] = useState<KitDraft | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [hasInquiryForm, setHasInquiryForm] = useState(false);
   const [hasLinks, setHasLinks] = useState(false);
@@ -151,11 +154,11 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
   // two saves at once (the newest draft is saved right after an in-flight one finishes).
   const loaded = useRef(false);
   const inFlight = useRef(false);
-  const pending = useRef<Draft | null>(null);
+  const pending = useRef<KitDraft | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cbs = useRef({ onSaved, onStatusChange });
+  const cbs = useRef({ onSaved, onStatusChange, onDraftChange });
   useEffect(() => {
-    cbs.current = { onSaved, onStatusChange };
+    cbs.current = { onSaved, onStatusChange, onDraftChange };
   });
 
   /* Load */
@@ -202,7 +205,7 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
 
   /* Save */
   const persist = useCallback(
-    async (d: Draft) => {
+    async (d: KitDraft) => {
       if (!kitId) return;
       if (inFlight.current) {
         pending.current = d;
@@ -234,6 +237,11 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
     [kitId],
   );
 
+  // Live preview: report every draft immediately (no save round-trip).
+  useEffect(() => {
+    if (draft) cbs.current.onDraftChange?.(draft);
+  }, [draft]);
+
   useEffect(() => {
     if (!draft) return;
     if (!loaded.current) {
@@ -256,8 +264,8 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
     registerRetry?.(() => draftRef.current && void persist(draftRef.current));
   }, [registerRetry, persist]);
 
-  const update = <K extends keyof Draft>(key: K, value: Draft[K] | ((prev: Draft[K]) => Draft[K])) =>
-    setDraft((d) => (d ? { ...d, [key]: typeof value === "function" ? (value as (p: Draft[K]) => Draft[K])(d[key]) : value } : d));
+  const update = <K extends keyof KitDraft>(key: K, value: KitDraft[K] | ((prev: KitDraft[K]) => KitDraft[K])) =>
+    setDraft((d) => (d ? { ...d, [key]: typeof value === "function" ? (value as (p: KitDraft[K]) => KitDraft[K])(d[key]) : value } : d));
 
   /* Render states */
   if (!kitId) {

@@ -74,6 +74,11 @@ interface MediaKitClientProps {
   isOwner?: boolean;
   /** Real Instagram posts for the grid */
   instagramPosts?: FetchedPost[];
+  /**
+   * Rendered inside the editor's phone preview rather than as the page: no screen-height
+   * minimum and phone padding on the header (its breakpoints follow the window, not the kit).
+   */
+  embedded?: boolean;
 }
 
 /** When Meta returns no time series, show a subtle trajectory from current follower count. */
@@ -116,7 +121,7 @@ function InquiryForm({ kitId, creatorName }: { kitId: string; creatorName: strin
     "w-full px-4 py-3 rounded-xl border border-[var(--mk-border)] bg-[var(--mk-surface)] text-[var(--mk-text)] placeholder:text-[var(--mk-text-soft)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mk-text)]/30 font-sans transition";
 
   return (
-    <section id="work-together" className="mt-12 scroll-mt-6 sm:mt-14 rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] px-6 py-10 sm:px-10">
+    <section id="work-together" className="mt-12 scroll-mt-6 @min-[640px]:mt-14 rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] px-6 py-10 @min-[640px]:px-10">
       <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight text-center">
         Work together
       </h2>
@@ -133,7 +138,7 @@ function InquiryForm({ kitId, creatorName }: { kitId: string; creatorName: strin
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="mt-8 space-y-4 max-w-lg mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 @min-[640px]:grid-cols-2 gap-4">
             <input
               type="text"
               placeholder="Your name"
@@ -286,6 +291,7 @@ export function MediaKitClient({
   kitId,
   inquiryEnabled = false,
   isOwner = false,
+  embedded = false,
   instagramPosts = [],
   referralCode = null,
 }: MediaKitClientProps) {
@@ -359,7 +365,7 @@ export function MediaKitClient({
 
   return (
     <div
-      className="relative min-h-screen bg-[var(--mk-bg)] text-[var(--mk-text)] antialiased"
+      className={`relative ${embedded ? "min-h-full" : "min-h-screen"} bg-[var(--mk-bg)] text-[var(--mk-text)] antialiased`}
       style={kitAppearanceToCssVarsWithOverrides(appearance)}
       data-kit-preset={preset}
     >
@@ -477,7 +483,7 @@ export function MediaKitClient({
           </div>
         </header>
       ) : (
-        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-[var(--mk-bg)] border-b border-[var(--mk-border-hairline)] px-6 sm:px-10 h-14">
+        <header className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-[var(--mk-bg)] border-b border-[var(--mk-border-hairline)] px-6 h-14 ${embedded ? "" : "sm:px-10"}`}>
           {/* Custom brand logo is parked — see KitEditor. Always show the wordmark for now. */}
           {/*
             Mono, like the footer: this is the creator's page and it goes to brands, so the
@@ -497,7 +503,12 @@ export function MediaKitClient({
         </header>
       )}
 
-      <main className="relative pb-24 max-w-4xl mx-auto px-5 sm:px-8 pt-14">
+      {/* Query container for the kit's responsive layout: the kit adapts to the width it's
+          given (the window on the public page, a phone-sized box in the editor preview).
+          Header and modals stay outside: container-type applies layout containment, which
+          would anchor their position:fixed to this box instead of the viewport. */}
+      <div className="@container">
+      <main className="relative pb-24 max-w-4xl mx-auto px-5 @min-[640px]:px-8 pt-14">
         <div className="pt-6 space-y-4">
 
           {/* 1. Profile card — cover banner with the avatar overlapping it, then identity + bio.
@@ -507,7 +518,7 @@ export function MediaKitClient({
                  so its ring (card colour) visibly cuts the avatar out of the cover. Fading toward
                  the surface here instead would make the ring disappear. */}
             <div
-              className="relative h-24 sm:h-28"
+              className="relative h-24 @min-[640px]:h-28"
               style={{
                 backgroundImage: `linear-gradient(to top right, ${chartColors.stroke}C4 0%, ${chartColors.stroke}82 50%, ${chartColors.stroke}38 100%)`,
               }}
@@ -517,21 +528,21 @@ export function MediaKitClient({
               </span>
             </div>
 
-            <div className="px-5 pb-6 sm:px-7 sm:pb-7">
+            <div className="px-5 pb-6 @min-[640px]:px-7 @min-[640px]:pb-7">
               {/* Avatar — pulled up so it straddles the cover edge. `relative z-10` is required:
                   the cover above is positioned, so without a stacking context of its own the
                   cover paints over the avatar's overlapping half (and its ring). */}
-              <div className="relative z-10 -mt-10 sm:-mt-12 mb-3 w-fit">
+              <div className="relative z-10 -mt-10 @min-[640px]:-mt-12 mb-3 w-fit">
                 {creator.avatarUrl ? (
                   <img
                     src={creator.avatarUrl}
                     alt=""
-                    className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover ring-[5px] ring-[var(--mk-surface)] shadow-sm"
+                    className="h-20 w-20 @min-[640px]:h-24 @min-[640px]:w-24 rounded-full object-cover ring-[5px] ring-[var(--mk-surface)] shadow-sm"
                     width={96} height={96}
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full ring-[5px] ring-[var(--mk-surface)] bg-[var(--mk-border)] flex items-center justify-center">
+                  <div className="h-20 w-20 @min-[640px]:h-24 @min-[640px]:w-24 rounded-full ring-[5px] ring-[var(--mk-surface)] bg-[var(--mk-border)] flex items-center justify-center">
                     <span className="font-display text-2xl font-semibold text-[var(--mk-text)]/60">
                       {creator.name.charAt(0)}
                     </span>
@@ -541,7 +552,7 @@ export function MediaKitClient({
 
               {/* Identity */}
               <div className="flex items-center gap-2">
-                <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--mk-text)] leading-none tracking-tight truncate">
+                <h1 className="font-display text-2xl @min-[640px]:text-3xl font-semibold text-[var(--mk-text)] leading-none tracking-tight truncate">
                   {creator.name}
                 </h1>
                 <VerifiedBadge tier={creator.verifiedTier} size="md" />
@@ -621,7 +632,7 @@ export function MediaKitClient({
             const bothPlatforms = !!ig && !!yt;
             const totalAudience = (ig?.followers ?? 0) + (yt?.followers ?? 0);
             // Compact cells (number over label) let more fit per row: 3-up on mobile, all-in-one-row on desktop.
-            const cols = cells.length >= 5 ? "sm:grid-cols-5" : cells.length === 4 ? "sm:grid-cols-4" : cells.length === 3 ? "sm:grid-cols-3" : cells.length === 2 ? "sm:grid-cols-2" : "";
+            const cols = cells.length >= 5 ? "@min-[640px]:grid-cols-5" : cells.length === 4 ? "@min-[640px]:grid-cols-4" : cells.length === 3 ? "@min-[640px]:grid-cols-3" : cells.length === 2 ? "@min-[640px]:grid-cols-2" : "";
             const platformLabel = bothPlatforms ? "Instagram & YouTube" : ig ? "Instagram" : "YouTube";
             const liveLabel =
               statsSource === "manual"
@@ -637,16 +648,16 @@ export function MediaKitClient({
             const remainder = cells.length % 3;
             const spanFor = (i: number) => {
               const inLastRow = remainder !== 0 && i >= cells.length - remainder;
-              if (!inLastRow) return "col-span-2 sm:col-span-1";
-              return remainder === 1 ? "col-span-6 sm:col-span-1" : "col-span-3 sm:col-span-1";
+              if (!inLastRow) return "col-span-2 @min-[640px]:col-span-1";
+              return remainder === 1 ? "col-span-6 @min-[640px]:col-span-1" : "col-span-3 @min-[640px]:col-span-1";
             };
             return (
               <div>
                 <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-border)] overflow-hidden">
                   {/* Total audience headline — the single number that frames everything (only when multi-platform) */}
                   {bothPlatforms && (
-                    <div className="bg-[var(--mk-surface)] mb-px px-5 py-5 sm:px-6 flex items-baseline gap-x-2 gap-y-1 flex-wrap">
-                      <span className="font-display text-[var(--mk-text)] text-3xl sm:text-4xl font-semibold tabular-nums leading-none tracking-tight">
+                    <div className="bg-[var(--mk-surface)] mb-px px-5 py-5 @min-[640px]:px-6 flex items-baseline gap-x-2 gap-y-1 flex-wrap">
+                      <span className="font-display text-[var(--mk-text)] text-3xl @min-[640px]:text-4xl font-semibold tabular-nums leading-none tracking-tight">
                         <CountUp value={totalAudience} duration={1600} compact />
                       </span>
                       <span className="text-sm text-[var(--mk-text-muted)] font-sans">total audience across Instagram &amp; YouTube</span>
@@ -654,8 +665,8 @@ export function MediaKitClient({
                   )}
                   <div className={`grid grid-cols-6 ${cols} gap-px`}>
                     {cells.map((cell, i) => (
-                      <div key={cell.key} className={`bg-[var(--mk-surface)] px-2 py-4 sm:px-3 sm:py-5 text-center ${spanFor(i)}`}>
-                        <p className="font-display text-[var(--mk-text)] text-xl sm:text-2xl font-semibold tabular-nums leading-none tracking-tight">{cell.node}</p>
+                      <div key={cell.key} className={`bg-[var(--mk-surface)] px-2 py-4 @min-[640px]:px-3 @min-[640px]:py-5 text-center ${spanFor(i)}`}>
+                        <p className="font-display text-[var(--mk-text)] text-xl @min-[640px]:text-2xl font-semibold tabular-nums leading-none tracking-tight">{cell.node}</p>
                         <p className="text-[var(--mk-text-soft)] text-[11px] mt-1.5 flex items-center justify-center gap-1 truncate">
                           {cell.icon}{cell.label}
                         </p>
@@ -687,10 +698,10 @@ export function MediaKitClient({
               <div className="bg-[var(--mk-surface)] mb-px px-5 pt-4 pb-3">
                 <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Typical post performance</p>
               </div>
-              <div className={`grid grid-cols-3 ${perPostCells.length === 3 ? "sm:grid-cols-3" : perPostCells.length === 2 ? "sm:grid-cols-2" : ""} gap-px`}>
+              <div className={`grid grid-cols-3 ${perPostCells.length === 3 ? "@min-[640px]:grid-cols-3" : perPostCells.length === 2 ? "@min-[640px]:grid-cols-2" : ""} gap-px`}>
                 {perPostCells.map((cell) => (
-                  <div key={cell.label} className="bg-[var(--mk-surface)] px-2 py-4 sm:px-3 sm:py-5 text-center">
-                    <p className="font-display text-[var(--mk-text)] text-xl sm:text-2xl font-semibold tabular-nums leading-none tracking-tight">
+                  <div key={cell.label} className="bg-[var(--mk-surface)] px-2 py-4 @min-[640px]:px-3 @min-[640px]:py-5 text-center">
+                    <p className="font-display text-[var(--mk-text)] text-xl @min-[640px]:text-2xl font-semibold tabular-nums leading-none tracking-tight">
                       <CountUp value={cell.value} duration={1100} compact />
                     </p>
                     <p className="text-[var(--mk-text-soft)] text-[11px] mt-1.5 truncate">{cell.label}</p>
@@ -702,7 +713,7 @@ export function MediaKitClient({
 
           {/* Charts — side-by-side on desktop, stacked on mobile, equal height */}
           {(showGrowthChart || showAudienceChart) && (
-            <div className={`grid gap-4 items-stretch ${showGrowthChart && showAudienceChart ? "md:grid-cols-2" : ""}`}>
+            <div className={`grid gap-4 items-stretch ${showGrowthChart && showAudienceChart ? "@min-[768px]:grid-cols-2" : ""}`}>
               {showGrowthChart && (
                 <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
                   <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
@@ -749,7 +760,7 @@ export function MediaKitClient({
 
           {/* Gender split + top countries — distinct visual styles from the charts above */}
           {(showGender || showCountries) && (
-            <div className={`grid gap-4 items-stretch ${showGender && showCountries ? "md:grid-cols-2" : ""}`}>
+            <div className={`grid gap-4 items-stretch ${showGender && showCountries ? "@min-[768px]:grid-cols-2" : ""}`}>
               {/* Gender — segmented split bar */}
               {showGender && (
                 <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
@@ -789,9 +800,9 @@ export function MediaKitClient({
                     {countryData.map((c) => {
                       const max = countryData[0]?.pct || 1;
                       return (
-                        <div key={c.code} className="flex items-center gap-2.5 sm:gap-3">
+                        <div key={c.code} className="flex items-center gap-2.5 @min-[640px]:gap-3">
                           <span className="text-base leading-none w-5 text-center shrink-0" aria-hidden>{flagEmoji(c.code)}</span>
-                          <span className="text-sm text-[var(--mk-text)] w-20 sm:w-28 truncate shrink-0">{c.country}</span>
+                          <span className="text-sm text-[var(--mk-text)] w-20 @min-[640px]:w-28 truncate shrink-0">{c.country}</span>
                           <div className="flex-1 min-w-[40px] h-2 rounded-full bg-[var(--mk-border)] overflow-hidden">
                             <div className="h-full rounded-full" style={{ width: `${(c.pct / max) * 100}%`, backgroundColor: chartColors.stroke }} />
                           </div>
@@ -926,7 +937,7 @@ export function MediaKitClient({
                 </div>
                 {/* Video grid — 16:9 */}
                 {videos.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-[2px] p-[2px]">
+                  <div className="grid grid-cols-2 @min-[640px]:grid-cols-3 gap-[2px] p-[2px]">
                     {videos.map((video) => (
                       <button
                         key={video.id}
@@ -984,7 +995,7 @@ export function MediaKitClient({
               </p>
               {/* Logo wall: uniform cell height with object-contain keeps every logo at its own
                   aspect ratio. Logos sit on a light chip so dark marks stay legible on dark vibes. */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 @min-[640px]:grid-cols-3 @min-[1024px]:grid-cols-4">
                 {brands.map((brand) => (
                   <div
                     key={brand.id}
@@ -1030,7 +1041,7 @@ export function MediaKitClient({
             const items = publicRateItems(rates);
             const ctaTarget = inquiryEnabled && kitId ? "#work-together" : sectionVisibility.links && links.length > 0 ? "#contact" : null;
             return (
-              <section aria-labelledby="kit-rates" className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] p-5 sm:p-6">
+              <section aria-labelledby="kit-rates" className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] p-5 @min-[640px]:p-6">
                 <h2 id="kit-rates" className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Rates</h2>
                 {items.length > 0 ? (
                   <ul className="mt-3 divide-y divide-[var(--mk-border)]">
@@ -1052,7 +1063,7 @@ export function MediaKitClient({
                 {ctaTarget && (
                   <a
                     href={ctaTarget}
-                    className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[var(--mk-text)] px-6 py-3 text-sm font-semibold text-[var(--mk-bg)] transition-opacity hover:opacity-90 sm:w-auto"
+                    className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[var(--mk-text)] px-6 py-3 text-sm font-semibold text-[var(--mk-bg)] transition-opacity hover:opacity-90 @min-[640px]:w-auto"
                   >
                     {rates.ctaLabel || "Work with me"}
                   </a>
@@ -1107,6 +1118,7 @@ export function MediaKitClient({
 
         </div>
       </main>
+      </div>
     </div>
   );
 }

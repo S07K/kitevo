@@ -162,7 +162,7 @@ export function AudienceDonutChart({ data, stroke }: { data: AudienceBucket[]; s
   return (
     // w-full: the parent card body is a flex row (justify-start), so without this the chart
     // only takes its content width and hugs the left edge, leaving dead space on the right.
-    <div className="flex flex-col sm:flex-row items-center gap-5 h-full w-full">
+    <div className="flex flex-col @min-[640px]:flex-row items-center gap-5 h-full w-full">
       {/* Fixed size — ResponsiveContainer can measure 0 inside flex/align-center parents */}
       <div className="h-[180px] w-[180px] shrink-0">
         <PieChart width={180} height={180}>
@@ -187,7 +187,7 @@ export function AudienceDonutChart({ data, stroke }: { data: AudienceBucket[]; s
       </div>
       {/* Cap the legend width on mobile, otherwise justify-between flings the label and
           the percentage to opposite edges of the card. */}
-      <ul className="flex-1 w-full max-w-[240px] sm:max-w-none mx-auto space-y-2">
+      <ul className="flex-1 w-full max-w-[240px] @min-[640px]:max-w-none mx-auto space-y-2">
         {sorted.map((d, i) => (
           <li key={d.age} className="flex items-center justify-between gap-2 text-sm">
             <span className="flex items-center gap-2 text-[var(--mk-text)]">
