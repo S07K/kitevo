@@ -57,16 +57,17 @@ export function Hero(): ReactNode {
     // Full-bleed at the top so the fixed nav sits entirely on navy (no straddled edge);
     // only the bottom corners round off into the page.
     <section className="relative">
-      {/* Light: brand navy band. Dark: deeper midnight band with a dot grid, two glows and a
-          hairline sky edge, so the hero reads as its own scene in each theme. */}
+      {/* Light: brand navy band. Dark: deeper midnight band with a second glow and a hairline
+          sky edge, so the hero reads as its own scene in each theme. Dot grid in both. */}
       <div className="relative rounded-b-[36px] bg-[#1b365d] text-white sm:rounded-b-[56px] dark:bg-[#0c1626] dark:shadow-[0_1px_0_0_rgba(96,193,229,0.35)]">
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]" aria-hidden>
           <div data-bleed className="absolute -right-24 top-10 h-[520px] w-[520px] rounded-full bg-[#60c1e5]/25 blur-3xl dark:bg-[#60c1e5]/30" />
           <div data-bleed className="absolute -bottom-40 -left-32 hidden h-[420px] w-[420px] rounded-full bg-[#a0e0ef]/15 blur-3xl dark:block" />
+          {/* Dot grid in both themes; dots a touch stronger on the lighter navy band. */}
           <div
-            className="absolute inset-0 hidden dark:block"
+            className="absolute inset-0 opacity-100 dark:opacity-80"
             style={{
-              backgroundImage: "radial-gradient(rgba(160,224,239,0.16) 1px, transparent 1px)",
+              backgroundImage: "radial-gradient(rgba(160,224,239,0.2) 1px, transparent 1px)",
               backgroundSize: "22px 22px",
               maskImage: "linear-gradient(to left, black 10%, transparent 75%)",
               WebkitMaskImage: "linear-gradient(to left, black 10%, transparent 75%)",
