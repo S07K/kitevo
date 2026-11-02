@@ -15,7 +15,7 @@ import {
   presetSwatch,
   type KitAppearance,
 } from "@/lib/kit-appearance";
-import { EMPTY_MANUAL_STATS, normalizeManualStats, type ManualStats } from "@/lib/manual-stats";
+import { normalizeManualStats, type ManualStats } from "@/lib/manual-stats";
 import { EMPTY_RATES, MAX_RATE_ITEMS, normalizeRates } from "@/lib/kit-rates";
 import { KitEditorSkeleton } from "@/app/components/Skeleton";
 import { Button, ButtonLink } from "@/app/components/workspace/Button";

@@ -7,6 +7,7 @@ import { AlertCircle, ArrowLeft, Check, ExternalLink, Loader2 } from "lucide-rea
 import { WorkspaceShell } from "@/app/components/workspace/WorkspaceShell";
 import { Skeleton } from "@/app/components/Skeleton";
 import { KitEditor, type LoadedKit, type SaveStatus } from "./KitEditor";
+import { KitPreviewPane } from "./KitPreviewPane";
 
 /** Header status chip for autosave. */
 function StatusChip({ status, onRetry }: { status: SaveStatus; onRetry: () => void }) {
@@ -32,55 +33,6 @@ function StatusChip({ status, onRetry }: { status: SaveStatus; onRetry: () => vo
       </span>
     );
   return <span className="text-xs text-muted-foreground">Changes save automatically</span>;
-}
-
-/**
- * Live preview. A saved change loads the new version into a hidden iframe and swaps it in
- * once it has painted, so the preview never flashes blank between saves.
- */
-function Preview({ slug, version }: { slug: string; version: number }) {
-  const [frames, setFrames] = useState<Array<{ v: number; ready: boolean }>>([{ v: version, ready: false }]);
-  const refs = useRef(new Map<number, HTMLIFrameElement>());
-
-  useEffect(() => {
-    setFrames((fs) => (fs.some((f) => f.v === version) ? fs : [...fs, { v: version, ready: false }]));
-  }, [version]);
-
-  const onLoad = (v: number) =>
-    setFrames((fs) => {
-      const next = fs.map((f) => (f.v === v ? { ...f, ready: true } : f));
-      const newestReady = Math.max(...next.filter((f) => f.ready).map((f) => f.v));
-      return next.filter((f) => f.v >= newestReady); // drop older frames once a newer one is ready
-    });
-
-  const visible = Math.max(-1, ...frames.filter((f) => f.ready).map((f) => f.v));
-
-  return (
-    <div className="relative h-full w-full overflow-hidden">
-      {visible === -1 && <Skeleton className="absolute inset-6 rounded-2xl" />}
-      {frames.map((f) => (
-        <iframe
-          key={f.v}
-          ref={(el) => {
-            if (el) refs.current.set(f.v, el);
-            else refs.current.delete(f.v);
-          }}
-          src={`/kit/${slug}?preview=1&v=${f.v}`}
-          title="Kit preview"
-          onLoad={() => onLoad(f.v)}
-          className={`pointer-events-none absolute inset-0 h-full w-full border-0 transition-opacity duration-200 ${f.v === visible ? "opacity-100" : "opacity-0"}`}
-          tabIndex={-1}
-          aria-hidden={f.v !== visible}
-        />
-      ))}
-      {/* Scroll the preview without letting clicks navigate inside it. */}
-      <div
-        className="absolute inset-0"
-        onWheel={(e) => refs.current.get(visible)?.contentWindow?.scrollBy({ top: e.deltaY, behavior: "instant" })}
-        aria-hidden
-      />
-    </div>
-  );
 }
 
 function KitEditContent() {
@@ -161,11 +113,7 @@ function KitEditContent() {
 
       {/* Preview column (desktop) */}
       <div className="hidden min-h-0 flex-1 flex-col bg-muted/40 lg:flex">
-        <div className="flex items-center justify-between border-b border-border bg-background px-5 py-3">
-          <span className="text-xs font-medium text-muted-foreground">Preview of your public kit</span>
-          <span className="text-xs text-muted-foreground">Updates after each save</span>
-        </div>
-        <div className="min-h-0 flex-1">{kit?.slug ? <Preview slug={kit.slug} version={version} /> : <Skeleton className="m-6 h-[calc(100%-3rem)] rounded-2xl" />}</div>
+        <KitPreviewPane slug={kit?.slug || null} version={version} />
       </div>
     </div>
   );
