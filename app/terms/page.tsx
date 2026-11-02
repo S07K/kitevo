@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function TermsOfService() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-canvas">
       <header className="border-border border-b px-5 py-5 sm:px-8 lg:px-10">
         <Link
           href="/"

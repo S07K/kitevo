@@ -3,9 +3,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { releaseDomains } from "@/lib/custom-domains";
 import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
+import { normalizeRates } from "@/lib/kit-rates";
 import type { SectionVisibility } from "@/lib/kit-storage";
-import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
+import type { WorkSample, BrandPartner } from "@/lib/mock-data";
 import {
   parseKitAppearance,
   serializeKitAppearance,
@@ -44,7 +46,7 @@ function toKitResponse(k: {
     name: k.name,
     hasPassword: !!k.passwordHash,
     workSamples: parseJson<WorkSample[]>(k.workSamples, []),
-    rates: parseJson<KitRates>(k.rates, { show: false }),
+    rates: normalizeRates(parseJson<unknown>(k.rates, null)),
     brands: parseJson<BrandPartner[]>(k.brands, []),
     sectionVisibility: parseJson<SectionVisibility>(k.sectionVisibility, { ...DEFAULT_SECTION_VISIBILITY }),
     appearance: parseKitAppearance(k.appearance),
@@ -120,7 +122,7 @@ export async function PUT(
     }
   }
   if (Array.isArray(body.workSamples)) updates.workSamples = JSON.stringify(body.workSamples);
-  if (body.rates !== undefined && body.rates !== null) updates.rates = JSON.stringify(body.rates);
+  if (body.rates !== undefined && body.rates !== null) updates.rates = JSON.stringify(normalizeRates(body.rates));
   if (Array.isArray(body.brands)) updates.brands = JSON.stringify(body.brands);
   if (body.sectionVisibility !== undefined && body.sectionVisibility !== null) {
     updates.sectionVisibility = JSON.stringify(body.sectionVisibility);
@@ -155,6 +157,7 @@ export async function DELETE(
   if (!kit) {
     return NextResponse.json({ error: "Kit not found" }, { status: 404 });
   }
+  await releaseDomains({ kitId: id }).catch((e) => console.error("[kit delete] domain release failed:", e));
   await prisma.kit.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

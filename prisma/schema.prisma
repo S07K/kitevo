@@ -103,6 +103,18 @@ model User {
 
   // Relations for Phase 8 (kits)
   kits      Kit[]
+  customDomains CustomDomain[]
+  analyticsEvents AnalyticsEvent[]
+  // Referral program (lib/referrals.ts)
+  referralCode         String?              @unique
+  referredById         String?
+  referredBy           User?                @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals            User[]               @relation("Referrals")
+  referredAt           DateTime?
+  payoutProfile        PayoutProfile?
+  commissionsEarned    ReferralCommission[] @relation("CommissionReferrer")
+  commissionsGenerated ReferralCommission[] @relation("CommissionReferred")
+  referralPayouts      ReferralPayout[]
 
   // Shortlist / save creators (brand saves creators)
   savedCreators SavedCreator[] @relation("BrandSaved")   // as brand: creators I saved
@@ -131,6 +143,31 @@ model Kit {
   // Phase 12.3: Kit analytics (views)
   views     KitView[]
   inquiries Inquiry[]
+  customDomain CustomDomain?
+}
+
+/// A creator's own domain pointing at one kit (Starter+). Served via the Vercel project's
+/// domain list; see lib/custom-domains.ts.
+model CustomDomain {
+  id            String    @id @default(cuid())
+  hostname      String    @unique // lowercase, punycode, no port/trailing dot
+  kitId         String    @unique
+  kit           Kit       @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apexName      String?   // registrable domain, from Vercel (decides CNAME vs A record)
+  status        String    @default("pending") // "pending" | "active"
+  verified      Boolean   @default(false) // Vercel ownership check (only needed if the domain is on another Vercel account)
+  verification  String    @default("[]") // JSON: TXT records Vercel asks for when not verified
+  dnsConfigured Boolean   @default(false) // DNS points at Vercel
+  tlsReady      Boolean   @default(false) // HTTPS answered
+  lastError     String?
+  lastCheckedAt DateTime?
+  activatedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
 }
 
 model KitView {
@@ -283,4 +320,108 @@ model Account {
 
   @@unique([provider, providerAccountId])
   @@index([userId])
+}
+
+// First-party product funnel events (lib/analytics.ts). Names are a closed set
+// (ANALYTICS_EVENTS); props is a small JSON object with no PII. dedupeKey makes
+// "first time" events (e.g. a kit's first outside view) idempotent.
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  props     String?
+  dedupeKey String?  @unique
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([userId])
+}
+
+// Where a referrer wants to be paid. destination + taxId are encrypted (lib/token-crypto).
+model PayoutProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  method      String   // "paypal" | "wise" | "bank"
+  destination String   // encrypted: PayPal/Wise email, or bank details text
+  legalName   String
+  country     String   // ISO-3166 alpha-2
+  taxId       String?  // encrypted
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+
+// One row per referred payment. amount is the referrer's commission in minor units of
+// currency (the provider's settlement currency). "Available" = pending && availableAt <= now.
+model ReferralCommission {
+  id             String          @id @default(cuid())
+  referrerId     String
+  referrer       User            @relation("CommissionReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUserId String
+  referredUser   User            @relation("CommissionReferred", fields: [referredUserId], references: [id], onDelete: Cascade)
+  paymentId      String          @unique
+  baseAmount     Int             // pre-tax amount the referred user paid
+  amount         Int             // commission
+  currency       String
+  status         String          @default("pending") // "pending" | "paid" | "reversed"
+  availableAt    DateTime
+  reversedAt     DateTime?
+  payoutId       String?
+  payout         ReferralPayout? @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now())
+
+  @@index([referrerId, status])
+  @@index([referredUserId])
+}
+
+// One row per payment-provider webhook delivery (lib/webhook-log.ts). payload is our
+// provider-agnostic domain event (ids + amounts, no emails), which is what an admin
+// replay re-applies. Signature failures collapse into one row per provider per hour
+// (deliveryId "rejected:<hour>") so an unauthenticated flood can't grow the table.
+model WebhookEvent {
+  id           String   @id @default(cuid())
+  provider     String
+  deliveryId   String?  // provider's delivery/event id; null when it didn't send one
+  type         String   // domain event type, or "rejected"
+  providerType String?  // provider's own event name, for ignored events
+  status       String   // "processed" | "ignored" | "failed" | "rejected"
+  error        String?
+  payload      String?  // JSON domain event; null for ignored/rejected
+  attempts     Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([provider, deliveryId])
+  @@index([status, createdAt])
+  @@index([createdAt])
+}
+
+// Who changed what from the admin side (comps, plan resyncs, webhook replays).
+// targetUserId is deliberately not a relation, so history survives account deletion.
+model AdminAuditLog {
+  id           String   @id @default(cuid())
+  actor        String   // admin email, or "script:<name>"
+  action       String   // "comp.set" | "plan.resync" | "webhook.replay"
+  targetUserId String?
+  details      String?  // JSON { before, after, ... }
+  createdAt    DateTime @default(now())
+
+  @@index([targetUserId, createdAt])
+  @@index([createdAt])
+}
+
+// A payment sent to a referrer (manually via PayPal/Wise/bank for now).
+model ReferralPayout {
+  id          String               @id @default(cuid())
+  referrerId  String
+  referrer    User                 @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+  amount      Int
+  currency    String
+  method      String
+  reference   String               // PayPal/Wise batch or transaction reference
+  paidAt      DateTime             @default(now())
+  commissions ReferralCommission[]
+
+  @@index([referrerId])
 }

@@ -45,7 +45,7 @@ export function LaunchBanner() {
 
   return (
     <div
-      className="bg-foreground text-background fixed inset-x-0 top-0 z-[60] flex h-[42px] items-center justify-center gap-3 px-4 text-sm"
+      className="bg-primary text-primary-foreground fixed inset-x-0 top-0 z-[60] flex h-[42px] items-center justify-center gap-3 px-4 text-sm"
       role="region"
       aria-label="Launch announcement"
     >

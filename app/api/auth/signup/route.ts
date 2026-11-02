@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail, VERIFY_TOKEN_TTL_MS } from "@/lib/email";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { betaCompFieldsForNewUser } from "@/lib/beta-comp";
+import { trackEvent } from "@/lib/analytics";
+import { attributeReferral, REF_COOKIE } from "@/lib/referrals";
+import { readCookie } from "@/lib/utils";
 
 /*
   Deliberately generous. Real users sign up once, but mobile carriers and offices put many
@@ -68,6 +71,13 @@ export async function POST(req: Request) {
         emailVerifyTokenExpiresAt,
       },
     });
+
+    const referred = await attributeReferral({
+      newUserId: user.id,
+      newUserEmail: trimmedEmail,
+      code: readCookie(req.headers.get("cookie"), REF_COOKIE),
+    });
+    await trackEvent("signup", { userId: user.id, props: { method: "email", referred } });
 
     // Send verification email (non-blocking — don't fail signup if email fails)
     sendVerificationEmail(trimmedEmail, emailVerifyToken).catch((e) =>

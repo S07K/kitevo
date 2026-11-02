@@ -2,146 +2,133 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
-import { signOut } from "next-auth/react";
-import { AppNav } from "@/app/components/AppNav";
-import { KitEditor } from "@/app/dashboard/KitEditor";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { AlertCircle, ArrowLeft, Check, ExternalLink, Loader2 } from "lucide-react";
+import { WorkspaceShell } from "@/app/components/workspace/WorkspaceShell";
+import { Skeleton } from "@/app/components/Skeleton";
+import { KitEditor, type KitDraft, type LoadedKit, type SaveStatus } from "./KitEditor";
+import type { KitPreviewData } from "./LiveKit";
+import { KitPreviewPane } from "./KitPreviewPane";
+import { APP_HOST } from "@/lib/app-url";
+
+/** Header status chip for autosave. */
+function StatusChip({ status, onRetry }: { status: SaveStatus; onRetry: () => void }) {
+  if (status === "saving")
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" role="status">
+        <Loader2 size={13} className="animate-spin" aria-hidden /> Saving…
+      </span>
+    );
+  if (status === "saved")
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400" role="status">
+        <Check size={13} aria-hidden /> Saved
+      </span>
+    );
+  if (status === "error")
+    return (
+      <span className="inline-flex items-center gap-2 text-xs text-red-700 dark:text-red-400" role="alert">
+        <AlertCircle size={13} aria-hidden /> Couldn&apos;t save
+        <button type="button" onClick={onRetry} className="font-semibold underline underline-offset-2">
+          Retry
+        </button>
+      </span>
+    );
+  return <span className="text-xs text-muted-foreground">Changes save automatically</span>;
+}
 
 function KitEditContent() {
-  const searchParams = useSearchParams();
-  const kitId = searchParams.get("id");
-  const [tierId, setTierId] = useState<string | null>(null);
-  const [tierLoaded, setTierLoaded] = useState(false);
-  const [kitSlug, setKitSlug] = useState<string | null>(null);
-  const [previewKey, setPreviewKey] = useState(0);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-
-  useEffect(() => {
-    fetch("/api/subscription-status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-      credentials: "include",
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (data) setTierId(data.tierId ?? null); })
-      .catch(() => {})
-      .finally(() => setTierLoaded(true));
+  const kitId = useSearchParams().get("id");
+  const [tierId, setTierId] = useState<string | null | undefined>(undefined);
+  const [kit, setKit] = useState<LoadedKit | null>(null);
+  const [status, setStatus] = useState<SaveStatus>("idle");
+  const [draft, setDraft] = useState<KitDraft | null>(null);
+  const [preview, setPreview] = useState<KitPreviewData | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const retryRef = useRef<() => void>(() => {});
+  const registerRetry = useCallback((fn: () => void) => {
+    retryRef.current = fn;
   }, []);
 
-  // Fetch kit slug on mount
+  useEffect(() => {
+    fetch("/api/subscription-status", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setTierId(d?.tierId ?? null))
+      .catch(() => setTierId(null));
+  }, []);
+
+  // The non-editable half of the kit (creator, links, live stats, posts) for the live preview.
   useEffect(() => {
     if (!kitId) return;
-    fetch(`/api/kits/${kitId}`, { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (data?.slug) setKitSlug(data.slug); })
-      .catch(() => {});
+    let cancelled = false;
+    fetch(`/api/kits/${kitId}/preview`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: KitPreviewData) => !cancelled && setPreview(d))
+      .catch(() => !cancelled && setPreviewError("Couldn't load the preview. Your edits still save; refresh to try again."));
+    return () => {
+      cancelled = true;
+    };
   }, [kitId]);
 
-  const handleSaved = (slug: string) => {
-    setKitSlug(slug);
-    setPreviewKey((k) => k + 1);
-  };
+  // "Saved" fades back to the neutral hint after a moment.
+  useEffect(() => {
+    if (status !== "saved") return;
+    const t = setTimeout(() => setStatus("idle"), 2500);
+    return () => clearTimeout(t);
+  }, [status]);
 
-  const previewUrl = kitSlug ? `/kit/${kitSlug}?preview=1` : null;
-  const liveUrl = kitSlug ? `/kit/${kitSlug}` : null;
+  const liveUrl = kit?.slug ? `/kit/${kit.slug}` : null;
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)]">
-      {/* ── Editor panel ── */}
-      <div className="w-full lg:w-[460px] lg:shrink-0 overflow-y-auto border-r border-border bg-muted/20">
-        <div className="px-5 sm:px-6 pt-6 pb-24">
-          <div className="flex items-center justify-between mb-6">
-            <Link
-              href="/dashboard"
-              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              Dashboard
-            </Link>
-            {liveUrl && (
-              <a
-                href={liveUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                  <polyline points="15 3 21 3 21 9" />
-                  <line x1="10" x2="21" y1="14" y2="3" />
-                </svg>
-                View live
-              </a>
-            )}
+    <div className="flex h-[calc(100dvh-57px)] flex-col pb-[52px] md:pb-0 lg:flex-row">
+      {/* Editor column */}
+      <div className="flex min-h-0 w-full flex-col border-border bg-canvas lg:w-[520px] lg:shrink-0 lg:border-r">
+        <div className="flex items-center gap-3 border-b border-border bg-background px-4 py-3 sm:px-6">
+          <Link
+            href="/dashboard"
+            aria-label="Back to dashboard"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <ArrowLeft size={17} aria-hidden />
+          </Link>
+          <div className="min-w-0 flex-1">
+            {kit ? <p className="truncate text-sm font-semibold text-foreground">{kit.name}</p> : <Skeleton className="h-4 w-32 rounded-full" />}
+            <StatusChip status={status} onRetry={() => retryRef.current()} />
           </div>
-          {tierLoaded
-            ? <KitEditor kitId={kitId} tierId={tierId} onSaved={handleSaved} />
-            : <div className="space-y-4 animate-pulse"><div className="h-8 bg-muted rounded-xl w-1/2" /><div className="h-32 bg-muted rounded-2xl" /><div className="h-48 bg-muted rounded-2xl" /></div>
-          }
+          {liveUrl && (
+            <a
+              href={liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              View live <ExternalLink size={13} aria-hidden />
+            </a>
+          )}
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+          {tierId === undefined ? (
+            <div className="space-y-4" aria-hidden>
+              <Skeleton className="h-40 w-full rounded-2xl" />
+              <Skeleton className="h-56 w-full rounded-2xl" />
+            </div>
+          ) : (
+            <KitEditor
+              kitId={kitId}
+              tierId={tierId}
+              onLoaded={setKit}
+              onSaved={(slug) => setKit((k) => (k ? { ...k, slug } : k))}
+              onDraftChange={setDraft}
+              onStatusChange={setStatus}
+              registerRetry={registerRetry}
+            />
+          )}
         </div>
       </div>
 
-      {/* ── Preview panel (desktop only) ── */}
-      <div className="hidden lg:flex flex-col flex-1 overflow-hidden bg-muted/10">
-        {/* Preview toolbar */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-2.5 shrink-0 bg-background">
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            <span className="text-xs font-medium text-muted-foreground">Live preview</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">Saves automatically refresh</span>
-            {liveUrl && (
-              <a
-                href={liveUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background px-3 py-1 text-xs font-medium hover:opacity-80 transition-opacity"
-              >
-                Open in new tab ↗
-              </a>
-            )}
-          </div>
-        </div>
-
-        {/* iframe */}
-        <div className="flex-1 overflow-hidden relative">
-          {previewUrl ? (
-            <>
-              <iframe
-                ref={iframeRef}
-                key={previewKey}
-                src={previewUrl}
-                className="w-full h-full border-0 pointer-events-none"
-                title="Kit preview"
-              />
-              {/* Forwards scroll to iframe, blocks all clicks */}
-              <div
-                className="absolute inset-0"
-                onWheel={(e) => {
-                  iframeRef.current?.contentWindow?.scrollBy({ top: e.deltaY, behavior: "instant" });
-                }}
-              />
-            </>
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-center px-8">
-              <div className="h-10 w-10 rounded-2xl bg-muted flex items-center justify-center">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-                  <rect width="18" height="18" x="3" y="3" rx="2" />
-                  <path d="M3 9h18M9 21V9" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Preview will appear here</p>
-                <p className="text-xs text-muted-foreground mt-1">Save your kit to see a live preview</p>
-              </div>
-            </div>
-          )}
-        </div>
+      {/* Preview column (desktop) */}
+      <div className="hidden min-h-0 flex-1 flex-col bg-muted/40 lg:flex">
+        <KitPreviewPane data={preview} draft={draft} error={previewError} address={kit?.slug ? `${APP_HOST}/kit/${kit.slug}` : APP_HOST} />
       </div>
     </div>
   );
@@ -149,22 +136,10 @@ function KitEditContent() {
 
 export default function KitEditPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <AppNav
-        links={[
-          { href: "/dashboard", label: "Dashboard" },
-          { href: "/pricing", label: "Pricing" },
-        ]}
-        onLogout={async () => {
-          await fetch("/api/auth/clear-session-cookies", { method: "POST", credentials: "include" });
-          signOut({ callbackUrl: "/" });
-        }}
-      />
-      <div className="flex-1 pt-16">
-        <Suspense fallback={<div className="p-8 text-muted-foreground text-sm">Loading…</div>}>
-          <KitEditContent />
-        </Suspense>
-      </div>
-    </div>
+    <WorkspaceShell width="full">
+      <Suspense fallback={<div className="p-8" aria-hidden><Skeleton className="h-40 w-full max-w-lg rounded-2xl" /></div>}>
+        <KitEditContent />
+      </Suspense>
+    </WorkspaceShell>
   );
 }

@@ -84,21 +84,94 @@ export async function sendInquiryNotification({
   kitSlug: string;
   from: { name: string; email: string; company?: string | null; message: string };
 }) {
-  const dashboardUrl = `${APP_URL}/dashboard`;
+  const pipelineUrl = `${APP_URL}/pipeline`;
   const company = from.company ? ` (${from.company})` : "";
   await send({
     from: FROM,
     to: ownerEmail,
     subject: `New inquiry on your kit "${kitName}" · Kitevo`,
     html: emailHtml({
-      heading: `New inquiry on your brand kit: "${kitName}"`,
-      body: `<strong>${from.name}${company}</strong> &lt;${from.email}&gt; sent you a message:<br><br><blockquote style="margin:0;padding:12px 16px;border-left:3px solid #e8e4e0;color:#6b6560;font-style:italic">${from.message.replace(/\n/g, "<br>")}</blockquote><br>Reply directly to <a href="mailto:${from.email}" style="color:#111110">${from.email}</a>.`,
-      ctaLabel: "View dashboard",
-      ctaUrl: dashboardUrl,
-      footer: `You received this because someone submitted an inquiry on your ${kitName} media kit. To stop these emails, contact us via your dashboard.`,
+      heading: `New inquiry on your brand kit: "${escapeHtml(kitName)}"`,
+      // Everything from the inquiry form is visitor input: escape it before it goes in HTML.
+      body: `<strong>${escapeHtml(from.name)}${escapeHtml(company)}</strong> &lt;${escapeHtml(from.email)}&gt; sent you a message:<br><br>${quote(from.message)}<br>Reply directly to <a href="mailto:${encodeURIComponent(from.email)}" style="color:#111110">${escapeHtml(from.email)}</a>.`,
+      ctaLabel: "Open your pipeline",
+      ctaUrl: pipelineUrl,
+      footer: `You received this because someone submitted an inquiry on your ${escapeHtml(kitName)} media kit. To stop these emails, contact us via your dashboard.`,
     }),
     replyTo: from.email,
   }, "inquiry");
+}
+
+/** A visitor's message as an escaped, line-broken blockquote (trimmed to `max` characters). */
+function quote(text: string, max = 2000): string {
+  const t = text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
+  return `<blockquote style="margin:0;padding:12px 16px;border-left:3px solid #e8e4e0;color:#6b6560;font-style:italic">${escapeHtml(t).replace(/\n/g, "<br>")}</blockquote>`;
+}
+
+/** Brand: a creator applied to one of your campaigns. */
+export async function sendApplicationReceivedEmail({
+  brandEmail,
+  campaignTitle,
+  creator,
+  pitch,
+}: {
+  brandEmail: string;
+  campaignTitle: string;
+  creator: { name: string; username: string | null };
+  pitch: string | null;
+}) {
+  const who = escapeHtml(creator.name) + (creator.username ? ` <span style="color:#9a9a98">@${escapeHtml(creator.username)}</span>` : "");
+  await send(
+    {
+      from: FROM,
+      to: brandEmail,
+      subject: `New application for "${campaignTitle}" · Kitevo`,
+      html: emailHtml({
+        heading: `New application for "${escapeHtml(campaignTitle)}"`,
+        body: `<strong>${who}</strong> applied${pitch ? " with this pitch:<br><br>" + quote(pitch, 600) : "."}<br>Their media kit is linked from the application.`,
+        ctaLabel: "Review applicants",
+        ctaUrl: `${APP_URL}/campaigns`,
+        footer: `You received this because you posted "${escapeHtml(campaignTitle)}" on Kitevo.`,
+      }),
+    },
+    "application-received",
+  );
+}
+
+/** Creator: the brand accepted or declined your application. */
+export async function sendApplicationDecisionEmail({
+  creatorEmail,
+  campaignId,
+  campaignTitle,
+  brandName,
+  decision,
+}: {
+  creatorEmail: string;
+  campaignId: string;
+  campaignTitle: string;
+  brandName: string;
+  decision: "accepted" | "rejected";
+}) {
+  const title = escapeHtml(campaignTitle);
+  const brand = escapeHtml(brandName);
+  const accepted = decision === "accepted";
+  await send(
+    {
+      from: FROM,
+      to: creatorEmail,
+      subject: accepted ? `${brandName} accepted your application · Kitevo` : `An update on "${campaignTitle}" · Kitevo`,
+      html: emailHtml({
+        heading: accepted ? `${brand} accepted your application` : `An update on "${title}"`,
+        body: accepted
+          ? `Good news: ${brand} accepted your application for <strong>${title}</strong>. They'll reach out in your Kitevo messages to sort out the details.`
+          : `${brand} went with other creators for <strong>${title}</strong> this time. New briefs open every week, and your kit is ready for the next one.`,
+        ctaLabel: accepted ? "View the campaign" : "Browse open campaigns",
+        ctaUrl: accepted ? `${APP_URL}/campaigns/${encodeURIComponent(campaignId)}` : `${APP_URL}/campaigns`,
+        footer: `You received this because you applied to "${title}" on Kitevo.`,
+      }),
+    },
+    "application-decision",
+  );
 }
 
 export async function sendViewMilestoneEmail({
@@ -159,6 +232,69 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   }, "password-reset");
 }
 
+function money(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount / 100);
+  } catch {
+    return `${(amount / 100).toFixed(2)} ${currency}`;
+  }
+}
+
+/** Receipt to a referrer after the admin records a payout. */
+export async function sendReferralPayoutReceipt({
+  email,
+  name,
+  amount,
+  currency,
+  reference,
+}: {
+  email: string;
+  name: string | null;
+  amount: number;
+  currency: string;
+  reference: string;
+}) {
+  await send({
+    from: FROM,
+    to: email,
+    subject: `You've been paid ${money(amount, currency)} in referral earnings · Kitevo`,
+    html: emailHtml({
+      heading: `${money(amount, currency)} is on its way`,
+      body: `Hi ${escapeHtml(name ?? "there")}, we've sent your Kitevo referral earnings of <strong>${money(amount, currency)}</strong> to the payout account in your settings.<br><br>Reference: <strong>${escapeHtml(reference)}</strong>. Depending on the method it can take a few days to arrive.`,
+      ctaLabel: "See your earnings",
+      ctaUrl: `${APP_URL}/referrals`,
+      footer: "You received this because you referred creators to Kitevo.",
+    }),
+  }, "referral-payout");
+}
+
+/** Monthly heads-up to the admin that referral payouts are due. */
+export async function sendPayoutsDueDigest({
+  to,
+  totals,
+  payableCount,
+  missingDetailsCount,
+}: {
+  to: string[];
+  totals: Record<string, number>;
+  payableCount: number;
+  missingDetailsCount: number;
+}) {
+  const totalText = Object.entries(totals).map(([c, a]) => money(a, c)).join(" + ") || "nothing";
+  await send({
+    from: FROM,
+    to,
+    subject: `Referral payouts due: ${totalText} to ${payableCount} referrer${payableCount === 1 ? "" : "s"}`,
+    html: emailHtml({
+      heading: `${totalText} due to ${payableCount} referrer${payableCount === 1 ? "" : "s"}`,
+      body: `Open the payouts page, send each payment in PayPal, Wise or your bank, then mark them paid with the reference.${missingDetailsCount ? `<br><br>${missingDetailsCount} more referrer${missingDetailsCount === 1 ? " is" : "s are"} over the minimum but haven't added payout details yet.` : ""}`,
+      ctaLabel: "Review payouts",
+      ctaUrl: `${APP_URL}/admin/payouts`,
+      footer: "Sent on the 1st of each month while referral payouts are due.",
+    }),
+  }, "payouts-digest");
+}
+
 function emailHtml({ heading, body, ctaLabel, ctaUrl, footer }: {
   heading: string;
   body: string;
@@ -203,4 +339,8 @@ function emailHtml({ heading, body, ctaLabel, ctaUrl, footer }: {
   </table>
 </body>
 </html>`;
+}
+
+function escapeHtml(v: string): string {
+  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

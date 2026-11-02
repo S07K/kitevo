@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendApplicationReceivedEmail } from "@/lib/email";
+import { inBackground } from "@/lib/background";
 
 /** GET /api/social/campaigns/[id]/apply — check if current user already applied */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +30,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (user?.accountType === "brand") return NextResponse.json({ error: "Creators only" }, { status: 403 });
 
   const { id } = await params;
-  const campaign = await prisma.campaign.findUnique({ where: { id }, select: { status: true } });
+  const campaign = await prisma.campaign.findUnique({
+    where: { id },
+    select: { status: true, title: true, brand: { select: { email: true } } },
+  });
   if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (campaign.status !== "open") return NextResponse.json({ error: "Campaign is not open" }, { status: 400 });
 
@@ -47,6 +52,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       status: "pending",
     },
   });
+
+  // Tell the brand, after the response (an email problem must never fail the application).
+  const brandEmail = campaign.brand?.email;
+  if (brandEmail) {
+    inBackground("application-received", async () => {
+      const creator = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true, username: true } });
+      await sendApplicationReceivedEmail({
+        brandEmail,
+        campaignTitle: campaign.title,
+        creator: { name: creator?.name || creator?.username || "A creator", username: creator?.username ?? null },
+        pitch: application.message,
+      });
+    });
+  }
 
   return NextResponse.json(application, { status: 201 });
 }

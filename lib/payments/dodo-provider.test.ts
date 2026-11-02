@@ -131,6 +131,46 @@ describe("dodoProvider.parseWebhook event mapping", () => {
     }
   );
 
+  it("maps payment.succeeded to a pre-tax amount in the settlement currency", async () => {
+    const payment = {
+      payment_id: "pay_1",
+      total_amount: 1800,
+      tax: 300,
+      currency: "INR",
+      settlement_amount: 1500,
+      settlement_tax: 250,
+      settlement_currency: "USD",
+      is_update_payment_method: false,
+      customer: { customer_id: "cus_dodo_1" },
+      metadata: { kitevo_user_id: "user_1" },
+    };
+    expect(await dodoProvider.parseWebhook(body("payment.succeeded", payment), HEADERS())).toEqual({
+      type: "payment.succeeded",
+      paymentId: "pay_1",
+      customerId: "cus_dodo_1",
+      userId: "user_1",
+      amount: 1250,
+      currency: "USD",
+    });
+  });
+
+  it("ignores zero-amount update-payment-method charges", async () => {
+    const ev = await dodoProvider.parseWebhook(
+      body("payment.succeeded", { payment_id: "pay_2", total_amount: 0, is_update_payment_method: true }),
+      HEADERS()
+    );
+    expect(ev.type).toBe("ignored");
+  });
+
+  it("maps refunds: partial carries the amount, full is null", async () => {
+    expect(
+      await dodoProvider.parseWebhook(body("refund.succeeded", { refund_id: "rf_1", payment_id: "pay_1", amount: 500, is_partial: true }), HEADERS())
+    ).toEqual({ type: "payment.refunded", paymentId: "pay_1", refundId: "rf_1", amount: 500 });
+    expect(
+      await dodoProvider.parseWebhook(body("refund.succeeded", { refund_id: "rf_2", payment_id: "pay_1", amount: 1800, is_partial: false }), HEADERS())
+    ).toEqual({ type: "payment.refunded", paymentId: "pay_1", refundId: "rf_2", amount: null });
+  });
+
   it("reports unrecognised events as ignored rather than dropping them", async () => {
     const event = await dodoProvider.parseWebhook(body("payment.processing"), HEADERS());
     expect(event).toEqual({ type: "ignored", providerEventType: "payment.processing" });
@@ -243,6 +283,26 @@ describe("dodoProvider checkout", () => {
         metadata: { kitevo_user_id: "user_1" },
       })
     );
+  });
+
+  const params = { priceId: "prod_1", userId: "user_1", successUrl: "https://x/ok", cancelUrl: "https://x/no" };
+
+  it("always sets the trial length, so a product-level trial in the dashboard can't leak to ineligible buyers", async () => {
+    createSession.mockResolvedValue({ checkout_url: "https://checkout.dodo/x" });
+    await dodoProvider.createCheckout(params);
+    expect(createSession).toHaveBeenLastCalledWith(expect.objectContaining({ subscription_data: { trial_period_days: 0 } }));
+    await dodoProvider.createCheckout({ ...params, trialDays: 14 });
+    expect(createSession).toHaveBeenLastCalledWith(expect.objectContaining({ subscription_data: { trial_period_days: 14 } }));
+  });
+
+  it("pre-applies a discount code, and falls back to a plain checkout if Dodo rejects it", async () => {
+    createSession.mockRejectedValueOnce(new Error("invalid discount code")).mockResolvedValueOnce({ checkout_url: "https://checkout.dodo/plain" });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const res = await dodoProvider.createCheckout({ ...params, discountCode: "NOPE" });
+    expect(res.url).toBe("https://checkout.dodo/plain");
+    expect(createSession).toHaveBeenNthCalledWith(1, expect.objectContaining({ discount_codes: ["NOPE"] }));
+    expect(createSession.mock.calls[1][0]).not.toHaveProperty("discount_codes");
+    warn.mockRestore();
   });
 
   /*

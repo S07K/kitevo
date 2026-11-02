@@ -3,51 +3,32 @@
 import type React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight, MapPin } from "lucide-react";
 import { LogoMark } from "@/app/components/Logo";
 import { CountUp } from "@/app/components/Skeleton";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import type { PlatformId, PlatformStatsWithCharts } from "@/lib/platforms";
-import { getPlatformMeta } from "@/lib/platforms";
 import { BRAND_LOGO_RATIO_CLASS, type KitRates, type BrandPartner } from "@/lib/mock-data";
+import { formatUsd, hasPublicRates, publicRateItems } from "@/lib/kit-rates";
 import type { FetchedPost } from "@/lib/platforms/instagram";
 import { DEFAULT_SECTION_VISIBILITY, type SectionVisibility } from "@/lib/kit-storage";
 import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
-import {
-  DEFAULT_KIT_APPEARANCE,
-  kitAppearanceToCssVars,
-  kitAppearanceToCssVarsWithOverrides,
-  kitChartColors,
-} from "@/lib/kit-appearance";
+import { DEFAULT_KIT_APPEARANCE, kitAppearanceToCssVarsWithOverrides, kitChartColors } from "@/lib/kit-appearance";
+import { audienceSummary, compactNumber, firstName } from "@/lib/kit-audience-summary";
 
 const GrowthAreaChart = dynamic(
   () => import("./MediaKitRecharts").then((m) => m.GrowthAreaChart),
   {
     ssr: false,
-    loading: () => (
-      <div
-        className="h-52 min-h-[208px] w-full animate-pulse rounded-lg bg-[var(--mk-border)]/25"
-        aria-hidden
-      />
-    ),
-  }
-);
-
-const AudienceDonutChart = dynamic(
-  () => import("./MediaKitRecharts").then((m) => m.AudienceDonutChart),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        className="h-[180px] min-h-[180px] w-full animate-pulse rounded-lg bg-[var(--mk-border)]/25"
-        aria-hidden
-      />
-    ),
+    loading: () => <div className="h-52 min-h-[208px] w-full rounded-lg bg-[var(--mk-border)]/25" aria-hidden />,
   }
 );
 
 interface MediaKitClientProps {
   username: string;
+  /** Kit owner's referral code, appended to the "Create yours" links. */
+  referralCode?: string | null;
   creator: { name: string; username: string; bio: string; avatarUrl?: string | null; verifiedTier?: string | null; niches?: string[]; location?: string | null };
   links: { label: string; url: string }[];
   platformStats: Record<string, PlatformStatsWithCharts>;
@@ -71,6 +52,11 @@ interface MediaKitClientProps {
   isOwner?: boolean;
   /** Real Instagram posts for the grid */
   instagramPosts?: FetchedPost[];
+  /**
+   * Rendered inside the editor's phone preview rather than as the page: no screen-height
+   * minimum and phone padding on the header (its breakpoints follow the window, not the kit).
+   */
+  embedded?: boolean;
 }
 
 /** When Meta returns no time series, show a subtle trajectory from current follower count. */
@@ -93,6 +79,7 @@ function InquiryForm({ kitId, creatorName }: { kitId: string; creatorName: strin
   const [company, setCompany] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const first = firstName(creatorName);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -110,74 +97,38 @@ function InquiryForm({ kitId, creatorName }: { kitId: string; creatorName: strin
   }
 
   const inputCls =
-    "w-full px-4 py-3 rounded-xl border border-[var(--mk-border)] bg-[var(--mk-surface)] text-[var(--mk-text)] placeholder:text-[var(--mk-text-soft)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mk-text)]/30 font-sans transition";
+    "w-full rounded-xl border border-[var(--mk-border)] bg-[var(--mk-bg)] px-4 py-3 font-sans text-sm text-[var(--mk-text)] placeholder:text-[var(--mk-text-soft)] transition focus:outline-none focus:ring-2 focus:ring-[var(--mk-text)]/30";
 
   return (
-    <section className="mt-12 sm:mt-14 rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] px-6 py-10 sm:px-10">
-      <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight text-center">
-        Work together
-      </h2>
-      <p className="mt-2 text-sm text-[var(--mk-text-muted)] font-sans max-w-md mx-auto text-center">
-        Interested in a collaboration? Send {creatorName.split(" ")[0]} a message and they&apos;ll get back to you.
+    <div id="work-together" className="scroll-mt-20 rounded-2xl bg-[var(--mk-surface)] p-5 @min-[640px]:p-7">
+      <h3 className="font-display text-xl font-semibold tracking-tight text-[var(--mk-text)]">Send {first} a brief</h3>
+      <p className="mt-1 max-w-md font-sans text-sm text-[var(--mk-text-muted)]">
+        Say what you have in mind, and {first} will reply by email.
       </p>
-
       {status === "sent" ? (
-        <div className="mt-8 py-10 px-8 rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] text-center">
-          <p className="font-display text-xl font-semibold text-[var(--mk-text)]">Message sent ✓</p>
-          <p className="mt-2 text-sm text-[var(--mk-text-muted)] font-sans">
-            Thanks for reaching out — you&apos;ll hear back soon.
-          </p>
+        <div className="mt-6 rounded-xl border border-[var(--mk-border)] px-6 py-8 text-center">
+          <p className="font-display text-xl font-semibold text-[var(--mk-text)]">Message sent</p>
+          <p className="mt-1 font-sans text-sm text-[var(--mk-text-muted)]">{first} has your message and will reply to {email || "your email"}.</p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4 max-w-lg mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="Your name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={inputCls}
-            />
-            <input
-              type="email"
-              placeholder="Your email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={inputCls}
-            />
+        <form onSubmit={handleSubmit} className="mt-6 space-y-3">
+          <div className="grid grid-cols-1 gap-3 @min-[640px]:grid-cols-2">
+            <input type="text" aria-label="Your name" placeholder="Your name" required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
+            <input type="email" aria-label="Your email" placeholder="Your email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </div>
-          <input
-            type="text"
-            placeholder="Company / brand (optional)"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            className={inputCls}
-          />
-          <textarea
-            placeholder="Tell me about the collaboration…"
-            required
-            rows={4}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className={inputCls + " resize-none"}
-          />
-          {status === "error" && (
-            <p className="text-sm text-red-600 font-sans">
-              Something went wrong — please try again.
-            </p>
-          )}
+          <input type="text" aria-label="Company or brand" placeholder="Company or brand (optional)" value={company} onChange={(e) => setCompany(e.target.value)} className={inputCls} />
+          <textarea aria-label="Message" placeholder="What's the campaign, and when?" required rows={4} value={message} onChange={(e) => setMessage(e.target.value)} className={inputCls + " resize-none"} />
+          {status === "error" && <p className="font-sans text-sm text-red-600">The message didn&apos;t send. Check your connection and try again.</p>}
           <button
             type="submit"
             disabled={status === "sending"}
-            className="w-full py-3.5 bg-[var(--mk-text)] text-[var(--mk-bg)] font-semibold text-sm rounded-full hover:opacity-90 transition-opacity disabled:opacity-60 font-sans"
+            className="w-full rounded-full bg-[var(--mk-text)] py-3.5 font-sans text-sm font-semibold text-[var(--mk-bg)] transition-opacity hover:opacity-90 disabled:opacity-60 @min-[640px]:w-auto @min-[640px]:px-8"
           >
             {status === "sending" ? "Sending…" : "Send message"}
           </button>
         </form>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -268,6 +219,77 @@ function PatternLayer({ preset }: { preset: KitAppearancePreset }) {
   );
 }
 
+const IG_ICON = (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="#E1306C" aria-hidden className="shrink-0">
+    <path d="M12 2.2c3.2 0 3.6 0 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07s-3.58-.01-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92C2.14 15.6 2.13 15.2 2.13 12s.01-3.58.07-4.85C2.35 3.92 3.87 2.4 7.12 2.27 8.4 2.2 8.8 2.2 12 2.2Zm0 3.64a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32Zm0 10.16a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88Z"/>
+  </svg>
+);
+const YT_ICON = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="#FF0000" aria-hidden className="shrink-0">
+    <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.2C0 8.07 0 12 0 12s0 3.93.5 5.81a3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14C24 15.93 24 12 24 12s0-3.93-.5-5.81ZM9.55 15.57V8.43L15.82 12l-6.27 3.57Z"/>
+  </svg>
+);
+
+/**
+ * What each part of the kit is, for the editor's preview: hovering or tapping an element with
+ * data-kit-section opens the matching part of the editor (app/kit/edit).
+ */
+export type KitSectionKind = "profile" | "numbers" | "audience" | "posts" | "youtube" | "growth" | "brands" | "rates" | "contact";
+
+/** A titled block of the kit. No card: sections are separated by space and a hairline. */
+function Section({ title, icon, children, id, kind }: { title: string; icon?: React.ReactNode; children: React.ReactNode; id?: string; kind: KitSectionKind }) {
+  return (
+    <section id={id} data-kit-section={kind} className="scroll-mt-20 border-t border-[var(--mk-border-hairline)] pt-8 @min-[640px]:pt-10">
+      <h2 className="mb-5 flex items-center gap-2 font-display text-xl font-semibold tracking-tight text-[var(--mk-text)] @min-[640px]:text-2xl">
+        {icon}
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+/** Small heading inside a section (Age, Gender, Top countries). */
+function SubHeading({ children }: { children: React.ReactNode }) {
+  return <h3 className="mb-3 font-sans text-sm font-medium text-[var(--mk-text-muted)]">{children}</h3>;
+}
+
+/** The rate card: the kit's one coloured surface, in the style's accent. */
+function RateCard({ rates, ctaTarget, ctaLabel }: { rates: KitRates; ctaTarget: string | null; ctaLabel: string }) {
+  const items = publicRateItems(rates);
+  return (
+    <div data-kit-section="rates" className="rounded-2xl bg-[var(--mk-rates-bg)] p-5 text-[var(--mk-rates-text)] @min-[640px]:p-6">
+      <p className="font-display text-lg font-semibold tracking-tight">Rates</p>
+      {items.length > 0 ? (
+        <ul className="mt-3 divide-y divide-[var(--mk-rates-muted)]/30">
+          {items.map((item) => (
+            <li key={item.id} className="flex items-baseline justify-between gap-4 py-2.5">
+              <span className="min-w-0 font-sans text-sm">{item.label}</span>
+              <span className="shrink-0 font-sans text-base font-semibold tabular-nums">{formatUsd(item.price)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 font-display text-3xl font-semibold tracking-tight">From {formatUsd(rates.fromAmount as number)}</p>
+      )}
+      {items.length > 0 && typeof rates.fromAmount === "number" && (
+        <p className="mt-2 font-sans text-xs text-[var(--mk-rates-muted)]">Packages from {formatUsd(rates.fromAmount)}.</p>
+      )}
+      {ctaTarget && (
+        <a
+          href={ctaTarget}
+          className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[var(--mk-rates-text)] px-6 py-3 font-sans text-sm font-semibold text-[var(--mk-rates-bg)] transition-opacity hover:opacity-90"
+        >
+          {ctaLabel}
+        </a>
+      )}
+    </div>
+  );
+}
+
+const flagEmoji = (code: string) =>
+  code.length === 2 ? code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65)) : "";
+
 export function MediaKitClient({
   creator,
   links,
@@ -283,8 +305,12 @@ export function MediaKitClient({
   kitId,
   inquiryEnabled = false,
   isOwner = false,
+  embedded = false,
   instagramPosts = [],
+  referralCode = null,
 }: MediaKitClientProps) {
+  // Footer/header "Create yours" links credit the kit owner as the referrer.
+  const homeHref = referralCode ? `/?ref=${encodeURIComponent(referralCode)}` : "/";
   const sectionVisibility = initialSectionVisibility ?? DEFAULT_SECTION_VISIBILITY;
   const showConnectInstagramOverlay = !isDemoKit && !instagramConnected && isOwner;
   const [selectedPost, setSelectedPost] = useState<FetchedPost | null>(null);
@@ -292,68 +318,118 @@ export function MediaKitClient({
   const appearance = appearanceProp ?? DEFAULT_KIT_APPEARANCE;
   const preset: KitAppearancePreset = appearance.preset ?? "warm";
   const chartColors = kitChartColors(preset);
+  const first = firstName(creator.name);
 
-  const primaryPlatform =
-    enabledPlatformIds.find((id) => platformStats[id]?.growthDataPoints?.length) ?? enabledPlatformIds[0];
+  const ig = platformStats["instagram"];
+  const yt = platformStats["youtube"];
+  const measured = instagramConnected || isDemoKit;
 
-  const rawGrowth =
-    primaryPlatform && platformStats[primaryPlatform]?.growthDataPoints?.length
-      ? platformStats[primaryPlatform].growthDataPoints!
-      : [];
+  // ── Growth (real history only; demo kits may show a sample curve) ──
+  const primaryPlatform = enabledPlatformIds.find((id) => platformStats[id]?.growthDataPoints?.length) ?? enabledPlatformIds[0];
+  const rawGrowth = primaryPlatform && platformStats[primaryPlatform]?.growthDataPoints?.length ? platformStats[primaryPlatform].growthDataPoints! : [];
+  const followersForChart = primaryPlatform && platformStats[primaryPlatform] ? platformStats[primaryPlatform].followers : 0;
+  const growthData = rawGrowth.length > 0 ? rawGrowth : isDemoKit && followersForChart > 0 ? buildSyntheticGrowthFromFollowers(followersForChart) : [];
 
-  const followersForChart =
-    primaryPlatform && platformStats[primaryPlatform]
-      ? platformStats[primaryPlatform].followers
-      : enabledPlatformIds[0]
-        ? (platformStats[enabledPlatformIds[0]]?.followers ?? 0)
-        : 0;
+  // ── Audience (measured only — manual stats never become charts) ──
+  const audiencePlatform = enabledPlatformIds.find((id) => platformStats[id]?.audienceDemographics?.length) ?? primaryPlatform;
+  const ageData = audiencePlatform && platformStats[audiencePlatform]?.audienceDemographics?.length ? platformStats[audiencePlatform].audienceDemographics! : [];
+  const genderData = ig?.audienceGender ?? [];
+  const countryData = ig?.audienceCountries ?? [];
+  const audienceAllowed = sectionVisibility.audience && statsSource !== "manual";
+  const showAge = audienceAllowed && measured && ageData.length > 0;
+  const showGender = audienceAllowed && measured && genderData.length > 0;
+  const showCountries = audienceAllowed && measured && countryData.length > 0;
+  const showAudienceSection = showAge || showGender || showCountries || (audienceAllowed && showConnectInstagramOverlay);
+  const showGrowthChart = sectionVisibility.growthChart && statsSource !== "manual" && (measured || isOwner);
 
-  // Only chart REAL follower history. Demo kits may show a synthetic curve (clearly a sample);
-  // live kits never fabricate — no data → honest empty state.
-  const growthData =
-    rawGrowth.length > 0
-      ? rawGrowth
-      : isDemoKit && followersForChart > 0
-        ? buildSyntheticGrowthFromFollowers(followersForChart)
-        : [];
+  // ── YouTube numbers ──
+  let ytVideos: Array<{ id: string; title: string; thumbnailUrl: string; viewCount: number; likeCount: number }> = [];
+  try {
+    ytVideos = yt?.extra?.recentVideosJson ? JSON.parse(String(yt.extra.recentVideosJson)) : [];
+  } catch {
+    ytVideos = [];
+  }
+  const ytAvgViews = ytVideos.length ? Math.round(ytVideos.reduce((s, v) => s + (v.viewCount ?? 0), 0) / ytVideos.length) : null;
+  const ytTotalViews = typeof yt?.extra?.totalViews === "number" ? yt.extra.totalViews : null;
+  const ytVideoCount = typeof yt?.extra?.videoCount === "number" ? yt.extra.videoCount : null;
 
-  const audiencePlatform =
-    enabledPlatformIds.find((id) => platformStats[id]?.audienceDemographics?.length) ?? primaryPlatform;
-  const audience =
-    audiencePlatform && platformStats[audiencePlatform]?.audienceDemographics?.length
-      ? platformStats[audiencePlatform].audienceDemographics!
-      : [];
-
-  // Charts sit side-by-side on desktop when both are present; full-width when only one.
-  // Manual stats are headline-only — never turn them into a fake growth/audience chart.
-  const showGrowthChart = sectionVisibility.growthChart && statsSource !== "manual" && (instagramConnected || isDemoKit || isOwner);
-  const showAudienceChart = sectionVisibility.audience && statsSource !== "manual" && (instagramConnected || isDemoKit || isOwner);
-
-  // Gender split + top countries (Instagram audience insights).
-  const genderData = platformStats["instagram"]?.audienceGender ?? [];
-  const countryData = platformStats["instagram"]?.audienceCountries ?? [];
-  const showGender = sectionVisibility.audience && (instagramConnected || isDemoKit) && genderData.length > 0;
-  const showCountries = sectionVisibility.audience && (instagramConnected || isDemoKit) && countryData.length > 0;
-  const flagEmoji = (code: string) =>
-    code.length === 2
-      ? code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
-      : "";
-
-  // Per-post averages — derived from the recent posts we already fetched (no extra API).
+  // ── Per-post averages from the posts we already have ──
   const avg = (nums: number[]) => (nums.length ? Math.round(nums.reduce((s, n) => s + n, 0) / nums.length) : null);
-  const avgLikes = avg(instagramPosts.map((p) => p.likes).filter((n): n is number => typeof n === "number"));
-  const avgComments = avg(instagramPosts.map((p) => p.comments).filter((n): n is number => typeof n === "number"));
-  const avgReach = avg(instagramPosts.map((p) => p.reach).filter((n): n is number => typeof n === "number"));
-  const perPostCells = [
-    avgLikes != null && avgLikes > 0 ? { label: "Avg likes", value: avgLikes } : null,
-    avgComments != null && avgComments > 0 ? { label: "Avg comments", value: avgComments } : null,
-    avgReach != null && avgReach > 0 ? { label: "Avg reach", value: avgReach } : null,
-  ].filter((c): c is { label: string; value: number } => c !== null);
-  const showPerPost = sectionVisibility.stats && (instagramConnected || isDemoKit) && perPostCells.length > 0;
+  const perPost = [
+    { label: "Likes per post", value: avg(instagramPosts.map((p) => p.likes).filter((n): n is number => typeof n === "number")) },
+    { label: "Comments per post", value: avg(instagramPosts.map((p) => p.comments).filter((n): n is number => typeof n === "number")) },
+    { label: "Reach per post", value: avg(instagramPosts.map((p) => p.reach).filter((n): n is number => typeof n === "number")) },
+  ].filter((c): c is { label: string; value: number } => c.value != null && c.value > 0);
+  const showPerPost = sectionVisibility.stats && measured && perPost.length > 0;
+
+  // ── Headline stat strip ──
+  type Stat = { key: string; label: string; icon: React.ReactNode; node: React.ReactNode };
+  const stats: Stat[] = [];
+  if (sectionVisibility.stats) {
+    if (ig) {
+      stats.push({ key: "ig-f", icon: IG_ICON, label: "Followers", node: <CountUp value={ig.followers} duration={1200} compact /> });
+      if (ig.avgEngagement > 0) stats.push({ key: "ig-e", icon: IG_ICON, label: "Engagement", node: <CountUp value={ig.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
+      if (ig.growthThisMonth > 0) stats.push({ key: "ig-g", icon: IG_ICON, label: "30-day growth", node: <span>+<CountUp value={ig.growthThisMonth} decimals={1} suffix="%" duration={1000} /></span> });
+    }
+    if (yt) {
+      stats.push({ key: "yt-s", icon: YT_ICON, label: "Subscribers", node: <CountUp value={yt.followers} duration={1200} compact /> });
+      if (ytAvgViews) stats.push({ key: "yt-a", icon: YT_ICON, label: "Views per video", node: <CountUp value={ytAvgViews} duration={1000} compact /> });
+      else if (ytTotalViews) stats.push({ key: "yt-t", icon: YT_ICON, label: "Total views", node: <CountUp value={ytTotalViews} duration={1000} compact /> });
+    }
+  }
+  const sourceLabel =
+    statsSource === "manual"
+      ? "Self-reported by creator"
+      : statsSource === "mixed"
+        ? "Live where connected, other numbers self-reported"
+        : `Live, synced from ${ig && yt ? "Instagram and YouTube" : ig ? "Instagram" : "YouTube"}`;
+
+  // ── The headline paragraph (real data only) ──
+  const summary = sectionVisibility.stats
+    ? audienceSummary({
+        name: creator.name,
+        selfReported: statsSource === "manual",
+        instagram: ig ? { followers: ig.followers, engagement: ig.avgEngagement } : null,
+        youtube: yt ? { subscribers: yt.followers, avgViews: ytAvgViews } : null,
+        gender: showGender ? genderData : [],
+        age: showAge ? ageData : [],
+        countries: showCountries ? countryData : [],
+      })
+    : [];
+
+  // ── Call to action: inquiry form (Pro) → links → nothing. Never a dead link. ──
+  const ctaTarget = inquiryEnabled && kitId ? "#work-together" : sectionVisibility.links && links.length > 0 ? "#contact" : null;
+  const ctaLabel = rates.ctaLabel || `Work with ${first}`;
+  const showRates = sectionVisibility.rates && hasPublicRates(rates);
+  const rateItems = showRates ? publicRateItems(rates) : [];
+  const fromPrice = showRates
+    ? Math.min(...[...rateItems.map((i) => i.price as number), ...(typeof rates.fromAmount === "number" ? [rates.fromAmount] : [])])
+    : null;
+  const showContact = ctaTarget !== null;
+
+  // The sticky bar steps aside once the contact section is on screen.
+  const root = useRef<HTMLDivElement>(null);
+  const [contactInView, setContactInView] = useState(false);
+  useEffect(() => {
+    const el = root.current?.querySelector("#contact-area");
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setContactInView(e.isIntersecting), { threshold: 0.15 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [showContact]);
+
+  const igProfileUrl = (() => {
+    const handle = ig?.extra?.username;
+    return typeof handle === "string" && handle ? `https://instagram.com/${handle}` : instagramPosts.find((p) => p.permalink)?.permalink;
+  })();
+  const postsToShow = instagramPosts.filter((p) => p.thumbnailUrl).slice(0, 3);
+  /** Recent posts + YouTube videos ("workSamples" in section visibility). */
+  const showWork = sectionVisibility.workSamples !== false;
 
   return (
     <div
-      className="relative min-h-screen bg-[var(--mk-bg)] text-[var(--mk-text)] antialiased"
+      ref={root}
+      className={`relative ${embedded ? "min-h-full" : "min-h-screen"} bg-[var(--mk-bg)] text-[var(--mk-text)] antialiased`}
       style={kitAppearanceToCssVarsWithOverrides(appearance)}
       data-kit-preset={preset}
     >
@@ -471,7 +547,7 @@ export function MediaKitClient({
           </div>
         </header>
       ) : (
-        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-[var(--mk-bg)] border-b border-[var(--mk-border-hairline)] px-6 sm:px-10 h-14">
+        <header className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-[var(--mk-bg)] border-b border-[var(--mk-border-hairline)] px-6 h-14 ${embedded ? "" : "sm:px-10"}`}>
           {/* Custom brand logo is parked — see KitEditor. Always show the wordmark for now. */}
           {/*
             Mono, like the footer: this is the creator's page and it goes to brands, so the
@@ -483,7 +559,7 @@ export function MediaKitClient({
             Kitevo
           </span>
           <Link
-            href="/"
+            href={homeHref}
             className="text-xs text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors font-medium tracking-wide"
           >
             Create yours
@@ -491,604 +567,419 @@ export function MediaKitClient({
         </header>
       )}
 
-      <main className="relative pb-24 max-w-4xl mx-auto px-5 sm:px-8 pt-14">
-        <div className="pt-6 space-y-4">
-
-          {/* 1. Profile card — cover banner with the avatar overlapping it, then identity + bio.
-                 The cover is built from the kit's accent so it changes with the chosen vibe. */}
-          <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
-            {/* Cover — solid accent gradient, strongest at the bottom-left where the avatar sits
-                 so its ring (card colour) visibly cuts the avatar out of the cover. Fading toward
-                 the surface here instead would make the ring disappear. */}
-            <div
-              className="relative h-24 sm:h-28"
-              style={{
-                backgroundImage: `linear-gradient(to top right, ${chartColors.stroke}C4 0%, ${chartColors.stroke}82 50%, ${chartColors.stroke}38 100%)`,
-              }}
-            >
-              <span className="absolute top-3 right-4 text-[10px] font-semibold tracking-[0.16em] uppercase text-[var(--mk-text)]/55">
-                Creator Media Kit
-              </span>
-            </div>
-
-            <div className="px-5 pb-6 sm:px-7 sm:pb-7">
-              {/* Avatar — pulled up so it straddles the cover edge. `relative z-10` is required:
-                  the cover above is positioned, so without a stacking context of its own the
-                  cover paints over the avatar's overlapping half (and its ring). */}
-              <div className="relative z-10 -mt-10 sm:-mt-12 mb-3 w-fit">
+      {/* Query container: the kit lays out for the width it's given (the window on the public
+          page, a phone-sized box in the editor preview). Header and modals stay outside:
+          container-type applies layout containment, which would anchor position:fixed here. */}
+      <div className="@container">
+        <main className="relative mx-auto max-w-6xl px-5 pt-14 @min-[640px]:px-8">
+          <div className="pt-8 @min-[1024px]:grid @min-[1024px]:grid-cols-[300px_minmax(0,1fr)] @min-[1024px]:gap-14 @min-[1024px]:pt-12">
+            {/* ── Identity rail: sticky on wide screens so price + contact stay in view ── */}
+            <aside data-kit-section="profile" className="@min-[1024px]:sticky @min-[1024px]:top-20 @min-[1024px]:self-start">
+              <div className="flex items-center gap-4 @min-[1024px]:block">
                 {creator.avatarUrl ? (
                   <img
                     src={creator.avatarUrl}
                     alt=""
-                    className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover ring-[5px] ring-[var(--mk-surface)] shadow-sm"
-                    width={96} height={96}
+                    width={96}
+                    height={96}
                     referrerPolicy="no-referrer"
+                    className="h-16 w-16 shrink-0 rounded-full object-cover @min-[640px]:h-20 @min-[640px]:w-20 @min-[1024px]:h-24 @min-[1024px]:w-24"
                   />
                 ) : (
-                  <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full ring-[5px] ring-[var(--mk-surface)] bg-[var(--mk-border)] flex items-center justify-center">
-                    <span className="font-display text-2xl font-semibold text-[var(--mk-text)]/60">
-                      {creator.name.charAt(0)}
-                    </span>
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--mk-border)] @min-[640px]:h-20 @min-[640px]:w-20 @min-[1024px]:h-24 @min-[1024px]:w-24">
+                    <span className="font-display text-2xl font-semibold text-[var(--mk-text)]/60">{creator.name.charAt(0)}</span>
                   </div>
                 )}
-              </div>
-
-              {/* Identity */}
-              <div className="flex items-center gap-2">
-                <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[var(--mk-text)] leading-none tracking-tight truncate">
-                  {creator.name}
-                </h1>
-                <VerifiedBadge tier={creator.verifiedTier} size="md" />
-              </div>
-              <div className="flex items-center gap-2 flex-wrap mt-1.5">
-                <p className="text-[var(--mk-text-muted)] text-sm font-medium">@{creator.username}</p>
-                {creator.location && (
-                  <>
-                    <span className="text-[var(--mk-text-soft)] text-xs">·</span>
-                    <p className="text-[var(--mk-text-muted)] text-sm">{creator.location}</p>
-                  </>
-                )}
-              </div>
-
-              {creator.bio && (
-                <p className="mt-3 text-[var(--mk-text-muted)] text-sm leading-relaxed font-sans max-w-2xl text-pretty">
-                  {creator.bio}
-                </p>
-              )}
-
-              {(creator.niches?.length ?? 0) > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-4">
-                  {creator.niches!.slice(0, 5).map((n) => (
-                    <span
-                      key={n}
-                      className="text-[10px] font-semibold tracking-wide uppercase rounded-full px-2.5 py-1"
-                      style={{ backgroundColor: `${chartColors.stroke}1F`, color: "var(--mk-text)" }}
-                    >
-                      {n}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ── Combined stats — every platform's headline numbers, up top ── */}
-          {sectionVisibility.stats && (() => {
-            const ig = platformStats["instagram"];
-            const yt = platformStats["youtube"];
-            if (!ig && !yt) return null;
-
-            const igIcon = (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="#E1306C" aria-hidden className="shrink-0">
-                <path d="M12 2.2c3.2 0 3.6 0 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07s-3.58-.01-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92C2.14 15.6 2.13 15.2 2.13 12s.01-3.58.07-4.85C2.35 3.92 3.87 2.4 7.12 2.27 8.4 2.2 8.8 2.2 12 2.2Zm0 3.64a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32Zm0 10.16a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm6.41-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88Z"/>
-              </svg>
-            );
-            const ytIcon = (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#FF0000" aria-hidden className="shrink-0">
-                <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.2C0 8.07 0 12 0 12s0 3.93.5 5.81a3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14C24 15.93 24 12 24 12s0-3.93-.5-5.81ZM9.55 15.57V8.43L15.82 12l-6.27 3.57Z"/>
-              </svg>
-            );
-
-            type Cell = { key: string; label: string; node: React.ReactNode; icon: React.ReactNode };
-            const cells: Cell[] = [];
-
-            if (ig) {
-              cells.push({ key: "ig-foll", icon: igIcon, label: "Followers", node: <CountUp value={ig.followers} duration={1400} compact /> });
-              if (ig.avgEngagement > 0) cells.push({ key: "ig-eng", icon: igIcon, label: "Engagement", node: <CountUp value={ig.avgEngagement} decimals={1} suffix="%" duration={1000} /> });
-              if (ig.growthThisMonth > 0) cells.push({ key: "ig-gr", icon: igIcon, label: "Growth · 30d", node: <span>+<CountUp value={ig.growthThisMonth} decimals={1} suffix="%" duration={1200} /></span> });
-            }
-            if (yt) {
-              cells.push({ key: "yt-sub", icon: ytIcon, label: "Subscribers", node: <CountUp value={yt.followers} duration={1400} compact /> });
-              const totalViews = typeof yt.extra?.totalViews === "number" ? yt.extra.totalViews : null;
-              if (totalViews) cells.push({ key: "yt-views", icon: ytIcon, label: "Total views", node: <CountUp value={totalViews} duration={1600} compact /> });
-              let avgViews: number | null = null;
-              try {
-                const vids = yt.extra?.recentVideosJson ? (JSON.parse(String(yt.extra.recentVideosJson)) as Array<{ viewCount?: number }>) : [];
-                const vv = vids.map((v) => v.viewCount).filter((n): n is number => typeof n === "number");
-                avgViews = vv.length ? Math.round(vv.reduce((s, n) => s + n, 0) / vv.length) : null;
-              } catch { /* ignore malformed */ }
-              if (avgViews && cells.filter((c) => c.key.startsWith("yt")).length < 3) {
-                cells.push({ key: "yt-avg", icon: ytIcon, label: "Avg views", node: <CountUp value={avgViews} duration={1200} compact /> });
-              }
-            }
-
-            const bothPlatforms = !!ig && !!yt;
-            const totalAudience = (ig?.followers ?? 0) + (yt?.followers ?? 0);
-            // Compact cells (number over label) let more fit per row: 3-up on mobile, all-in-one-row on desktop.
-            const cols = cells.length >= 5 ? "sm:grid-cols-5" : cells.length === 4 ? "sm:grid-cols-4" : cells.length === 3 ? "sm:grid-cols-3" : cells.length === 2 ? "sm:grid-cols-2" : "";
-            const platformLabel = bothPlatforms ? "Instagram & YouTube" : ig ? "Instagram" : "YouTube";
-            const liveLabel =
-              statsSource === "manual"
-                ? "Self-reported by creator"
-                : statsSource === "mixed"
-                  ? "Live where connected · other stats self-reported"
-                  : `Live — synced from ${platformLabel}`;
-
-            // Mobile is a 6-col grid so cells can divide evenly: normally 3-up (span 2 each), and a
-            // trailing row of 1 or 2 stretches to fill (span 6, or 3 each) — no leftover gaps.
-            // Grid lines come from gap-px over a border-coloured background, which stays correct
-            // however the cells wrap (divide-x/-y does not).
-            const remainder = cells.length % 3;
-            const spanFor = (i: number) => {
-              const inLastRow = remainder !== 0 && i >= cells.length - remainder;
-              if (!inLastRow) return "col-span-2 sm:col-span-1";
-              return remainder === 1 ? "col-span-6 sm:col-span-1" : "col-span-3 sm:col-span-1";
-            };
-            return (
-              <div>
-                <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-border)] overflow-hidden">
-                  {/* Total audience headline — the single number that frames everything (only when multi-platform) */}
-                  {bothPlatforms && (
-                    <div className="bg-[var(--mk-surface)] mb-px px-5 py-5 sm:px-6 flex items-baseline gap-x-2 gap-y-1 flex-wrap">
-                      <span className="font-display text-[var(--mk-text)] text-3xl sm:text-4xl font-semibold tabular-nums leading-none tracking-tight">
-                        <CountUp value={totalAudience} duration={1600} compact />
-                      </span>
-                      <span className="text-sm text-[var(--mk-text-muted)] font-sans">total audience across Instagram &amp; YouTube</span>
-                    </div>
-                  )}
-                  <div className={`grid grid-cols-6 ${cols} gap-px`}>
-                    {cells.map((cell, i) => (
-                      <div key={cell.key} className={`bg-[var(--mk-surface)] px-2 py-4 sm:px-3 sm:py-5 text-center ${spanFor(i)}`}>
-                        <p className="font-display text-[var(--mk-text)] text-xl sm:text-2xl font-semibold tabular-nums leading-none tracking-tight">{cell.node}</p>
-                        <p className="text-[var(--mk-text-soft)] text-[11px] mt-1.5 flex items-center justify-center gap-1 truncate">
-                          {cell.icon}{cell.label}
-                        </p>
-                      </div>
-                    ))}
+                <div className="min-w-0 @min-[1024px]:mt-5">
+                  <div className="flex items-center gap-2">
+                    <h1 className="truncate font-display text-2xl font-semibold leading-tight tracking-tight text-[var(--mk-text)] @min-[640px]:text-3xl">
+                      {creator.name}
+                    </h1>
+                    <VerifiedBadge tier={creator.verifiedTier} size="md" />
                   </div>
-                </div>
-                {/* Source indicator — manual numbers are never dressed up as live */}
-                {!isDemoKit && (ig || yt) && (
-                  <div className="mt-2.5 flex items-center justify-center gap-1.5">
-                    {statsSource === "manual" ? (
-                      <span className="h-2 w-2 rounded-full bg-[var(--mk-text-soft)]" aria-hidden />
-                    ) : (
-                      <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60 animate-ping" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-sans text-sm text-[var(--mk-text-muted)]">
+                    <span>@{creator.username}</span>
+                    {creator.location && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={13} aria-hidden className="text-[var(--mk-text-soft)]" />
+                        {creator.location}
                       </span>
                     )}
-                    <span className="text-[11px] font-medium text-[var(--mk-text-soft)] tracking-wide">{liveLabel}</span>
                   </div>
-                )}
+                </div>
               </div>
-            );
-          })()}
 
-          {/* Per-post averages — typical performance a brand can expect */}
-          {showPerPost && (
-            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-border)] overflow-hidden">
-              <div className="bg-[var(--mk-surface)] mb-px px-5 pt-4 pb-3">
-                <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Typical post performance</p>
+              {(creator.niches?.length ?? 0) > 0 && (
+                <ul className="mt-4 flex flex-wrap gap-1.5" aria-label="Content niches">
+                  {creator.niches!.slice(0, 5).map((n) => (
+                    <li
+                      key={n}
+                      className="rounded-full px-2.5 py-1 font-sans text-xs font-medium text-[var(--mk-text)]"
+                      style={{ backgroundColor: `${chartColors.stroke}1A` }}
+                    >
+                      {n}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {creator.bio && (
+                <p className="mt-4 max-w-xl text-pretty font-sans text-[15px] leading-relaxed text-[var(--mk-text-muted)]">{creator.bio}</p>
+              )}
+
+              {/* Wide screens: rates + the main action live in the rail */}
+              <div className="mt-8 hidden space-y-3 @min-[1024px]:block">
+                {showRates ? (
+                  <RateCard rates={rates} ctaTarget={ctaTarget} ctaLabel={ctaLabel} />
+                ) : ctaTarget ? (
+                  <a
+                    href={ctaTarget}
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[var(--mk-text)] px-6 py-3 font-sans text-sm font-semibold text-[var(--mk-bg)] transition-opacity hover:opacity-90"
+                  >
+                    {ctaLabel}
+                  </a>
+                ) : null}
               </div>
-              <div className={`grid grid-cols-3 ${perPostCells.length === 3 ? "sm:grid-cols-3" : perPostCells.length === 2 ? "sm:grid-cols-2" : ""} gap-px`}>
-                {perPostCells.map((cell) => (
-                  <div key={cell.label} className="bg-[var(--mk-surface)] px-2 py-4 sm:px-3 sm:py-5 text-center">
-                    <p className="font-display text-[var(--mk-text)] text-xl sm:text-2xl font-semibold tabular-nums leading-none tracking-tight">
-                      <CountUp value={cell.value} duration={1100} compact />
+            </aside>
+
+            {/* ── The case for working together ── */}
+            {/* The first block never gets a divider above it (sections draw a top hairline). */}
+            <div className="min-w-0 space-y-10 pb-16 pt-8 @min-[640px]:space-y-12 @min-[1024px]:pt-0 [&>section:first-child]:border-t-0 [&>section:first-child]:pt-0 [&>div:first-child>section:first-child]:border-t-0 [&>div:first-child>section:first-child]:pt-0 @min-[1024px]:[&>[data-rates-mobile]:first-child+div>section]:border-t-0 @min-[1024px]:[&>[data-rates-mobile]:first-child+div>section]:pt-0">
+              {(summary.length > 0 || stats.length > 0) && (
+                <div data-kit-section="numbers">
+                  {summary.length > 0 && (
+                    <p className="max-w-[34ch] text-balance font-display text-[clamp(1.5rem,5.2cqw,2.6rem)] font-normal leading-[1.18] tracking-tight text-[var(--mk-text)] @min-[1024px]:text-[clamp(1.8rem,3.4cqw,2.6rem)]">
+                      {summary.map((sentence, i) => (
+                        <span key={i}>
+                          {i > 0 && " "}
+                          {sentence.map((seg, j) =>
+                            seg.strong ? (
+                              <strong key={j} className="font-semibold">{seg.text}</strong>
+                            ) : (
+                              <span key={j} className={i > 0 ? "text-[var(--mk-text-muted)]" : undefined}>{seg.text}</span>
+                            ),
+                          )}
+                        </span>
+                      ))}
                     </p>
-                    <p className="text-[var(--mk-text-soft)] text-[11px] mt-1.5 truncate">{cell.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+                  )}
 
-          {/* Charts — side-by-side on desktop, stacked on mobile, equal height */}
-          {(showGrowthChart || showAudienceChart) && (
-            <div className={`grid gap-4 items-stretch ${showGrowthChart && showAudienceChart ? "md:grid-cols-2" : ""}`}>
-              {showGrowthChart && (
-                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
-                  <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
-                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Follower growth</p>
-                  </div>
-                  <div className="relative flex-1 flex items-center p-5 min-h-[240px]">
-                    {(isDemoKit || instagramConnected) && growthData.length > 0 ? (
+                  {stats.length > 0 && (
+                    <dl
+                      className={`mt-8 grid gap-x-4 gap-y-6 border-t border-[var(--mk-border-hairline)] pt-6 @min-[640px]:gap-x-6 ${
+                        stats.length === 3 ? "grid-cols-3" : stats.length === 1 ? "grid-cols-1" : "grid-cols-2"
+                      } ${stats.length >= 4 ? "@min-[640px]:grid-cols-4" : ""}`}
+                    >
+                      {stats.map((s) => (
+                        <div key={s.key} className="min-w-0">
+                          <dd className="font-sans text-[26px] font-semibold leading-none tracking-tight tabular-nums text-[var(--mk-text)] @min-[640px]:text-4xl">{s.node}</dd>
+                          <dt className="mt-2 flex items-center gap-1.5 font-sans text-xs text-[var(--mk-text-muted)]">
+                            {s.icon}
+                            {s.label}
+                          </dt>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+
+                  {showPerPost && (
+                    <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 font-sans text-sm">
+                      {perPost.map((c) => (
+                        <div key={c.label} className="flex items-baseline gap-1.5">
+                          <dd className="font-semibold tabular-nums text-[var(--mk-text)]">{compactNumber(c.value)}</dd>
+                          <dt className="text-[var(--mk-text-muted)]">{c.label.toLowerCase()}</dt>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+
+                  {!isDemoKit && (ig || yt) && sectionVisibility.stats && (
+                    <p className="mt-4 flex items-center gap-2 font-sans text-xs text-[var(--mk-text-soft)]">
+                      <span className={`h-1.5 w-1.5 rounded-full ${statsSource === "manual" ? "bg-[var(--mk-text-soft)]" : "bg-emerald-500"}`} aria-hidden />
+                      {sourceLabel}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Owner-only: nothing connected yet */}
+              {!isDemoKit && !instagramConnected && !yt && isOwner && (
+                <div className="rounded-2xl border border-dashed border-[var(--mk-border)] p-6 text-center">
+                  <p className="font-sans text-sm font-semibold text-[var(--mk-text)]">No platforms connected yet</p>
+                  <p className="mx-auto mt-1 max-w-xs font-sans text-xs leading-relaxed text-[var(--mk-text-soft)]">
+                    Connect Instagram or YouTube from your dashboard to show live stats, posts and videos here.
+                  </p>
+                  <Link href="/dashboard" className="mt-4 inline-flex h-8 items-center rounded-full bg-[var(--mk-text)] px-4 font-sans text-xs font-medium text-[var(--mk-bg)] transition-opacity hover:opacity-80">
+                    Go to dashboard
+                  </Link>
+                </div>
+              )}
+
+              {/* ── Audience ── */}
+              {showAudienceSection && (
+                <Section title="Audience" kind="audience">
+                  {showAge || showGender || showCountries ? (
+                    <div className="grid gap-8 @min-[768px]:grid-cols-2 @min-[768px]:gap-10">
+                      {(showAge || showGender) && (
+                        <div className="space-y-8">
+                          {showAge && (
+                            <div>
+                              <SubHeading>Age</SubHeading>
+                              <ul className="space-y-2.5">
+                                {[...ageData].sort((a, b) => b.pct - a.pct).map((a) => {
+                                  const max = Math.max(...ageData.map((x) => x.pct)) || 1;
+                                  return (
+                                    <li key={a.age} className="grid grid-cols-[3.5rem_minmax(0,1fr)_3rem] items-center gap-3 font-sans text-sm">
+                                      <span className="text-[var(--mk-text)]">{a.age.replace(/-/g, "–")}</span>
+                                      <span className="h-2 overflow-hidden rounded-full bg-[var(--mk-border)]">
+                                        <span className="block h-full rounded-full" style={{ width: `${(a.pct / max) * 100}%`, backgroundColor: chartColors.stroke }} />
+                                      </span>
+                                      <span className="text-right font-semibold tabular-nums text-[var(--mk-text-muted)]">{Math.round(a.pct)}%</span>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          )}
+                          {showGender && (
+                            <div>
+                              <SubHeading>Gender</SubHeading>
+                              <div className="flex h-2 w-full overflow-hidden rounded-full">
+                                {genderData.map((g, i) => (
+                                  <div key={g.gender} style={{ width: `${g.pct}%`, backgroundColor: chartColors.stroke, opacity: [1, 0.5, 0.25][i] ?? 0.25 }} />
+                                ))}
+                              </div>
+                              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1.5 font-sans text-sm">
+                                {genderData.map((g, i) => (
+                                  <span key={g.gender} className="flex items-center gap-2">
+                                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartColors.stroke, opacity: [1, 0.5, 0.25][i] ?? 0.25 }} aria-hidden />
+                                    <span className="text-[var(--mk-text)]">{g.gender}</span>
+                                    <span className="font-semibold tabular-nums text-[var(--mk-text-muted)]">{g.pct}%</span>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {showCountries && (
+                        <div>
+                          <SubHeading>Top countries</SubHeading>
+                          <ul className="space-y-2.5">
+                            {countryData.map((c) => {
+                              const max = countryData[0]?.pct || 1;
+                              return (
+                                <li key={c.code} className="grid grid-cols-[1.25rem_minmax(0,7rem)_minmax(0,1fr)_3rem] items-center gap-3 font-sans text-sm">
+                                  <span className="text-base leading-none" aria-hidden>{flagEmoji(c.code)}</span>
+                                  <span className="truncate text-[var(--mk-text)]">{c.country}</span>
+                                  <span className="h-2 overflow-hidden rounded-full bg-[var(--mk-border)]">
+                                    <span className="block h-full rounded-full" style={{ width: `${(c.pct / max) * 100}%`, backgroundColor: chartColors.stroke }} />
+                                  </span>
+                                  <span className="text-right font-semibold tabular-nums text-[var(--mk-text-muted)]">{c.pct}%</span>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative min-h-[200px] overflow-hidden rounded-2xl">
+                      <ConnectInstagramOverlay title="Connect Instagram to show who your audience is" />
+                    </div>
+                  )}
+                </Section>
+              )}
+
+              {/* ── Recent posts ── */}
+              {showWork && measured && (postsToShow.length > 0 || showConnectInstagramOverlay) && (
+                <Section title="Recent posts" icon={IG_ICON} kind="posts">
+                  {postsToShow.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {postsToShow.map((post) => (
+                        <button
+                          key={post.id}
+                          type="button"
+                          onClick={() => setSelectedPost(post)}
+                          aria-label={post.caption ? `Open post: ${post.caption.slice(0, 60)}` : "Open post"}
+                          className="group relative overflow-hidden rounded-xl bg-[var(--mk-border)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mk-text)]"
+                          style={{ aspectRatio: "4/5" }}
+                        >
+                          <img src={post.thumbnailUrl!} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+                          {post.likes != null && (
+                            <span className="absolute bottom-2 left-2 rounded-full bg-black/55 px-2 py-0.5 font-sans text-[11px] font-semibold text-white backdrop-blur-sm">
+                              {compactNumber(post.likes)} likes
+                            </span>
+                          )}
+                          {post.mediaType === "VIDEO" && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="absolute right-2 top-2 drop-shadow" aria-hidden><path d="M8 5v14l11-7z"/></svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="relative min-h-[200px] overflow-hidden rounded-2xl">
+                      <ConnectInstagramOverlay title="Connect Instagram to show your posts" />
+                    </div>
+                  )}
+                  {igProfileUrl && postsToShow.length > 0 && (
+                    <a href={igProfileUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1 font-sans text-sm font-medium text-[var(--mk-text-muted)] transition-colors hover:text-[var(--mk-text)]">
+                      More on Instagram <ArrowUpRight size={14} aria-hidden />
+                    </a>
+                  )}
+                </Section>
+              )}
+
+              {/* ── YouTube ── */}
+              {showWork && yt && enabledPlatformIds.includes("youtube" as PlatformId) && (
+                <Section title="YouTube" icon={YT_ICON} kind="youtube">
+                  <dl className="mb-5 flex flex-wrap gap-x-8 gap-y-2 font-sans text-sm">
+                    <div className="flex items-baseline gap-1.5"><dd className="font-semibold tabular-nums">{compactNumber(yt.followers)}</dd><dt className="text-[var(--mk-text-muted)]">subscribers</dt></div>
+                    {ytTotalViews != null && <div className="flex items-baseline gap-1.5"><dd className="font-semibold tabular-nums">{compactNumber(ytTotalViews)}</dd><dt className="text-[var(--mk-text-muted)]">total views</dt></div>}
+                    {ytVideoCount != null && <div className="flex items-baseline gap-1.5"><dd className="font-semibold tabular-nums">{ytVideoCount.toLocaleString()}</dd><dt className="text-[var(--mk-text-muted)]">videos</dt></div>}
+                  </dl>
+                  {ytVideos.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 @min-[640px]:grid-cols-3">
+                      {ytVideos.map((video) => (
+                        <button
+                          key={video.id}
+                          type="button"
+                          onClick={() => setYoutubeEmbedId(video.id)}
+                          className="group text-left focus-visible:outline-none"
+                        >
+                          <span className="relative block overflow-hidden rounded-xl bg-black group-focus-visible:ring-2 group-focus-visible:ring-[var(--mk-text)]" style={{ aspectRatio: "16/9" }}>
+                            {video.thumbnailUrl && <img src={video.thumbnailUrl} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />}
+                            <span className="absolute inset-0 flex items-center justify-center">
+                              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/55 backdrop-blur-sm">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden><path d="M8 5v14l11-7z"/></svg>
+                              </span>
+                            </span>
+                          </span>
+                          <span className="mt-2 line-clamp-2 block font-sans text-xs font-medium leading-snug text-[var(--mk-text)]">{video.title}</span>
+                          <span className="mt-0.5 block font-sans text-[11px] text-[var(--mk-text-soft)]">{compactNumber(video.viewCount)} views</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </Section>
+              )}
+
+              {/* ── Growth ── */}
+              {showGrowthChart && (growthData.length > 0 || showConnectInstagramOverlay || measured) && (
+                <Section title="Follower growth" kind="growth">
+                  <div className="relative min-h-[220px]">
+                    {measured && growthData.length > 0 ? (
                       <GrowthAreaChart data={growthData} preset={preset} stroke={chartColors.stroke} fillOpacity={chartColors.fillOpacity} />
                     ) : showConnectInstagramOverlay ? (
                       <ConnectInstagramOverlay title="Connect Instagram to show follower growth" />
-                    ) : (isDemoKit || instagramConnected) && growthData.length === 0 ? (
-                      <div className="flex w-full flex-col items-center justify-center text-center">
-                        <p className="text-sm text-[var(--mk-text-muted)] max-w-sm font-sans">
-                          Follower data will appear here once available from Instagram.
-                        </p>
-                      </div>
-                    ) : null}
+                    ) : (
+                      <p className="font-sans text-sm text-[var(--mk-text-muted)]">Follower history appears here after a week of data from Instagram.</p>
+                    )}
                   </div>
-                </div>
+                </Section>
               )}
 
-              {showAudienceChart && (
-                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
-                  <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
-                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Audience age</p>
-                  </div>
-                  <div className="relative flex-1 flex items-center p-5 min-h-[240px]">
-                    {(isDemoKit || instagramConnected) && audience.length > 0 ? (
-                      <AudienceDonutChart data={audience} stroke={chartColors.stroke} />
-                    ) : showConnectInstagramOverlay ? (
-                      <ConnectInstagramOverlay title="Connect Instagram to show audience demographics" />
-                    ) : (isDemoKit || instagramConnected) && audience.length === 0 ? (
-                      <div className="flex w-full flex-col items-center justify-center text-center">
-                        <p className="font-sans text-sm text-[var(--mk-text-muted)] max-w-sm">
-                          Instagram didn&apos;t return age demographics yet. This can take up to 48 hours.
-                        </p>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Gender split + top countries — distinct visual styles from the charts above */}
-          {(showGender || showCountries) && (
-            <div className={`grid gap-4 items-stretch ${showGender && showCountries ? "md:grid-cols-2" : ""}`}>
-              {/* Gender — segmented split bar */}
-              {showGender && (
-                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
-                  <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
-                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Audience gender</p>
-                  </div>
-                  <div className="flex-1 flex flex-col justify-center p-5">
-                    <div className="flex h-4 w-full rounded-full overflow-hidden">
-                      {genderData.map((g, i) => (
-                        <div
-                          key={g.gender}
-                          style={{ width: `${g.pct}%`, backgroundColor: chartColors.stroke, opacity: [1, 0.55, 0.3][i] ?? 0.3 }}
-                          title={`${g.gender} ${g.pct}%`}
-                        />
-                      ))}
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-                      {genderData.map((g, i) => (
-                        <div key={g.gender} className="flex items-center gap-2">
-                          <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: chartColors.stroke, opacity: [1, 0.55, 0.3][i] ?? 0.3 }} />
-                          <span className="text-sm text-[var(--mk-text)]">{g.gender}</span>
-                          <span className="text-sm font-semibold tabular-nums text-[var(--mk-text-soft)]">{g.pct}%</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Top countries — ranked flag + progress bar */}
-              {showCountries && (
-                <div className="flex flex-col rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
-                  <div className="px-5 pt-5 pb-3 border-b border-[var(--mk-border)]">
-                    <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Top locations</p>
-                  </div>
-                  <div className="flex-1 flex flex-col justify-center p-5 space-y-3">
-                    {countryData.map((c) => {
-                      const max = countryData[0]?.pct || 1;
-                      return (
-                        <div key={c.code} className="flex items-center gap-2.5 sm:gap-3">
-                          <span className="text-base leading-none w-5 text-center shrink-0" aria-hidden>{flagEmoji(c.code)}</span>
-                          <span className="text-sm text-[var(--mk-text)] w-20 sm:w-28 truncate shrink-0">{c.country}</span>
-                          <div className="flex-1 min-w-[40px] h-2 rounded-full bg-[var(--mk-border)] overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${(c.pct / max) * 100}%`, backgroundColor: chartColors.stroke }} />
-                          </div>
-                          <span className="text-sm font-semibold tabular-nums text-[var(--mk-text-soft)] w-11 text-right shrink-0">{c.pct}%</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Instagram Section ── */}
-          {(instagramConnected || isDemoKit) && (
-            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden relative">
-              {/* Header */}
-              <div className="px-5 pt-5 pb-4 flex items-center gap-3 border-b border-[var(--mk-border)]">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="url(#ig-sec-grad)" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="ig-sec-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#f09433"/>
-                      <stop offset="50%" stopColor="#dc2743"/>
-                      <stop offset="100%" stopColor="#bc1888"/>
-                    </linearGradient>
-                  </defs>
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                </svg>
-                <span className="font-display text-[var(--mk-text)] text-base font-semibold">Recent posts</span>
-              </div>
-              {/* 9:16 posts grid — one row */}
-              {instagramPosts.length > 0 ? (
-                <div className="grid grid-cols-3 gap-[2px] p-[2px]">
-                  {instagramPosts.filter((p) => p.thumbnailUrl).slice(0, 3).map((post) => (
-                    <button
-                      key={post.id}
-                      type="button"
-                      onClick={() => setSelectedPost(post)}
-                      className="group relative overflow-hidden bg-[var(--mk-border)]"
-                      style={{ aspectRatio: "9/16" }}
-                    >
-                      {post.thumbnailUrl && (
-                        <img src={post.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                      <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform duration-200">
-                        <div className="flex items-center gap-2">
-                          {post.likes != null && (
-                            <span className="flex items-center gap-1 text-white text-[10px] font-semibold">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="white" aria-hidden><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                              {post.likes >= 1000 ? `${(post.likes / 1000).toFixed(1)}k` : post.likes}
-                            </span>
-                          )}
-                          {post.comments != null && (
-                            <span className="flex items-center gap-1 text-white text-[10px] font-semibold">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                              {post.comments}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {/* Type badge */}
-                      <div className="absolute top-2 right-2">
-                        {post.mediaType === "VIDEO" && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="white" className="drop-shadow" aria-hidden><path d="M8 5v14l11-7z"/></svg>
+              {/* ── Brands ── */}
+              {sectionVisibility.brands && brands.length > 0 && (
+                <Section title="Brands I've worked with" kind="brands">
+                  <ul className="grid grid-cols-2 gap-x-4 gap-y-6 @min-[640px]:grid-cols-3 @min-[1024px]:grid-cols-4">
+                    {brands.map((brand) => (
+                      <li key={brand.id} className="min-w-0">
+                        {brand.logoUrl ? (
+                          <span className={`flex h-14 items-center justify-center overflow-hidden rounded-xl bg-white/95 p-2.5 ${BRAND_LOGO_RATIO_CLASS[brand.logoRatio ?? "auto"]}`}>
+                            <img src={brand.logoUrl} alt={brand.name} className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
+                          </span>
+                        ) : (
+                          <span className="block font-display text-lg font-semibold leading-tight text-[var(--mk-text)]">{brand.name}</span>
                         )}
-                        {post.mediaType === "CAROUSEL_ALBUM" && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="drop-shadow" aria-hidden><rect x="2" y="7" width="15" height="15" rx="2"/><path d="M17 2h2a2 2 0 0 1 2 2v2"/></svg>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : showConnectInstagramOverlay ? (
-                <div className="min-h-[200px] relative">
-                  <ConnectInstagramOverlay title="Connect Instagram to show your posts" />
-                </div>
-              ) : null}
-              {/* See more — link to the IG profile (falls back to a post permalink if the handle is unknown) */}
-              {(() => {
-                const igHandle = platformStats["instagram"]?.extra?.username;
-                const profileUrl = typeof igHandle === "string" && igHandle
-                  ? `https://instagram.com/${igHandle}`
-                  : instagramPosts.find((p) => p.permalink)?.permalink;
-                if (!profileUrl) return null;
-                return (
-                  <a
-                    href={profileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 px-5 py-3.5 border-t border-[var(--mk-border)] text-sm font-medium text-[var(--mk-text-muted)] hover:text-[var(--mk-text)] transition-colors"
-                  >
-                    See more on Instagram
-                    <span aria-hidden></span>
-                  </a>
-                );
-              })()}
-            </div>
-          )}
-
-          {/* ── YouTube Section ── */}
-          {enabledPlatformIds.includes("youtube" as import("@/lib/platforms/types").PlatformId) && (() => {
-            const ytStats = platformStats["youtube"];
-            if (!ytStats) return null;
-            const videoCount = ytStats.extra && typeof ytStats.extra.videoCount === "number" ? ytStats.extra.videoCount : null;
-            const totalViews = ytStats.extra && typeof ytStats.extra.totalViews === "number" ? ytStats.extra.totalViews : null;
-            const videosJson = ytStats.extra?.recentVideosJson as string | undefined;
-            const videos = videosJson ? JSON.parse(videosJson) as Array<{ id: string; title: string; thumbnailUrl: string; viewCount: number; likeCount: number }> : [];
-            return (
-              <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] overflow-hidden">
-                {/* Header */}
-                <div className="px-5 pt-5 pb-4 flex items-center gap-3 border-b border-[var(--mk-border)]">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#FF0000" aria-hidden="true">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                  </svg>
-                  <span className="font-display text-[var(--mk-text)] text-base font-semibold">YouTube</span>
-                </div>
-                {/* Stats row */}
-                <div className="grid grid-cols-3 divide-x divide-[var(--mk-border)] border-b border-[var(--mk-border)]">
-                  <div className="px-5 py-4">
-                    <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1">Subscribers</p>
-                    <p className="font-display text-[var(--mk-text)] text-xl font-semibold tabular-nums"><CountUp value={ytStats.followers} duration={1400} /></p>
-                  </div>
-                  <div className="px-5 py-4">
-                    <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1">Total Views</p>
-                    <p className="font-display text-[var(--mk-text)] text-xl font-semibold tabular-nums">{totalViews != null ? <CountUp value={totalViews} duration={1200} /> : "—"}</p>
-                  </div>
-                  <div className="px-5 py-4">
-                    <p className="text-[var(--mk-text-soft)] text-[10px] font-semibold tracking-[0.14em] uppercase mb-1">Videos</p>
-                    <p className="font-display text-[var(--mk-text)] text-xl font-semibold tabular-nums">{videoCount != null ? <CountUp value={videoCount} duration={1100} /> : "—"}</p>
-                  </div>
-                </div>
-                {/* Video grid — 16:9 */}
-                {videos.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-[2px] p-[2px]">
-                    {videos.map((video) => (
-                      <button
-                        key={video.id}
-                        type="button"
-                        onClick={() => setYoutubeEmbedId(video.id)}
-                        className="group relative overflow-hidden bg-black"
-                        style={{ aspectRatio: "16/9" }}
-                      >
-                        {video.thumbnailUrl && (
-                          <img src={video.thumbnailUrl} alt={video.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 opacity-90 group-hover:opacity-70" />
-                        )}
-                        {/* Play button */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="h-10 w-10 rounded-full bg-black/50 group-hover:bg-black/70 border border-white/30 flex items-center justify-center transition-all duration-200 group-hover:scale-110">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="white" aria-hidden><path d="M8 5v14l11-7z"/></svg>
-                          </div>
-                        </div>
-                        {/* Title + stats on hover */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2.5 translate-y-full group-hover:translate-y-0 transition-transform duration-200">
-                          <p className="text-white text-[10px] font-medium line-clamp-2 leading-snug">{video.title}</p>
-                          <p className="text-white/60 text-[9px] mt-0.5">{video.viewCount.toLocaleString()} views</p>
-                        </div>
-                      </button>
+                        {brand.tagline && <span className="mt-1.5 block font-sans text-xs leading-snug text-[var(--mk-text-muted)]">{brand.tagline}</span>}
+                      </li>
                     ))}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
+                  </ul>
+                </Section>
+              )}
 
-          {/* No platforms connected — prompt to connect (owner only, non-demo) */}
-          {!isDemoKit && !instagramConnected && !enabledPlatformIds.includes("youtube" as import("@/lib/platforms/types").PlatformId) && isOwner && (
-            <div className="rounded-2xl border border-dashed border-[var(--mk-border)] bg-[var(--mk-surface)] p-6 text-center space-y-3">
-              <div className="flex items-center justify-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--mk-text-soft)]" aria-hidden><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <p className="text-[var(--mk-text)] text-sm font-semibold">No platforms connected yet</p>
+              {/* ── Rates (narrow screens; wide screens show them in the rail) ── */}
+              {showRates && (
+                <div data-rates-mobile className="@min-[1024px]:hidden">
+                  <RateCard rates={rates} ctaTarget={ctaTarget} ctaLabel={ctaLabel} />
+                </div>
+              )}
+
+              {/* ── Contact ── */}
+              {showContact && (
+                <div id="contact-area" className="space-y-6">
+                  <Section title={`Work with ${first}`} id="contact" kind="contact">
+                    {sectionVisibility.links && links.length > 0 && (
+                      <ul className="divide-y divide-[var(--mk-border-hairline)] overflow-hidden rounded-2xl border border-[var(--mk-border)]">
+                        {links.map((link, i) => (
+                          <li key={i}>
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-between gap-3 bg-[var(--mk-surface)] px-5 py-4 font-sans text-sm font-medium text-[var(--mk-text)] transition-colors hover:bg-[var(--mk-bg-elevated)]"
+                            >
+                              <span className="min-w-0 truncate">{link.label}</span>
+                              <ArrowUpRight size={16} aria-hidden className="shrink-0 text-[var(--mk-text-soft)]" />
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {inquiryEnabled && kitId && (
+                      <div className={sectionVisibility.links && links.length > 0 ? "mt-6" : ""}>
+                        <InquiryForm kitId={kitId} creatorName={creator.name} />
+                      </div>
+                    )}
+                  </Section>
+                </div>
+              )}
+
+              {/* Footer: every shared kit links home (the acquisition loop) */}
+              <div className="pt-4 text-center @min-[1024px]:text-left">
+                <Link
+                  href={homeHref}
+                  className="inline-flex items-center gap-1.5 font-sans text-xs text-[var(--mk-text-soft)] transition-colors hover:text-[var(--mk-text)]"
+                >
+                  {/* Mono, not the colour overprint: this page is the creator's pitch. */}
+                  <LogoMark size={14} mono on="auto" />
+                  Made with <span className="font-semibold">Kitevo</span>. Create your own media kit
+                </Link>
               </div>
-              <p className="text-[var(--mk-text-soft)] text-xs leading-relaxed max-w-xs mx-auto">
-                Connect Instagram or YouTube from your dashboard to show live stats, posts, and videos on this kit.
-              </p>
+            </div>
+          </div>
+
+          {/* Sticky "Work with me" bar (narrow screens). Sticky, not fixed: the @container
+              above contains fixed elements, and sticky also works inside the editor preview. */}
+          {ctaTarget && (
+            <div
+              className={`sticky bottom-0 z-40 -mx-5 px-5 pb-[max(env(safe-area-inset-bottom),14px)] pt-6 transition-opacity duration-200 motion-reduce:transition-none @min-[640px]:-mx-8 @min-[640px]:px-8 @min-[1024px]:hidden ${
+                contactInView ? "pointer-events-none opacity-0" : "opacity-100"
+              }`}
+              style={{ backgroundImage: "linear-gradient(to top, var(--mk-bg) 55%, transparent)" }}
+              aria-hidden={contactInView || undefined}
+            >
               <a
-                href="/dashboard"
-                className="inline-flex h-8 items-center rounded-full bg-[var(--mk-text)] px-4 text-xs font-medium text-[var(--mk-bg)] hover:opacity-80 transition-opacity"
+                href={ctaTarget}
+                tabIndex={contactInView ? -1 : undefined}
+                className="flex items-center justify-between gap-3 rounded-full bg-[var(--mk-text)] py-2 pl-5 pr-2 text-[var(--mk-bg)] shadow-lg transition-opacity hover:opacity-95"
               >
-                Go to dashboard
+                <span className="min-w-0 truncate font-sans text-sm">
+                  {fromPrice != null && Number.isFinite(fromPrice) ? (
+                    <>
+                      From <strong className="font-semibold">{formatUsd(fromPrice)}</strong>
+                    </>
+                  ) : (
+                    <>Open to brand partnerships</>
+                  )}
+                </span>
+                <span className="shrink-0 rounded-full bg-[var(--mk-bg)] px-4 py-2 font-sans text-sm font-semibold text-[var(--mk-text)]">{ctaLabel}</span>
               </a>
             </div>
           )}
-
-          {/* 4. Brands — flat chips card */}
-          {sectionVisibility.brands && brands.length > 0 && (
-            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] p-5">
-              <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-4">
-                Brands I&apos;ve worked with
-              </p>
-              {/* Logo wall: uniform cell height with object-contain keeps every logo at its own
-                  aspect ratio. Logos sit on a light chip so dark marks stay legible on dark vibes. */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {brands.map((brand) => (
-                  <div
-                    key={brand.id}
-                    className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[var(--mk-border)] bg-[var(--mk-bg-elevated)] px-3 py-4 text-center"
-                    title={brand.tagline ? `${brand.name} · ${brand.tagline}` : brand.name}
-                  >
-                    {brand.logoUrl ? (
-                      /* Frame follows the ratio the creator picked for their image, so a wide
-                         wordmark isn't letterboxed into a square (and vice versa). */
-                      /* min-h-0: flex items default to min-height:auto, which lets the image's
-                         content height override the frame's aspect-ratio. */
-                      <span
-                        className={`flex w-full min-h-0 items-center justify-center overflow-hidden rounded-md bg-white/95 p-2 ${
-                          BRAND_LOGO_RATIO_CLASS[brand.logoRatio ?? "auto"]
-                        }`}
-                      >
-                        <img
-                          src={brand.logoUrl}
-                          alt={brand.name}
-                          className="max-h-full max-w-full object-contain"
-                          referrerPolicy="no-referrer"
-                        />
-                      </span>
-                    ) : (
-                      <span className="flex h-12 items-center text-sm font-semibold text-[var(--mk-text)]">
-                        {brand.name}
-                      </span>
-                    )}
-                    {brand.tagline && (
-                      <span className="text-[11px] leading-snug text-[var(--mk-text-muted)] line-clamp-2">
-                        {brand.tagline}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 5. Rates — parked for now ──
-              Also removes the "Get in touch" CTA, which pointed at links[0] and silently did
-              nothing (href="#") whenever the creator had no links set. Rates data still
-              round-trips; re-enable here and in KitEditor, and give the CTA a real target
-              (the inquiry form) before bringing it back.
-          {sectionVisibility.rates && rates.show && (
-            <div className="rounded-2xl bg-[var(--mk-text)] px-6 py-6 flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <p className="text-[var(--mk-bg)]/50 text-[11px] font-semibold tracking-[0.16em] uppercase mb-1">Rates</p>
-                <p className="font-display text-2xl font-semibold text-[var(--mk-bg)] tracking-tight">
-                  {rates.fromAmount != null ? `From $${rates.fromAmount.toLocaleString()}` : "Contact for rates"}
-                </p>
-              </div>
-              {rates.ctaLabel && (
-                <a
-                  href={links[0]?.url ?? "#"}
-                  className="inline-flex items-center rounded-full bg-[var(--mk-bg)] text-[var(--mk-text)] px-6 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity"
-                >
-                  {rates.ctaLabel}
-                </a>
-              )}
-            </div>
-          )}
-          */}
-
-
-          {/* 8. Links */}
-          {sectionVisibility.links && links.length > 0 && (
-            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] p-5">
-              <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-3">Get in touch</p>
-              <div className="space-y-2">
-                {links.map((link, i) => (
-                  <a
-                    key={i}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between w-full py-3 px-5 rounded-xl bg-[var(--mk-text)] text-[var(--mk-bg)] text-sm font-medium hover:opacity-90 transition-opacity"
-                  >
-                    {link.label}
-                    <span className="text-[var(--mk-text-soft)]"></span>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 9. Brand inquiry form (Pro) */}
-          {inquiryEnabled && kitId && (
-            <InquiryForm kitId={kitId} creatorName={creator.name} />
-          )}
-
-          {/* 10. Footer — links home so every shared kit is an acquisition channel */}
-          <div className="pt-6 pb-2 text-center">
-            <Link
-              href="/"
-              className="text-xs text-[var(--mk-text-soft)] font-sans hover:text-[var(--mk-text)] transition-colors inline-flex items-center gap-1.5"
-            >
-              {/*
-                Mono, not the colour overprint: this page belongs to the creator and gets
-                sent to brands. A tri-colour mark here would co-brand their pitch. `auto`
-                takes currentColor, so it rides --mk-text-soft and the hover transition
-                across every kit vibe.
-              */}
-              <LogoMark size={14} mono on="auto" />
-              Made with <span className="font-semibold">Kitevo</span>. Create your own media kit
-            </Link>
-          </div>
-
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

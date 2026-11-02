@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { trackEvent } from "@/lib/analytics";
 
 /** POST /api/me/onboarding-complete — mark onboarding as done (redirect to dashboard). */
 export async function POST() {
@@ -12,6 +13,10 @@ export async function POST() {
   await prisma.user.update({
     where: { id: session.user.id },
     data: { onboardingCompletedAt: new Date() },
+  });
+  await trackEvent("onboarding_complete", {
+    userId: session.user.id,
+    dedupeKey: `onboarding_complete:${session.user.id}`,
   });
   return NextResponse.json({ ok: true });
 }

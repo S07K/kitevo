@@ -59,6 +59,17 @@ export interface CreateCheckoutParams {
   email?: string;
   successUrl: string;
   cancelUrl: string;
+  /**
+   * Free-trial length. Only set after the app has checked eligibility (lib/trials.ts); the
+   * provider bills automatically when it ends and must collect a payment method up front.
+   */
+  trialDays?: number;
+  /**
+   * A discount code to pre-apply (already sanitised). Codes and their limits live in the
+   * provider's dashboard. An unknown code must never block checkout: providers drop it and
+   * let the customer enter one themselves.
+   */
+  discountCode?: string;
 }
 
 /**
@@ -82,6 +93,21 @@ export type PaymentWebhookEvent =
       isActive: boolean;
     }
   | { type: "subscription.canceled"; customerId: string | null; subscriptionId: string | null }
+  /**
+   * Money actually collected (first charge or a renewal). Feeds referral commissions.
+   * amount is PRE-TAX, in minor units of `currency` — the provider's settlement currency
+   * where it has one, so every commission is in the currency Kitevo is paid in.
+   */
+  | {
+      type: "payment.succeeded";
+      paymentId: string;
+      customerId: string | null;
+      userId: string | null;
+      amount: number;
+      currency: string;
+    }
+  /** A refund of a previously succeeded payment. amount null = unknown (treat as full). */
+  | { type: "payment.refunded"; paymentId: string; refundId: string; amount: number | null }
   | { type: "ignored"; providerEventType: string };
 
 /** Thrown when a webhook fails signature verification. The route answers 400, never 500. */
@@ -128,4 +154,11 @@ export interface PaymentProvider {
 
   /** Verify and translate an incoming webhook. Throws `WebhookVerificationError`. */
   parseWebhook(rawBody: string, headers: Headers): Promise<PaymentWebhookEvent>;
+
+  /**
+   * The provider's id for this delivery, stable across its retries, or null. Used to log
+   * deliveries and to skip a retry of one we already applied. Call it only after
+   * `parseWebhook` succeeded: it reads the unverified body/headers and must not throw.
+   */
+  webhookDeliveryId(rawBody: string, headers: Headers): string | null;
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
 import { AvatarImg } from "./AvatarImg";
+import { CreditCard, SquareKanban } from "lucide-react";
 
 type Profile = {
   name: string | null;
@@ -12,8 +13,9 @@ type Profile = {
   accountType: string;
 };
 
-export function NavAvatar() {
-  const [profile, setProfile] = useState<Profile | null>(null);
+/** `initial` comes from the workspace frame (server-known viewer): no profile fetch at all. */
+export function NavAvatar({ initial }: { initial?: Profile }) {
+  const [profile, setProfile] = useState<Profile | null>(initial ?? null);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -22,11 +24,12 @@ export function NavAvatar() {
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
+    if (initial) return;
     fetch("/api/me/profile", { credentials: "include" })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => d && setProfile({ name: d.name, avatarUrl: d.avatarUrl, accountType: d.accountType }))
       .catch(() => {});
-  }, []);
+  }, [initial]);
 
   useEffect(() => {
     function handleAvatarUpdate(e: Event) {
@@ -49,7 +52,7 @@ export function NavAvatar() {
 
   if (!profile) return null;
 
-  const settingsHref = profile.accountType === "brand" ? "/brand/settings" : "/profile";
+  const settingsHref = profile.accountType === "brand" ? "/settings" : "/settings";
   const initials = (profile.name ?? "?").charAt(0).toUpperCase();
   const isDark = theme === "dark";
 
@@ -105,6 +108,39 @@ export function NavAvatar() {
               </svg>
               Settings
             </Link>
+
+            <Link
+              href="/referrals"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+              </svg>
+              Invite &amp; earn
+            </Link>
+
+            {profile.accountType !== "brand" && (
+              <Link
+                href="/pipeline"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+              >
+                <SquareKanban size={14} aria-hidden />
+                Pipeline
+              </Link>
+            )}
+
+            {profile.accountType !== "brand" && (
+              <Link
+                href="/pricing"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+              >
+                <CreditCard size={14} aria-hidden />
+                Plan &amp; billing
+              </Link>
+            )}
           </div>
 
           <div className="border-t border-border p-1.5 space-y-0.5">

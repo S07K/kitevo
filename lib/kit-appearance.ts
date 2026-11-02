@@ -6,7 +6,7 @@ import type { CSSProperties } from "react";
 import type React from "react";
 
 /** Free-tier basic presets. */
-export type BasicPreset = "warm" | "cool" | "paper" | "noir";
+export type BasicPreset = "warm" | "cool" | "paper" | "noir" | "sage" | "mist" | "blush" | "lavender";
 
 /** Pro Brand Kit Vibes — 5 signature design styles. */
 export type BrandKitVibe = "editorial" | "studio" | "bloom" | "electric" | "noir_pro";
@@ -22,7 +22,7 @@ export interface KitAppearance {
   logoUrl?: string;
 }
 
-export const BASIC_PRESETS: BasicPreset[] = ["warm", "cool", "paper", "noir"];
+export const BASIC_PRESETS: BasicPreset[] = ["warm", "cool", "paper", "sage", "mist", "blush", "lavender", "noir"];
 export const BRAND_KIT_VIBES: BrandKitVibe[] = ["editorial", "studio", "bloom", "electric", "noir_pro"];
 
 export const DEFAULT_KIT_APPEARANCE: KitAppearance = { preset: "warm" };
@@ -33,6 +33,10 @@ export const KIT_APPEARANCE_PRESET_LABELS: Record<KitAppearancePreset, string> =
   cool: "Cool slate",
   paper: "Editorial paper",
   noir: "Noir",
+  sage: "Sage",
+  mist: "Mist",
+  blush: "Blush",
+  lavender: "Lavender",
   // Brand Kit Vibes (Pro)
   editorial: "Editorial",
   studio: "Studio",
@@ -48,6 +52,12 @@ export const BRAND_KIT_VIBE_META: Record<BrandKitVibe, { label: string; tagline:
   electric:  { label: "Electric", tagline: "High energy. Gen-Z native.",  for: "Gaming · Sports · Fashion-forward", bg: "#0a0a14", fg: "#6366f1" },
   noir_pro:  { label: "Noir Pro", tagline: "Dark. Cinematic. Premium.",   for: "Music · Streetwear · High-end", bg: "#111110", fg: "#c9a84c" },
 };
+
+/** Background + accent of a preset, for swatches in the editor. */
+export function presetSwatch(preset: KitAppearancePreset): { bg: string; accent: string } {
+  const vars = KIT_THEME_CSS_VARS[preset] ?? KIT_THEME_CSS_VARS.warm;
+  return { bg: vars["--mk-bg"], accent: vars["--mk-accent"] };
+}
 
 /** CSS custom properties applied on the kit page root. */
 export function kitAppearanceToCssVars(appearance: KitAppearance | null | undefined): CSSProperties {
@@ -236,10 +246,82 @@ const KIT_THEME_CSS_VARS: Record<KitAppearancePreset, Record<string, string>> = 
     "--mk-chart-fill": "rgba(232,232,232,0.08)",
     "--mk-header-bg": "rgba(18,18,18,0.92)",
   },
+  sage: {
+    "--mk-bg": "#EEF3EA",
+    "--mk-bg-elevated": "#F5F8F2",
+    "--mk-surface": "#FFFFFF",
+    "--mk-text": "#18211A",
+    "--mk-text-muted": "#5C6959",
+    "--mk-text-soft": "#7D8A79",
+    "--mk-border": "#D9E3D2",
+    "--mk-border-hairline": "#DFE7D9",
+    "--mk-accent": "#2F5D50",
+    "--mk-accent-contrast": "#FFFFFF",
+    "--mk-rates-bg": "#2F5D50",
+    "--mk-rates-text": "#FFFFFF",
+    "--mk-rates-muted": "#A9C2B5",
+    "--mk-chart-stroke": "#2F5D50",
+    "--mk-chart-fill": "rgba(47,93,80,0.14)",
+    "--mk-header-bg": "rgba(238,243,234,0.94)",
+  },
+  mist: {
+    "--mk-bg": "#EDF2F8",
+    "--mk-bg-elevated": "#F4F7FB",
+    "--mk-surface": "#FFFFFF",
+    "--mk-text": "#141B26",
+    "--mk-text-muted": "#5A6575",
+    "--mk-text-soft": "#7C8797",
+    "--mk-border": "#D8E1ED",
+    "--mk-border-hairline": "#DEE6F0",
+    "--mk-accent": "#2B4C7E",
+    "--mk-accent-contrast": "#FFFFFF",
+    "--mk-rates-bg": "#2B4C7E",
+    "--mk-rates-text": "#FFFFFF",
+    "--mk-rates-muted": "#B3C3DB",
+    "--mk-chart-stroke": "#2B4C7E",
+    "--mk-chart-fill": "rgba(43,76,126,0.14)",
+    "--mk-header-bg": "rgba(237,242,248,0.94)",
+  },
+  blush: {
+    "--mk-bg": "#F8EEEB",
+    "--mk-bg-elevated": "#FBF5F3",
+    "--mk-surface": "#FFFFFF",
+    "--mk-text": "#241816",
+    "--mk-text-muted": "#74605B",
+    "--mk-text-soft": "#957D78",
+    "--mk-border": "#ECDAD5",
+    "--mk-border-hairline": "#F0E1DD",
+    "--mk-accent": "#A3485A",
+    "--mk-accent-contrast": "#FFFFFF",
+    "--mk-rates-bg": "#A3485A",
+    "--mk-rates-text": "#FFFFFF",
+    "--mk-rates-muted": "#E3B9C1",
+    "--mk-chart-stroke": "#A3485A",
+    "--mk-chart-fill": "rgba(163,72,90,0.14)",
+    "--mk-header-bg": "rgba(248,238,235,0.94)",
+  },
+  lavender: {
+    "--mk-bg": "#F1EFF9",
+    "--mk-bg-elevated": "#F7F6FC",
+    "--mk-surface": "#FFFFFF",
+    "--mk-text": "#1B1828",
+    "--mk-text-muted": "#625D77",
+    "--mk-text-soft": "#837E98",
+    "--mk-border": "#DEDAEE",
+    "--mk-border-hairline": "#E4E1F2",
+    "--mk-accent": "#5B4B9A",
+    "--mk-accent-contrast": "#FFFFFF",
+    "--mk-rates-bg": "#5B4B9A",
+    "--mk-rates-text": "#FFFFFF",
+    "--mk-rates-muted": "#C3BBE3",
+    "--mk-chart-stroke": "#5B4B9A",
+    "--mk-chart-fill": "rgba(91,75,154,0.14)",
+    "--mk-header-bg": "rgba(241,239,249,0.94)",
+  },
 };
 
 const ALL_VALID_PRESETS: KitAppearancePreset[] = [
-  "warm", "cool", "paper", "noir",
+  "warm", "cool", "paper", "noir", "sage", "mist", "blush", "lavender",
   "editorial", "studio", "bloom", "electric", "noir_pro",
 ];
 
@@ -279,7 +361,11 @@ export function kitChartColors(preset: KitAppearancePreset | undefined): { strok
     case "bloom":     return { stroke: "#c97b4b", fillOpacity: 0.15 };
     case "electric":  return { stroke: "#6366f1", fillOpacity: 0.20 };
     case "noir_pro":  return { stroke: "#c9a84c", fillOpacity: 0.15 };
-    default:          return { stroke: "#1A1A1A", fillOpacity: 0.15 };
+    case "sage":      return { stroke: "#2F5D50", fillOpacity: 0.14 };
+    case "mist":      return { stroke: "#2B4C7E", fillOpacity: 0.14 };
+    case "blush":     return { stroke: "#A3485A", fillOpacity: 0.14 };
+    case "lavender":  return { stroke: "#5B4B9A", fillOpacity: 0.14 };
+    default:         return { stroke: "#1A1A1A", fillOpacity: 0.15 };
   }
 }
 

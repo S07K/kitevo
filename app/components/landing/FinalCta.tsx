@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, type Variants } from "motion/react";
 import Link from "next/link";
 import { useRef, type ReactNode } from "react";
 
-const HEADLINE = "Stop pitching. Start closing.";
+const HEADLINE = "Your audience is worth paying for.";
 const WORDS = HEADLINE.split(" ");
 
 const WORD_CONTAINER: Variants = {
@@ -42,9 +42,6 @@ export function FinalCta(): ReactNode {
         }}
         className="flex flex-col items-center overflow-hidden rounded-[40px] px-6 pt-20 pb-24 text-center sm:pt-24 sm:pb-32"
       >
-        <p className="mb-6 text-xs font-semibold tracking-[0.2em] uppercase opacity-50">
-          Free to start · No credit card
-        </p>
 
         <h2 className="max-w-2xl text-[clamp(34px,5.5vw,64px)] leading-[1.06] font-medium tracking-tight">
           {reduce ? (
@@ -76,8 +73,7 @@ export function FinalCta(): ReactNode {
         </h2>
 
         <p className="mt-6 max-w-md text-base leading-relaxed opacity-60">
-          Your media kit is one link away. Free to start — no credit card, no
-          design skills, no agency fees.
+          Build your kit, add your rates and start taking brand inquiries today. Free to start, no card needed.
         </p>
 
         <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
@@ -89,7 +85,7 @@ export function FinalCta(): ReactNode {
             }}
             className="focus-ring inline-flex h-13 items-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80"
           >
-            Start building for free
+            Start earning with Kitevo
           </Link>
           <Link
             href="/pricing"

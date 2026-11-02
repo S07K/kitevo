@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-canvas">
       <header className="border-border border-b px-5 py-5 sm:px-8 lg:px-10">
         <Link
           href="/"
@@ -28,7 +28,7 @@ export default function PrivacyPolicy() {
           Privacy Policy
         </h1>
         <p className="text-muted-foreground mt-3 text-sm">
-          Last updated: July 2026
+          Last updated: November 2026
         </p>
 
         <div className="prose-sm mt-12 space-y-10 text-sm leading-relaxed text-muted-foreground">
@@ -81,14 +81,29 @@ export default function PrivacyPolicy() {
               </li>
               <li>
                 <strong className="text-foreground">Billing data:</strong>{" "}
-                Subscription and payment information is handled directly by
-                Stripe. We store only your Stripe Customer ID — we never store
-                full card numbers.
+                Subscription and payment information is handled directly by our
+                payment processor (Dodo Payments, which acts as merchant of
+                record, or Stripe). We store only your customer ID with that
+                processor — we never see or store full card numbers.
+              </li>
+              <li>
+                <strong className="text-foreground">Referral payout data:</strong>{" "}
+                If you join the referral program and add payout details, we store
+                your payout method and account (PayPal or Wise email, or bank
+                details), legal name, country and optional tax ID — encrypted —
+                along with which signups you referred and the commissions earned.
+                We use this only to calculate and send your earnings and to keep
+                the records tax law requires.
               </li>
               <li>
                 <strong className="text-foreground">Usage data:</strong> Kit view
                 counts and referrer information (which URL sent a visitor to your
-                kit), used to display analytics in your dashboard.
+                kit), used to display analytics in your dashboard. We also record
+                product milestones on our own servers (for example: account
+                created, onboarding finished, kit created, first outside view of a
+                kit, checkout started, plan upgraded or canceled) to understand how
+                people use Kitevo. These records contain no message content or
+                platform tokens and are deleted with your account.
               </li>
             </ul>
           </section>
@@ -270,21 +285,38 @@ export default function PrivacyPolicy() {
                 infrastructure.
               </li>
               <li>
-                <strong className="text-foreground">Neon / PostgreSQL</strong> —
+                <strong className="text-foreground">Supabase (PostgreSQL)</strong> —
                 database storage.
               </li>
               <li>
-                <strong className="text-foreground">Stripe</strong> — payment
-                processing.
+                <strong className="text-foreground">Dodo Payments / Stripe</strong> —
+                payment processing and billing.
               </li>
               <li>
-                <strong className="text-foreground">Meta (Instagram)</strong> —
-                only to fetch the API data you authorize.
+                <strong className="text-foreground">Resend</strong> — sending
+                account and notification emails.
+              </li>
+              <li>
+                <strong className="text-foreground">Meta (Instagram)</strong> and{" "}
+                <strong className="text-foreground">Google (YouTube)</strong> — only
+                to fetch the API data you authorize.
+              </li>
+              <li>
+                <strong className="text-foreground">Google Analytics</strong> and{" "}
+                <strong className="text-foreground">Vercel Analytics</strong> —
+                aggregate website traffic measurement (pages visited, referring
+                site, device and approximate location).
+              </li>
+              <li>
+                <strong className="text-foreground">Troopy</strong> — the support
+                chat widget, which processes messages you send through it.
               </li>
             </ul>
             <p className="mt-3">
-              All service providers are bound by data processing agreements and
-              are prohibited from using your data for their own purposes.
+              Service providers process data only to provide their service to us,
+              under their own terms and, where offered, data processing
+              agreements. Data received from Google APIs is never shared for
+              analytics or advertising (see section 5).
             </p>
           </section>
 
@@ -335,10 +367,22 @@ export default function PrivacyPolicy() {
               11. Cookies
             </h2>
             <p>
-              We use a minimal set of cookies: a session cookie for
+              We use a minimal set of first-party cookies: a session cookie for
               authentication, and a subscription-status cookie to avoid redundant
-              API calls. We do not use advertising or tracking cookies. We do not
-              use third-party analytics cookies.
+              API calls. We also use Google Analytics, which sets its own cookies
+              (such as <code>_ga</code>) to measure aggregate website traffic.
+              Vercel Analytics measures traffic without cookies. We do not use
+              advertising cookies, and we do not use analytics data to target
+              ads. You can opt out of Google Analytics with Google&apos;s{" "}
+              <a
+                href="https://tools.google.com/dlpage/gaoptout"
+                className="text-foreground underline underline-offset-4"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                opt-out browser add-on
+              </a>{" "}
+              or by blocking cookies in your browser.
             </p>
           </section>
 

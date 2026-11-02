@@ -53,6 +53,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
       "Professional shareable link",
       "Live stats & growth charts",
       "Audience demographics",
+      "Your own domain (kit.yourname.com)",
       "Section visibility controls",
     ],
   },

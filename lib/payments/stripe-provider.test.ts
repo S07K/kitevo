@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { constructEvent, retrieveSub, listSubs, createSession } = vi.hoisted(() => ({
+const { constructEvent, retrieveSub, listSubs, createSession, listPromos } = vi.hoisted(() => ({
+  listPromos: vi.fn(),
   constructEvent: vi.fn(),
   retrieveSub: vi.fn(),
   listSubs: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock("stripe", () => ({
     subscriptions = { retrieve: retrieveSub, list: listSubs, update: vi.fn() };
     checkout = { sessions: { create: createSession, retrieve: vi.fn() } };
     billingPortal = { sessions: { create: vi.fn() } };
+    promotionCodes = { list: listPromos };
   },
 }));
 
@@ -115,10 +117,25 @@ describe("stripeProvider.parseWebhook", () => {
   });
 
   it("reports unrecognised events as ignored rather than dropping them", async () => {
-    constructEvent.mockReturnValue({ type: "invoice.paid", data: { object: {} } });
+    constructEvent.mockReturnValue({ type: "customer.created", data: { object: {} } });
     expect(await stripeProvider.parseWebhook("{}", headers())).toEqual({
       type: "ignored",
-      providerEventType: "invoice.paid",
+      providerEventType: "customer.created",
+    });
+  });
+
+  it("maps invoice.paid to payment.succeeded with the pre-tax amount (referral commissions)", async () => {
+    constructEvent.mockReturnValue({
+      type: "invoice.paid",
+      data: { object: { id: "in_1", amount_paid: 1800, total_excluding_tax: 1500, currency: "usd", customer: "cus_1", metadata: {} } },
+    });
+    expect(await stripeProvider.parseWebhook("{}", headers())).toEqual({
+      type: "payment.succeeded",
+      paymentId: "in_1",
+      customerId: "cus_1",
+      userId: null,
+      amount: 1500,
+      currency: "USD",
     });
   });
 
@@ -172,5 +189,34 @@ describe("stripeProvider.isCheckoutSessionId", () => {
   it("recognises Stripe checkout session ids", () => {
     expect(stripeProvider.isCheckoutSessionId("cs_test_123")).toBe(true);
     expect(stripeProvider.isCheckoutSessionId("sub_123")).toBe(false);
+  });
+});
+
+describe("stripeProvider checkout: trials and codes", () => {
+  const params = { priceId: "price_1", userId: "u1", successUrl: "https://x/ok", cancelUrl: "https://x/no" };
+  beforeEach(() => {
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test");
+    createSession.mockReset().mockResolvedValue({ url: "https://checkout.stripe/x" });
+    listPromos.mockReset();
+  });
+
+  it("adds a trial with card collection only when asked", async () => {
+    await stripeProvider.createCheckout(params);
+    expect(createSession.mock.calls[0][0]).not.toHaveProperty("subscription_data");
+    await stripeProvider.createCheckout({ ...params, trialDays: 14 });
+    expect(createSession).toHaveBeenLastCalledWith(
+      expect.objectContaining({ subscription_data: { trial_period_days: 14 }, payment_method_collection: "always" })
+    );
+  });
+
+  it("pre-applies an active promotion code; otherwise lets the customer type one", async () => {
+    listPromos.mockResolvedValueOnce({ data: [{ id: "promo_1" }] });
+    await stripeProvider.createCheckout({ ...params, discountCode: "LAUNCH20" });
+    expect(createSession).toHaveBeenLastCalledWith(expect.objectContaining({ discounts: [{ promotion_code: "promo_1" }] }));
+    expect(createSession.mock.calls[0][0]).not.toHaveProperty("allow_promotion_codes");
+
+    listPromos.mockResolvedValueOnce({ data: [] });
+    await stripeProvider.createCheckout({ ...params, discountCode: "NOPE" });
+    expect(createSession).toHaveBeenLastCalledWith(expect.objectContaining({ allow_promotion_codes: true }));
   });
 });

@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function InstagramHelpPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-canvas">
       <AppNav
         links={[
           { href: "/pricing", label: "Pricing" },
@@ -134,7 +134,7 @@ export default function InstagramHelpPage() {
         <div className="mt-12 pt-8 border-t border-border">
           <Link
             href="/dashboard"
-            className="inline-flex h-10 items-center px-5 bg-foreground text-background text-sm font-medium rounded-full hover:opacity-80 transition-opacity"
+            className="inline-flex h-10 items-center px-5 bg-primary text-primary-foreground text-sm font-medium rounded-full hover:opacity-80 transition-opacity"
           >
             Back to dashboard
           </Link>

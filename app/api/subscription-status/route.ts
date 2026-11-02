@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { payments } from "@/lib/payments";
+import { getCachedSubscription } from "@/lib/subscription-cache";
 import {
   setSubscriptionCookie,
   getSubscriptionCustomerId,
@@ -20,7 +21,7 @@ import {
 async function getSubscriptionPayload(customerId: string) {
   // Not activeOnly: a status endpoint should report "canceled" or "past_due" rather than
   // pretending the customer never subscribed.
-  const sub = await payments.getSubscription(customerId);
+  const sub = await getCachedSubscription(customerId);
   const status = sub?.status ?? "inactive";
   const hasSubscription = sub?.isActive ?? false;
   const priceId = sub?.priceId ?? null;

@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const sessionId = body.session_id as string | undefined;
     const returnTo = body.returnTo as string | undefined;
-    const returnUrl = `${BASE_URL}${returnTo === "brand" ? "/brand/settings" : "/dashboard"}`;
+    const returnUrl = `${BASE_URL}${returnTo === "brand" ? "/settings" : "/dashboard"}`;
     const authSession = await getServerSession(authOptions);
 
     let customerId: string | null = null;

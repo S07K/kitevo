@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getStatsForCreator, getEnabledPlatformIds } from "@/lib/platforms";
-import { getStatsForUser, getRecentPostsForUser } from "@/lib/instagram-api";
 import {
   MOCK_CREATOR,
   MOCK_LINKS,
@@ -12,10 +11,8 @@ import {
   MOCK_BRANDS,
   MOCK_POSTS,
 } from "@/lib/mock-data";
-import { prisma } from "@/lib/prisma";
-import { payments } from "@/lib/payments";
-import { getTierById, getTierByPriceId } from "@/config/subscriptions";
-import { manualStatsToPlatformStats } from "@/lib/manual-stats";
+import { composeKitStats } from "@/lib/kit-stats-compose";
+import { loadKitViewData } from "@/lib/kit-view-data";
 import { getKitBySlug } from "@/lib/get-kit-by-slug";
 import { recordKitView } from "@/lib/kit-views";
 import { MediaKitClient } from "./MediaKitClient";
@@ -23,6 +20,7 @@ import { PasswordWall } from "./PasswordWall";
 import { DEFAULT_KIT_APPEARANCE } from "@/lib/kit-appearance";
 import { cookies } from "next/headers";
 import { APP_URL } from "@/lib/app-url";
+import { trackKitFirstView } from "@/lib/analytics";
 
 const DEMO_SLUGS = ["demo", "alexchen", "my-kit"];
 
@@ -138,76 +136,12 @@ export default async function MediaKitPage({
       }
     }
     const isOwner = session?.user?.id === result.kit.userId;
-    const [, user] = await Promise.all([
-      Promise.resolve(getEnabledPlatformIds()),
-      prisma.user.findUnique({
-        where: { id: result.kit.userId },
-        select: { instagramUserId: true, instagramAccessToken: true, stripeCustomerId: true, compedTier: true, youtubeChannelId: true, youtubeAccessToken: true },
-      }),
-    ]);
-
-    // Effective plan: an active subscription wins over a comp, matching /api/subscription-status.
-    // Live platform data is a Starter+ feature; free kits render only creator-reported stats.
-    let creatorTier = getTierById(user?.compedTier ?? null);
-    if (user?.stripeCustomerId) {
-      try {
-        const sub = await payments.getSubscription(user.stripeCustomerId, { activeOnly: true });
-        const subscriptionTier = getTierByPriceId(sub?.priceId ?? null);
-        if (subscriptionTier) creatorTier = subscriptionTier;
-      } catch (e) {
-        console.error("[kit page] subscription lookup failed:", e);
-      }
-    }
-    const hasPaidPlan = !!creatorTier && creatorTier.id !== "free";
-    const inquiryEnabled = creatorTier?.id === "pro";
-
-    const instagramConnectedForKit = !!(user?.instagramUserId && user?.instagramAccessToken);
-    let instagramStats = null;
-    let instagramPosts: Awaited<ReturnType<typeof getRecentPostsForUser>> = [];
-    if (hasPaidPlan && instagramConnectedForKit) {
-      try {
-        [instagramStats, instagramPosts] = await Promise.all([
-          getStatsForUser(result.kit.userId),
-          getRecentPostsForUser(result.kit.userId),
-        ]);
-      } catch (e) {
-        console.error("[kit page] Instagram fetch failed:", e);
-      }
-    }
-
-    const youtubeConnectedForKit = !!(user?.youtubeChannelId && user?.youtubeAccessToken);
-    let youtubeStats = null;
-    if (hasPaidPlan && youtubeConnectedForKit) {
-      try {
-        const { getYouTubeStatsForUser } = await import("@/lib/youtube-api");
-        youtubeStats = await getYouTubeStatsForUser(result.kit.userId);
-      } catch (e) {
-        console.error("[kit page] getYouTubeStatsForUser failed:", e);
-      }
-    }
-
-    // Manual numbers are the fallback. Live data replaces them per connected platform, so a
-    // paid creator never sees a stale self-reported number where a verified one exists.
-    const manualPlatformStats = manualStatsToPlatformStats(result.kit.manualStats);
-    const platformStats: Record<string, import("@/lib/platforms/types").PlatformStatsWithCharts> = {
-      ...manualPlatformStats,
-      ...(instagramStats ? { instagram: instagramStats } : {}),
-      ...(youtubeStats ? { youtube: { followers: youtubeStats.subscriberCount, avgEngagement: 0, growthThisMonth: 0, extra: { videoCount: youtubeStats.videoCount, totalViews: youtubeStats.viewCount, recentVideosJson: JSON.stringify(youtubeStats.recentVideos) } } } : {}),
-    };
-    const manualOnlyPlatforms = Object.keys(manualPlatformStats).filter((id) => {
-      if (id === "instagram" && instagramStats) return false;
-      if (id === "youtube" && youtubeStats) return false;
-      return true;
-    });
-    const statsSource: "live" | "manual" | "mixed" | "none" = (instagramStats || youtubeStats)
-      ? manualOnlyPlatforms.length > 0
-        ? "mixed"
-        : "live"
-      : Object.keys(platformStats).length > 0
-        ? "manual"
-        : "none";
-    const enabledPlatformIds = Object.keys(platformStats) as import("@/lib/platforms/types").PlatformId[];
-    const instagramConnected = instagramConnectedForKit;
+    // Activation signal: the first time anyone other than the owner opens this kit.
+    if (!previewMode && !isOwner) await trackKitFirstView(result.kit.id, result.kit.userId);
+    // Plan, live stats, posts, inquiry form and referral code (shared with the editor preview).
+    const view = await loadKitViewData(result.kit.userId);
+    const { platformStats, enabledPlatformIds, statsSource } = composeKitStats(result.kit.manualStats, view.live);
+    const { instagramConnected, instagramPosts, inquiryEnabled, referralCode } = view;
     return (
       <MediaKitClient
         username={result.creator.username}
@@ -233,6 +167,7 @@ export default async function MediaKitPage({
         kitId={result.kit.id}
         inquiryEnabled={inquiryEnabled}
         isOwner={isOwner && !previewMode}
+        referralCode={referralCode}
       />
     );
   }

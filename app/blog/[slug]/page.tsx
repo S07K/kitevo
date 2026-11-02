@@ -62,7 +62,7 @@ export default async function BlogPost({
   };
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-canvas min-h-screen">
       <BlogHeader />
 
       <main className="mx-auto max-w-3xl px-5 py-14 sm:px-8 sm:py-20">
@@ -96,7 +96,7 @@ export default async function BlogPost({
           </p>
           <Link
             href="/signup"
-            className="bg-foreground text-background mt-5 inline-flex h-10 items-center rounded-full px-6 text-sm font-medium transition-opacity hover:opacity-80"
+            className="bg-primary text-primary-foreground mt-5 inline-flex h-10 items-center rounded-full px-6 text-sm font-medium transition-opacity hover:opacity-80"
           >
             Create your kit free
           </Link>

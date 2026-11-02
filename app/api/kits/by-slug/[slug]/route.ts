@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import type { SectionVisibility } from "@/lib/kit-storage";
-import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
+import type { WorkSample, BrandPartner } from "@/lib/mock-data";
 import { parseKitAppearance } from "@/lib/kit-appearance";
-import { parseManualStats } from "@/lib/manual-stats";
+import { parseManualStats } from "@/lib/manual-stats";import { normalizeRates } from "@/lib/kit-rates";
+
 
 function parseJson<T>(raw: string, fallback: T): T {
   try {
@@ -60,7 +61,7 @@ export async function GET(
       slug: kit.slug,
       name: kit.name,
       workSamples: parseJson<WorkSample[]>(kit.workSamples, []),
-      rates: parseJson<KitRates>(kit.rates, { show: false }),
+      rates: normalizeRates(parseJson<unknown>(kit.rates, null)),
       brands: parseJson<BrandPartner[]>(kit.brands, []),
       sectionVisibility,
       appearance: parseKitAppearance(kit.appearance),

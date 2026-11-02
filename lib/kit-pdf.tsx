@@ -9,6 +9,7 @@ import {
 } from "@react-pdf/renderer";
 import type { WorkSample, KitRates, BrandPartner } from "./mock-data";
 import type { PdfTheme } from "./pdf-theme";
+import { formatUsd, hasPublicRates, publicRateItems } from "@/lib/kit-rates";
 
 // Register clean system fonts (no external fetch needed at build time)
 Font.register({
@@ -373,17 +374,23 @@ export function KitPdf({
         )}
 
         {/* Rates */}
-        {sectionVisibility.rates && rates.show && (
+        {sectionVisibility.rates && hasPublicRates(rates) && (
           <View style={[s.section, { marginTop: 4 }]}>
             <Text style={s.sectionLabel}>Rates</Text>
             <View style={s.ratesBlock}>
               <View>
-                <Text style={s.ratesAmount}>
-                  {rates.fromAmount != null
-                    ? `From $${rates.fromAmount.toLocaleString()}`
-                    : "Contact for rates"}
-                </Text>
-                <Text style={s.ratesLabel}>Per collaboration</Text>
+                {publicRateItems(rates).length > 0 ? (
+                  publicRateItems(rates).map((it) => (
+                    <Text key={it.id} style={s.ratesLabel}>
+                      {it.label}: {formatUsd(it.price)}
+                    </Text>
+                  ))
+                ) : (
+                  <>
+                    <Text style={s.ratesAmount}>From {formatUsd(rates.fromAmount as number)}</Text>
+                    <Text style={s.ratesLabel}>Per collaboration</Text>
+                  </>
+                )}
               </View>
               {rates.ctaLabel && (
                 <Text style={s.ratesCta}>{rates.ctaLabel}</Text>

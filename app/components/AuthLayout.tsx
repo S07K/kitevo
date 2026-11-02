@@ -6,10 +6,11 @@ import { useReducedMotion } from "@/lib/motion";
 import { LogoMark } from "@/app/components/Logo";
 
 const ORBS = [
-  { x: "15%", y: "20%", size: 420, color: "rgba(99,102,241,0.18)", delay: 0 },
-  { x: "70%", y: "60%", size: 340, color: "rgba(201,123,75,0.14)", delay: 1.2 },
-  { x: "55%", y: "10%", size: 260, color: "rgba(201,168,76,0.12)", delay: 0.6 },
-  { x: "10%", y: "70%", size: 300, color: "rgba(99,102,241,0.10)", delay: 1.8 },
+  // Palette: blue #005A9C, sky #60C1E5, aqua #A0E0EF on navy.
+  { x: "15%", y: "20%", size: 420, color: "rgba(0,90,156,0.45)", delay: 0 },
+  { x: "70%", y: "60%", size: 340, color: "rgba(96,193,229,0.22)", delay: 1.2 },
+  { x: "55%", y: "10%", size: 260, color: "rgba(160,224,239,0.14)", delay: 0.6 },
+  { x: "10%", y: "70%", size: 300, color: "rgba(0,90,156,0.30)", delay: 1.8 },
 ];
 
 function AnimatedOrb({ orb, index }: { orb: typeof ORBS[0]; index: number }) {
@@ -50,7 +51,7 @@ export function AuthLayout({ children, title, subtitle }: {
   return (
     <div className="flex min-h-screen">
       {/* ── Left panel — animated dark background ── */}
-      <div className="hidden lg:flex lg:w-[52%] flex-col relative overflow-hidden bg-[#0e0e0d]">
+      <div className="hidden lg:flex lg:w-[52%] flex-col relative overflow-hidden bg-[#1b365d]">
         {/* Orb animations */}
         {!prefersReducedMotion && ORBS.map((orb, i) => (
           <AnimatedOrb key={i} orb={orb} index={i} />
@@ -82,7 +83,7 @@ export function AuthLayout({ children, title, subtitle }: {
       </div>
 
       {/* ── Right panel — form ── */}
-      <div className="flex-1 flex flex-col bg-background">
+      <div className="flex-1 flex flex-col bg-canvas">
         {/* Mobile header */}
         <header className="lg:hidden border-b border-border bg-background/95 px-5 py-4 backdrop-blur-md">
           <Link href="/" className="font-display text-foreground inline-flex items-center gap-2 text-lg font-semibold tracking-tight hover:opacity-70 transition-opacity">

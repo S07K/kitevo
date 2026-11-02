@@ -3,7 +3,7 @@
 import { InView } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 type Plan = {
   id: string;
@@ -50,7 +50,7 @@ const PLANS: Plan[] = [
       "Live Instagram stats",
       "Audience demographics",
       "Growth charts",
-      "Section visibility controls",
+      "Your own domain",
     ],
     proOnly: [false, false, false, false, false],
     cta: "Get Starter",
@@ -85,6 +85,19 @@ const CHECK = (
 
 export function PricingSection(): ReactNode {
   const [yearly, setYearly] = useState(false);
+  // Pro trial length from the server (0 = trials off), so the copy never promises one that
+  // isn't running. Eligibility (first subscription, verified email) is enforced at checkout.
+  const [trialDays, setTrialDays] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/me/trial")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => !cancelled && setTrialDays(Number(d?.days) || 0))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section
@@ -110,7 +123,7 @@ export function PricingSection(): ReactNode {
               onClick={() => setYearly(false)}
               className={cn(
                 "focus-ring rounded-full px-5 py-2 text-sm font-medium transition-colors",
-                !yearly ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                !yearly ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               Monthly
@@ -120,7 +133,7 @@ export function PricingSection(): ReactNode {
               onClick={() => setYearly(true)}
               className={cn(
                 "focus-ring flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-medium transition-colors",
-                yearly ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                yearly ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               Yearly
@@ -146,7 +159,7 @@ export function PricingSection(): ReactNode {
               className={cn(
                 "relative flex h-full flex-col rounded-3xl p-7",
                 plan.highlight
-                  ? "bg-foreground text-background"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-background border-border border"
               )}
             >
@@ -162,13 +175,13 @@ export function PricingSection(): ReactNode {
               <div className="flex items-start justify-between gap-4">
                 <p className={cn(
                   "text-sm font-semibold tracking-wide uppercase",
-                  plan.highlight ? "text-background/50" : "text-muted-foreground"
+                  plan.highlight ? "text-primary-foreground/80" : "text-muted-foreground"
                 )}>
                   {plan.name}
                 </p>
                 <span className={cn(
                   "rounded-full px-2.5 py-1 text-[10px] font-semibold",
-                  plan.highlight ? "bg-background/15 text-background/70" : "bg-muted text-muted-foreground"
+                  plan.highlight ? "bg-primary-foreground/15 text-primary-foreground/90" : "bg-muted text-muted-foreground"
                 )}>
                   {plan.kits}
                 </span>
@@ -180,17 +193,17 @@ export function PricingSection(): ReactNode {
                   {plan.monthlyPrice === 0 ? "Free" : `$${yearly ? plan.yearlyPrice : plan.monthlyPrice}`}
                 </span>
                 {plan.monthlyPrice > 0 && (
-                  <span className={cn("text-sm", plan.highlight ? "text-background/50" : "text-muted-foreground")}>
+                  <span className={cn("text-sm", plan.highlight ? "text-primary-foreground/80" : "text-muted-foreground")}>
                     /mo{yearly ? ", billed yearly" : ""}
                   </span>
                 )}
               </div>
-              <p className={cn("mt-2 text-sm leading-relaxed", plan.highlight ? "text-background/65" : "text-muted-foreground")}>
+              <p className={cn("mt-2 text-sm leading-relaxed", plan.highlight ? "text-primary-foreground/85" : "text-muted-foreground")}>
                 {plan.description}
               </p>
 
               {/* Divider */}
-              <div className={cn("my-6 h-px", plan.highlight ? "bg-background/15" : "bg-border")} />
+              <div className={cn("my-6 h-px", plan.highlight ? "bg-primary-foreground/20" : "bg-border")} />
 
               {/* Features */}
               <ul className="flex flex-1 flex-col gap-3">
@@ -199,7 +212,7 @@ export function PricingSection(): ReactNode {
                     <span className={cn(
                       "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
                       plan.highlight
-                        ? "bg-background/15 text-background"
+                        ? "bg-primary-foreground/15 text-primary-foreground"
                         : plan.proOnly[fi]
                           ? "bg-foreground/10 text-foreground"
                           : "bg-muted text-muted-foreground"
@@ -208,7 +221,7 @@ export function PricingSection(): ReactNode {
                     </span>
                     <span className={cn(
                       "text-sm",
-                      plan.highlight ? "text-background/85" : "",
+                      plan.highlight ? "text-primary-foreground" : "",
                       !plan.highlight && plan.proOnly[fi] ? "text-foreground font-medium" : ""
                     )}>
                       {f}
@@ -228,10 +241,10 @@ export function PricingSection(): ReactNode {
                   "focus-ring mt-8 inline-flex h-12 items-center justify-center rounded-full text-sm font-medium transition-opacity hover:opacity-80",
                   plan.highlight
                     ? "bg-background text-foreground"
-                    : "bg-foreground text-background"
+                    : "bg-primary text-primary-foreground"
                 )}
               >
-                {plan.cta}
+                {plan.id === "pro" && trialDays > 0 ? `Try Pro free for ${trialDays} days` : plan.cta}
               </Link>
             </div>
           </InView>
@@ -241,7 +254,8 @@ export function PricingSection(): ReactNode {
       {/* Bottom note */}
       <InView className="mt-8 text-center">
         <p className="text-muted-foreground text-sm">
-          All plans include a shareable kit URL, no credit card required for Free.{" "}
+          All plans include a shareable kit URL, no credit card required for Free.
+          {trialDays > 0 && ` Pro comes with a ${trialDays}-day free trial for first-time subscribers.`}{" "}
           <Link href="/pricing" className="text-foreground underline underline-offset-4 hover:no-underline">
             See full comparison
           </Link>

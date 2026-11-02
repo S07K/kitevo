@@ -16,6 +16,7 @@ import {
 } from "@/lib/instagram-demographics";
 import { writeInstagramStatsCache } from "@/lib/creator-stats-cache";
 import { cachedPlatformCall } from "@/lib/platform-cache";
+import { decryptPlatformTokens, encryptToken } from "@/lib/token-crypto";
 
 const GRAPH = "https://graph.facebook.com/v18.0";
 /** Demographic insights — use a recent Graph version; param name is often `breakdown` (singular), not `breakdowns`. */
@@ -106,10 +107,10 @@ async function fetchInstagramAudienceDemographics(
 
 /** Refresh long-lived token if it expires within 14 days. New token gets a new 60-day window. */
 async function refreshInstagramTokenIfNeeded(userId: string): Promise<void> {
-  const user = await prisma.user.findUnique({
+  const user = decryptPlatformTokens(await prisma.user.findUnique({
     where: { id: userId },
     select: { instagramAccessToken: true, instagramTokenExpiresAt: true },
-  });
+  }));
   if (!user?.instagramAccessToken || !META_APP_ID || !META_APP_SECRET) return;
   const expiresAt = user.instagramTokenExpiresAt;
   const daysLeft = expiresAt ? (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24) : 0;
@@ -132,7 +133,7 @@ async function refreshInstagramTokenIfNeeded(userId: string): Promise<void> {
         : null;
     await prisma.user.update({
       where: { id: userId },
-      data: { instagramAccessToken: data.access_token, instagramTokenExpiresAt: tokenExpiresAt },
+      data: { instagramAccessToken: encryptToken(data.access_token), instagramTokenExpiresAt: tokenExpiresAt },
     });
   } catch {
     // On any error leave token as-is; next API call may get 190 and we'll clear then
@@ -148,10 +149,10 @@ async function clearUserInstagramToken(userId: string): Promise<void> {
 
 /** Profile image URL from Instagram Graph (requires valid token + instagramUserId). */
 export async function getInstagramProfilePictureForUser(userId: string): Promise<string | null> {
-  const user = await prisma.user.findUnique({
+  const user = decryptPlatformTokens(await prisma.user.findUnique({
     where: { id: userId },
     select: { instagramUserId: true, instagramAccessToken: true },
-  });
+  }));
   if (!user?.instagramUserId || !user?.instagramAccessToken) return null;
   try {
     const data = await metaGet<{ profile_picture_url?: string }>(
@@ -167,10 +168,10 @@ export async function getInstagramProfilePictureForUser(userId: string): Promise
 /** Fetch Instagram stats for a user. Uses token from DB if set; else mock. Refreshes token when near expiry; on 190 falls back to mock. */
 async function fetchStatsForUser(userId: string): Promise<PlatformStatsWithCharts> {
   await refreshInstagramTokenIfNeeded(userId);
-  const user = await prisma.user.findUnique({
+  const user = decryptPlatformTokens(await prisma.user.findUnique({
     where: { id: userId },
     select: { instagramUserId: true, instagramAccessToken: true },
-  });
+  }));
   if (user?.instagramUserId && user?.instagramAccessToken) {
     try {
       // followers_count, media_count, username (handle) from IG User node
@@ -286,10 +287,10 @@ async function fetchStatsForUser(userId: string): Promise<PlatformStatsWithChart
 /** Fetch recent Instagram posts with engagement metrics. Falls back to mock if no token. */
 async function fetchRecentPostsForUser(userId: string): Promise<FetchedPost[]> {
   await refreshInstagramTokenIfNeeded(userId);
-  const user = await prisma.user.findUnique({
+  const user = decryptPlatformTokens(await prisma.user.findUnique({
     where: { id: userId },
     select: { instagramUserId: true, instagramAccessToken: true },
-  });
+  }));
   if (user?.instagramUserId && user?.instagramAccessToken) {
     const token = user.instagramAccessToken;
     const igId = user.instagramUserId;

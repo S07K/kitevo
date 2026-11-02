@@ -1,302 +1,172 @@
 "use client";
 
 import { softEase, useReducedMotion } from "@/lib/motion";
-import { motion, useScroll, useTransform, type Variants } from "motion/react";
+import { motion } from "motion/react";
 import Link from "next/link";
-import { useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { SiInstagram } from "@icons-pack/react-simple-icons";
+import { Megaphone, SquareKanban, Tag } from "lucide-react";
+import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
+import { KitCard, unsplashPortrait, type KitLook } from "./cutouts";
 
-const HEADLINE = "Your media kit should close deals";
-const WORDS = HEADLINE.split(" ");
-
-const WORD_CONTAINER: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
+const HERO_KIT: KitLook = {
+  name: "Maya Okafor",
+  handle: "maya.makes",
+  niche: "Beauty",
+  initials: "MO",
+  photo: unsplashPortrait("photo-1531123897727-8f129e1688ce"),
+  bg: "#ffffff",
+  fg: "#1b365d",
+  accent: "#005a9c",
+  accentFg: "#ffffff",
+  followers: "48.2K",
+  second: "5.8%",
+  platform: "instagram",
+  rates: [
+    { label: "Instagram Reel", price: "$450" },
+    { label: "Story set (3)", price: "$220" },
+  ],
 };
 
-const WORD_ITEM: Variants = {
-  hidden: { y: "110%" },
-  visible: { y: 0, transition: { duration: 0.75, ease: softEase } },
+/** Same kit in the dark theme: midnight card, sky accents. */
+const HERO_KIT_DARK: KitLook = {
+  ...HERO_KIT,
+  bg: "#13233a",
+  fg: "#f5f8fc",
+  accent: "#60c1e5",
+  accentFg: "#0b1a2e",
 };
 
-type KitCard = {
-  vibe: string;
-  bg: string;
-  accent: string;
-  label: string;
-  top: string;
-  left?: string;
-  right?: string;
-  rotate: number;
-  scale: number;
-};
-
-const KIT_CARDS: KitCard[] = [
-  {
-    vibe: "Editorial",
-    bg: "#111110",
-    accent: "#f5f0e8",
-    label: "@natalierose",
-    top: "8%",
-    left: "3%",
-    rotate: -6,
-    scale: 0.82,
-  },
-  {
-    vibe: "Studio",
-    bg: "#f0eeeb",
-    accent: "#2d2d2b",
-    label: "@alexchen",
-    top: "18%",
-    right: "2%",
-    rotate: 5,
-    scale: 0.88,
-  },
-  {
-    vibe: "Bloom",
-    bg: "#f5ede4",
-    accent: "#8b4513",
-    label: "@saraamir",
-    top: "55%",
-    left: "5%",
-    rotate: -4,
-    scale: 0.78,
-  },
-  {
-    vibe: "Noir",
-    bg: "#1a1a18",
-    accent: "#c9a84c",
-    label: "@maxstudio",
-    top: "60%",
-    right: "4%",
-    rotate: 6,
-    scale: 0.84,
-  },
-];
-
-function KitCardFloat({ card, index }: { card: KitCard; index: number }): ReactNode {
+/** One orchestrated entrance: the phone rises, then the cutouts land around it. */
+function Pop({ i, children, className = "", reduce }: { i: number; children: ReactNode; className?: string; reduce: boolean }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30, rotate: card.rotate * 0.3 }}
-      animate={{ opacity: 1, y: 0, rotate: card.rotate }}
-      transition={{
-        opacity: { duration: 0.8, ease: softEase, delay: 0.6 + index * 0.12 },
-        y: { duration: 0.9, ease: softEase, delay: 0.6 + index * 0.12 },
-        rotate: { duration: 0.9, ease: softEase, delay: 0.6 + index * 0.12 },
-      }}
-      style={{
-        position: "absolute",
-        top: card.top,
-        left: card.left,
-        right: card.right,
-        transform: `scale(${card.scale})`,
-        transformOrigin: "center",
-      }}
+      className={className}
+      initial={reduce ? false : { opacity: 0, y: 18, scale: 0.94 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.6, ease: softEase, delay: 0.45 + i * 0.12 }}
     >
-      <motion.div
-        animate={{ y: [0, -8, 0] }}
-        transition={{
-          duration: 4 + index * 0.7,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: index * 0.5,
-        }}
-        style={{ backgroundColor: card.bg }}
-        className="w-36 rounded-2xl p-4 shadow-2xl sm:w-44"
-      >
-        <div
-          className="mb-3 h-10 w-10 rounded-full"
-          style={{ backgroundColor: card.accent, opacity: 0.9 }}
-        />
-        <div className="space-y-1.5">
-          <div
-            className="h-2 w-20 rounded-full opacity-70"
-            style={{ backgroundColor: card.accent }}
-          />
-          <div
-            className="h-1.5 w-14 rounded-full opacity-40"
-            style={{ backgroundColor: card.accent }}
-          />
-        </div>
-        <div className="mt-3 flex items-center justify-between">
-          <span
-            className="text-[10px] font-medium opacity-60"
-            style={{ color: card.accent }}
-          >
-            {card.label}
-          </span>
-          <span
-            className="rounded-sm px-1.5 py-0.5 text-[9px] font-semibold tracking-wide"
-            style={{ backgroundColor: card.accent, color: card.bg }}
-          >
-            {card.vibe}
-          </span>
-        </div>
-      </motion.div>
+      {children}
     </motion.div>
   );
 }
 
 export function Hero(): ReactNode {
-  const prefersReducedMotion = useReducedMotion();
-  const heroRef = useRef<HTMLElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  });
-  const scrollFade = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const scrollY = useTransform(scrollYProgress, [0, 1], [0, -60]);
+  const reduce = useReducedMotion();
 
   return (
-    <section
-      ref={heroRef}
-      className="relative flex min-h-svh items-center justify-center overflow-hidden"
-    >
-      {/* Floating kit cards — desktop only */}
-      {!prefersReducedMotion && (
-        <motion.div
-          style={{ opacity: scrollFade }}
-          className="pointer-events-none absolute inset-0 hidden lg:block"
-          aria-hidden
-        >
-          {KIT_CARDS.map((card, i) => (
-            <KitCardFloat key={card.vibe} card={card} index={i} />
-          ))}
-        </motion.div>
-      )}
+    // Full-bleed at the top so the fixed nav sits entirely on navy (no straddled edge);
+    // only the bottom corners round off into the page.
+    <section className="relative">
+      {/* Light: brand navy band. Dark: deeper midnight band with a second glow and a hairline
+          sky edge, so the hero reads as its own scene in each theme. Dot grid in both. */}
+      <div className="relative rounded-b-[36px] bg-[#1b365d] text-white sm:rounded-b-[56px] dark:bg-[#0c1626] dark:shadow-[0_1px_0_0_rgba(96,193,229,0.35)]">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]" aria-hidden>
+          <div data-bleed className="absolute -right-24 top-10 h-[520px] w-[520px] rounded-full bg-[#60c1e5]/25 blur-3xl dark:bg-[#60c1e5]/30" />
+          <div data-bleed className="absolute -bottom-40 -left-32 hidden h-[420px] w-[420px] rounded-full bg-[#a0e0ef]/15 blur-3xl dark:block" />
+          {/* Dot grid in both themes; dots a touch stronger on the lighter navy band. */}
+          <div
+            className="absolute inset-0 opacity-100 dark:opacity-80"
+            style={{
+              backgroundImage: "radial-gradient(rgba(160,224,239,0.2) 1px, transparent 1px)",
+              backgroundSize: "22px 22px",
+              maskImage: "linear-gradient(to left, black 10%, transparent 75%)",
+              WebkitMaskImage: "linear-gradient(to left, black 10%, transparent 75%)",
+            }}
+          />
+        </div>
 
-      {/* Content */}
-      <motion.div
-        style={{ y: prefersReducedMotion ? 0 : scrollY, opacity: scrollFade }}
-        className="relative z-10 flex max-w-3xl flex-col items-center px-6 pt-20 pb-16 text-center sm:pt-28 sm:pb-20"
-      >
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: softEase, delay: 0.05 }}
-          className="text-muted-foreground mb-6 text-xs font-semibold tracking-[0.2em] uppercase"
-        >
-          {/*
-            Names the product and states what it is, above the fold. The headline below is
-            benefit-led and never says "Kitevo", so without this a first-time visitor reads
-            a promise before they know what they are looking at. Google's OAuth branding
-            review flagged exactly that: homepage does not explain the purpose, and the
-            consent-screen app name does not match anything prominent on the page.
-          */}
-          Kitevo · Live Media Kits for Creators
-        </motion.p>
-
-        <h1 className="text-foreground text-[clamp(32px,7vw,80px)] leading-[1.04] font-medium tracking-tight text-balance">
-          {prefersReducedMotion ? (
-            HEADLINE
-          ) : (
-            <>
-              <span className="sr-only">{HEADLINE}</span>
-              <motion.span
-                aria-hidden
-                initial="hidden"
-                animate="visible"
-                variants={WORD_CONTAINER}
-                className="flex flex-wrap justify-center gap-x-[0.25em]"
+        <div className="relative mx-auto grid max-w-[1200px] items-center gap-10 px-6 pb-4 pt-28 sm:px-10 sm:pt-32 lg:grid-cols-[1fr_1fr] lg:gap-10 lg:pb-20 lg:pt-36">
+          {/* Copy */}
+          <div className="max-w-xl">
+            {/* Names the product and what it is above the fold (Google OAuth branding review). */}
+            <p className="text-sm text-white/70">Kitevo is the media kit built to win brand deals.</p>
+            <h1 className="mt-4 text-[clamp(38px,6vw,72px)] font-medium leading-[1.02] tracking-[-0.03em] text-balance">
+              Get paid by brands for the audience you already built.
+            </h1>
+            <p className="mt-6 max-w-md text-base leading-relaxed text-white/75 sm:text-lg">
+              Live stats, your rates and a brand inquiry inbox in one link. Brands see real numbers and reach out; you track every
+              deal until it&apos;s won.
+            </p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/signup"
+                className="focus-ring inline-flex h-13 items-center justify-center rounded-full bg-[#60c1e5] px-8 text-sm font-semibold text-[#0e1c30] transition-colors hover:bg-[#a0e0ef]"
               >
-                {WORDS.map((word, i) => (
-                  <span
-                    key={`${word}-${i}`}
-                    className="-mb-[0.1em] inline-flex overflow-hidden pb-[0.1em]"
-                  >
-                    <motion.span variants={WORD_ITEM} className="inline-block">
-                      {word}
-                    </motion.span>
-                  </span>
-                ))}
-              </motion.span>
-            </>
-          )}
-        </h1>
+                Start free
+              </Link>
+              <Link
+                href="/kit/demo"
+                className="focus-ring inline-flex h-13 items-center justify-center rounded-full border border-white/25 px-8 text-sm font-medium text-white transition-colors hover:bg-white/10"
+              >
+                See a live kit
+              </Link>
+            </div>
+            <ul className="mt-8 flex flex-wrap gap-2" aria-label="What's in Kitevo">
+              {[
+                { icon: <SiInstagram size={13} aria-hidden />, label: "Live stats" },
+                { icon: <Tag size={14} aria-hidden />, label: "Rate card" },
+                { icon: <Megaphone size={14} aria-hidden />, label: "Brand campaigns" },
+                { icon: <SquareKanban size={14} aria-hidden />, label: "Deal pipeline" },
+              ].map((f) => (
+                <li key={f.label} className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm text-white/85">
+                  {f.icon}
+                  {f.label}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-sm text-white/60">
+              Free plan, no card needed.{" "}
+              <Link href="/referral-program" className="text-white/85 underline decoration-white/30 underline-offset-4 hover:decoration-white">
+                Earn {REFERRAL_RATE_PCT}% when creators you invite upgrade.
+              </Link>
+            </p>
+          </div>
 
-        <motion.p
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: softEase, delay: 0.55 }}
-          className="text-muted-foreground mt-7 max-w-md text-base leading-relaxed"
-        >
-          Stop sending ugly PDFs. Kitevo turns your Instagram presence
-          into a live, high-end portfolio with real engagement data, audience
-          demographics, and growth charts brands actually want to see.
-        </motion.p>
+          {/* Visual: the kit, plus what it brings in. Laid out so nothing overlaps content:
+              xl = kit card + a column of two cards beside it; below xl = cards under the kit. */}
+          <div className="mx-auto w-full max-w-[560px] pb-12 lg:pb-0" aria-hidden>
+            <div className="flex flex-col items-center gap-4 xl:flex-row xl:items-center xl:gap-4">
+              <motion.div
+                className="w-full max-w-[340px] xl:w-[320px] xl:shrink-0"
+                initial={reduce ? false : { opacity: 0, y: 28 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: softEase, delay: 0.15 }}
+              >
+                <KitCard look={HERO_KIT} className="dark:hidden" style={{ transform: "rotate(-2deg)" }} />
+                <KitCard look={HERO_KIT_DARK} className="hidden dark:block" style={{ transform: "rotate(-2deg)" }} />
+              </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: softEase, delay: 0.7 }}
-          className="mt-10 flex w-full flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:w-auto"
-        >
-          <Link
-            href="/signup"
-            className="focus-ring bg-foreground text-background inline-flex h-13 w-full items-center justify-center rounded-full px-8 text-sm font-medium transition-opacity hover:opacity-80 sm:w-auto"
-          >
-            Start building for free
-          </Link>
-          {/*
-            Points at a real kit rather than scrolling to #how-it-works. Nothing on the
-            public site linked to the demo, so a visitor could not see what Kitevo
-            produces without signing up first — and the product is the page, not the
-            description of it. #how-it-works is still reachable from the nav.
-          */}
-          <Link
-            href="/kit/demo"
-            className="focus-ring border-border text-foreground hover:bg-muted inline-flex h-13 w-full items-center justify-center rounded-full border px-8 text-sm font-medium transition-colors sm:w-auto"
-          >
-            See a live media kit
-          </Link>
-        </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, ease: softEase, delay: 0.9 }}
-          className="text-muted-foreground mt-6 text-xs"
-        >
-          Free plan available · No credit card required
-        </motion.p>
-
-        {/* The floating cards are lg-only, which left the hero empty on phones. Show a compact
-            fan of the same vibes here so mobile still sees what Kitevo actually makes. */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: softEase, delay: 1 }}
-          className="mt-12 flex items-center justify-center lg:hidden"
-          aria-hidden
-        >
-          {KIT_CARDS.slice(0, 3).map((card, i) => (
-            <div
-              key={card.vibe}
-              style={{
-                backgroundColor: card.bg,
-                transform: `rotate(${card.rotate * 0.8}deg)`,
-                marginLeft: i === 0 ? 0 : -18,
-                zIndex: i,
-              }}
-              className="w-28 shrink-0 rounded-2xl p-3 shadow-xl sm:w-32"
-            >
-              <div className="mb-2.5 h-7 w-7 rounded-full" style={{ backgroundColor: card.accent, opacity: 0.9 }} />
-              <div className="space-y-1">
-                <div className="h-1.5 w-14 rounded-full opacity-70" style={{ backgroundColor: card.accent }} />
-                <div className="h-1 w-9 rounded-full opacity-40" style={{ backgroundColor: card.accent }} />
-              </div>
-              <div className="mt-2.5">
-                <span
-                  className="rounded-sm px-1.5 py-0.5 text-[9px] font-semibold tracking-wide"
-                  style={{ backgroundColor: card.accent, color: card.bg }}
-                >
-                  {card.vibe}
-                </span>
+              <div className="grid w-full max-w-[340px] grid-cols-1 gap-4 sm:max-w-[440px] sm:grid-cols-2 xl:w-[204px] xl:max-w-none xl:grid-cols-1">
+                <Pop i={0} reduce={reduce}>
+                  <div className="rounded-2xl border border-black/5 bg-white p-4 text-[#1b365d] shadow-[0_18px_40px_-12px_rgba(27,54,93,0.35)] dark:border-white/10 dark:bg-[#13233a] dark:text-[#f5f8fc] dark:shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)]" style={{ transform: "rotate(2deg)" }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold">New inquiry</p>
+                    </div>
+                    <p className="mt-2.5 truncate text-sm font-semibold">Glowfield Skincare</p>
+                    <p className="truncate text-xs text-[#556b84] dark:text-[#b3c3d6]">1 Reel + 3 Stories</p>
+                    <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[#f3f7fa] px-3 py-2 dark:bg-white/5">
+                      <span className="text-xs text-[#556b84] dark:text-[#b3c3d6]">Budget</span>
+                      <span className="text-sm font-semibold tabular-nums">$1,200</span>
+                    </div>
+                  </div>
+                </Pop>
+                <Pop i={1} reduce={reduce} className="hidden sm:block">
+                  <div className="rounded-2xl border border-black/5 bg-white p-4 text-[#1b365d] shadow-[0_18px_40px_-12px_rgba(27,54,93,0.35)] dark:border-white/10 dark:bg-[#13233a] dark:text-[#f5f8fc] dark:shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)]" style={{ transform: "rotate(-1.5deg)" }}>
+                    <p className="text-xs text-[#556b84] dark:text-[#b3c3d6]">Kit views this week</p>
+                    <p className="mt-0.5 text-2xl font-semibold tabular-nums">1,284</p>
+                    <div className="mt-2.5 flex h-9 items-end gap-1">
+                      {[30, 45, 38, 60, 52, 78, 92].map((h, i) => (
+                        <span key={i} className="flex-1 rounded-sm bg-[#60c1e5]" style={{ height: `${h}%`, opacity: 0.45 + i * 0.08 }} />
+                      ))}
+                    </div>
+                  </div>
+                </Pop>
               </div>
             </div>
-          ))}
-        </motion.div>
-      </motion.div>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

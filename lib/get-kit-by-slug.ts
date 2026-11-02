@@ -4,11 +4,13 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { normalizeLinks } from "@/lib/profile-links";
 import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import type { SectionVisibility } from "@/lib/kit-storage";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
 import { parseKitAppearance, type KitAppearance } from "@/lib/kit-appearance";
-import { parseManualStats, type ManualStats } from "@/lib/manual-stats";
+import { parseManualStats, type ManualStats } from "@/lib/manual-stats";import { normalizeRates } from "@/lib/kit-rates";
+
 
 function parseJson<T>(raw: string, fallback: T): T {
   try {
@@ -19,18 +21,12 @@ function parseJson<T>(raw: string, fallback: T): T {
   }
 }
 
+/** Links render as <a href> on the public kit: re-check every stored URL (lib/profile-links), so a
+ * link saved before validation existed can never be a `javascript:` URL. */
 function parseLinks(linksJson: string | null): { label: string; url: string }[] {
   if (!linksJson) return [];
   try {
-    const parsed = JSON.parse(linksJson) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (x): x is { label: string; url: string } =>
-        typeof x === "object" &&
-        x !== null &&
-        typeof (x as { label: string }).label === "string" &&
-        typeof (x as { url: string }).url === "string"
-    );
+    return normalizeLinks(JSON.parse(linksJson));
   } catch {
     return [];
   }
@@ -98,7 +94,7 @@ export async function getKitBySlug(slug: string): Promise<KitBySlugResult> {
       name: kit.name,
       passwordHash: kit.passwordHash ?? null,
       workSamples: parseJson<WorkSample[]>(kit.workSamples, []),
-      rates: parseJson<KitRates>(kit.rates, { show: false }),
+      rates: normalizeRates(parseJson<unknown>(kit.rates, null)),
       brands: parseJson<BrandPartner[]>(kit.brands, []),
       sectionVisibility,
       appearance: parseKitAppearance(kit.appearance),

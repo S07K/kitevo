@@ -1,0 +1,268 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/app/components/workspace/Button";
+
+type Props = {
+  campaignId: string;
+  initialStatus: string | null;
+  appliedAt: string | null;
+  reviewedAt: string | null;
+  hasConversation: boolean;
+};
+
+function fmt(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+type Step = {
+  key: string;
+  label: string;
+  sublabel?: string;
+  date?: string;
+  state: "done" | "active" | "pending";
+  variant?: "success" | "danger" | "warning";
+};
+
+function buildSteps(
+  status: string | null,
+  appliedAt: string | null,
+  reviewedAt: string | null,
+  hasConversation: boolean,
+): Step[] {
+  if (!status) return [];
+
+  const isReviewed = status !== "pending" || hasConversation;
+  const isDecided = status === "accepted" || status === "rejected";
+
+  const steps: Step[] = [
+    {
+      key: "applied",
+      label: "Application submitted",
+      sublabel: "Your pitch is on the brand's radar.",
+      date: appliedAt ?? undefined,
+      state: "done",
+    },
+    {
+      key: "review",
+      label: "Under review",
+      sublabel: isReviewed ? "The brand has seen your application." : "Waiting for the brand to review.",
+      date: isReviewed && reviewedAt ? reviewedAt : undefined,
+      state: isReviewed ? "done" : "active",
+    },
+  ];
+
+  if (hasConversation) {
+    steps.push({
+      key: "reached",
+      label: "Brand reached out",
+      sublabel: "You have a message from the brand.",
+      state: "done",
+    });
+  }
+
+  if (isDecided) {
+    steps.push({
+      key: "decision",
+      label: status === "accepted" ? "Application accepted" : "Not shortlisted",
+      sublabel:
+        status === "accepted"
+          ? "Congrats! Check your inbox — the brand may reach out."
+          : "This one wasn't a fit. Keep applying to other campaigns.",
+      date: reviewedAt ?? undefined,
+      state: "done",
+      variant: status === "accepted" ? "success" : "danger",
+    });
+  } else {
+    steps.push({
+      key: "decision",
+      label: "Decision pending",
+      sublabel: "The brand will accept or decline your application.",
+      state: isReviewed ? "active" : "pending",
+      variant: "warning",
+    });
+  }
+
+  return steps;
+}
+
+const dotColors: Record<string, string> = {
+  done_success: "bg-green-500",
+  done_danger:  "bg-red-500",
+  done_warning: "bg-amber-500",
+  done:         "bg-primary",
+  active:       "bg-primary ring-4 ring-primary/20",
+  pending:      "bg-border",
+};
+
+const labelColors: Record<string, string> = {
+  success: "text-green-600 dark:text-green-400",
+  danger:  "text-red-500 dark:text-red-400",
+  warning: "text-amber-600 dark:text-amber-400",
+};
+
+export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt, hasConversation }: Props) {
+  const [status, setStatus] = useState<string | null>(initialStatus);
+  const [localAppliedAt, setLocalAppliedAt] = useState<string | null>(appliedAt);
+  const [showForm, setShowForm] = useState(false);
+  const [pitch, setPitch] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/social/campaigns/${campaignId}/apply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: pitch }),
+        credentials: "include",
+      });
+      if (res.ok) {
+        setStatus("pending");
+        setLocalAppliedAt(new Date().toISOString());
+        setShowForm(false);
+        setPitch("");
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setError(d.error ?? "Failed to submit. Try again.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // Timeline view — shown once applied
+  if (status) {
+    const steps = buildSteps(status, localAppliedAt, reviewedAt, hasConversation);
+    const lastStep = steps[steps.length - 1];
+    const isAccepted = status === "accepted";
+
+    return (
+      <div>
+        <div>
+          <div className="relative space-y-0">
+            {steps.map((step, i) => {
+              const isLast = i === steps.length - 1;
+              const dotKey = step.state === "done"
+                ? `done_${step.variant ?? ""}`
+                : step.state;
+              const dotClass = dotColors[dotKey] || dotColors[step.state];
+
+              return (
+                <div key={step.key} className="flex gap-4">
+                  {/* Column: dot + line */}
+                  <div className="flex flex-col items-center">
+                    <div className={`h-3 w-3 rounded-full shrink-0 mt-1 transition-all ${dotClass}`} />
+                    {!isLast && <div className="w-px flex-1 bg-border mt-1.5 mb-1.5 min-h-[28px]" />}
+                  </div>
+
+                  {/* Content */}
+                  <div className={`pb-5 min-w-0 ${isLast ? "pb-0" : ""}`}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={`text-sm font-semibold ${
+                        step.variant && step.state === "done"
+                          ? labelColors[step.variant]
+                          : step.state === "active"
+                          ? "text-primary dark:text-primary-soft-foreground"
+                          : step.state === "pending"
+                          ? "text-muted-foreground"
+                          : "text-foreground"
+                      }`}>
+                        {step.label}
+                      </p>
+                      {step.date && (
+                        <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                          {fmt(step.date)}
+                        </span>
+                      )}
+                    </div>
+                    {step.sublabel && (
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{step.sublabel}</p>
+                    )}
+                    {step.key === "reached" && (
+                      <Link
+                        href="/messages"
+                        className="inline-flex items-center gap-1 text-xs text-primary dark:text-primary-soft-foreground hover:underline mt-1"
+                      >
+                        Open inbox
+                        <ArrowRight size={11} aria-hidden />
+                      </Link>
+                    )}
+                    {step.key === "decision" && isAccepted && (
+                      <Link
+                        href="/messages"
+                        className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline mt-1"
+                      >
+                        Check inbox
+                        <ArrowRight size={11} aria-hidden />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pitch form
+  if (showForm) {
+    return (
+      <div className="space-y-3">
+        <div>
+          <label htmlFor="apply-pitch" className="text-sm font-semibold text-foreground">
+            Your pitch
+          </label>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+            Why you&apos;re a fit: your niche, your audience, similar work. The brand also sees your kit.
+          </p>
+        </div>
+        {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+        <textarea
+          id="apply-pitch"
+          value={pitch}
+          onChange={(e) => setPitch(e.target.value)}
+          placeholder="Hi! I make … for an audience of … I'd love to …"
+          rows={6}
+          autoFocus
+          className="w-full resize-y rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
+        />
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setShowForm(false);
+              setPitch("");
+              setError(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button variant="primary" className="flex-1" onClick={submit} disabled={submitting || !pitch.trim()}>
+            {submitting ? "Submitting…" : "Submit application"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground">Send a short pitch. The brand sees it alongside your media kit.</p>
+      <Button variant="primary" size="lg" className="mt-4 w-full" onClick={() => setShowForm(true)}>
+        Apply to this campaign
+      </Button>
+      <p className="mt-2 text-center text-xs text-muted-foreground">Free · No commitment</p>
+    </div>
+  );
+}

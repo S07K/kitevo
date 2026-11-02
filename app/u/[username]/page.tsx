@@ -79,7 +79,7 @@ export default async function CreatorProfilePage({ params }: { params: Promise<P
   const kit = creator.kits[0];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-canvas">
       <MarketingNav />
 
       <main className="mx-auto max-w-2xl px-5 pt-28 pb-20 sm:px-8">
@@ -136,7 +136,7 @@ export default async function CreatorProfilePage({ params }: { params: Promise<P
         {niches.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-5">
             {niches.map((n) => (
-              <span key={n} className="text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full">
+              <span key={n} className="text-xs font-medium bg-primary-soft text-primary-soft-foreground px-3 py-1 rounded-full">
                 {n}
               </span>
             ))}
@@ -150,13 +150,13 @@ export default async function CreatorProfilePage({ params }: { params: Promise<P
           {kit && (
             <Link
               href={`/kit/${kit.slug}`}
-              className="inline-flex h-11 items-center justify-center rounded-full bg-foreground text-background px-6 text-sm font-semibold hover:opacity-80 transition-opacity"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-primary text-primary-foreground px-6 text-sm font-semibold hover:opacity-80 transition-opacity"
             >
               View media kit
             </Link>
           )}
           <Link
-            href={`/brand/inbox?message=${creator.id}`}
+            href={`/messages?message=${creator.id}`}
             className="inline-flex h-11 items-center justify-center rounded-full border border-border text-foreground px-6 text-sm font-medium hover:bg-muted transition-colors"
           >
             Send a message

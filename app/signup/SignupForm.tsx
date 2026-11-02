@@ -34,7 +34,7 @@ export default function SignupForm() {
     }
   }
 
-  const inputCls = "w-full rounded-xl border border-border bg-muted/50 dark:bg-white/[0.06] text-foreground placeholder:text-muted-foreground px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition";
+  const inputCls = "w-full rounded-xl border border-border bg-background dark:bg-white/[0.06] text-foreground placeholder:text-muted-foreground px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition";
 
   if (done) {
     return (
@@ -67,7 +67,7 @@ export default function SignupForm() {
       <button
         type="button"
         onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-        className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-border bg-muted/50 dark:bg-white/[0.06] px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted/70 transition-colors"
+        className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-border bg-background dark:bg-white/[0.06] px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted/70 transition-colors"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -101,7 +101,7 @@ export default function SignupForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-11 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 disabled:opacity-50 transition-opacity"
+          className="w-full h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-80 disabled:opacity-50 transition-opacity"
         >
           {loading ? "Creating account…" : "Create account"}
         </button>

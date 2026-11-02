@@ -6,6 +6,7 @@ import { SectionHeading } from "@/components/section-heading";
 import { softEase, useReducedMotion } from "@/lib/motion";
 import { AnimatePresence, motion } from "motion/react";
 import { useState, type ReactNode } from "react";
+import { REFERRAL_RATE_PCT, REFERRAL_TERMS } from "@/lib/referral-terms";
 
 type QA = { question: string; answer: string | ReactNode };
 
@@ -40,6 +41,10 @@ const FAQS: QA[] = [
     question: "Can I cancel my subscription anytime?",
     answer:
       "Yes. Cancel anytime from your dashboard — no questions, no penalty. You'll keep access until the end of your billing period, then revert to the free plan.",
+  },
+  {
+    question: "Can I earn money by referring other creators?",
+    answer: `Yes. Every account gets an invite link. When someone signs up with it and pays for a plan, you earn ${REFERRAL_RATE_PCT}% of what they pay for their first ${REFERRAL_TERMS.months} months, paid monthly by PayPal, Wise or bank transfer. See the referral program page for details.`,
   },
   {
     question: "Is my media kit URL permanent?",

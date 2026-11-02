@@ -69,7 +69,28 @@ export const stripeProvider: PaymentProvider = {
     return value.startsWith("cs_");
   },
 
-  async createCheckout({ priceId, userId, email, successUrl, cancelUrl }: CreateCheckoutParams) {
+  webhookDeliveryId(rawBody) {
+    // Stripe retries resend the same Event, so its evt_ id identifies the delivery.
+    try {
+      const id = (JSON.parse(rawBody) as { id?: unknown }).id;
+      return typeof id === "string" && id ? id : null;
+    } catch {
+      return null;
+    }
+  },
+
+  async createCheckout({ priceId, userId, email, successUrl, cancelUrl, trialDays, discountCode }: CreateCheckoutParams) {
+    // A pre-filled code must be an active promotion code; Stripe can't take both a discount
+    // and the code-entry field, so an unknown code falls back to letting the customer type one.
+    let promotionCodeId: string | null = null;
+    if (discountCode) {
+      try {
+        const found = await stripeClient().promotionCodes.list({ code: discountCode, active: true, limit: 1 });
+        promotionCodeId = found.data[0]?.id ?? null;
+      } catch {
+        promotionCodeId = null;
+      }
+    }
     const session = await stripeClient().checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
@@ -81,6 +102,8 @@ export const stripeProvider: PaymentProvider = {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl,
       cancel_url: cancelUrl,
+      ...(trialDays ? { subscription_data: { trial_period_days: trialDays }, payment_method_collection: "always" as const } : {}),
+      ...(promotionCodeId ? { discounts: [{ promotion_code: promotionCodeId }] } : { allow_promotion_codes: true }),
     });
     return { url: session.url };
   },
@@ -186,6 +209,26 @@ export const stripeProvider: PaymentProvider = {
           subscriptionId: sub.id,
         };
       }
+
+      case "invoice.paid": {
+        const inv = event.data.object as Stripe.Invoice;
+        if (!inv.id || !inv.amount_paid) {
+          return { type: "ignored", providerEventType: "invoice.paid (zero amount)" };
+        }
+        return {
+          type: "payment.succeeded",
+          paymentId: inv.id,
+          customerId: typeof inv.customer === "string" ? inv.customer : inv.customer?.id ?? null,
+          userId: (inv.metadata?.userId as string) || null,
+          amount: Math.min(inv.amount_paid, inv.total_excluding_tax ?? inv.amount_paid),
+          currency: inv.currency.toUpperCase(),
+        };
+      }
+
+      // Refunds are NOT mapped for Stripe yet: since API 2025-03 a Charge no longer links
+      // to its invoice, so a refund can't be matched to the invoice-keyed commission
+      // without an extra InvoicePayment lookup. Dodo (the live provider) maps refunds.
+      // Until then, reverse a Stripe-refunded commission from the admin payouts page.
 
       default:
         return { type: "ignored", providerEventType: event.type };

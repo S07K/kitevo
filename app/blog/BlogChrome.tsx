@@ -15,12 +15,15 @@ export function BlogHeader() {
           Kitevo
         </Link>
         <div className="flex items-center gap-4">
+          <Link href="/tools" className="text-muted-foreground hover:text-foreground hidden text-sm font-medium transition-colors sm:inline">
+            Free tools
+          </Link>
           <Link href="/blog" className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors">
             Blog
           </Link>
           <Link
             href="/signup"
-            className="bg-foreground text-background inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
+            className="bg-primary text-primary-foreground inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-opacity hover:opacity-80"
           >
             Get started free
           </Link>

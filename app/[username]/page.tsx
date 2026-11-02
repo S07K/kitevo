@@ -111,6 +111,10 @@ const VIBE_COLORS: Record<string, { bg: string; accent: string }> = {
   bloom:     { bg: "#f5ede4", accent: "#8b4513" },
   electric:  { bg: "#0A0A14", accent: "#6366f1" },
   noir:      { bg: "#1a1a18", accent: "#c9a84c" },
+  sage:      { bg: "#EEF3EA", accent: "#2F5D50" },
+  mist:      { bg: "#EDF2F8", accent: "#2B4C7E" },
+  blush:     { bg: "#F8EEEB", accent: "#A3485A" },
+  lavender:  { bg: "#F1EFF9", accent: "#5B4B9A" },
 };
 
 export default async function CreatorProfilePage({
@@ -135,7 +139,7 @@ export default async function CreatorProfilePage({
   const bio = isBrand ? (user.brandProfile?.description ?? user.bio) : user.bio;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-canvas">
       {/* Nav */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-5 sm:px-8">
@@ -143,7 +147,7 @@ export default async function CreatorProfilePage({
             <LogoMark size={20} on="auto" />
             Kitevo
           </Link>
-          <Link href="/signup" className="bg-foreground text-background rounded-full px-4 py-1.5 text-xs font-medium hover:opacity-80 transition-opacity">
+          <Link href="/signup" className="bg-primary text-primary-foreground rounded-full px-4 py-1.5 text-xs font-medium hover:opacity-80 transition-opacity">
             Create your kit
           </Link>
         </div>
@@ -230,7 +234,7 @@ export default async function CreatorProfilePage({
                       </div>
                       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
                         {c.niche && (
-                          <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full px-2.5 py-0.5">{c.niche}</span>
+                          <span className="text-[10px] font-medium bg-primary-soft text-primary-soft-foreground rounded-full px-2.5 py-0.5">{c.niche}</span>
                         )}
                         {c.budget && (
                           <span className="text-xs text-muted-foreground flex items-center gap-1">

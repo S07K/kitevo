@@ -41,7 +41,7 @@ export function PasswordWall({
   }
 
   return (
-    <div className="min-h-screen bg-muted/20 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
         {/* Avatar + identity */}
         <div className="flex flex-col items-center mb-8">

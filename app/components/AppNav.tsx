@@ -9,8 +9,14 @@ type NavLink = { href: string; label: string; primary?: boolean; external?: bool
 
 export function AppNav({
   links = [],
+  avatarOnMobileOnly = false,
+  account,
 }: {
+  /** Known viewer (from the workspace frame): the avatar menu skips its profile fetch. */
+  account?: { name: string | null; avatarUrl: string | null; accountType: string };
   links?: NavLink[];
+  /** Workspace pages: the sidebar shows the account on desktop, so only phones need it here. */
+  avatarOnMobileOnly?: boolean;
   onLogout?: () => void; // kept for API compat, handled by NavAvatar now
   tabs?: unknown;        // kept for API compat, unused
 }) {
@@ -34,7 +40,7 @@ export function AppNav({
           {links.map((link) => {
             const key = `${link.href}-${link.label}`;
             const base = link.primary
-              ? "bg-foreground text-background inline-flex h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
+              ? "bg-primary text-primary-foreground inline-flex h-9 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-80"
               : "text-muted-foreground hover:text-foreground inline-flex h-9 items-center px-3 text-sm transition-colors";
             if (link.external) {
               return <a key={key} href={link.href} target="_blank" rel="noopener noreferrer" className={base}>{link.label}</a>;
@@ -45,8 +51,8 @@ export function AppNav({
       )}
 
       {/* Avatar menu — pushed to the right */}
-      <div className="ml-auto flex items-center gap-2">
-        <NavAvatar />
+      <div className={`ml-auto flex items-center gap-2 ${avatarOnMobileOnly ? "md:hidden" : ""}`}>
+        <NavAvatar initial={account} />
       </div>
 
       {/* Mobile menu button — only shown if there are extra links */}
@@ -77,7 +83,7 @@ export function AppNav({
                 {links.map((link) => {
                   const key = `${link.href}-${link.label}`;
                   const cls = link.primary
-                    ? "bg-foreground text-background flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium"
+                    ? "bg-primary text-primary-foreground flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium"
                     : "text-foreground hover:bg-muted flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors";
                   if (link.external) {
                     return <a key={key} href={link.href} target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)} className={cls}>{link.label}</a>;

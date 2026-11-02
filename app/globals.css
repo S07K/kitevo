@@ -1,30 +1,71 @@
 @import "tailwindcss";
 @variant dark (&:where(.dark, .dark *));
 
+/*
+  One app theme, from the Kitevo palette:
+    navy #1B365D (ink/text, hover) · blue #005A9C (primary) · sky #60C1E5 (accent)
+    · aqua #A0E0EF (soft tints).
+  --background = cards, inputs, menus · --canvas = page/workspace backdrop, one step deeper
+  so cards lift off it · --muted = neutral hover/fills · --primary-soft = tinted chip/active
+  fills · --accent = sky highlights ("New" pills etc.), always with --accent-foreground.
+  Dark mode flips primary to sky with dark navy text (blue on near-black is too dim).
+*/
 :root {
-  --background: #fafaf9;
-  --foreground: #111110;
-  --muted: #f5f4f2;
-  --muted-foreground: #6b6b68;
-  --border: #e4e3e0;
-  --ring: #111110;
-  --surface: #111110;
-  --surface-foreground: #fafaf9;
+  --background: #ffffff;
+  --canvas: #f3f7fa;
+  --foreground: #1b365d;
+  --muted: #edf3f8;
+  --muted-foreground: #556b84;
+  --border: #dce6ef;
+  --ring: #005a9c;
+  --surface: #1b365d;
+  --surface-foreground: #ffffff;
+
+  --primary: #005a9c;
+  --primary-hover: #1b365d;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e3f4fa;
+  --primary-soft-foreground: #005a9c;
+
+  --accent: #60c1e5;
+  --accent-foreground: #1b365d;
+  --accent-soft: #a0e0ef;
 }
 
 .dark {
-  --background: #111110;
-  --foreground: #f5f3f0;
-  --muted: #1c1c1a;
-  --muted-foreground: #8a8a86;
-  --border: #2a2a28;
-  --ring: #f5f3f0;
-  --surface: #f5f3f0;
-  --surface-foreground: #111110;
+  --background: #0f1a2b;
+  --canvas: #0b1422;
+  --foreground: #f5f8fc;
+  --muted: #1a2a40;
+  /* Secondary text kept bright on navy (~9.5:1 on cards): #8ea3bb read as too dim. */
+  --muted-foreground: #b3c3d6;
+  --border: #2b3e5a;
+  --ring: #60c1e5;
+  --surface: #f5f8fc;
+  --surface-foreground: #0f1a2b;
+
+  --primary: #60c1e5;
+  --primary-hover: #a0e0ef;
+  --primary-foreground: #0b1a2e;
+  --primary-soft: rgba(96, 193, 229, 0.14);
+  --primary-soft-foreground: #a0e0ef;
+
+  --accent: #a0e0ef;
+  --accent-foreground: #0b1a2e;
+  --accent-soft: rgba(160, 224, 239, 0.16);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-canvas: var(--canvas);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
@@ -52,10 +93,17 @@ html.dark {
 }
 
 body {
-  background-color: var(--background);
+  background-color: var(--canvas);
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Grayscale smoothing thins light-on-dark text on macOS; let dark mode use the default
+   rendering so body copy keeps its weight. (Beats the `antialiased` class on <body>.) */
+.dark body {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
 button,
