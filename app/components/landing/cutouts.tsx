@@ -4,25 +4,14 @@ import { SiInstagram, SiYoutube } from "@icons-pack/react-simple-icons";
 /**
  * Building blocks for the landing page's "cutout" illustrations: miniature, non-interactive
  * renderings of real Kitevo surfaces (a kit, an inquiry, the pipeline). Every number in them
- * is illustrative and the surrounding UI says so with <ExampleTag> — the landing page never
+ * is illustrative, and each section's copy says so where it matters — the landing page never
  * presents invented people or results as real (see CLAUDE.md, honest social proof).
  */
 
-export function ExampleTag({ className = "", tone = "light" }: { className?: string; tone?: "light" | "dark" }) {
-  return (
-    <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
-        tone === "dark" ? "bg-white/15 text-white/80" : "bg-muted text-muted-foreground"
-      } ${className}`}
-    >
-      Example
-    </span>
-  );
-}
 
 /**
  * Cutouts are illustrations of the light app UI, so they stay white in dark mode. They pin
- * the light values of the tokens their children use (ExampleTag etc.) so nothing inside
+ * the light values of the tokens their children use so nothing inside
  * flips to dark-mode colours.
  */
 const LIGHT_TOKENS = {
@@ -89,7 +78,7 @@ export function KitCard({
   return (
     <div
       style={{ backgroundColor: look.bg, color: look.fg, ...style }}
-      className={`rounded-[26px] p-5 shadow-[0_24px_50px_-18px_rgba(14,28,48,0.55)] ${className}`}
+      className={`rounded-[26px] p-5 shadow-[0_24px_50px_-18px_rgba(14,28,48,0.55)] dark:ring-1 dark:ring-white/10 ${className}`}
     >
       <div className="flex items-center gap-3">
         <span

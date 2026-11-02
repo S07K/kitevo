@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { SiInstagram } from "@icons-pack/react-simple-icons";
 import { Megaphone, SquareKanban, Tag } from "lucide-react";
 import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
-import { Cutout, ExampleTag, KitCard, type KitLook } from "./cutouts";
+import { KitCard, type KitLook } from "./cutouts";
 
 const HERO_KIT: KitLook = {
   name: "Maya Okafor",
@@ -25,6 +25,15 @@ const HERO_KIT: KitLook = {
     { label: "Instagram Reel", price: "$450" },
     { label: "Story set (3)", price: "$220" },
   ],
+};
+
+/** Same kit in the dark theme: midnight card, sky accents. */
+const HERO_KIT_DARK: KitLook = {
+  ...HERO_KIT,
+  bg: "#13233a",
+  fg: "#f5f8fc",
+  accent: "#60c1e5",
+  accentFg: "#0b1a2e",
 };
 
 /** One orchestrated entrance: the phone rises, then the cutouts land around it. */
@@ -48,13 +57,21 @@ export function Hero(): ReactNode {
     // Full-bleed at the top so the fixed nav sits entirely on navy (no straddled edge);
     // only the bottom corners round off into the page.
     <section className="relative">
-      <div className="relative rounded-b-[36px] bg-[#1b365d] text-white sm:rounded-b-[56px]">
-        {/* Soft sky glow behind the phone; decoration only. */}
-        <div
-          className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]"
-          aria-hidden
-        >
-          <div data-bleed className="absolute -right-24 top-10 h-[520px] w-[520px] rounded-full bg-[#60c1e5]/25 blur-3xl" />
+      {/* Light: brand navy band. Dark: deeper midnight band with a dot grid, two glows and a
+          hairline sky edge, so the hero reads as its own scene in each theme. */}
+      <div className="relative rounded-b-[36px] bg-[#1b365d] text-white sm:rounded-b-[56px] dark:bg-[#0c1626] dark:shadow-[0_1px_0_0_rgba(96,193,229,0.35)]">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]" aria-hidden>
+          <div data-bleed className="absolute -right-24 top-10 h-[520px] w-[520px] rounded-full bg-[#60c1e5]/25 blur-3xl dark:bg-[#60c1e5]/30" />
+          <div data-bleed className="absolute -bottom-40 -left-32 hidden h-[420px] w-[420px] rounded-full bg-[#a0e0ef]/15 blur-3xl dark:block" />
+          <div
+            className="absolute inset-0 hidden dark:block"
+            style={{
+              backgroundImage: "radial-gradient(rgba(160,224,239,0.16) 1px, transparent 1px)",
+              backgroundSize: "22px 22px",
+              maskImage: "linear-gradient(to left, black 10%, transparent 75%)",
+              WebkitMaskImage: "linear-gradient(to left, black 10%, transparent 75%)",
+            }}
+          />
         </div>
 
         <div className="relative mx-auto grid max-w-[1200px] items-center gap-10 px-6 pb-4 pt-28 sm:px-10 sm:pt-32 lg:grid-cols-[1fr_1fr] lg:gap-10 lg:pb-20 lg:pt-36">
@@ -114,34 +131,34 @@ export function Hero(): ReactNode {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: softEase, delay: 0.15 }}
               >
-                <KitCard look={HERO_KIT} style={{ transform: "rotate(-2deg)" }} />
+                <KitCard look={HERO_KIT} className="dark:hidden" style={{ transform: "rotate(-2deg)" }} />
+                <KitCard look={HERO_KIT_DARK} className="hidden dark:block" style={{ transform: "rotate(-2deg)" }} />
               </motion.div>
 
               <div className="grid w-full max-w-[340px] grid-cols-1 gap-4 sm:max-w-[440px] sm:grid-cols-2 xl:w-[204px] xl:max-w-none xl:grid-cols-1">
                 <Pop i={0} reduce={reduce}>
-                  <Cutout className="p-4" style={{ transform: "rotate(2deg)" }}>
+                  <div className="rounded-2xl border border-black/5 bg-white p-4 text-[#1b365d] shadow-[0_18px_40px_-12px_rgba(27,54,93,0.35)] dark:border-white/10 dark:bg-[#13233a] dark:text-[#f5f8fc] dark:shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)]" style={{ transform: "rotate(2deg)" }}>
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-semibold">New inquiry</p>
-                      <ExampleTag />
                     </div>
                     <p className="mt-2.5 truncate text-sm font-semibold">Glowfield Skincare</p>
-                    <p className="truncate text-xs text-[#556b84]">1 Reel + 3 Stories</p>
-                    <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[#f3f7fa] px-3 py-2">
-                      <span className="text-xs text-[#556b84]">Budget</span>
+                    <p className="truncate text-xs text-[#556b84] dark:text-[#b3c3d6]">1 Reel + 3 Stories</p>
+                    <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[#f3f7fa] px-3 py-2 dark:bg-white/5">
+                      <span className="text-xs text-[#556b84] dark:text-[#b3c3d6]">Budget</span>
                       <span className="text-sm font-semibold tabular-nums">$1,200</span>
                     </div>
-                  </Cutout>
+                  </div>
                 </Pop>
                 <Pop i={1} reduce={reduce} className="hidden sm:block">
-                  <Cutout className="p-4" style={{ transform: "rotate(-1.5deg)" }}>
-                    <p className="text-xs text-[#556b84]">Kit views this week</p>
+                  <div className="rounded-2xl border border-black/5 bg-white p-4 text-[#1b365d] shadow-[0_18px_40px_-12px_rgba(27,54,93,0.35)] dark:border-white/10 dark:bg-[#13233a] dark:text-[#f5f8fc] dark:shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)]" style={{ transform: "rotate(-1.5deg)" }}>
+                    <p className="text-xs text-[#556b84] dark:text-[#b3c3d6]">Kit views this week</p>
                     <p className="mt-0.5 text-2xl font-semibold tabular-nums">1,284</p>
                     <div className="mt-2.5 flex h-9 items-end gap-1">
                       {[30, 45, 38, 60, 52, 78, 92].map((h, i) => (
                         <span key={i} className="flex-1 rounded-sm bg-[#60c1e5]" style={{ height: `${h}%`, opacity: 0.45 + i * 0.08 }} />
                       ))}
                     </div>
-                  </Cutout>
+                  </div>
                 </Pop>
               </div>
             </div>

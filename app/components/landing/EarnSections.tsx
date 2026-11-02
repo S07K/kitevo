@@ -4,7 +4,7 @@ import { SiInstagram } from "@icons-pack/react-simple-icons";
 import { BadgeCheck, CalendarClock, Check, ChevronsRight, Eye, FileText, Link2, MessageCircle, Sheet, Sparkles, Tag, TrendingUp } from "lucide-react";
 import { getPublicTiers } from "@/config/subscriptions";
 import { exampleEarnings } from "@/lib/referral-terms";
-import { Cutout, ExampleTag, KitCard, Scribble, type KitLook } from "./cutouts";
+import { Cutout, KitCard, Scribble, type KitLook } from "./cutouts";
 
 /* Shared pieces ─────────────────────────────────────────────────────────── */
 
@@ -90,7 +90,6 @@ function CampaignVisual() {
             </p>
             <p className="text-base font-semibold leading-snug">Summer glow launch</p>
           </div>
-          <ExampleTag />
         </div>
         <p className="mt-3 text-xs leading-relaxed text-[#556b84]">
           Looking for beauty creators to show a 3-step morning routine with our new SPF serum.
@@ -161,7 +160,6 @@ function PipelineVisual() {
       <Cutout className="relative ml-auto w-[min(100%,340px)] p-3" style={{ transform: "rotate(1.5deg)" }}>
         <div className="mb-2 flex items-center justify-between">
           <p className="text-xs font-semibold">Pipeline</p>
-          <ExampleTag />
         </div>
         <div className="flex gap-1.5">
           {col("New", "bg-[#005a9c]", [{ who: "Northwind", what: "2 Reels", amount: "$800" }])}
@@ -181,7 +179,6 @@ function ProofVisual() {
           <p className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-[#556b84]">
             <SiInstagram size={11} color="#E4405F" /> Followers
           </p>
-          <ExampleTag />
         </div>
         <p className="mt-1 text-2xl font-semibold tabular-nums">
           48.2K <span className="text-xs font-medium text-[#15803d]">+1,204</span>
@@ -360,7 +357,6 @@ export function ExampleKits(): ReactNode {
               <div className="relative h-36 overflow-hidden rounded-[28px] px-5 pt-4" style={{ background: panel, color: ink }}>
                 <div className="relative flex items-center justify-between gap-3">
                   <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#1b365d]">{look.niche} creator</span>
-                  <ExampleTag tone="dark" />
                 </div>
               </div>
               <div className="relative -mt-20 px-3">
@@ -441,7 +437,6 @@ export function InboxWall(): ReactNode {
         <span className="block text-sm font-semibold text-foreground">{title}</span>
         <span className="block text-xs text-muted-foreground">{when}</span>
       </span>
-      <ExampleTag />
     </div>
   );
   return (

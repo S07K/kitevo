@@ -9,8 +9,8 @@ import { REFERRAL_RATE_PCT, REFERRAL_TERMS, exampleEarnings } from "@/lib/referr
 
 /**
  * Landing-page pitch for the referral program. The right-hand panel is an illustrative
- * mock of the earnings card (labelled "Example") built from the real terms and plan
- * prices — never fabricated people or results.
+ * mock of the earnings card, worded as a hypothetical ("if 3 creators you invite
+ * upgrade") and built from the real terms and plan prices — never fabricated people or results.
  */
 export function ReferralSection(): ReactNode {
   const reduce = useReducedMotion();
@@ -90,10 +90,9 @@ export function ReferralSection(): ReactNode {
           <div className="rounded-[28px] bg-background p-6 text-foreground shadow-2xl">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Referral earnings</p>
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Example</span>
             </div>
             <p className="mt-4 text-4xl font-semibold tracking-tight tabular-nums">{usd(monthTotal)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">this month, from 3 referred creators</p>
+            <p className="mt-1 text-xs text-muted-foreground">a month, if 3 creators you invite upgrade</p>
 
             <ul className="mt-6 divide-y divide-border border-y border-border">
               {rows.map((r, i) => (
