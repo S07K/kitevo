@@ -6,23 +6,7 @@
  * `Cannot read properties of undefined (reading 'call')` on /kit/* in dev).
  */
 
-import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
-import type { AudienceBucket } from "@/lib/platforms/types";
-
-/** Monochrome shades of the theme accent, largest bracket = most opaque. */
-const DONUT_SHADES = [1, 0.78, 0.6, 0.45, 0.33, 0.24];
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 
 export type GrowthPoint = { month: string; followers: number };
 
@@ -67,41 +51,6 @@ function GrowthChartTooltipContent({
       {followers != null && (
         <p className="mt-1 text-white/90">{followers.toLocaleString()} followers</p>
       )}
-    </div>
-  );
-}
-
-function AudienceDemographicsTooltipContent({
-  active,
-  label,
-  payload,
-}: {
-  active?: boolean;
-  label?: unknown;
-  payload?: ReadonlyArray<{
-    value?: number;
-    payload?: { age?: string; pct?: number };
-  }>;
-}) {
-  if (!active || !payload?.length) return null;
-  const row = payload[0];
-  const point = row?.payload;
-  const pct =
-    typeof row?.value === "number"
-      ? row.value
-      : typeof point?.pct === "number"
-        ? point.pct
-        : null;
-  const ageRange =
-    (typeof point?.age === "string" ? point.age : null) ??
-    (label != null ? String(label) : "");
-  return (
-    <div
-      className="rounded-md px-3 py-2 text-xs text-white shadow-lg"
-      style={{ backgroundColor: "#1A1A1A" }}
-    >
-      {pct != null && <p className="font-semibold">{pct}% of audience</p>}
-      {ageRange && <p className="mt-1 text-white/90">Age {ageRange}</p>}
     </div>
   );
 }
@@ -151,81 +100,6 @@ export function GrowthAreaChart({
             fill={`url(#${gradId})`}
           />
         </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-export function AudienceDonutChart({ data, stroke }: { data: AudienceBucket[]; stroke: string }) {
-  // Slices ordered by share so the donut and legend read largest-first.
-  const sorted = [...data].sort((a, b) => b.pct - a.pct);
-  return (
-    // w-full: the parent card body is a flex row (justify-start), so without this the chart
-    // only takes its content width and hugs the left edge, leaving dead space on the right.
-    <div className="flex flex-col @min-[640px]:flex-row items-center gap-5 h-full w-full">
-      {/* Fixed size — ResponsiveContainer can measure 0 inside flex/align-center parents */}
-      <div className="h-[180px] w-[180px] shrink-0">
-        <PieChart width={180} height={180}>
-          <Pie
-            data={sorted}
-            dataKey="pct"
-            nameKey="age"
-            innerRadius={52}
-            outerRadius={82}
-            paddingAngle={2}
-            stroke="none"
-            startAngle={90}
-            endAngle={-270}
-            isAnimationActive={false}
-          >
-            {sorted.map((_, i) => (
-              <Cell key={i} fill={stroke} fillOpacity={DONUT_SHADES[i % DONUT_SHADES.length]} />
-            ))}
-          </Pie>
-          <Tooltip content={AudienceDemographicsTooltipContent} filterNull={false} />
-        </PieChart>
-      </div>
-      {/* Cap the legend width on mobile, otherwise justify-between flings the label and
-          the percentage to opposite edges of the card. */}
-      <ul className="flex-1 w-full max-w-[240px] @min-[640px]:max-w-none mx-auto space-y-2">
-        {sorted.map((d, i) => (
-          <li key={d.age} className="flex items-center justify-between gap-2 text-sm">
-            <span className="flex items-center gap-2 text-[var(--mk-text)]">
-              <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: stroke, opacity: DONUT_SHADES[i % DONUT_SHADES.length] }} />
-              Age {d.age}
-            </span>
-            <span className="tabular-nums font-semibold text-[var(--mk-text-soft)]">{d.pct}%</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-export function AudienceBarChart({ data, stroke }: { data: AudienceBucket[]; stroke: string }) {
-  return (
-    <div className="h-40 min-h-[160px] w-full">
-      <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 400, height: 160 }}>
-        <BarChart data={data} layout="vertical" margin={{ left: 0 }}>
-          <XAxis
-            type="number"
-            domain={[0, "dataMax"]}
-            axisLine={false}
-            tickLine={false}
-            tick={{ fontSize: 11, fill: "var(--mk-text-soft)" }}
-            tickFormatter={(n) => `${n}%`}
-          />
-          <YAxis
-            type="category"
-            dataKey="age"
-            axisLine={false}
-            tickLine={false}
-            tick={{ fontSize: 11, fill: "var(--mk-text)" }}
-            width={50}
-          />
-          <Bar dataKey="pct" fill={stroke} radius={[0, 2, 2, 0]} barSize={12} />
-          <Tooltip content={AudienceDemographicsTooltipContent} filterNull={false} />
-        </BarChart>
       </ResponsiveContainer>
     </div>
   );

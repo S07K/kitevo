@@ -396,43 +396,52 @@ export function KitEditorSkeleton() {
 }
 
 export function PublicKitSkeleton() {
+  // Mirrors MediaKitClient: identity (+ rate card in a rail on wide screens), the audience
+  // sentence, the stat strip, then sections. Page-level, so viewport breakpoints are right here.
   return (
-    <div className="pb-24 max-w-4xl mx-auto px-5 sm:px-8 pt-14">
-      <div className="pt-6 space-y-4">
-        {/* Hero banner — matches bg-[var(--mk-text)] dark card */}
-        <div className="rounded-2xl bg-muted/60 px-6 py-6 flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-foreground/10 shrink-0" />
-          <div className="space-y-2">
-            <div className="h-2.5 w-20 rounded-full bg-foreground/10" />
-            <div className="h-5 w-36 rounded-full bg-foreground/10" />
+    <div className="mx-auto max-w-6xl px-5 pt-14 sm:px-8">
+      <div className="pt-8 lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-14 lg:pt-12">
+        <div>
+          <div className="flex items-center gap-4 lg:block">
+            <Skeleton className="h-16 w-16 shrink-0 rounded-full sm:h-20 sm:w-20 lg:h-24 lg:w-24" />
+            <div className="space-y-2 lg:mt-5">
+              <Skeleton className="h-6 w-40 rounded-full" />
+              <Skeleton className="h-3.5 w-32 rounded-full" />
+            </div>
+          </div>
+          <div className="mt-4 flex gap-1.5">
+            <Skeleton className="h-6 w-16 rounded-full" />
+            <Skeleton className="h-6 w-16 rounded-full" />
+          </div>
+          <Skeleton className="mt-4 h-3.5 w-full max-w-sm rounded-full" />
+          <Skeleton className="mt-8 hidden h-60 w-full rounded-2xl lg:block" />
+        </div>
+        <div className="pt-8 lg:pt-0">
+          <div className="space-y-3">
+            <Skeleton className="h-8 w-[90%] rounded-full" />
+            <Skeleton className="h-8 w-[75%] rounded-full" />
+            <Skeleton className="h-8 w-[60%] rounded-full" />
+          </div>
+          <div className="mt-8 grid grid-cols-3 gap-4 border-t border-border pt-6">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-8 w-20 rounded-full" />
+                <Skeleton className="h-3 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+          <Skeleton className="mt-12 h-6 w-28 rounded-full" />
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <Skeleton className="h-32 rounded-2xl" />
+            <Skeleton className="h-32 rounded-2xl" />
+          </div>
+          <Skeleton className="mt-12 h-6 w-36 rounded-full" />
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="aspect-[4/5] rounded-xl" />
+            ))}
           </div>
         </div>
-
-        {/* Platform stats card */}
-        <Skeleton className="h-24 w-full rounded-2xl" />
-
-        {/* Work samples */}
-        <Skeleton className="h-5 w-28 rounded-full mt-2" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Skeleton className="h-56 rounded-2xl" />
-          <Skeleton className="h-56 rounded-2xl" />
-        </div>
-
-        {/* Rates */}
-        <Skeleton className="h-5 w-20 rounded-full mt-2" />
-        <Skeleton className="h-32 w-full rounded-2xl" />
-
-        {/* Brands */}
-        <Skeleton className="h-5 w-32 rounded-full mt-2" />
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-16 rounded-xl" />
-          ))}
-        </div>
-
-        {/* Growth chart */}
-        <Skeleton className="h-5 w-36 rounded-full mt-2" />
-        <Skeleton className="h-52 w-full rounded-2xl" />
       </div>
     </div>
   );

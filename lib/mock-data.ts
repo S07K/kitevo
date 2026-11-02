@@ -21,7 +21,8 @@ export const MOCK_CREATOR = {
  * sees. The links section hides itself when the array is empty. Links remain a real
  * feature for actual kits; there is just nothing honest to put here.
  */
-export const MOCK_LINKS: { label: string; url: string }[] = [];
+/** Demo kit contact link (example.com is reserved for examples, so it reaches no one). */
+export const MOCK_LINKS: { label: string; url: string }[] = [{ label: "Email Alex", url: "mailto:alex@example.com" }];
 
 /** Work sample: example post or video for the "proof of work" section. */
 export interface WorkSample {
