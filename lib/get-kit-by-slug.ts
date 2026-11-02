@@ -8,7 +8,8 @@ import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import type { SectionVisibility } from "@/lib/kit-storage";
 import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
 import { parseKitAppearance, type KitAppearance } from "@/lib/kit-appearance";
-import { parseManualStats, type ManualStats } from "@/lib/manual-stats";
+import { parseManualStats, type ManualStats } from "@/lib/manual-stats";import { normalizeRates } from "@/lib/kit-rates";
+
 
 function parseJson<T>(raw: string, fallback: T): T {
   try {
@@ -98,7 +99,7 @@ export async function getKitBySlug(slug: string): Promise<KitBySlugResult> {
       name: kit.name,
       passwordHash: kit.passwordHash ?? null,
       workSamples: parseJson<WorkSample[]>(kit.workSamples, []),
-      rates: parseJson<KitRates>(kit.rates, { show: false }),
+      rates: normalizeRates(parseJson<unknown>(kit.rates, null)),
       brands: parseJson<BrandPartner[]>(kit.brands, []),
       sectionVisibility,
       appearance: parseKitAppearance(kit.appearance),

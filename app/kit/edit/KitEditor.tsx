@@ -1,59 +1,105 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { Check, Lock, Plus, X } from "lucide-react";
+import { BRAND_LOGO_RATIO_OPTIONS, type BrandPartner, type KitRates, type RateItem } from "@/lib/mock-data";
+import { DEFAULT_SECTION_VISIBILITY, type SectionVisibility } from "@/lib/kit-storage";
 import {
-  MOCK_RATES,
-  MOCK_BRANDS,
-  BRAND_LOGO_RATIO_OPTIONS,
-  type KitRates,
-  type BrandPartner,
-} from "@/lib/mock-data";
-import {
-  getKitContent,
-  setKitContent,
-  getAllKits,
-  DEFAULT_SECTION_VISIBILITY,
-  type SectionVisibility,
-} from "@/lib/kit-storage";
-import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
-import {
-  DEFAULT_KIT_APPEARANCE,
-  KIT_APPEARANCE_PRESET_LABELS,
   BASIC_PRESETS,
-  presetSwatch,
   BRAND_KIT_VIBES,
   BRAND_KIT_VIBE_META,
+  DEFAULT_KIT_APPEARANCE,
+  KIT_APPEARANCE_PRESET_LABELS,
   parseKitAppearance,
+  presetSwatch,
+  type KitAppearance,
 } from "@/lib/kit-appearance";
+import { EMPTY_MANUAL_STATS, normalizeManualStats, type ManualStats } from "@/lib/manual-stats";
+import { EMPTY_RATES, MAX_RATE_ITEMS, normalizeRates } from "@/lib/kit-rates";
 import { KitEditorSkeleton } from "@/app/components/Skeleton";
-import {
-  EMPTY_MANUAL_STATS,
-  normalizeManualStats,
-  type ManualStats,
-} from "@/lib/manual-stats";
+import { Button, ButtonLink } from "@/app/components/workspace/Button";
 
-function StatField({
+export type SaveStatus = "idle" | "saving" | "saved" | "error";
+export type LoadedKit = { id: string; name: string; slug: string };
+
+const AUTOSAVE_MS = 800;
+
+const fieldCls =
+  "w-full min-w-0 rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-ring/40";
+
+const newId = () => Math.random().toString(36).slice(2, 11);
+
+/* ─── Small building blocks ─────────────────────────────────────────────── */
+
+function Section({ title, hint, badge, children }: { title: string; hint?: ReactNode; badge?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-border bg-background p-5 sm:p-6">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+          {hint && <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{hint}</p>}
+        </div>
+        {badge}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function PlanBadge({ plan }: { plan: string }) {
+  return <span className="shrink-0 rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-semibold text-primary-soft-foreground">{plan}</span>;
+}
+
+/** Accessible on/off switch. */
+function Switch({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 ${
+        checked ? "bg-primary" : "bg-muted ring-1 ring-inset ring-border"
+      }`}
+    >
+      <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+    </button>
+  );
+}
+
+function NumberField({
+  id,
   label,
   value,
   onChange,
   suffix,
+  prefix,
   min = 0,
   step = 1,
   hint,
 }: {
+  id: string;
   label: string;
   value: number | undefined;
   onChange: (value: number | undefined) => void;
   suffix?: string;
+  prefix?: string;
   min?: number;
   step?: number;
   hint?: string;
 }) {
   return (
-    <label className="block">
-      <span className="block text-xs text-muted-foreground mb-1">{label}</span>
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-xs font-medium text-muted-foreground">
+        {label}
+      </label>
       <div className="relative">
+        {prefix && <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{prefix}</span>}
         <input
+          id={id}
           type="number"
           min={min}
           step={step}
@@ -61,619 +107,432 @@ function StatField({
           placeholder="—"
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value === "" ? undefined : Number(e.target.value))}
-          className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          className={`${fieldCls} ${prefix ? "pl-7" : ""} ${suffix ? "pr-8" : ""}`}
         />
-        {suffix && (
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-            {suffix}
-          </span>
-        )}
+        {suffix && <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{suffix}</span>}
       </div>
-      {hint && <span className="mt-1 block text-[11px] text-muted-foreground">{hint}</span>}
-    </label>
+      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+    </div>
   );
 }
 
-function newId(): string {
-  return Math.random().toString(36).slice(2, 11);
-}
+/* ─── Editor ────────────────────────────────────────────────────────────── */
 
 interface KitEditorProps {
   kitId: string | null;
   tierId?: string | null;
-  /** Called after a successful save with the kit's public slug */
+  /** After the kit loads (name/slug for the page header and preview). */
+  onLoaded?: (kit: LoadedKit) => void;
+  /** After each successful save, with the kit's public slug (refreshes the preview). */
   onSaved?: (slug: string) => void;
+  onStatusChange?: (status: SaveStatus) => void;
+  /** Lets the page header offer "Retry" after a failed save. */
+  registerRetry?: (retry: () => void) => void;
 }
 
-export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
-  const isPro = tierId === "pro";
-  const isStarter = tierId === "starter" || isPro;
-  const isFree = !tierId || tierId === "free";
-  const [effectiveKitId, setEffectiveKitId] = useState<string | null>(kitId);
-  const [rates, setRates] = useState<KitRates>(MOCK_RATES);
-  const [brands, setBrands] = useState<BrandPartner[]>(MOCK_BRANDS);
-  const [saved, setSaved] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [loadingKit, setLoadingKit] = useState(false);
-  const [sectionVisibility, setSectionVisibility] = useState<SectionVisibility>(
-    DEFAULT_SECTION_VISIBILITY
-  );
-  const [appearance, setAppearance] = useState<KitAppearance>(DEFAULT_KIT_APPEARANCE);
-  const [manualStats, setManualStats] = useState<ManualStats>(EMPTY_MANUAL_STATS);
+type Draft = {
+  rates: KitRates;
+  brands: BrandPartner[];
+  sectionVisibility: SectionVisibility;
+  appearance: KitAppearance;
+  manualStats: ManualStats;
+};
 
-  // Resolve effective kit id (first kit if none specified)
+export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, registerRetry }: KitEditorProps) {
+  const isPro = tierId === "pro";
+  const isFree = !tierId || tierId === "free";
+
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [hasInquiryForm, setHasInquiryForm] = useState(false);
+  const [hasLinks, setHasLinks] = useState(false);
+
+  // Autosave bookkeeping: skip the first render after load, coalesce rapid edits, never run
+  // two saves at once (the newest draft is saved right after an in-flight one finishes).
+  const loaded = useRef(false);
+  const inFlight = useRef(false);
+  const pending = useRef<Draft | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cbs = useRef({ onSaved, onStatusChange });
   useEffect(() => {
-    const id = kitId ?? getAllKits()[0]?.id ?? null;
-    setEffectiveKitId(id);
+    cbs.current = { onSaved, onStatusChange };
+  });
+
+  /* Load */
+  useEffect(() => {
+    if (!kitId) return;
+    let cancelled = false;
+    loaded.current = false;
+    fetch(`/api/kits/${kitId}`, { credentials: "include" })
+      .then((r) => {
+        if (!r.ok) throw new Error(r.status === 404 ? "This kit doesn't exist or isn't yours." : "Couldn't load your kit. Refresh to try again.");
+        return r.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setDraft({
+          rates: normalizeRates(data.rates ?? EMPTY_RATES),
+          brands: Array.isArray(data.brands) ? data.brands : [],
+          sectionVisibility: { ...DEFAULT_SECTION_VISIBILITY, ...(data.sectionVisibility && typeof data.sectionVisibility === "object" ? data.sectionVisibility : {}) },
+          appearance:
+            data.appearance && typeof data.appearance === "object"
+              ? parseKitAppearance(JSON.stringify(data.appearance))
+              : typeof data.appearance === "string"
+                ? parseKitAppearance(data.appearance)
+                : DEFAULT_KIT_APPEARANCE,
+          manualStats: normalizeManualStats(data.manualStats),
+        });
+        onLoaded?.({ id: data.id ?? kitId, name: data.name ?? "Untitled kit", slug: data.slug ?? "" });
+      })
+      .catch((e: Error) => !cancelled && setLoadError(e.message));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kitId]);
 
-  // Load kit content: from API when effectiveKitId is present, else localStorage
+  // Where the rate card's button can go: the Pro contact form, else the kit's links.
   useEffect(() => {
-    setLoadError(null);
-    if (!effectiveKitId) return;
+    setHasInquiryForm(isPro);
+    fetch("/api/me/profile", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => setHasLinks(Array.isArray(p?.links) && p.links.some((l: { url?: string }) => l?.url)))
+      .catch(() => {});
+  }, [isPro]);
 
-    const isDbId = effectiveKitId.length >= 20 && !effectiveKitId.startsWith("kit_");
-    if (isDbId) {
-      setLoadingKit(true);
-      fetch(`/api/kits/${effectiveKitId}`, { credentials: "include" })
-        .then((r) => {
-          if (!r.ok) throw new Error(r.status === 404 ? "Kit not found" : "Failed to load kit");
-          return r.json();
-        })
-        .then((data) => {
-          setRates(data.rates && typeof data.rates === "object" ? data.rates : MOCK_RATES);
-          setBrands(Array.isArray(data.brands) ? data.brands : MOCK_BRANDS);
-          setSectionVisibility(
-            data.sectionVisibility && typeof data.sectionVisibility === "object"
-              ? { ...DEFAULT_SECTION_VISIBILITY, ...data.sectionVisibility }
-              : DEFAULT_SECTION_VISIBILITY
-          );
-          setAppearance(
-            data.appearance && typeof data.appearance === "object"
-              ? parseKitAppearance(typeof data.appearance === "string" ? data.appearance : JSON.stringify(data.appearance))
-              : DEFAULT_KIT_APPEARANCE
-          );
-          setManualStats(normalizeManualStats(data.manualStats));
-        })
-        .catch((e) => setLoadError(e.message ?? "Failed to load kit"))
-        .finally(() => setLoadingKit(false));
+  /* Save */
+  const persist = useCallback(
+    async (d: Draft) => {
+      if (!kitId) return;
+      if (inFlight.current) {
+        pending.current = d;
+        return;
+      }
+      inFlight.current = true;
+      cbs.current.onStatusChange?.("saving");
+      try {
+        const res = await fetch(`/api/kits/${kitId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          // The rate card's visibility is controlled in the Rates section only.
+          body: JSON.stringify({ ...d, sectionVisibility: { ...d.sectionVisibility, rates: d.rates.show } }),
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json().catch(() => ({}));
+        cbs.current.onStatusChange?.("saved");
+        if (data.slug) cbs.current.onSaved?.(data.slug);
+      } catch {
+        cbs.current.onStatusChange?.("error");
+      } finally {
+        inFlight.current = false;
+        const next = pending.current;
+        pending.current = null;
+        if (next) void persist(next);
+      }
+    },
+    [kitId],
+  );
+
+  useEffect(() => {
+    if (!draft) return;
+    if (!loaded.current) {
+      loaded.current = true; // first render after load: nothing changed yet
       return;
     }
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => void persist(draft), AUTOSAVE_MS);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, [draft, persist]);
 
-    const stored = getKitContent(effectiveKitId);
-    if (stored) {
-      setRates(stored.rates);
-      setBrands(stored.brands);
-      setSectionVisibility(stored.sectionVisibility ?? DEFAULT_SECTION_VISIBILITY);
-      setManualStats(normalizeManualStats(stored.manualStats));
-    }
-  }, [effectiveKitId]);
+  // Retry from the page header saves the current draft immediately.
+  const draftRef = useRef(draft);
+  useEffect(() => {
+    draftRef.current = draft;
+  });
+  useEffect(() => {
+    registerRetry?.(() => draftRef.current && void persist(draftRef.current));
+  }, [registerRetry, persist]);
 
-  const save = () => {
-    if (!effectiveKitId) return;
-    const isDbId = effectiveKitId.length >= 20 && !effectiveKitId.startsWith("kit_");
-    if (isDbId) {
-      fetch(`/api/kits/${effectiveKitId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ rates, brands, sectionVisibility, appearance, manualStats }),
-      })
-        .then(async (r) => {
-          if (!r.ok) throw new Error("Failed to save");
-          const data = await r.json().catch(() => ({}));
-          setSaved(true);
-          setTimeout(() => setSaved(false), 2000);
-          if (data.slug && onSaved) onSaved(data.slug);
-        })
-        .catch(() => setLoadError("Failed to save"));
-      return;
-    }
-    setKitContent(effectiveKitId, { rates, brands, sectionVisibility, manualStats });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+  const update = <K extends keyof Draft>(key: K, value: Draft[K] | ((prev: Draft[K]) => Draft[K])) =>
+    setDraft((d) => (d ? { ...d, [key]: typeof value === "function" ? (value as (p: Draft[K]) => Draft[K])(d[key]) : value } : d));
 
-  const addBrand = () => {
-    setBrands((prev) => [...prev, { id: newId(), name: "", tagline: "" }]);
-  };
-
-  const updateBrand = (id: string, updates: Partial<BrandPartner>) => {
-    setBrands((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, ...updates } : b))
+  /* Render states */
+  if (!kitId) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-background p-8 text-center">
+        <p className="text-sm text-muted-foreground">Pick a kit to edit from your dashboard.</p>
+        <ButtonLink href="/dashboard" className="mt-4">
+          Back to dashboard
+        </ButtonLink>
+      </div>
     );
-  };
+  }
+  if (loadError) {
+    return (
+      <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+        {loadError}
+        <div className="mt-3">
+          <ButtonLink href="/dashboard" size="sm">
+            Back to dashboard
+          </ButtonLink>
+        </div>
+      </div>
+    );
+  }
+  if (!draft) return <KitEditorSkeleton />;
 
-  const removeBrand = (id: string) => {
-    setBrands((prev) => prev.filter((b) => b.id !== id));
-  };
+  const { rates, brands, sectionVisibility, appearance, manualStats } = draft;
+  const ctaDestination = hasInquiryForm ? "your contact form" : hasLinks && sectionVisibility.links ? "your links" : null;
 
-  const updateSectionVisibility = (key: keyof SectionVisibility, value: boolean) => {
-    setSectionVisibility((prev) => ({ ...prev, [key]: value }));
-  };
+  const setRateItem = (id: string, patch: Partial<RateItem>) =>
+    update("rates", (r) => ({ ...r, items: (r.items ?? []).map((it) => (it.id === id ? { ...it, ...patch } : it)) }));
 
-  const visibilityToggles: { key: keyof SectionVisibility; label: string }[] = [
-    { key: "stats", label: "Reach & engagement" },
-    { key: "rates", label: "Rates" },
+  const visibility: Array<{ key: keyof SectionVisibility; label: string; starter?: boolean }> = [
+    { key: "stats", label: "Reach & engagement", starter: true },
+    { key: "growthChart", label: "Follower growth chart", starter: true },
+    { key: "audience", label: "Audience demographics", starter: true },
     { key: "brands", label: "Brands I've worked with" },
-    { key: "growthChart", label: "Follower growth chart" },
-    { key: "audience", label: "Audience demographics" },
-    { key: "links", label: "Get in touch (links)" },
+    { key: "links", label: "Get in touch (your links)" },
   ];
 
-  if (!effectiveKitId) {
-    return (
-      <div className="p-8 border border-border rounded-2xl bg-background text-center">
-        <p className="text-muted-foreground">No kit selected. Create one from the dashboard.</p>
-        <a href="/dashboard" className="mt-4 inline-block text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </a>
-      </div>
-    );
-  }
-
-  if (loadingKit) {
-    return <KitEditorSkeleton />;
-  }
-
-  const isDbKit =
-    effectiveKitId != null && effectiveKitId.length >= 20 && !effectiveKitId.startsWith("kit_");
-
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-semibold text-foreground">
-          Edit your kit
-        </h2>
-        <button
-          type="button"
-          onClick={save}
-          className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-full hover:opacity-80 disabled:opacity-70"
-        >
-          {saved ? "✓ Saved" : "Save changes"}
-        </button>
-      </div>
-      <p className="text-[11px] text-muted-foreground -mt-6">
-        Save changes to refresh the live preview
-      </p>
-      {loadError && (
-        <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-sm text-red-800">
-          <p className="font-medium">Something went wrong</p>
-          <p className="mt-1">{loadError}</p>
-          <button
-            type="button"
-            onClick={() => setLoadError(null)}
-            className="mt-2 text-red-600 hover:underline"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {/* Manual stats — available on every plan, replaced by live data when connected */}
-      <div className="p-6 border border-border rounded-2xl bg-background">
-        <div className="flex items-start justify-between gap-4 mb-1">
-          <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
-            Manual stats
-          </h3>
-          <span className="border-border text-muted-foreground rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide shrink-0">
-            All plans
-          </span>
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          No platform connected? Enter your headline numbers and they&apos;ll appear on your public kit, clearly labelled as self-reported.
-          On Starter and Pro, live data replaces these for any platform you connect.
-        </p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <StatField
-            label="Instagram followers"
-            value={manualStats.instagramFollowers}
-            onChange={(instagramFollowers) => setManualStats((s) => ({ ...s, instagramFollowers }))}
-          />
-          <StatField
-            label="Instagram engagement rate"
-            value={manualStats.instagramEngagement}
-            onChange={(instagramEngagement) => setManualStats((s) => ({ ...s, instagramEngagement }))}
-            suffix="%"
-            step={0.1}
-            hint="Average engagement across recent posts"
-          />
-          <StatField
-            label="YouTube subscribers"
-            value={manualStats.youtubeSubscribers}
-            onChange={(youtubeSubscribers) => setManualStats((s) => ({ ...s, youtubeSubscribers }))}
-          />
-          <StatField
-            label="YouTube total views"
-            value={manualStats.youtubeTotalViews}
-            onChange={(youtubeTotalViews) => setManualStats((s) => ({ ...s, youtubeTotalViews }))}
-          />
-          <StatField
-            label="Follower growth"
-            value={manualStats.growthThisMonth}
-            onChange={(growthThisMonth) => setManualStats((s) => ({ ...s, growthThisMonth }))}
-            suffix="%"
-            step={0.1}
-            min={-100}
-            hint="Last 30 days. Shown only when positive."
-          />
-        </div>
-        <p className="mt-4 text-xs text-muted-foreground">
-          Growth charts and audience demographics are only generated from connected platforms — manual numbers never become a chart.
-        </p>
-      </div>
-
-      {/* Section visibility — what appears on the public kit */}
-      <div className="p-6 border border-border rounded-2xl bg-background">
-        <div className="flex items-start justify-between gap-4 mb-1">
-          <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
-            Section visibility
-          </h3>
-          {isFree && (
-            <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide shrink-0">
-              Starter
-            </span>
-          )}
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Choose which sections appear on your public media kit.
-        </p>
-        <div className="mt-4 space-y-2.5">
-          {visibilityToggles.map(({ key, label }) => {
-            const starterOnly = ["stats", "growthChart", "audience"].includes(key);
-            const locked = isFree && starterOnly;
+    <div className="space-y-5">
+      {/* Style */}
+      <Section title="Style" hint="How your kit looks to brands. Your stats and rates stay the same in every style.">
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Kit style">
+          {BASIC_PRESETS.map((preset) => {
+            const active = appearance.preset === preset;
+            const sw = presetSwatch(preset);
             return (
-              <div key={key} className="flex items-center gap-3 w-full">
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={!locked && sectionVisibility[key]}
-                  disabled={locked}
-                  onClick={() => !locked && updateSectionVisibility(key, !sectionVisibility[key])}
-                  className={`flex items-center gap-3 flex-1 text-left ${locked ? "opacity-40 cursor-not-allowed" : "group"}`}
-                >
-                  <span
-                    className="h-4 w-4 shrink-0 rounded flex items-center justify-center transition-colors"
-                    style={locked ? { border: "1.5px solid #999" } : {
-                      border: sectionVisibility[key] ? undefined : "1.5px solid #999",
-                      backgroundColor: sectionVisibility[key] ? "var(--color-foreground)" : undefined,
-                      color: sectionVisibility[key] ? "var(--color-background)" : undefined,
-                      outline: sectionVisibility[key] ? "1.5px solid var(--color-foreground)" : undefined,
-                    }}
-                  >
-                    {!locked && sectionVisibility[key] && (
-                      <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="1.5 5 3.8 7.5 8.5 2" />
-                      </svg>
-                    )}
-                  </span>
-                  <span className="text-sm text-foreground">{label}</span>
-                </button>
-                {locked && (
-                  <a href="/pricing" className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors shrink-0">
-                    Upgrade
-                  </a>
-                )}
-              </div>
+              <button
+                key={preset}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => update("appearance", (a) => ({ ...a, preset }))}
+                className={`inline-flex h-9 items-center gap-2 rounded-full border pl-2 pr-3.5 text-sm font-medium transition-colors ${
+                  active ? "border-primary bg-primary text-primary-foreground" : "border-border text-foreground hover:bg-muted"
+                }`}
+              >
+                <span
+                  className="h-5 w-5 shrink-0 rounded-full border border-black/10"
+                  style={{ background: `linear-gradient(135deg, ${sw.bg} 50%, ${sw.accent} 50%)` }}
+                  aria-hidden
+                />
+                {KIT_APPEARANCE_PRESET_LABELS[preset]}
+              </button>
             );
           })}
         </div>
-        {isFree && (
-          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">Unlock live stats, growth charts & audience sections</p>
-            <a href="/pricing" className="shrink-0 bg-primary text-primary-foreground rounded-full px-4 py-1.5 text-xs font-medium hover:opacity-80 transition-opacity">
-              Upgrade to Starter
-            </a>
+
+        <div className="mt-5 border-t border-border pt-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-foreground">Signature styles</p>
+            {!isPro && <PlanBadge plan="Pro" />}
           </div>
-        )}
-      </div>
-
-      {isDbKit && (
-        <div className="border-border bg-background space-y-8 rounded-2xl border p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-foreground text-base font-semibold tracking-tight">
-                Brand Kit
-              </h3>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Choose a visual identity for your public kit.
-              </p>
-            </div>
-            {appearance.preset && (
-              <span className="text-muted-foreground bg-muted shrink-0 rounded-full px-3 py-1 text-xs font-medium">
-                {KIT_APPEARANCE_PRESET_LABELS[appearance.preset]}
-              </span>
-            )}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Signature style">
+            {BRAND_KIT_VIBES.map((vibe) => {
+              const meta = BRAND_KIT_VIBE_META[vibe];
+              const active = appearance.preset === vibe;
+              const bar = meta.bg === "#111110" || meta.bg === "#0A0A14" ? meta.fg : meta.bg;
+              return (
+                <button
+                  key={vibe}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  disabled={!isPro}
+                  onClick={() => update("appearance", (a) => ({ ...a, preset: vibe }))}
+                  className={`flex items-stretch overflow-hidden rounded-xl border text-left transition-colors disabled:cursor-not-allowed ${
+                    active ? "border-primary bg-primary-soft" : "border-border hover:bg-muted/60"
+                  } ${!isPro ? "opacity-60" : ""}`}
+                >
+                  <span className="w-1.5 shrink-0" style={{ backgroundColor: bar }} aria-hidden />
+                  <span className="min-w-0 flex-1 px-3.5 py-3">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-semibold text-foreground">{meta.label}</span>
+                      {active ? <Check size={14} className="shrink-0 text-primary" aria-hidden /> : !isPro ? <Lock size={13} className="shrink-0 text-muted-foreground" aria-hidden /> : null}
+                    </span>
+                    <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">{meta.tagline}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
-
-          {/* ── Basic presets (all plans) ── */}
-          <div>
-            <p className="text-muted-foreground mb-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
-              Starter styles
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {BASIC_PRESETS.map((preset) => {
-                const active = appearance.preset === preset;
-                return (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setAppearance((a) => ({ ...a, preset }))}
-                    className={`inline-flex items-center gap-2 rounded-full border py-1.5 pl-2 pr-4 text-sm font-medium whitespace-nowrap transition-all duration-150 ${
-                      active
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border text-foreground hover:bg-muted hover:border-foreground/20"
-                    }`}
-                  >
-                    <span
-                      className="h-4 w-4 shrink-0 rounded-full border border-black/10"
-                      style={{ background: `linear-gradient(135deg, ${presetSwatch(preset).bg} 50%, ${presetSwatch(preset).accent} 50%)` }}
-                      aria-hidden
-                    />
-                    {KIT_APPEARANCE_PRESET_LABELS[preset]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── Brand Kit Vibes (Pro) ── */}
-          <div>
-            <div className="mb-4 flex items-center gap-2">
-              <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.16em] uppercase">
-                Brand Kit Vibes
-              </p>
-              {!isPro && (
-                <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide">
-                  Pro
-                </span>
-              )}
-            </div>
-
-            {!isPro ? (
-              <div className="relative">
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 opacity-40 pointer-events-none select-none">
-                  {BRAND_KIT_VIBES.slice(0, 4).map((vibe) => {
-                    const meta = BRAND_KIT_VIBE_META[vibe];
-                    return (
-                      <div key={vibe} className="flex items-stretch rounded-xl border border-border overflow-hidden">
-                        <div className="w-1.5 shrink-0" style={{ backgroundColor: meta.bg === "#111110" || meta.bg === "#0A0A14" ? meta.fg : meta.bg }} />
-                        <div className="flex-1 px-4 py-3.5">
-                          <p className="text-sm font-semibold text-foreground">{meta.label}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{meta.tagline}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-background/85 backdrop-blur-sm text-center px-6 py-8">
-                  <p className="text-foreground text-sm font-semibold">5 signature design styles</p>
-                  <p className="text-muted-foreground mt-1 text-xs max-w-[220px] leading-relaxed">
-                    Editorial, Studio, Bloom, Electric, Noir Pro — with custom accent colors.
-                  </p>
-                  <a
-                    href="/pricing"
-                    className="bg-primary text-primary-foreground mt-4 inline-flex h-8 items-center rounded-full px-5 text-xs font-medium transition-opacity hover:opacity-80"
-                  >
-                    Upgrade to Pro
-                  </a>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {BRAND_KIT_VIBES.map((vibe) => {
-                  const meta = BRAND_KIT_VIBE_META[vibe];
-                  const active = appearance.preset === vibe;
-                  const accentColor = meta.bg === "#111110" || meta.bg === "#0A0A14" ? meta.fg : meta.bg;
-                  return (
-                    <button
-                      key={vibe}
-                      type="button"
-                      onClick={() => setAppearance((a) => ({ ...a, preset: vibe }))}
-                      className={`flex items-stretch rounded-xl border text-left transition-all duration-150 overflow-hidden ${
-                        active
-                          ? "border-foreground bg-muted/40"
-                          : "border-border hover:border-foreground/20 hover:bg-muted/30"
-                      }`}
-                    >
-                      {/* Color accent bar */}
-                      <div className="w-1.5 shrink-0" style={{ backgroundColor: accentColor }} />
-                      {/* Content */}
-                      <div className="flex-1 px-4 py-3.5 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-foreground leading-snug">{meta.label}</p>
-                          {active && (
-                            <span className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground mt-0.5">
-                              <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="1.5 5 3.8 7.5 8.5 2" />
-                              </svg>
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{meta.tagline}</p>
-                        <p className="text-[10px] text-muted-foreground/60 mt-2 tracking-wide">{meta.for}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* ── Logo URL (Pro) — parked for now ──
-              Shelved until we decide how a creator-supplied logo should behave on the kit
-              header (it has to stay legible across light and dark vibes). The data model
-              (appearance.logoUrl) still round-trips, so re-enabling is just uncommenting this
-              and the header render in MediaKitClient.
-          {isPro && (
-            <div>
-              <p className="text-muted-foreground mb-2 text-[11px] font-semibold tracking-[0.16em] uppercase">
-                Brand logo
-              </p>
-              <input
-                type="url"
-                placeholder="https://example.com/logo.png"
-                value={appearance.logoUrl ?? ""}
-                onChange={(e) =>
-                  setAppearance((a) => ({
-                    ...a,
-                    logoUrl: e.target.value || undefined,
-                  }))
-                }
-                className="border-border bg-background text-foreground placeholder:text-muted-foreground w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <p className="text-muted-foreground mt-1.5 text-xs">
-                Shown in your kit header instead of the Kitevo wordmark.
-              </p>
+          {!isPro && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-primary-soft px-4 py-3">
+              <p className="text-xs text-primary-soft-foreground">Signature styles come with Pro, along with 3 kits and the brand contact form.</p>
+              <ButtonLink href="/pricing?plan=pro" size="sm" variant="primary">
+                See Pro
+              </ButtonLink>
             </div>
           )}
-          */}
         </div>
-      )}
+      </Section>
 
-      {/* Rates — parked for now ──
-          Hidden on the kit too (see MediaKitClient). The CTA it rendered pointed at
-          links[0] and did nothing when the creator had no links. Rates data still
-          round-trips, so re-enabling is just uncommenting both sides.
-
-      <div className="p-6 border border-border rounded-2xl bg-background">
-        <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
-          Rates
-        </h3>
-        <div className="mt-4 space-y-4">
-          <button
-            type="button"
-            role="checkbox"
-            aria-checked={rates.show}
-            onClick={() => setRates((r) => ({ ...r, show: !r.show }))}
-            className="flex items-center gap-3 text-left group"
-          >
-            <span
-              className="h-4 w-4 shrink-0 rounded flex items-center justify-center transition-colors"
-              style={{
-                border: rates.show ? undefined : "1.5px solid #999",
-                backgroundColor: rates.show ? "var(--color-foreground)" : undefined,
-                color: rates.show ? "var(--color-background)" : undefined,
-                outline: rates.show ? "1.5px solid var(--color-foreground)" : undefined,
-              }}
-            >
-              {rates.show && (
-                <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="1.5 5 3.8 7.5 8.5 2" />
-                </svg>
+      {/* Rates */}
+      <Section
+        title="Rates"
+        hint="What you charge per deliverable. Brands decide faster when prices are on the kit."
+        badge={<Switch checked={rates.show} onChange={(show) => update("rates", (r) => ({ ...r, show }))} label="Show rates on my kit" />}
+      >
+        {!rates.show ? (
+          <p className="text-sm text-muted-foreground">Rates are hidden on your kit. Turn them on to add your prices.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {(rates.items ?? []).map((it, i) => (
+                <div key={it.id} className="flex items-center gap-2">
+                  <input
+                    aria-label={`Deliverable ${i + 1}`}
+                    value={it.label}
+                    maxLength={60}
+                    onChange={(e) => setRateItem(it.id, { label: e.target.value })}
+                    placeholder="e.g. Instagram Reel"
+                    className={`${fieldCls} flex-1`}
+                  />
+                  <div className="relative w-28 shrink-0">
+                    <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                    <input
+                      aria-label={`Price for deliverable ${i + 1}`}
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      value={it.price ?? ""}
+                      onChange={(e) => setRateItem(it.id, { price: e.target.value === "" ? undefined : Number(e.target.value) })}
+                      placeholder="450"
+                      className={`${fieldCls} pl-7`}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => update("rates", (r) => ({ ...r, items: (r.items ?? []).filter((x) => x.id !== it.id) }))}
+                    aria-label={`Remove ${it.label || `deliverable ${i + 1}`}`}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                  >
+                    <X size={15} aria-hidden />
+                  </button>
+                </div>
+              ))}
+              {(rates.items ?? []).length < MAX_RATE_ITEMS && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => update("rates", (r) => ({ ...r, items: [...(r.items ?? []), { id: newId(), label: "" }] }))}
+                >
+                  <Plus size={14} aria-hidden /> Add a deliverable
+                </Button>
               )}
-            </span>
-            <span className="text-sm text-foreground">Show rates on my kit</span>
-          </button>
-          {rates.show && (
-            <>
+            </div>
+
+            <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+              <NumberField
+                id="rates-from"
+                label="Custom packages from (optional)"
+                prefix="$"
+                value={rates.fromAmount}
+                onChange={(fromAmount) => update("rates", (r) => ({ ...r, fromAmount }))}
+                hint="Shown under your list, or on its own if you add no items."
+              />
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">
-                  From amount ($)
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="2500"
-                  value={rates.fromAmount ?? ""}
-                  onChange={(e) =>
-                    setRates((r) => ({
-                      ...r,
-                      fromAmount: e.target.value ? Number(e.target.value) : undefined,
-                    }))
-                  }
-                  className="w-full max-w-xs px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Leave empty for &quot;Contact for rates&quot;
-                </p>
-              </div>
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1">
+                <label htmlFor="rates-cta" className="mb-1.5 block text-xs font-medium text-muted-foreground">
                   Button label
                 </label>
                 <input
-                  type="text"
-                  placeholder="Get in touch"
+                  id="rates-cta"
                   value={rates.ctaLabel ?? ""}
-                  onChange={(e) =>
-                    setRates((r) => ({ ...r, ctaLabel: e.target.value || undefined }))
-                  }
-                  className="w-full max-w-xs px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  maxLength={40}
+                  onChange={(e) => update("rates", (r) => ({ ...r, ctaLabel: e.target.value || undefined }))}
+                  placeholder="Work with me"
+                  className={fieldCls}
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {ctaDestination ? `Takes brands to ${ctaDestination}.` : "Hidden until you add links in Settings or get the Pro contact form."}
+                </p>
               </div>
-            </>
-          )}
+            </div>
+          </div>
+        )}
+      </Section>
+
+      {/* Manual stats */}
+      <Section
+        title="Your numbers"
+        hint="No platform connected? Add headline numbers; they show on your kit labelled as self-reported. On Starter and Pro, live data replaces them for any platform you connect."
+        badge={<span className="shrink-0 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">All plans</span>}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <NumberField id="ms-igf" label="Instagram followers" value={manualStats.instagramFollowers} onChange={(v) => update("manualStats", (s) => ({ ...s, instagramFollowers: v }))} />
+          <NumberField
+            id="ms-ige"
+            label="Instagram engagement rate"
+            value={manualStats.instagramEngagement}
+            onChange={(v) => update("manualStats", (s) => ({ ...s, instagramEngagement: v }))}
+            suffix="%"
+            step={0.1}
+            hint="Average across recent posts"
+          />
+          <NumberField id="ms-yts" label="YouTube subscribers" value={manualStats.youtubeSubscribers} onChange={(v) => update("manualStats", (s) => ({ ...s, youtubeSubscribers: v }))} />
+          <NumberField id="ms-ytv" label="YouTube total views" value={manualStats.youtubeTotalViews} onChange={(v) => update("manualStats", (s) => ({ ...s, youtubeTotalViews: v }))} />
+          <NumberField
+            id="ms-gr"
+            label="Follower growth, last 30 days"
+            value={manualStats.growthThisMonth}
+            onChange={(v) => update("manualStats", (s) => ({ ...s, growthThisMonth: v }))}
+            suffix="%"
+            step={0.1}
+            min={-100}
+            hint="Shown only when positive"
+          />
         </div>
-      </div>
-      */}
+        <p className="mt-4 text-xs text-muted-foreground">Growth charts and audience breakdowns only come from connected platforms; manual numbers never become a chart.</p>
+      </Section>
 
       {/* Brands */}
-      <div className="p-6 border border-border rounded-2xl bg-background">
-        <h3 className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
-          Brands I&apos;ve worked with
-        </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Add past partners for social proof. Add a logo URL to show the logo instead of the name,
-          and pick the shape that matches your image so it isn&apos;t boxed in.
-        </p>
-        <div className="mt-4 space-y-3">
+      <Section title="Brands you've worked with" hint="Past partners, for social proof. Add a logo URL to show the logo instead of the name.">
+        <div className="space-y-3">
+          {brands.length === 0 && <p className="text-sm text-muted-foreground">No brands yet.</p>}
           {brands.map((b) => (
-            <div key={b.id} className="rounded-2xl border border-border p-4">
-              <div className="flex items-start gap-4">
-                {/* Live preview — anchors the row and shows exactly what the kit will render */}
-                <span className="mt-0.5 flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-white">
+            <div key={b.id} className="rounded-xl border border-border p-3.5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-white">
                   {b.logoUrl ? (
-                    <img src={b.logoUrl} alt="" className="max-h-9 max-w-[44px] object-contain" />
+                    // eslint-disable-next-line @next/next/no-img-element -- creator-supplied external URL
+                    <img src={b.logoUrl} alt="" className="max-h-8 max-w-[40px] object-contain" referrerPolicy="no-referrer" />
                   ) : (
-                    <span className="text-base font-semibold text-neutral-400">
-                      {(b.name || "?").charAt(0).toUpperCase()}
-                    </span>
+                    <span className="text-sm font-semibold text-[#556b84]">{(b.name || "?").charAt(0).toUpperCase()}</span>
                   )}
                 </span>
-
-                <div className="min-w-0 flex-1 space-y-2.5">
-                  <div className="grid gap-2.5 sm:grid-cols-2">
-                    <input
-                      type="text"
-                      placeholder="Brand name"
-                      value={b.name}
-                      onChange={(e) => updateBrand(b.id, { name: e.target.value })}
-                      className="w-full min-w-0 px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Tagline (optional)"
-                      value={b.tagline ?? ""}
-                      onChange={(e) => updateBrand(b.id, { tagline: e.target.value })}
-                      className="w-full min-w-0 px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <input aria-label="Brand name" value={b.name} onChange={(e) => update("brands", (bs) => bs.map((x) => (x.id === b.id ? { ...x, name: e.target.value } : x)))} placeholder="Brand name" className={fieldCls} />
+                    <input aria-label="Tagline" value={b.tagline ?? ""} onChange={(e) => update("brands", (bs) => bs.map((x) => (x.id === b.id ? { ...x, tagline: e.target.value } : x)))} placeholder="e.g. Spring campaign, 2026" className={fieldCls} />
                   </div>
-
                   <input
+                    aria-label="Logo URL"
                     type="url"
-                    placeholder="Logo URL (optional)"
                     value={b.logoUrl ?? ""}
-                    onChange={(e) => updateBrand(b.id, { logoUrl: e.target.value || undefined })}
-                    className="w-full min-w-0 px-3 py-2.5 border border-border rounded-xl text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    onChange={(e) => update("brands", (bs) => bs.map((x) => (x.id === b.id ? { ...x, logoUrl: e.target.value || undefined } : x)))}
+                    placeholder="Logo URL (optional)"
+                    className={fieldCls}
                   />
-
                   {b.logoUrl && (
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Shape</span>
-                      <div className="inline-flex rounded-lg border border-border p-0.5">
+                      <span className="text-xs text-muted-foreground">Logo shape</span>
+                      <div className="inline-flex rounded-full bg-muted p-0.5" role="radiogroup" aria-label="Logo shape">
                         {BRAND_LOGO_RATIO_OPTIONS.map((o) => {
-                          const active = (b.logoRatio ?? "auto") === o.value;
+                          const on = (b.logoRatio ?? "auto") === o.value;
                           return (
                             <button
                               key={o.value}
                               type="button"
-                              onClick={() => updateBrand(b.id, { logoRatio: o.value })}
-                              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                                active
-                                  ? "bg-primary text-primary-foreground"
-                                  : "text-muted-foreground hover:text-foreground"
-                              }`}
+                              role="radio"
+                              aria-checked={on}
+                              onClick={() => update("brands", (bs) => bs.map((x) => (x.id === b.id ? { ...x, logoRatio: o.value } : x)))}
+                              className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${on ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                             >
                               {o.short}
                             </button>
@@ -683,30 +542,49 @@ export function KitEditor({ kitId, tierId, onSaved }: KitEditorProps) {
                     </div>
                   )}
                 </div>
-
                 <button
                   type="button"
-                  onClick={() => removeBrand(b.id)}
+                  onClick={() => update("brands", (bs) => bs.filter((x) => x.id !== b.id))}
                   aria-label={`Remove ${b.name || "brand"}`}
-                  title="Remove"
-                  className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-red-600"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                    <path d="M18 6 6 18M6 6l12 12" />
-                  </svg>
+                  <X size={15} aria-hidden />
                 </button>
               </div>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={addBrand}
-            className="w-full py-3 border border-dashed border-border rounded-2xl text-sm text-muted-foreground hover:border-foreground hover:text-foreground transition-colors"
-          >
-            + Add brand
-          </button>
+          <Button size="sm" variant="ghost" onClick={() => update("brands", (bs) => [...bs, { id: newId(), name: "", tagline: "" }])}>
+            <Plus size={14} aria-hidden /> Add a brand
+          </Button>
         </div>
-      </div>
+      </Section>
+
+      {/* Visibility */}
+      <Section title="What's on your kit" hint="Turn sections on or off. Rates are controlled in the Rates section above.">
+        <ul className="divide-y divide-border">
+          {visibility.map(({ key, label, starter }) => {
+            const locked = isFree && !!starter;
+            return (
+              <li key={key} className="flex items-center justify-between gap-3 py-2.5">
+                <span className={`text-sm ${locked ? "text-muted-foreground" : "text-foreground"}`}>{label}</span>
+                <span className="flex items-center gap-2">
+                  {locked && (
+                    <Link href="/pricing?plan=starter" className="text-xs font-medium text-primary hover:underline">
+                      Starter
+                    </Link>
+                  )}
+                  <Switch
+                    checked={!locked && sectionVisibility[key]}
+                    disabled={locked}
+                    onChange={(v) => update("sectionVisibility", (sv) => ({ ...sv, [key]: v }))}
+                    label={label}
+                  />
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </Section>
     </div>
   );
 }

@@ -9,8 +9,9 @@ import { getPdfTheme } from "@/lib/pdf-theme";
 import { parseKitAppearance } from "@/lib/kit-appearance";
 import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import { getStatsForUser } from "@/lib/instagram-api";
-import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
-import type { SectionVisibility } from "@/lib/kit-storage";
+import type { WorkSample, BrandPartner } from "@/lib/mock-data";
+import type { SectionVisibility } from "@/lib/kit-storage";import { normalizeRates } from "@/lib/kit-rates";
+
 
 function parseJson<T>(raw: string, fallback: T): T {
   try { return (JSON.parse(raw) ?? fallback) as T; }
@@ -46,7 +47,7 @@ export async function GET(
   const appearance = parseKitAppearance(kit.appearance);
   const theme = getPdfTheme(appearance.preset);
   const workSamples = parseJson<WorkSample[]>(kit.workSamples, []);
-  const rates = parseJson<KitRates>(kit.rates, { show: false });
+  const rates = normalizeRates(parseJson<unknown>(kit.rates, null));
   const brands = parseJson<BrandPartner[]>(kit.brands, []);
   const sectionVisibility = parseJson<SectionVisibility>(
     kit.sectionVisibility,

@@ -10,6 +10,7 @@ import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import type { PlatformId, PlatformStatsWithCharts } from "@/lib/platforms";
 import { getPlatformMeta } from "@/lib/platforms";
 import { BRAND_LOGO_RATIO_CLASS, type KitRates, type BrandPartner } from "@/lib/mock-data";
+import { formatUsd, hasPublicRates, publicRateItems } from "@/lib/kit-rates";
 import type { FetchedPost } from "@/lib/platforms/instagram";
 import { DEFAULT_SECTION_VISIBILITY, type SectionVisibility } from "@/lib/kit-storage";
 import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
@@ -115,7 +116,7 @@ function InquiryForm({ kitId, creatorName }: { kitId: string; creatorName: strin
     "w-full px-4 py-3 rounded-xl border border-[var(--mk-border)] bg-[var(--mk-surface)] text-[var(--mk-text)] placeholder:text-[var(--mk-text-soft)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mk-text)]/30 font-sans transition";
 
   return (
-    <section className="mt-12 sm:mt-14 rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] px-6 py-10 sm:px-10">
+    <section id="work-together" className="mt-12 scroll-mt-6 sm:mt-14 rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] px-6 py-10 sm:px-10">
       <h2 className="font-display text-lg font-semibold text-[var(--mk-text)] tracking-tight text-center">
         Work together
       </h2>
@@ -1023,35 +1024,47 @@ export function MediaKitClient({
             </div>
           )}
 
-          {/* 5. Rates — parked for now ──
-              Also removes the "Get in touch" CTA, which pointed at links[0] and silently did
-              nothing (href="#") whenever the creator had no links set. Rates data still
-              round-trips; re-enable here and in KitEditor, and give the CTA a real target
-              (the inquiry form) before bringing it back.
-          {sectionVisibility.rates && rates.show && (
-            <div className="rounded-2xl bg-[var(--mk-text)] px-6 py-6 flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <p className="text-[var(--mk-bg)]/50 text-[11px] font-semibold tracking-[0.16em] uppercase mb-1">Rates</p>
-                <p className="font-display text-2xl font-semibold text-[var(--mk-bg)] tracking-tight">
-                  {rates.fromAmount != null ? `From $${rates.fromAmount.toLocaleString()}` : "Contact for rates"}
-                </p>
-              </div>
-              {rates.ctaLabel && (
-                <a
-                  href={links[0]?.url ?? "#"}
-                  className="inline-flex items-center rounded-full bg-[var(--mk-bg)] text-[var(--mk-text)] px-6 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity"
-                >
-                  {rates.ctaLabel}
-                </a>
-              )}
-            </div>
-          )}
-          */}
+          {/* 5. Rates. The button jumps to the contact form (Pro) or the links section, and is
+              hidden when the kit has neither, so it can never be a dead link. */}
+          {sectionVisibility.rates && hasPublicRates(rates) && (() => {
+            const items = publicRateItems(rates);
+            const ctaTarget = inquiryEnabled && kitId ? "#work-together" : sectionVisibility.links && links.length > 0 ? "#contact" : null;
+            return (
+              <section aria-labelledby="kit-rates" className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] p-5 sm:p-6">
+                <h2 id="kit-rates" className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase">Rates</h2>
+                {items.length > 0 ? (
+                  <ul className="mt-3 divide-y divide-[var(--mk-border)]">
+                    {items.map((item) => (
+                      <li key={item.id} className="flex items-baseline justify-between gap-4 py-3">
+                        <span className="min-w-0 text-sm text-[var(--mk-text)]">{item.label}</span>
+                        <span className="shrink-0 font-display text-xl font-semibold tabular-nums text-[var(--mk-text)]">{formatUsd(item.price)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 font-display text-2xl font-semibold tracking-tight text-[var(--mk-text)]">
+                    From {formatUsd(rates.fromAmount as number)}
+                  </p>
+                )}
+                {items.length > 0 && typeof rates.fromAmount === "number" && (
+                  <p className="mt-1 text-xs text-[var(--mk-text-muted)]">Custom packages from {formatUsd(rates.fromAmount)}.</p>
+                )}
+                {ctaTarget && (
+                  <a
+                    href={ctaTarget}
+                    className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[var(--mk-text)] px-6 py-3 text-sm font-semibold text-[var(--mk-bg)] transition-opacity hover:opacity-90 sm:w-auto"
+                  >
+                    {rates.ctaLabel || "Work with me"}
+                  </a>
+                )}
+              </section>
+            );
+          })()}
 
 
           {/* 8. Links */}
           {sectionVisibility.links && links.length > 0 && (
-            <div className="rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] p-5">
+            <div id="contact" className="scroll-mt-6 rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] p-5">
               <p className="text-[var(--mk-text-soft)] text-[11px] font-semibold tracking-[0.16em] uppercase mb-3">Get in touch</p>
               <div className="space-y-2">
                 {links.map((link, i) => (

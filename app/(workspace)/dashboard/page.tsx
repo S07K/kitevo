@@ -18,6 +18,7 @@ import { Modal } from "@/app/components/workspace/Modal";
 import { KitSpotlight, SetupChecklist, OpportunitiesPanel, ConnectionsPanel, PlanPanel, InquiriesPanel } from "./WorkspaceWidgets";
 import { KitActionsMenu, vibeFor } from "./KitActions";
 import { CreateKitModal } from "./CreateKitModal";
+import { hasPublicRates } from "@/lib/kit-rates";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -497,7 +498,7 @@ function DashboardContent() {
         { id: "connect", label: "Connect Instagram or YouTube", done: anyConnected, cta: "Connect", onClick: scrollToConnections },
         ...(mainKit
           ? [
-              { id: "rates", label: "Add your rates", done: !!mainKit.rates?.show, href: `/kit/edit?id=${encodeURIComponent(mainKit.id)}`, cta: "Add" },
+              { id: "rates", label: "Add your rates", done: hasPublicRates(mainKit.rates), href: `/kit/edit?id=${encodeURIComponent(mainKit.id)}`, cta: "Add" },
               {
                 id: "share",
                 label: "Share your kit with a brand",

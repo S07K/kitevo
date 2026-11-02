@@ -6,10 +6,11 @@ import { getAllowedKitsForUser } from "@/lib/subscription-for-request";
 import { getViewCountsForKits } from "@/lib/kit-views";
 import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import type { SectionVisibility } from "@/lib/kit-storage";
-import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
+import type { WorkSample, BrandPartner } from "@/lib/mock-data";
 import { parseKitAppearance } from "@/lib/kit-appearance";
 import { parseManualStats } from "@/lib/manual-stats";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent } from "@/lib/analytics";import { normalizeRates } from "@/lib/kit-rates";
+
 
 function defaultVisibility(): SectionVisibility {
   return { ...DEFAULT_SECTION_VISIBILITY };
@@ -41,7 +42,7 @@ export async function GET() {
     name: k.name,
     hasPassword: !!k.passwordHash,
     workSamples: parseJson<WorkSample[]>(k.workSamples, []),
-    rates: parseJson<KitRates>(k.rates, { show: false }),
+    rates: normalizeRates(parseJson<unknown>(k.rates, null)),
     brands: parseJson<BrandPartner[]>(k.brands, []),
     sectionVisibility: parseJson<SectionVisibility>(k.sectionVisibility, defaultVisibility()),
     appearance: parseKitAppearance(k.appearance),

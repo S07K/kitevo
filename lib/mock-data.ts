@@ -82,18 +82,33 @@ export const MOCK_WORK_SAMPLES: WorkSample[] = [
   },
 ];
 
-/** Rates block: optional "from $X" or "Contact for rates". */
+/** One line on the rate card, e.g. "Instagram Reel" — $450. Price in whole USD. */
+export interface RateItem {
+  id: string;
+  label: string;
+  price?: number;
+}
+
+/** Rate card. Rules + sanitising live in lib/kit-rates.ts. */
 export interface KitRates {
   show: boolean;
-  /** If set, show "Rates from $X". Otherwise "Contact for rates". */
+  /** Itemised deliverables. */
+  items?: RateItem[];
+  /** Optional "Rates from $X" line, shown when there are no complete items. */
   fromAmount?: number;
+  /** Button label; the button goes to the kit's contact form or links. */
   ctaLabel?: string;
 }
 
+/** Demo kit only (/kit/demo). Real kits start from EMPTY_RATES. */
 export const MOCK_RATES: KitRates = {
   show: true,
-  fromAmount: 2500,
-  ctaLabel: "Get in touch",
+  items: [
+    { id: "d1", label: "Instagram Reel", price: 450 },
+    { id: "d2", label: "Story set (3)", price: 220 },
+    { id: "d3", label: "UGC video (usage 3 months)", price: 600 },
+  ],
+  ctaLabel: "Work with me",
 };
 
 /**

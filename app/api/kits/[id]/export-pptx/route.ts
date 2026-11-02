@@ -6,8 +6,9 @@ import { prisma } from "@/lib/prisma";
 const PptxGenJS = require("pptxgenjs");
 import { parseKitAppearance } from "@/lib/kit-appearance";
 import { getStatsForUser } from "@/lib/instagram-api";
-import type { WorkSample, KitRates, BrandPartner } from "@/lib/mock-data";
-import { APP_URL, APP_HOST } from "@/lib/app-url";
+import type { WorkSample, BrandPartner } from "@/lib/mock-data";
+import { APP_URL, APP_HOST } from "@/lib/app-url";import { formatUsd, hasPublicRates, normalizeRates, publicRateItems } from "@/lib/kit-rates";
+
 
 function pj<T>(raw: string, fallback: T): T {
   try { return (JSON.parse(raw) ?? fallback) as T; }
@@ -62,7 +63,7 @@ export async function GET(
   const appearance = parseKitAppearance(kit.appearance);
   const theme = THEME[appearance.preset as string] ?? DEFAULT_THEME;
   const workSamples = pj<WorkSample[]>(kit.workSamples, []);
-  const rates = pj<KitRates>(kit.rates, { show: false });
+  const rates = normalizeRates(pj<unknown>(kit.rates, null));
   const brands = pj<BrandPartner[]>(kit.brands, []);
   const links = pj<{ label: string; url: string }[]>(user.links ?? "[]", []);
   const creatorName = user.name ?? "Creator";
@@ -282,11 +283,14 @@ export async function GET(
     value: workSamples.filter((w) => w.platform === p).length + " samples",
   }));
 
-  if (rates.show) {
-    // Show pricing info
-    const priceCard = { label: "Starting from", value: rates.fromAmount ? `$${rates.fromAmount.toLocaleString()}` : "On request" };
-    const ctaCard = { label: "Next step", value: rates.ctaLabel ?? "Get in touch" };
-    const cards = [priceCard, ctaCard, ...contentTypes.slice(0, 4)];
+  if (hasPublicRates(rates)) {
+    // One card per rate line (or a single "from" card), then the next step.
+    const items = publicRateItems(rates);
+    const priceCards = items.length
+      ? items.slice(0, 4).map((it) => ({ label: it.label, value: formatUsd(it.price) }))
+      : [{ label: "Starting from", value: formatUsd(rates.fromAmount as number) }];
+    const ctaCard = { label: "Next step", value: rates.ctaLabel || "Work with me" };
+    const cards = [...priceCards, ctaCard, ...contentTypes.slice(0, Math.max(0, 5 - priceCards.length))];
 
     const colW = 2.7, colGap = 0.35, rowH = 1.8, rowGap = 0.3;
     const cols = 3;
