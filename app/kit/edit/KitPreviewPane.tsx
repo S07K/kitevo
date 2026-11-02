@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Monitor, Pencil, Smartphone } from "lucide-react";
+import { Lock, Monitor, Pencil, Smartphone } from "lucide-react";
 import { Skeleton } from "@/app/components/Skeleton";
 import { Iphone } from "@/components/ui/iphone";
 import { LiveKit, type KitPreviewData } from "./LiveKit";
@@ -14,6 +14,8 @@ type Device = "mobile" | "desktop";
 /** Viewport the mobile preview renders at (iPhone 14/15 class) and the Iphone frame's full size. */
 const VIEWPORT = { w: 390, h: 844 };
 const FRAME = { w: 433, h: 882 };
+/** Desktop preview: a real 1280px-wide browser window (title bar included), scaled to fit. */
+const BROWSER = { w: 1280, bar: 44 };
 const DEVICE_KEY = "kitevo-editor-preview-device";
 const DEVICE_EVENT = "kitevo:preview-device";
 
@@ -55,10 +57,22 @@ const deviceStore = {
  * uses container queries, so it lays out for whichever width it's given. Both are touch
  * areas: drag to scroll, taps never navigate.
  */
-export function KitPreviewPane({ data, draft, error }: { data: KitPreviewData | null; draft: KitDraft | null; error?: string | null }) {
+export function KitPreviewPane({
+  data,
+  draft,
+  error,
+  address,
+}: {
+  data: KitPreviewData | null;
+  draft: KitDraft | null;
+  error?: string | null;
+  /** Shown in the desktop browser frame's address bar. */
+  address?: string;
+}) {
   const device = useSyncExternalStore(deviceStore.subscribe, deviceStore.get, () => "mobile" as Device);
   const stage = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [browser, setBrowser] = useState({ scale: 0.5, height: 700 });
 
   const choose = (d: Device) => deviceStore.set(d);
 
@@ -105,13 +119,19 @@ export function KitPreviewPane({ data, draft, error }: { data: KitPreviewData | 
     [sectionAt],
   );
 
-  // Fit the phone into the stage (never upscale past 1:1).
+  // Fit the phone (or the browser window) into the stage, never upscaling past 1:1.
   useLayoutEffect(() => {
     const el = stage.current;
-    if (!el || device !== "mobile") return;
+    if (!el) return;
     const fit = () => {
       const { width, height } = el.getBoundingClientRect();
-      setScale(Math.max(0.4, Math.min(1, (height - 48) / FRAME.h, (width - 48) / FRAME.w)));
+      if (device === "mobile") {
+        setScale(Math.max(0.4, Math.min(1, (height - 48) / FRAME.h, (width - 48) / FRAME.w)));
+      } else {
+        // Width decides the scale; the window then fills the pane's height.
+        const s = Math.max(0.25, Math.min(1, (width - 48) / BROWSER.w));
+        setBrowser({ scale: s, height: Math.max(320, (height - 48) / s) });
+      }
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -148,10 +168,32 @@ export function KitPreviewPane({ data, draft, error }: { data: KitPreviewData | 
         ) : !kit ? (
           <Skeleton className="absolute inset-6 rounded-2xl" />
         ) : device === "desktop" ? (
-          // translateZ makes this box the containing block for the kit's position:fixed header,
-          // so it pins to the top of the preview instead of the browser window.
-          <div className="absolute inset-0" style={{ transform: "translateZ(0)" }}>
-            <TouchScroller onTap={onTap} onHover={onHover}>{kit}</TouchScroller>
+          <div className="absolute inset-0 flex items-start justify-center pt-6">
+            {/* Outer box takes the scaled size so the window centres; inner is a real 1280px window. */}
+            <div style={{ width: BROWSER.w * browser.scale, height: browser.height * browser.scale }}>
+              <div
+                className="origin-top-left overflow-hidden rounded-xl border border-border bg-background shadow-[0_24px_48px_-12px_rgba(27,54,93,0.28)]"
+                style={{ width: BROWSER.w, height: browser.height, transform: `scale(${browser.scale})` }}
+              >
+                <div className="flex items-center gap-4 border-b border-border bg-muted/70 px-5" style={{ height: BROWSER.bar }} aria-hidden>
+                  <span className="flex gap-2">
+                    <span className="h-3 w-3 rounded-full bg-foreground/15" />
+                    <span className="h-3 w-3 rounded-full bg-foreground/15" />
+                    <span className="h-3 w-3 rounded-full bg-foreground/15" />
+                  </span>
+                  <span className="mx-auto flex h-7 w-[min(560px,60%)] items-center justify-center gap-2 rounded-lg bg-background px-4 text-[13px] text-muted-foreground">
+                    <Lock size={12} aria-hidden />
+                    <span className="truncate">{address ?? "getkitevo.com"}</span>
+                  </span>
+                  <span className="w-[52px]" />
+                </div>
+                {/* Its own transform makes this (not the whole window) the containing block for the
+                    kit's fixed header, so the header sits under the address bar instead of over it. */}
+                <div style={{ height: browser.height - BROWSER.bar, transform: "translateZ(0)" }}>
+                  <TouchScroller scale={browser.scale} onTap={onTap} onHover={onHover}>{kit}</TouchScroller>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">

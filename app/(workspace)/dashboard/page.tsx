@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { type PlatformStatsWithCharts } from "@/lib/platforms";
-import { type ProfileFormProfile } from "@/app/components/ProfileForm";
+import type { AccountProfile } from "@/lib/profile-types";
 import { DashboardSkeleton, KitSpotlightSkeleton, MetricsSkeleton, ActivitySkeleton, PanelSkeleton, Skeleton, CountUp } from "@/app/components/Skeleton";
 import { AnalyticsChart } from "@/app/components/AnalyticsChart";
 import type { KitRecord } from "@/lib/kit-storage";
@@ -133,7 +133,7 @@ function DashboardContent() {
   const isPaidTier = !!tierId && tierId !== "free";
   const [kits, setKits] = useState<DashboardKit[]>([]);
   const [kitsLoaded, setKitsLoaded] = useState(false);
-  const [profile, setProfile] = useState<ProfileFormProfile | null>(null);
+  const [profile, setProfile] = useState<AccountProfile | null>(null);
   const router = useRouter();
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [platformStats, setPlatformStats] = useState<Record<string, PlatformStatsWithCharts> | null>(null);
@@ -492,9 +492,16 @@ function DashboardContent() {
         ...(kits.length === 0
           ? [{ id: "kit", label: "Create your media kit", done: false, cta: "Create", onClick: () => setCreateOpen(true) }]
           : []),
-        { id: "photo", label: "Add a profile photo", done: !!avatarUrl, href: "/settings", cta: "Add" },
-        { id: "bio", label: "Write a short bio", done: !!profile?.bio, href: "/settings", cta: "Write" },
-        { id: "niches", label: "Pick your niches", done: (profile?.niches?.length ?? 0) > 0, href: "/settings", cta: "Pick" },
+        // Profile lives in the kit editor's Profile card (no kit yet: create one first).
+        ...[
+          { id: "photo", label: "Add a profile photo", done: !!avatarUrl, cta: "Add" },
+          { id: "bio", label: "Write a short bio", done: !!profile?.bio, cta: "Write" },
+          { id: "niches", label: "Pick your niches", done: (profile?.niches?.length ?? 0) > 0, cta: "Pick" },
+        ].map((item) =>
+          mainKit
+            ? { ...item, href: `/kit/edit?id=${encodeURIComponent(mainKit.id)}&section=profile` }
+            : { ...item, onClick: () => setCreateOpen(true) },
+        ),
         { id: "connect", label: "Connect Instagram or YouTube", done: anyConnected, cta: "Connect", onClick: scrollToConnections },
         ...(mainKit
           ? [

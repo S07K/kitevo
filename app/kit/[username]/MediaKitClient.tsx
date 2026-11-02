@@ -643,7 +643,8 @@ export function MediaKitClient({
             </aside>
 
             {/* ── The case for working together ── */}
-            <div className="min-w-0 space-y-10 pb-16 pt-8 @min-[640px]:space-y-12 @min-[1024px]:pt-0">
+            {/* The first block never gets a divider above it (sections draw a top hairline). */}
+            <div className="min-w-0 space-y-10 pb-16 pt-8 @min-[640px]:space-y-12 @min-[1024px]:pt-0 [&>section:first-child]:border-t-0 [&>section:first-child]:pt-0 [&>div:first-child>section:first-child]:border-t-0 [&>div:first-child>section:first-child]:pt-0 @min-[1024px]:[&>[data-rates-mobile]:first-child+div>section]:border-t-0 @min-[1024px]:[&>[data-rates-mobile]:first-child+div>section]:pt-0">
               {(summary.length > 0 || stats.length > 0) && (
                 <div data-kit-section="numbers">
                   {summary.length > 0 && (
@@ -900,7 +901,7 @@ export function MediaKitClient({
 
               {/* ── Rates (narrow screens; wide screens show them in the rail) ── */}
               {showRates && (
-                <div className="@min-[1024px]:hidden">
+                <div data-rates-mobile className="@min-[1024px]:hidden">
                   <RateCard rates={rates} ctaTarget={ctaTarget} ctaLabel={ctaLabel} />
                 </div>
               )}

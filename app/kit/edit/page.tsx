@@ -9,6 +9,7 @@ import { Skeleton } from "@/app/components/Skeleton";
 import { KitEditor, type KitDraft, type LoadedKit, type SaveStatus } from "./KitEditor";
 import type { KitPreviewData } from "./LiveKit";
 import { KitPreviewPane } from "./KitPreviewPane";
+import { APP_HOST } from "@/lib/app-url";
 
 /** Header status chip for autosave. */
 function StatusChip({ status, onRetry }: { status: SaveStatus; onRetry: () => void }) {
@@ -127,7 +128,7 @@ function KitEditContent() {
 
       {/* Preview column (desktop) */}
       <div className="hidden min-h-0 flex-1 flex-col bg-muted/40 lg:flex">
-        <KitPreviewPane data={preview} draft={draft} error={previewError} />
+        <KitPreviewPane data={preview} draft={draft} error={previewError} address={kit?.slug ? `${APP_HOST}/kit/${kit.slug}` : APP_HOST} />
       </div>
     </div>
   );

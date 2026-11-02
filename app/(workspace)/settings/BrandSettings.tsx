@@ -40,7 +40,7 @@ const BUDGET_RANGES = ["Under $500", "$500–$2k", "$2k–$10k", "$10k–$50k", 
 const fieldCls =
   "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-ring/40";
 
-/** Same section anatomy as the creator ProfileForm: heading + hint, then fields. */
+/** Form section: heading + one-line hint, then fields. */
 function FormSection({ title, hint, children }: { title: string; hint?: ReactNode; children: ReactNode }) {
   return (
     <section className="px-5 py-6 sm:px-6">

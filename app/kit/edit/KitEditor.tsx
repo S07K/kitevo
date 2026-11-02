@@ -170,7 +170,15 @@ function NumberField({
 const MAX_BIO = 300;
 
 /** Photo, name, location, niches, bio. Photo uploads save at once; the rest autosaves. */
-function ProfileFields({ profile, onChange }: { profile: ProfileDraft; onChange: (patch: Partial<ProfileDraft>) => void }) {
+function ProfileFields({
+  profile,
+  onChange,
+  instagramConnected,
+}: {
+  profile: ProfileDraft;
+  onChange: (patch: Partial<ProfileDraft>) => void;
+  instagramConnected: boolean;
+}) {
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -191,8 +199,7 @@ function ProfileFields({ profile, onChange }: { profile: ProfileDraft; onChange:
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : "The photo didn't upload. Try again.");
-      onChange({ avatarUrl: json.avatarUrl ?? avatarDataUrl });
-      window.dispatchEvent(new CustomEvent("kitevo:avatar-updated", { detail: { avatarUrl: json.avatarUrl ?? avatarDataUrl } }));
+      setAvatar(json.avatarUrl ?? avatarDataUrl);
     } catch (e) {
       setPhotoError(e instanceof Error ? e.message : "The photo didn't upload. Try again.");
     } finally {
@@ -200,6 +207,39 @@ function ProfileFields({ profile, onChange }: { profile: ProfileDraft; onChange:
       if (fileRef.current) fileRef.current.value = "";
     }
   }
+
+  const setAvatar = (url: string | null) => {
+    onChange({ avatarUrl: url });
+    window.dispatchEvent(new CustomEvent("kitevo:avatar-updated", { detail: { avatarUrl: url } }));
+  };
+
+  /** Shared runner for the instant photo actions (Instagram import, remove). */
+  async function photoAction(run: () => Promise<Response>, fallback: string, read: (json: Record<string, unknown>) => string | null) {
+    setPhotoBusy(true);
+    setPhotoError(null);
+    try {
+      const res = await run();
+      const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!res.ok) throw new Error(typeof json.error === "string" ? json.error : fallback);
+      setAvatar(read(json));
+    } catch (e) {
+      setPhotoError(e instanceof Error ? e.message : fallback);
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+  const useInstagramPhoto = () =>
+    photoAction(
+      () => fetch("/api/me/profile/use-instagram-photo", { method: "POST", credentials: "include" }),
+      "Couldn't get your Instagram photo. Try again.",
+      (j) => (typeof j.avatarUrl === "string" ? j.avatarUrl : null),
+    );
+  const removePhoto = () =>
+    photoAction(
+      () => fetch("/api/me/avatar", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ avatarDataUrl: null }) }),
+      "Couldn't remove the photo. Try again.",
+      () => null,
+    );
 
   const toggleNiche = (n: string) =>
     onChange({
@@ -227,9 +267,21 @@ function ProfileFields({ profile, onChange }: { profile: ProfileDraft; onChange:
           </span>
         </button>
         <div className="min-w-0">
-          <Button size="sm" onClick={() => fileRef.current?.click()} disabled={photoBusy}>
-            {photoBusy ? "Uploading…" : profile.avatarUrl ? "Change photo" : "Add a photo"}
-          </Button>
+          <div className="flex flex-wrap gap-1.5">
+            <Button size="sm" onClick={() => fileRef.current?.click()} disabled={photoBusy}>
+              {photoBusy ? "Working…" : profile.avatarUrl ? "Change photo" : "Add a photo"}
+            </Button>
+            {instagramConnected && (
+              <Button size="sm" variant="ghost" onClick={useInstagramPhoto} disabled={photoBusy}>
+                Use Instagram photo
+              </Button>
+            )}
+            {profile.avatarUrl && (
+              <Button size="sm" variant="ghost" onClick={removePhoto} disabled={photoBusy}>
+                Remove
+              </Button>
+            )}
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">A clear photo of your face works best. Saves right away.</p>
           {photoError && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{photoError}</p>}
         </div>
@@ -407,6 +459,7 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
   const [draft, setDraft] = useState<KitDraft | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [flash, setFlash] = useState<{ section: EditorSectionId; row?: string } | null>(null);
+  const [instagramConnected, setInstagramConnected] = useState(false);
 
   // Autosave bookkeeping: skip the first render after load, coalesce rapid edits, never run
   // two saves at once (the newest draft is saved right after an in-flight one finishes).
@@ -433,7 +486,8 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
         return r.json();
       }),
       fetch("/api/me/profile", { credentials: "include" }).then(
-        (r) => (r.ok ? r.json() : {}) as Promise<{ name?: unknown; bio?: unknown; location?: unknown; niches?: unknown; links?: unknown; avatarUrl?: unknown }>,
+        (r) =>
+          (r.ok ? r.json() : {}) as Promise<{ name?: unknown; bio?: unknown; location?: unknown; niches?: unknown; links?: unknown; avatarUrl?: unknown; instagramConnected?: unknown }>,
       ),
     ])
       .then(([data, p]) => {
@@ -463,6 +517,7 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
             avatarUrl: typeof p.avatarUrl === "string" ? p.avatarUrl : null,
           },
         };
+        setInstagramConnected(p.instagramConnected === true);
         savedKit.current = JSON.stringify(kitPart(d));
         savedProfile.current = JSON.stringify(profilePart(d.profile));
         setDraft(d);
@@ -577,6 +632,21 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
     };
   }, []);
 
+  // Deep link: /kit/edit?id=…&section=profile opens that card once the kit has loaded
+  // (Settings and the dashboard checklist link here for profile edits).
+  const deepLinked = useRef(false);
+  const ready = draft !== null;
+  useEffect(() => {
+    if (!ready || deepLinked.current) return;
+    deepLinked.current = true;
+    const section = new URLSearchParams(window.location.search).get("section");
+    const ids: EditorSectionId[] = ["style", "profile", "numbers", "live", "brands", "rates", "contact"];
+    if (section && (ids as string[]).includes(section)) {
+      // After paint, so the card exists to scroll to.
+      requestAnimationFrame(() => window.dispatchEvent(new CustomEvent(EDIT_SECTION_EVENT, { detail: { section } })));
+    }
+  }, [ready]);
+
   const update = <K extends keyof KitDraft>(key: K, value: KitDraft[K] | ((prev: KitDraft[K]) => KitDraft[K])) =>
     setDraft((d) => (d ? { ...d, [key]: typeof value === "function" ? (value as (p: KitDraft[K]) => KitDraft[K])(d[key]) : value } : d));
   const updateProfile = (patch: Partial<ProfileDraft> | ((p: ProfileDraft) => Partial<ProfileDraft>)) =>
@@ -629,7 +699,7 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
         hint="The top of your kit. Changes here show on all your kits."
         badge={<SharedBadge />}
       >
-        <ProfileFields profile={profile} onChange={updateProfile} />
+        <ProfileFields profile={profile} onChange={updateProfile} instagramConnected={instagramConnected} />
       </Section>
 
       {/* Style */}

@@ -140,7 +140,8 @@ export function TouchScroller({
         data-touch-scroller
         onScroll={() => lastPoint.current && !drag.current && onHover?.(lastPoint.current)}
         className="h-full w-full overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div inert>{children}</div>
+        {/* h-full gives the kit a definite height to fill (min-h-full), so short kits don't stop mid-screen. */}
+        <div inert className="h-full">{children}</div>
       </div>
       {finger && (
         <span

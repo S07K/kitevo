@@ -2,21 +2,22 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
-import { ProfileForm, type ProfileFormProfile } from "@/app/components/ProfileForm";
-import { VerifiedBadge } from "@/app/components/VerifiedBadge";
-import type { ProfilePayload } from "@/app/api/me/profile/route";
-import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/WorkspaceShell";
-import { Skeleton, FieldSkeleton, PanelSkeleton } from "@/app/components/Skeleton";
+import type { AccountProfile } from "@/lib/profile-types";
+import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
+import { PanelSkeleton } from "@/app/components/Skeleton";
+import { ProfileSummaryPanel, UsernamePanel } from "./AccountSettings";
 import { ConnectionsPanel, PlanPanel } from "../dashboard/WorkspaceWidgets";
 import { AccountPanels } from "./AccountPanels";
 
-export default function ProfilePage() {
-  const [profile, setProfile] = useState<ProfileFormProfile | null>(null);
+/**
+ * Creator settings = the account: username, connected accounts, plan, sign-out/delete.
+ * Everything brands see on the kit (photo, name, bio, niches, links) is edited in the kit
+ * editor; the profile card here summarises it and links there.
+ */
+export default function CreatorSettings() {
+  const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [kitId, setKitId] = useState<string | null>(null);
 
   // Instagram
   const [instagramConnected, setInstagramConnected] = useState(false);
@@ -40,6 +41,12 @@ export default function ProfilePage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => { setProfile(data); setLoading(false); })
       .catch(() => setLoading(false));
+
+    // The main kit (first in the list, as on the dashboard) is where the profile is edited.
+    fetch("/api/kits", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((kits) => { if (Array.isArray(kits) && kits[0]?.id) setKitId(kits[0].id); })
+      .catch(() => {});
 
     fetch("/api/instagram/status", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
@@ -69,34 +76,6 @@ export default function ProfilePage() {
       })
       .catch(() => setPlanLoaded(true));
   }, []);
-
-  const handleSave = async (data: ProfilePayload) => {
-    setSaving(true);
-    setSaveError(null);
-    setSaved(false);
-    try {
-      const res = await fetch("/api/me/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        // The PUT response doesn't echo niches, so merge what we sent as well.
-        setProfile((p) => (p ? { ...p, ...data, ...updated } : null));
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-        // The sidebar persists across tabs; tell it the new display name.
-        window.dispatchEvent(new CustomEvent("kitevo:profile-updated", { detail: { name: updated.name ?? data.name ?? null } }));
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setSaveError(err.error ?? "Failed to save profile");
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleDisconnect = async () => {
     setDisconnecting(true);
@@ -165,67 +144,36 @@ export default function ProfilePage() {
 
   return (
     <WorkspaceShell variant="creator" width="wide">
-      <PageHeader eyebrow="Settings" title="Profile & settings" description="Your public profile, connected accounts and plan." />
+      <PageHeader eyebrow="Settings" title="Settings" description="Your account, connected accounts and plan." />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* ── Main: the public profile ── */}
-        <div className="min-w-0 lg:col-span-2">
-          <Panel
-            title={
-              <span className="inline-flex items-center gap-1.5">
-                Public profile <VerifiedBadge tier={profile?.verifiedTier} size="sm" />
-              </span>
-            }
-            action={
-              profile?.username ? (
-                <Link
-                  href={`/${profile.username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  View profile <ExternalLink size={12} aria-hidden />
-                </Link>
-              ) : null
-            }
-            bodyClassName=""
-          >
-            {loading ? (
-              <div className="space-y-6 p-5 sm:p-6" aria-hidden>
-                <div className="flex items-center gap-5">
-                  <Skeleton className="h-24 w-24 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-3.5 w-28 rounded-full" />
-                    <Skeleton className="h-3 w-3/4 rounded-full" />
-                    <Skeleton className="mt-3 h-8 w-32 rounded-full" />
-                  </div>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FieldSkeleton />
-                  <FieldSkeleton />
-                </div>
-                <FieldSkeleton tall />
-              </div>
-            ) : profile ? (
-              <ProfileForm
-                profile={profile}
-                externalError={saveError}
-                onAvatarUrlChange={(url) => setProfile((p) => (p ? { ...p, avatarUrl: url } : null))}
-                onSave={handleSave}
-                saving={saving}
-                saved={saved}
-                submitLabel="Save profile"
+        {/* ── Main: profile summary (edited in the kit editor) + username ── */}
+        <div className="min-w-0 space-y-6 lg:col-span-2">
+          {loading ? (
+            <>
+              <PanelSkeleton rows={3} titleWidth="w-24" />
+              <PanelSkeleton rows={1} titleWidth="w-20" />
+            </>
+          ) : profile ? (
+            <>
+              <ProfileSummaryPanel profile={profile} kitId={kitId} />
+              <UsernamePanel
+                username={profile.username ?? ""}
+                onSaved={(username) => {
+                  setProfile((p) => (p ? { ...p, username } : p));
+                  window.dispatchEvent(new CustomEvent("kitevo:profile-updated", { detail: { name: profile.name ?? null } }));
+                }}
               />
-            ) : (
-              <p className="p-6 text-sm text-muted-foreground">
-                Could not load your profile.{" "}
-                <Link href="/dashboard" className="underline underline-offset-4">
-                  Go back
-                </Link>
-                .
-              </p>
-            )}
-          </Panel>
+            </>
+          ) : (
+            <p className="rounded-2xl border border-border bg-background p-6 text-sm text-muted-foreground">
+              Couldn&apos;t load your account.{" "}
+              <Link href="/dashboard" className="underline underline-offset-4">
+                Back to dashboard
+              </Link>
+              .
+            </p>
+          )}
         </div>
 
         {/* ── Rail: connections, plan, account ── */}
