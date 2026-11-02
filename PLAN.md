@@ -1,6 +1,6 @@
 # Kitevo Product & Growth Plan
 
-**Status (2026-11-02):** Phase 0 — 9/11 checklist items done (open: trials & coupons, custom domains); all exit criteria met. R1 referral program shipped. Workspace + landing revamp shipped — see §15. Phases 1–3 not started.
+**Status (2026-11-02):** Phase 0 — 10/11 checklist items done (open: custom domains); all exit criteria met. R1 referral program shipped. Workspace + landing revamp shipped — see §15. Phases 1–3 not started.
 **Last updated:** 2026-11-02
 **Scope:** Competitive strategy, pricing architecture, feature roadmap, and the Phase 0 execution checklist.
 
@@ -204,7 +204,7 @@ Workstreams:
 - [x] **Migrations.** Versioned baseline in `prisma/migrations`; `migrate deploy` runs automatically on every deploy (GitHub Action gated on tests + Vercel build before `next build`). Prod baselined + first deploys verified 2026-10-31.
 - [x] **Token encryption.** AES-256-GCM with key-id prefix for rotation (`lib/token-crypto.ts`), backfill script, build guard. Google sign-in tokens no longer stored. (2026-11-01; prod key + backfill per DEPLOY.md)
 - [x] **Admin/ops.** `/admin`: user lookup, comp + plan resync (live provider subscription), payment webhook log with replay, admin audit log; `/admin/payouts` for referrals. (2026-11-01)
-- [ ] **Trials and coupons.** Provider-backed trial and coupon support, with abuse limits.
+- [x] **Trials and coupons.** Provider-backed trial and coupon support, with abuse limits. ✅ (2026-11-02) 14-day Pro trial (`lib/trials.ts`, `PRO_TRIAL_DAYS`): one per account (any past checkout disqualifies), verified email, creators only, card up front, eligibility checked server-side at checkout. Discount codes live in the provider dashboard; `/pricing?code=` pre-applies, unknown codes fall back to a normal checkout. Known gap: deleting an account and signing up again with the same email gets a new trial.
 - [x] **Analytics baseline.** First-party `AnalyticsEvent` table + `lib/analytics.ts`: signup → onboarding → kit created → first outside kit view (≈ shared) → checkout started → upgrade, plus cancel. Cohort report: `scripts/funnel-report.ts [days]`. (2026-11-01)
 - [ ] **Custom domains.** Design and ship the domain model and verification flow for paid plans.
 

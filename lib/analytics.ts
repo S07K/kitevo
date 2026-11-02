@@ -15,7 +15,7 @@ export const ANALYTICS_EVENTS = [
   "onboarding_complete",
   "kit_created", //          props: { kitId, kitNumber }
   "kit_first_view", //       first view of a kit by someone other than its owner (≈ "shared")
-  "checkout_started", //     props: { tier, interval }
+  "checkout_started", //     props: { tier, interval, trial, code (booleans) }
   "upgrade", //              props: { tier }
   "subscription_canceled",
 ] as const;

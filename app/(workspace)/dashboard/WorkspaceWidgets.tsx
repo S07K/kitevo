@@ -398,6 +398,68 @@ export function PlanPanel({
   onUpgradeToPro: () => void;
   upgrading: boolean;
 }) {
+  // Free plan + eligible for the Pro trial: offer the trial first (the checkout route re-checks).
+  const [trial, setTrial] = useState<{ days: number } | null>(null);
+  const [trialStarting, setTrialStarting] = useState(false);
+  const [trialError, setTrialError] = useState<string | null>(null);
+  useEffect(() => {
+    if (tierId !== "free") return;
+    let cancelled = false;
+    fetch("/api/me/trial", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => !cancelled && d?.eligible && setTrial({ days: Number(d.days) || 14 }))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [tierId]);
+
+  const startTrial = async () => {
+    setTrialStarting(true);
+    setTrialError(null);
+    try {
+      const res = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tierId: "pro", billing: "monthly", trial: true }),
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      setTrialError(data.error ?? "Couldn't start the trial. Try again.");
+    } catch {
+      setTrialError("Couldn't reach the server. Try again.");
+    }
+    setTrialStarting(false);
+  };
+
+  if (tierId === "free" && trial) {
+    return (
+      <Panel title="Plan">
+        <div className="flex items-baseline justify-between">
+          <p className="font-display text-lg font-semibold text-foreground">{tierName ?? "Free"}</p>
+          <p className="text-xs tabular-nums text-muted-foreground">
+            {kitsUsed === undefined ? `${kitsAllowed} kit${kitsAllowed === 1 ? "" : "s"} included` : `${kitsUsed}/${kitsAllowed} kit${kitsAllowed === 1 ? "" : "s"}`}
+          </p>
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          Try everything in Pro for {trial.days} days: live stats, 3 kits, every kit style and the brand contact form.
+        </p>
+        <Button variant="primary" onClick={startTrial} disabled={trialStarting} className="mt-4 w-full">
+          {trialStarting ? "Opening checkout…" : `Try Pro free for ${trial.days} days`}
+        </Button>
+        <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">No charge if you cancel before the trial ends.</p>
+        {trialError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{trialError}</p>}
+        <Link href="/pricing?plan=starter" className="mt-3 block text-center text-xs font-medium text-muted-foreground hover:text-foreground">
+          Or upgrade to Starter
+        </Link>
+      </Panel>
+    );
+  }
+
   const next =
     tierId === "free"
       ? { label: "Upgrade to Starter", blurb: "Live stats, growth charts and audience demographics on your kit.", href: "/pricing?plan=starter" }

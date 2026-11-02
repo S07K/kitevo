@@ -79,7 +79,18 @@ export const stripeProvider: PaymentProvider = {
     }
   },
 
-  async createCheckout({ priceId, userId, email, successUrl, cancelUrl }: CreateCheckoutParams) {
+  async createCheckout({ priceId, userId, email, successUrl, cancelUrl, trialDays, discountCode }: CreateCheckoutParams) {
+    // A pre-filled code must be an active promotion code; Stripe can't take both a discount
+    // and the code-entry field, so an unknown code falls back to letting the customer type one.
+    let promotionCodeId: string | null = null;
+    if (discountCode) {
+      try {
+        const found = await stripeClient().promotionCodes.list({ code: discountCode, active: true, limit: 1 });
+        promotionCodeId = found.data[0]?.id ?? null;
+      } catch {
+        promotionCodeId = null;
+      }
+    }
     const session = await stripeClient().checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
@@ -91,6 +102,8 @@ export const stripeProvider: PaymentProvider = {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl,
       cancel_url: cancelUrl,
+      ...(trialDays ? { subscription_data: { trial_period_days: trialDays }, payment_method_collection: "always" as const } : {}),
+      ...(promotionCodeId ? { discounts: [{ promotion_code: promotionCodeId }] } : { allow_promotion_codes: true }),
     });
     return { url: session.url };
   },

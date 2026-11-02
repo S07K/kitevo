@@ -24,7 +24,9 @@ The branches are stacked; each contains the one before it.
 | 9 | `feat/color-palettes` | App brand palette: navy `#1B365D` / blue `#005A9C` / sky `#60C1E5` / aqua `#A0E0EF` as one app theme (blue buttons, active nav, tags, toggles, highlights; navy dark mode; navy login panel). Four new free kit styles (Sage, Mist, Blush, Lavender) across the kit page, profile, PDF/PPTX export and dashboard card, with colour swatches in the editor. No deploy steps. |
 | 10 | `feat/persistent-shell` | Workspace routes moved into the `app/(workspace)` route group (URLs unchanged) with one persistent layout: top bar + sidebar render once, tab clicks swap only the page, plus an instant loading state. Also: payment-provider status lookups cached 60s (invalidated on every plan change), dashboard no longer waits on them, sidebar footer links moved into the profile menu, and the deal pipeline moved to its own `/pipeline` tab (new reserved usernames `pipeline`, `inquiries`). No deploy steps. *(Branched from `feat/workspace-ui`; `feat/color-palettes` merged in.)* |
 
-Merge `feat/persistent-shell`: it contains `feat/color-palettes`, `feat/workspace-ui` and everything above them, including dashboard polish and admin ops.
+| 11 | `feat/trials-coupons` | 14-day Pro free trial (one per account, verified email, card up front, `PRO_TRIAL_DAYS`) on pricing, landing and the dashboard Plan panel; discount codes at checkout (`/pricing?code=XYZ` pre-applies; unknown codes never block checkout) on both Dodo and Stripe. No migration. Steps: §5 |
+
+Merge `feat/trials-coupons` once it's reviewed: it contains `feat/persistent-shell`. Until then, merge `feat/persistent-shell`: it contains `feat/color-palettes`, `feat/workspace-ui` and everything above them, including dashboard polish and admin ops.
 
 Since row 10, these branches were fast-forwarded into `feat/persistent-shell` (each is contained in it; none needs a deploy step, migration or new env var): `feat/kit-create-modal` (kit creation modal), `feat/landing-earn` + `feat/landing-theme` + `feat/hero-dots` + `feat/kit-avatars` (landing revamp), `feat/kit-editor` (itemised rates, editor rebuild, autosave), `feat/editor-mobile-preview` + `feat/editor-live-kit` (live kit preview, container-query kit), `feat/campaign-emails` (campaign emails, application ownership fix, email escaping), `docs/plan-status-rollback` (PLAN status, migration rollback plan). Summary: PLAN.md §15. Rollback for any deploy: DEPLOY.md §8a.
 
@@ -75,6 +77,25 @@ Nothing else changes. `DATABASE_URL` / `DIRECT_URL` (Vercel + GitHub secrets) ar
   **`refund.succeeded`** are subscribed (or "all events"). Referral commissions come
   only from these two.
 - [ ] **Vercel cron**: Vercel → Project → Cron Jobs should list `/api/cron/payouts-digest`.
+
+---
+
+## 5. Trials and coupons (`feat/trials-coupons`)
+
+- [ ] **Nothing is required to deploy.** Trials default to 14 days. To change or turn them
+  off, set `PRO_TRIAL_DAYS` in Vercel (`0` = off, max 30).
+- [ ] **Beta note:** while `BETA_AUTO_COMP_TIER=pro` is set, every new signup is already
+  comped Pro, so nobody sees the trial. It starts working the day you unset that at launch.
+- [ ] **Dodo test mode, once, before relying on it:** start a trial checkout as a fresh
+  verified test user. Check that (a) Dodo asks for a card, (b) the subscription webhook
+  arrives and the account gets Pro right away with no payment, (c) Dodo shows the first
+  charge dated 14 days out, and (d) `/admin` → webhook log shows `subscription.changed`
+  and no `payment.succeeded` yet (so no referral commission is created for a trial).
+- [ ] **Discount codes:** create them in Dodo → Discounts (percentage, expiry, usage limit,
+  which products). Share as `https://getkitevo.com/pricing?code=CODE`, or customers type it
+  at checkout. A bad or expired code silently falls back to a normal checkout.
+- [ ] **Leave product-level trials off in Dodo.** The app always sends the trial length
+  (0 when not eligible), so a trial set on the product is overridden anyway.
 
 ---
 

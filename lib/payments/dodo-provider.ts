@@ -141,14 +141,30 @@ export const dodoProvider: PaymentProvider = {
     return headers.get("webhook-id") || null;
   },
 
-  async createCheckout({ priceId, userId, email, successUrl }: CreateCheckoutParams) {
-    const session = await dodoClient().checkoutSessions.create({
+  async createCheckout({ priceId, userId, email, successUrl, trialDays, discountCode }: CreateCheckoutParams) {
+    const base = {
       product_cart: [{ product_id: priceId, quantity: 1 }],
       customer: email ? { email, name: email } : undefined,
       // Surfaces on the Subscription object, so the webhook can map back to our user.
       metadata: { [USER_ID_KEY]: userId },
       return_url: successUrl,
-    });
+      // Dodo's default, made explicit: the customer can enter a discount code at checkout.
+      feature_flags: { allow_discount_code: true },
+      // Always explicit: 0 overrides any trial configured on the product in Dodo's dashboard,
+      // so only accounts the app found eligible (lib/trials.ts) ever get one.
+      subscription_data: { trial_period_days: trialDays ?? 0 },
+    };
+    if (discountCode) {
+      try {
+        const session = await dodoClient().checkoutSessions.create({ ...base, discount_codes: [discountCode] });
+        return { url: session.checkout_url ?? null };
+      } catch (e) {
+        // An unknown or expired code must not block the purchase: fall back to a plain
+        // checkout where the customer can still type a code.
+        console.warn(`[dodo] discount code rejected, continuing without it: ${e instanceof Error ? e.message : e}`);
+      }
+    }
+    const session = await dodoClient().checkoutSessions.create(base);
     return { url: session.checkout_url ?? null };
   },
 

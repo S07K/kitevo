@@ -3,7 +3,7 @@
 import { InView } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 type Plan = {
   id: string;
@@ -85,6 +85,19 @@ const CHECK = (
 
 export function PricingSection(): ReactNode {
   const [yearly, setYearly] = useState(false);
+  // Pro trial length from the server (0 = trials off), so the copy never promises one that
+  // isn't running. Eligibility (first subscription, verified email) is enforced at checkout.
+  const [trialDays, setTrialDays] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/me/trial")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => !cancelled && setTrialDays(Number(d?.days) || 0))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section
@@ -231,7 +244,7 @@ export function PricingSection(): ReactNode {
                     : "bg-primary text-primary-foreground"
                 )}
               >
-                {plan.cta}
+                {plan.id === "pro" && trialDays > 0 ? `Try Pro free for ${trialDays} days` : plan.cta}
               </Link>
             </div>
           </InView>
@@ -241,7 +254,8 @@ export function PricingSection(): ReactNode {
       {/* Bottom note */}
       <InView className="mt-8 text-center">
         <p className="text-muted-foreground text-sm">
-          All plans include a shareable kit URL, no credit card required for Free.{" "}
+          All plans include a shareable kit URL, no credit card required for Free.
+          {trialDays > 0 && ` Pro comes with a ${trialDays}-day free trial for first-time subscribers.`}{" "}
           <Link href="/pricing" className="text-foreground underline underline-offset-4 hover:no-underline">
             See full comparison
           </Link>

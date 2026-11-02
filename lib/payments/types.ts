@@ -59,6 +59,17 @@ export interface CreateCheckoutParams {
   email?: string;
   successUrl: string;
   cancelUrl: string;
+  /**
+   * Free-trial length. Only set after the app has checked eligibility (lib/trials.ts); the
+   * provider bills automatically when it ends and must collect a payment method up front.
+   */
+  trialDays?: number;
+  /**
+   * A discount code to pre-apply (already sanitised). Codes and their limits live in the
+   * provider's dashboard. An unknown code must never block checkout: providers drop it and
+   * let the customer enter one themselves.
+   */
+  discountCode?: string;
 }
 
 /**

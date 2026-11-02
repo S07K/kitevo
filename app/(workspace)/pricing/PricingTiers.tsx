@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { SubscriptionTier } from "@/config/subscriptions";
 import type { BillingInterval } from "@/config/subscriptions";
 
@@ -22,14 +23,22 @@ function hasYearly(tier: SubscriptionTier): boolean {
   return typeof tier.priceYearly === "number" && tier.priceYearly > 0;
 }
 
+/** What GET /api/me/trial says about the Pro free trial. */
+type TrialInfo = { eligible: boolean; signedIn: boolean; days: number };
+
 function SubscribeButton({
   tier,
   isHighlighted,
   billing,
+  trial,
+  code,
 }: {
   tier: SubscriptionTier;
   isHighlighted?: boolean;
   billing: BillingInterval;
+  /** Set only when this tier offers a trial to this visitor. */
+  trial?: TrialInfo | null;
+  code?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +55,12 @@ function SubscribeButton({
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tierId: tier.id, billing: effectiveBilling }),
+        body: JSON.stringify({ tierId: tier.id, billing: effectiveBilling, trial: !!trial?.eligible, code }),
         credentials: "include",
       });
       const data = await res.json();
       if (res.status === 401) {
-        const callbackUrl = encodeURIComponent(`/pricing?billing=${effectiveBilling}`);
+        const callbackUrl = encodeURIComponent(`/pricing?billing=${effectiveBilling}${code ? `&code=${encodeURIComponent(code)}` : ""}`);
         window.location.href = `/login?callbackUrl=${callbackUrl}`;
         return;
       }
@@ -76,9 +85,18 @@ function SubscribeButton({
             : "border border-border text-foreground hover:bg-muted"
         }`}
       >
-        {loading ? "Redirecting…" : `Continue with ${tier.name}`}
+        {loading ? "Redirecting…" : trial?.eligible ? `Start ${trial.days}-day free trial` : `Continue with ${tier.name}`}
       </button>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {trial?.eligible && (
+        <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
+          Free for {trial.days} days, then ${effectiveBilling === "yearly" && tier.priceYearly ? `${tier.priceYearly}/yr` : `${tier.priceMonthly}/mo`}. Cancel before it ends and
+          you won&apos;t be charged.
+        </p>
+      )}
+      {trial && !trial.signedIn && trial.days > 0 && (
+        <p className="mt-2 text-center text-xs text-muted-foreground">Includes a {trial.days}-day free trial for new subscribers.</p>
+      )}
+      {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }
@@ -87,12 +105,28 @@ export function PricingTiers({
   tiers,
   highlightTierId,
   defaultBilling = "monthly",
+  code,
 }: {
   tiers: SubscriptionTier[];
   highlightTierId?: string;
   defaultBilling?: BillingInterval;
+  /** Discount code from a ?code= link, pre-applied at checkout. */
+  code?: string;
 }) {
   const [billing, setBilling] = useState<BillingInterval>(defaultBilling);
+  const [trial, setTrial] = useState<TrialInfo | null>(null);
+
+  // Whether to offer the Pro free trial (the checkout route re-checks; this only labels buttons).
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/me/trial", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => !cancelled && d && setTrial({ eligible: d.eligible === true, signedIn: d.signedIn === true, days: Number(d.days) || 0 }))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="mt-12 max-w-4xl mx-auto">
@@ -177,17 +211,27 @@ export function PricingTiers({
               </ul>
               <div className="mt-8">
                 {tier.priceMonthly === 0 ? (
-                  <a href="/signup" className="block w-full px-6 py-3 text-center font-medium rounded-full border border-border text-foreground hover:bg-muted transition-colors text-sm">
+                  <Link href="/signup" className="block w-full px-6 py-3 text-center font-medium rounded-full border border-border text-foreground hover:bg-muted transition-colors text-sm">
                     Start for free
-                  </a>
+                  </Link>
                 ) : (
-                  <SubscribeButton tier={tier} isHighlighted={!!isHighlighted} billing={billing} />
+                  <SubscribeButton tier={tier} isHighlighted={!!isHighlighted} billing={billing} trial={tier.id === "pro" ? trial : null} code={code} />
                 )}
               </div>
             </div>
           );
         })}
       </div>
+
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        {code ? (
+          <>
+            Code <span className="rounded bg-primary-soft px-1.5 py-0.5 font-mono text-primary-soft-foreground">{code}</span> will be applied at checkout.
+          </>
+        ) : (
+          "Have a discount code? You can enter it at checkout."
+        )}
+      </p>
     </div>
   );
 }

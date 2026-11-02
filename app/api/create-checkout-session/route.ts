@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { getPriceIdForTier, type BillingInterval } from "@/config/subscriptions";
 import { prisma } from "@/lib/prisma";
 import { trackEvent } from "@/lib/analytics";
+import { TRIAL_TIER, cleanDiscountCode, getTrialEligibility } from "@/lib/trials";
 
 async function hasPaidSubscription(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { stripeCustomerId: true } });
@@ -24,7 +25,13 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { tierId, returnTo, billing } = body as { tierId?: string; returnTo?: string; billing?: string };
+    const { tierId, returnTo, billing, trial, code } = body as {
+      tierId?: string;
+      returnTo?: string;
+      billing?: string;
+      trial?: boolean;
+      code?: string;
+    };
 
     if (await hasPaidSubscription(authSession.user.id)) {
       return NextResponse.json(
@@ -47,6 +54,27 @@ export async function POST(req: Request) {
       );
     }
 
+    // Trials are granted here, never trusted from the client: Pro only, and only for an
+    // eligible account (lib/trials.ts — one per account, verified email).
+    let trialDays: number | undefined;
+    if (trial === true) {
+      if (tier !== TRIAL_TIER) {
+        return NextResponse.json({ error: "Free trials are only available on Pro." }, { status: 400 });
+      }
+      const eligibility = await getTrialEligibility(authSession.user.id);
+      if (!eligibility.eligible) {
+        const message =
+          eligibility.reason === "unverified"
+            ? "Verify your email to start a free trial."
+            : eligibility.reason === "used"
+              ? "Free trials are for first-time subscribers, and this account has subscribed before."
+              : "A free trial isn't available for this account.";
+        return NextResponse.json({ error: message, reason: eligibility.reason }, { status: 403 });
+      }
+      trialDays = eligibility.days;
+    }
+    const discountCode = cleanDiscountCode(code);
+
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
     // Where to land after checkout, per entry point.
     const returnBase =
@@ -66,9 +94,14 @@ export async function POST(req: Request) {
       email: authSession.user.email ?? undefined,
       successUrl,
       cancelUrl,
+      trialDays,
+      discountCode,
     });
 
-    await trackEvent("checkout_started", { userId: authSession.user.id, props: { tier, interval } });
+    await trackEvent("checkout_started", {
+      userId: authSession.user.id,
+      props: { tier, interval, trial: !!trialDays, code: !!discountCode },
+    });
     return NextResponse.json({ url });
   } catch (err: unknown) {
     console.error("Checkout error:", err);

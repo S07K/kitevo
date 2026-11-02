@@ -113,3 +113,58 @@ describe("POST /api/create-checkout-session", () => {
     expect(json.error).toBe("Sign in to subscribe");
   });
 });
+
+describe("POST /api/create-checkout-session — trials and codes", () => {
+  const fresh = { accountType: "creator", emailVerified: true, stripeCustomerId: null, compedTier: null };
+  const post = (body: object) =>
+    POST(new Request("http://x", { method: "POST", body: JSON.stringify(body) }));
+
+  beforeEach(() => {
+    vi.mocked(getServerSession).mockResolvedValue({ user: { id: "user-1", email: "a@b.com" }, expires: "" });
+    vi.mocked(payments.getSubscription).mockResolvedValue(null);
+    vi.mocked(payments.createCheckout).mockClear();
+  });
+
+  it("starts a 14-day trial for an eligible creator on Pro", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(fresh as never);
+    const res = await post({ tierId: "pro", trial: true });
+    expect(res.status).toBe(200);
+    expect(payments.createCheckout).toHaveBeenCalledWith(expect.objectContaining({ trialDays: 14 }));
+  });
+
+  it("never trusts the client: a returning subscriber asking for a trial is refused", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ ...fresh, stripeCustomerId: "cus_old" } as never);
+    const res = await post({ tierId: "pro", trial: true });
+    expect(res.status).toBe(403);
+    expect((await res.json()).reason).toBe("used");
+    expect(payments.createCheckout).not.toHaveBeenCalled();
+  });
+
+  it("refuses a trial on any tier other than Pro", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(fresh as never);
+    const res = await post({ tierId: "starter", trial: true });
+    expect(res.status).toBe(400);
+    expect(payments.createCheckout).not.toHaveBeenCalled();
+  });
+
+  it("asks unverified accounts to verify first", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ ...fresh, emailVerified: false } as never);
+    const res = await post({ tierId: "pro", trial: true });
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toMatch(/verify your email/i);
+  });
+
+  it("sends no trial when none was asked for", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(fresh as never);
+    await post({ tierId: "pro" });
+    expect(payments.createCheckout).toHaveBeenCalledWith(expect.objectContaining({ trialDays: undefined }));
+  });
+
+  it("passes a sanitised discount code through, and drops junk", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(fresh as never);
+    await post({ tierId: "starter", code: " launch20 " });
+    expect(payments.createCheckout).toHaveBeenLastCalledWith(expect.objectContaining({ discountCode: "LAUNCH20" }));
+    await post({ tierId: "starter", code: "<b>nope</b>" });
+    expect(payments.createCheckout).toHaveBeenLastCalledWith(expect.objectContaining({ discountCode: undefined }));
+  });
+});

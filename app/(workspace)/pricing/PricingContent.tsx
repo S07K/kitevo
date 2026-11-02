@@ -6,6 +6,12 @@ import Link from "next/link";
 import { getPublicTiers } from "@/config/subscriptions";
 import { PricingTiers } from "./PricingTiers";
 
+/** Same shape the server accepts (lib/trials cleanDiscountCode); anything else is ignored. */
+function cleanCode(raw: string | null): string | undefined {
+  const code = raw?.trim().toUpperCase();
+  return code && /^[A-Z0-9][A-Z0-9_-]{1,39}$/.test(code) ? code : undefined;
+}
+
 export function PricingContent() {
   const searchParams = useSearchParams();
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
@@ -93,6 +99,7 @@ export function PricingContent() {
       tiers={tiers}
       highlightTierId={searchParams.get("plan") ?? undefined}
       defaultBilling={billing}
+      code={cleanCode(searchParams.get("code"))}
     />
   );
 }

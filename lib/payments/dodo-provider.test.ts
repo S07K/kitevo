@@ -285,6 +285,26 @@ describe("dodoProvider checkout", () => {
     );
   });
 
+  const params = { priceId: "prod_1", userId: "user_1", successUrl: "https://x/ok", cancelUrl: "https://x/no" };
+
+  it("always sets the trial length, so a product-level trial in the dashboard can't leak to ineligible buyers", async () => {
+    createSession.mockResolvedValue({ checkout_url: "https://checkout.dodo/x" });
+    await dodoProvider.createCheckout(params);
+    expect(createSession).toHaveBeenLastCalledWith(expect.objectContaining({ subscription_data: { trial_period_days: 0 } }));
+    await dodoProvider.createCheckout({ ...params, trialDays: 14 });
+    expect(createSession).toHaveBeenLastCalledWith(expect.objectContaining({ subscription_data: { trial_period_days: 14 } }));
+  });
+
+  it("pre-applies a discount code, and falls back to a plain checkout if Dodo rejects it", async () => {
+    createSession.mockRejectedValueOnce(new Error("invalid discount code")).mockResolvedValueOnce({ checkout_url: "https://checkout.dodo/plain" });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const res = await dodoProvider.createCheckout({ ...params, discountCode: "NOPE" });
+    expect(res.url).toBe("https://checkout.dodo/plain");
+    expect(createSession).toHaveBeenNthCalledWith(1, expect.objectContaining({ discount_codes: ["NOPE"] }));
+    expect(createSession.mock.calls[1][0]).not.toHaveProperty("discount_codes");
+    warn.mockRestore();
+  });
+
   /*
     Dodo's session retrieve exposes no customer id, so a session cannot be exchanged for
     one. Reporting false keeps the status route on the webhook-populated DB path instead
