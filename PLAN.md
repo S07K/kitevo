@@ -1,7 +1,7 @@
 # Kitevo Product & Growth Plan
 
-**Status:** Phase 0 in progress (9/11 done) · R1 referral program shipped (manual payouts) — profit plan added (§11)
-**Last updated:** 2026-11-01
+**Status (2026-11-02):** Phase 0 — 9/11 checklist items done (open: trials & coupons, custom domains); all exit criteria met. R1 referral program shipped. Workspace + landing revamp shipped — see §15. Phases 1–3 not started.
+**Last updated:** 2026-11-02
 **Scope:** Competitive strategy, pricing architecture, feature roadmap, and the Phase 0 execution checklist.
 
 ---
@@ -214,7 +214,7 @@ Workstreams:
 - Every feature listed on the pricing page is either shipped or removed.
 - No fabricated social proof or "live" label on self-reported data.
 - `npm test` and `npm run build` pass.
-- A rollback plan exists for the first migration.
+- A rollback plan exists for the first migration. ✅ DEPLOY.md §8a (expand → contract rule, backup step, playbooks; every migration so far is additive). (2026-11-02)
 
 ### Phase 1 — Commerce core (next)
 
@@ -501,8 +501,8 @@ Tooling: the `frontend-design` skill is installed for design passes; screenshot-
 | Sprint | Ship | Unlocks |
 |---|---|---|
 | 1 | P0-5 token encryption · P0-7 analytics funnel events · **R1 referral program** | Safe to scale; measure every channel; growth loop live |
-| 2 | **Free rate + engagement calculators** · public kit UI revamp | SEO/social top of funnel; better first impression for brands |
-| 3 | Landing revamp + comparison pages · P0-6 admin view · payout-rail decision | Conversion; ops for commerce |
+| 2 | **Free rate + engagement calculators** · public kit UI revamp | SEO/social top of funnel; better first impression for brands — *calculators not started; kit got the itemised rate card + container-query layout, not a full revamp* |
+| 3 | Landing revamp + comparison pages · P0-6 admin view · payout-rail decision | Conversion; ops for commerce — *landing revamp ✅ and admin ✅ (2026-11-01/02); comparison pages and payout-rail decision open* |
 | 4–6 | **R3 digital products + bookings** (checkout, delivery, orders, receipts) · R6 custom domains | Commerce parity on the things that matter |
 | 7–8 | **R2 brand-deal payments** (milestones, 5% brand fee) · R4 Copilot beta | The expansion lever + the moat |
 
@@ -586,4 +586,26 @@ Sources: [Stan Help Center](https://help.stan.store), [Sell a Digital Download](
 **Now:** role picker → creators: **You** (name, username suggested from their name and checked live, up to 5 niches) → **Connect** (Instagram/YouTube optional; the Business/Creator + Facebook Page requirement is explained before they click) → **Your kit is live** (kit auto-created at `/kit/<username>`, copy link, open editor, view as a brand, invite link for the referral program). A live phone preview fills in beside the form and never shows sample numbers. No plan step; upgrades happen after they've seen their kit. Brands: one screen (company, industry, budget) → Discover.
 
 **Measure:** `scripts/funnel-report.ts` — compare signup → onboarding_complete → kit_created → kit_first_view before and after the deploy.
+
+---
+
+## 15. Shipped 2026-11-01 → 11-02 (outside the Phase 0 checklist)
+
+Workspace and product work that landed on the feature-branch stack (merge order in RELEASE.md):
+
+- **Workspace shell.** One route per tab (`/dashboard`, `/discover`, `/campaigns`, `/messages`, `/pipeline`, `/referrals`, `/settings`, `/pricing`, `/admin`) in the `app/(workspace)` route group with one **persistent layout**: the sidebar and top bar render once and tab clicks swap only the page, with an instant loading state. Account pages (my kit, plan & billing, settings, admin) live in the profile menu.
+- **Speed.** Payment-provider status lookups cached 60s and invalidated on every plan change; the dashboard no longer waits on them; requests run in parallel; tab clicks show pending state.
+- **Dashboard.** Kit spotlight (main kit shown once), honest audience-numbers prompt, inquiries summary; skeletons that match every layout.
+- **Pipeline tab.** Brand inquiries get their own page (list with stage filters, or a drag-and-drop board).
+- **Kit creation in a modal**, from every entry point.
+- **Settings (creator + brand) and Invite & earn** rebuilt in a two-column layout; profile and company forms with an unsaved-changes save bar.
+- **Campaigns** (creator feed, brand manager, detail) in the same layout.
+- **Landing page = "earn with Kitevo"** (§11.4): navy hero with product cutouts and a distinct dark-mode scene, 0% of deals, three ways to earn, example kits (Unsplash portraits), one link vs five tabs, example inbox; honesty disclosures kept in section copy.
+- **Brand theme** (navy / blue / sky / aqua) as one app theme; palettes became kit styles.
+- **Rates are back on the kit**, itemised (deliverable + price), with a button that can never be a dead link; in exports too.
+- **Kit editor rebuilt.** Workspace frame, autosave with status + retry, and a live preview that renders the real kit component from the unsaved draft — Mobile (inside an iPhone mockup, true 390px layout) or Desktop, as a drag-to-scroll touch area. The public kit moved to container queries to make this possible (verified pixel-identical).
+- **Campaign emails.** Brands hear about new applications; creators hear when they're accepted or declined.
+- **Fixes found along the way.** A brand could change applications on other brands' campaigns (now scoped to the campaign); the kit inquiry email inserted visitor input unescaped (all email templates now escape user text).
+
+**Still open from this plan:** Phase 0 trials & coupons and custom domains; Sprint 2 calculators; Sprint 3 comparison pages and payout-rail decision; Phases 1–3. Smaller gaps tracked in CLAUDE.md "Other Pending": report/block, downgrade handling for the kit cap, DB indexes, Supabase Storage for images, brand team seats.
 

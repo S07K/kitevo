@@ -260,6 +260,90 @@ step can't prove.
   pitch is that its numbers can be trusted. Watch real delivery for a few weeks
   first, since `p=reject` on a misconfigured domain silently bounces your own mail.
 
+## 8a. Migration rollback plan
+
+**Principle: roll code back, roll the schema forward.** Never hand-edit or "down-migrate" the
+production database under pressure. Prisma has no down migrations, and every rollback below
+works without one.
+
+### Why the order of events matters here
+
+- Migrations apply **automatically on every push to `main`**, from two places: the GitHub
+  Action (`.github/workflows/db-migrate.yml`, after `npm test`) and the Vercel build
+  (`scripts/vercel-build.cjs`), whichever runs first.
+- The Vercel build applies migrations **before** `next build`. A migration can land even if
+  that build then fails, so the **previous** deployment keeps serving traffic on the **new**
+  schema.
+- Vercel **Instant Rollback** reverts code only. It never touches the database.
+
+So the one rule that makes everything else easy:
+
+### The rule: every migration must work with the previous deployment (expand → contract)
+
+- **Expand (safe in one release):** new tables, new nullable columns, new columns with a
+  `DEFAULT`, new indexes (`CREATE INDEX CONCURRENTLY` for big tables, in its own migration).
+  The previous app version simply ignores them.
+- **Contract (needs two releases):** dropping or renaming a column/table, changing a type,
+  making an existing column `NOT NULL`, moving data. Release 1 stops reading/writing the old
+  shape (and backfills the new one); only after release 1 is live and healthy does release 2
+  ship the `DROP`/`RENAME`/`SET NOT NULL`.
+- A migration that would break the currently deployed code is a bug, even if the new code is
+  fine. Review migration SQL with that question in mind.
+
+### Before any risky migration: back up
+
+"Risky" = anything in the contract list above, or a data backfill. Before merging it:
+
+```bash
+# Uses the session pooler (DIRECT_URL), same as migrate deploy. Keep the file somewhere safe.
+pg_dump "$DIRECT_URL" --format=custom --no-owner --file=kitevo-$(date +%Y%m%d-%H%M)-pre-<migration>.dump
+# To dump only the tables the migration touches (faster, smaller restore):
+pg_dump "$DIRECT_URL" --format=custom --no-owner --table='"User"' --file=...
+```
+
+Also note whether your Supabase plan includes dashboard backups / point-in-time recovery
+(Project → Database → Backups); if it does, record the time just before the deploy. Don't rely
+on it without checking.
+
+### Playbooks
+
+**A. Bad deploy, migration was additive** (the normal case, and every migration so far):
+
+1. Vercel → Deployments → the last good deployment → **Instant Rollback**.
+2. Leave the schema alone. The old code ignores the new tables/columns.
+3. Fix forward on a branch; the next deploy reuses the already-applied migration.
+
+**B. A migration failed part-way** (`migrate deploy` errors; later deploys report `P3009`):
+
+1. `DATABASE_URL=… DIRECT_URL=… npx prisma migrate status` to see which migration is marked failed.
+2. Inspect the database to see what that migration actually created; don't assume all-or-nothing.
+3. Either undo its partial changes by hand and run
+   `npx prisma migrate resolve --rolled-back <migration_name>`, then ship a corrected migration;
+   or finish the remaining statements by hand and run
+   `npx prisma migrate resolve --applied <migration_name>`.
+4. If users are affected meanwhile, do playbook A for the code.
+
+**C. A destructive migration went wrong** (data dropped or corrupted):
+
+1. Instant Rollback the code (playbook A) so nothing writes to the damaged shape.
+2. Restore the affected tables from the pre-migration dump into a scratch schema/database
+   (`pg_restore --dbname=… --table=… kitevo-…-pre-<migration>.dump`) and copy the rows back.
+   Restoring over production wholesale also discards everything written since the dump.
+3. Ship a forward migration that reflects the real, restored state; never edit an applied
+   migration file (its checksum is recorded in `_prisma_migrations`).
+
+### Current migrations and how they roll back
+
+| Migration | Contents | Rollback |
+|---|---|---|
+| `20261031000000_init` | Baseline (13 tables) | Baseline; production was synced and marked applied (step 2) |
+| `20261101073730_analytics_events` | New `AnalyticsEvent` table | Additive: playbook A |
+| `20261101120000_referrals` | 3 new tables, 3 nullable `User` columns | Additive: playbook A |
+| `20261101130000_admin_ops` | 2 new tables | Additive: playbook A |
+
+Keep this table current: add a row with every new migration, and flag any contract-type
+migration in RELEASE.md together with its backup step.
+
 ## 9. Meta App Review and Google OAuth verification
 
 Both require a **live** app: a reachable privacy policy and a screencast of the

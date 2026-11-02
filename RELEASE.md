@@ -3,7 +3,7 @@
 A running checklist for the work currently on feature branches. Updated as each branch
 lands. Tick items off as you go; delete the section once it's live.
 
-**Last updated:** 2026-11-01 (dashboard polish + admin ops added)
+**Last updated:** 2026-11-02 (everything since row 10 is in feat/persistent-shell)
 
 ---
 
@@ -25,6 +25,8 @@ The branches are stacked; each contains the one before it.
 | 10 | `feat/persistent-shell` | Workspace routes moved into the `app/(workspace)` route group (URLs unchanged) with one persistent layout: top bar + sidebar render once, tab clicks swap only the page, plus an instant loading state. Also: payment-provider status lookups cached 60s (invalidated on every plan change), dashboard no longer waits on them, sidebar footer links moved into the profile menu, and the deal pipeline moved to its own `/pipeline` tab (new reserved usernames `pipeline`, `inquiries`). No deploy steps. *(Branched from `feat/workspace-ui`; `feat/color-palettes` merged in.)* |
 
 Merge `feat/persistent-shell`: it contains `feat/color-palettes`, `feat/workspace-ui` and everything above them, including dashboard polish and admin ops.
+
+Since row 10, these branches were fast-forwarded into `feat/persistent-shell` (each is contained in it; none needs a deploy step, migration or new env var): `feat/kit-create-modal` (kit creation modal), `feat/landing-earn` + `feat/landing-theme` + `feat/hero-dots` + `feat/kit-avatars` (landing revamp), `feat/kit-editor` (itemised rates, editor rebuild, autosave), `feat/editor-mobile-preview` + `feat/editor-live-kit` (live kit preview, container-query kit), `feat/campaign-emails` (campaign emails, application ownership fix, email escaping), `docs/plan-status-rollback` (PLAN status, migration rollback plan). Summary: PLAN.md §15. Rollback for any deploy: DEPLOY.md §8a.
 
 ---
 
