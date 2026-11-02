@@ -356,10 +356,10 @@ export function MediaKitClient({
   // ── Per-post averages from the posts we already have ──
   const avg = (nums: number[]) => (nums.length ? Math.round(nums.reduce((s, n) => s + n, 0) / nums.length) : null);
   const perPost = [
-    { label: "Likes per post", value: avg(instagramPosts.map((p) => p.likes).filter((n): n is number => typeof n === "number")) },
-    { label: "Comments per post", value: avg(instagramPosts.map((p) => p.comments).filter((n): n is number => typeof n === "number")) },
-    { label: "Reach per post", value: avg(instagramPosts.map((p) => p.reach).filter((n): n is number => typeof n === "number")) },
-  ].filter((c): c is { label: string; value: number } => c.value != null && c.value > 0);
+    { label: "likes per post", one: "like per post", value: avg(instagramPosts.map((p) => p.likes).filter((n): n is number => typeof n === "number")) },
+    { label: "comments per post", one: "comment per post", value: avg(instagramPosts.map((p) => p.comments).filter((n): n is number => typeof n === "number")) },
+    { label: "reach per post", one: "reach per post", value: avg(instagramPosts.map((p) => p.reach).filter((n): n is number => typeof n === "number")) },
+  ].filter((c): c is { label: string; one: string; value: number } => c.value != null && c.value > 0);
   const showPerPost = sectionVisibility.stats && measured && perPost.length > 0;
 
   // ── Headline stat strip ──
@@ -687,7 +687,7 @@ export function MediaKitClient({
                       {perPost.map((c) => (
                         <div key={c.label} className="flex items-baseline gap-1.5">
                           <dd className="font-semibold tabular-nums text-[var(--mk-text)]">{compactNumber(c.value)}</dd>
-                          <dt className="text-[var(--mk-text-muted)]">{c.label.toLowerCase()}</dt>
+                          <dt className="text-[var(--mk-text-muted)]">{c.value === 1 ? c.one : c.label}</dt>
                         </div>
                       ))}
                     </dl>
@@ -971,7 +971,7 @@ export function MediaKitClient({
                       From <strong className="font-semibold">{formatUsd(fromPrice)}</strong>
                     </>
                   ) : (
-                    <>Open to brand partnerships</>
+                    <>Open to collabs</>
                   )}
                 </span>
                 <span className="shrink-0 rounded-full bg-[var(--mk-bg)] px-4 py-2 font-sans text-sm font-semibold text-[var(--mk-text)]">{ctaLabel}</span>
