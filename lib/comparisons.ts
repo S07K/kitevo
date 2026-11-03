@@ -27,10 +27,10 @@ export type Comparison = {
   slug: string;
   name: string;
   /**
-   * Logo: a Simple Icons mark where one exists, else the company's own official favicon,
+   * Logo: a `thesvg` brand mark where one exists (lib/brand-icons), else the company's own official favicon,
    * downloaded from its website into public/brands/ (never hand-drawn brand art).
    */
-  mark: { kind: "linktree" } | { kind: "image"; src: string };
+  mark: { kind: "icon"; brand: "linktree" | "canva" } | { kind: "image"; src: string };
   /** Which generic sketch illustrates the product type (not a copy of their UI). */
   art: "storefront" | "links" | "allinone" | "static";
   /** One line: what the competitor is, in their own terms. */
@@ -112,7 +112,7 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: "linktree",
-    mark: { kind: "linktree" },
+    mark: { kind: "icon", brand: "linktree" },
     art: "links",
     name: "Linktree",
     whatTheyAre: "a link-in-bio page that collects all your links in one place",
@@ -175,7 +175,7 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: "canva-media-kit",
-    mark: { kind: "image", src: "/brands/canva.png" },
+    mark: { kind: "icon", brand: "canva" },
     art: "static",
     name: "a Canva media kit",
     whatTheyAre: "a design tool with free media kit templates you fill in and export",

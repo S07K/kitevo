@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { SiInstagram } from "@icons-pack/react-simple-icons";
+import { BrandIcon } from "@/app/components/BrandIcon";
 import { BadgeCheck, CalendarClock, Check, ChevronsRight, Eye, FileText, Link2, MessageCircle, Sheet, Sparkles, Tag, TrendingUp } from "lucide-react";
 import { getPublicTiers } from "@/config/subscriptions";
 import { exampleEarnings } from "@/lib/referral-terms";
@@ -177,7 +177,7 @@ function ProofVisual() {
       <Cutout className="absolute left-0 top-0 w-[min(236px,54%)] p-4" style={{ transform: "rotate(-2deg)" }}>
         <div className="flex items-center justify-between">
           <p className="flex items-center gap-1.5 whitespace-nowrap text-[11px] text-[#556b84]">
-            <SiInstagram size={11} color="#E4405F" /> Followers
+            <BrandIcon brand="instagram" size={11} /> Followers
           </p>
         </div>
         <p className="mt-1 text-2xl font-semibold tabular-nums">

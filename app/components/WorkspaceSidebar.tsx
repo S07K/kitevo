@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
-import { ArrowUpRight, ChevronsUpDown, Loader2, SquareKanban, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun, ShoppingBag } from "lucide-react";
+import { ArrowUpRight, ChevronsUpDown, Loader2, SquareKanban, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun, ShoppingBag, Plug } from "lucide-react";
 import { AvatarImg } from "./AvatarImg";
 import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
 import { Skeleton } from "@/app/components/Skeleton";
@@ -115,7 +115,12 @@ export function WorkspaceSidebar({
 
   const creator: { sections: Section[]; footer: Item[]; mobile: Item[] } = {
     sections: [
-      { items: [{ href: "/dashboard", label: "Home", icon: <House {...ICON} /> }] },
+      {
+        items: [
+          { href: "/dashboard", label: "Home", icon: <House {...ICON} /> },
+          { href: "/connectors", label: "Connectors", icon: <Plug {...ICON} /> },
+        ],
+      },
       {
         title: "Social",
         items: [

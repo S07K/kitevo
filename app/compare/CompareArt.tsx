@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
-import { SiLinktree } from "@icons-pack/react-simple-icons";
+import { BrandIcon } from "@/app/components/BrandIcon";
 import { LogoMark } from "@/app/components/Logo";
 import type { Comparison } from "@/lib/comparisons";
 
 /**
  * Brand marks + simple flat SVG illustrations for the compare pages.
- * Marks: Kitevo's own mark; Simple Icons where a brand exists there (Linktree); otherwise the
+ * Marks: Kitevo's own mark; `thesvg` where a brand exists there (Linktree, Canva); otherwise the
  * company's official favicon, downloaded from its site into public/brands/. Never hand-drawn
  * brand art. Illustrations are generic shapes coloured with theme tokens (light + dark).
  */
@@ -21,10 +21,10 @@ export function BrandMark({ who, size = 28 }: { who: "kitevo" | Comparison["mark
       </span>
     );
   }
-  if (who.kind === "linktree") {
+  if (who.kind === "icon") {
     return (
-      <span className="inline-flex shrink-0 items-center justify-center rounded-[28%] bg-[#43E55E] text-black" style={box}>
-        <SiLinktree size={Math.round(size * 0.56)} aria-hidden />
+      <span className="inline-flex shrink-0 items-center justify-center rounded-[28%] border border-border bg-white" style={box}>
+        <BrandIcon brand={who.brand} size={Math.round(size * 0.62)} lightOnly />
       </span>
     );
   }

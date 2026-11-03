@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { SiInstagram, SiYoutube } from "@icons-pack/react-simple-icons";
+import { BrandIcon } from "@/app/components/BrandIcon";
 import { AvatarImg } from "@/app/components/AvatarImg";
 
 /** Small, face-cropped Unsplash portrait (hotlinked from their CDN, as their licence allows). */
@@ -76,7 +76,6 @@ export function KitCard({
   /** Off when the surrounding UI already names the niche. */
   showNiche?: boolean;
 }) {
-  const PlatformIcon = look.platform === "instagram" ? SiInstagram : SiYoutube;
   const platform = look.platform === "instagram" ? "Instagram" : "YouTube";
   const stats = [
     { label: look.platform === "instagram" ? "Followers" : "Subscribers", value: look.followers },
@@ -116,7 +115,7 @@ export function KitCard({
         {stats.map((s) => (
           <div key={s.label} className="min-w-0 rounded-2xl px-3 py-2.5" style={{ backgroundColor: `${look.fg}0f` }}>
             <p className="flex items-center gap-1.5 whitespace-nowrap text-[11px] opacity-65">
-              <PlatformIcon size={10} aria-hidden /> {s.label}
+              <BrandIcon brand={look.platform === "instagram" ? "instagram" : "youtube"} mono size={10} /> {s.label}
             </p>
             <p className="mt-0.5 font-display text-2xl font-semibold leading-none tabular-nums">{s.value}</p>
           </div>

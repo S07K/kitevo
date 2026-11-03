@@ -17,6 +17,7 @@ export function Modal({
   title,
   description,
   children,
+  footer,
   dismissible = true,
   size = "sm",
 }: {
@@ -25,8 +26,10 @@ export function Modal({
   title: ReactNode;
   description?: ReactNode;
   children: ReactNode;
+  /** Actions pinned under the scrolling body (always visible, however long the form). */
+  footer?: ReactNode;
   dismissible?: boolean;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -90,10 +93,11 @@ export function Modal({
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
         tabIndex={-1}
-        className={`w-full ${size === "md" ? "max-w-md" : "max-w-sm"} overflow-hidden rounded-2xl border border-border bg-background shadow-2xl focus:outline-none`}
+        // Never taller than the viewport: the header and footer stay put, the body scrolls.
+        className={`flex max-h-[calc(100dvh-2rem)] w-full flex-col ${size === "lg" ? "max-w-lg" : size === "md" ? "max-w-md" : "max-w-sm"} overflow-hidden rounded-2xl border border-border bg-background shadow-2xl focus:outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 px-5 pb-1 pt-5">
+        <div className="flex shrink-0 items-start justify-between gap-3 px-5 pb-1 pt-5">
           <div className="min-w-0">
             <h2 id={titleId} className="font-display text-lg font-semibold text-foreground">
               {title}
@@ -115,7 +119,8 @@ export function Modal({
             </button>
           )}
         </div>
-        <div className="px-5 pb-5 pt-4">{children}</div>
+        <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-4 ${footer ? "pb-4" : "pb-5"}`}>{children}</div>
+        {footer && <div className="shrink-0 border-t border-border bg-background px-5 py-3.5">{footer}</div>}
       </div>
     </div>,
     document.body,
