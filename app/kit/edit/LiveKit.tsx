@@ -6,6 +6,7 @@ import { composeKitStats, type LiveKitStats } from "@/lib/kit-stats-compose";
 import type { FetchedPost } from "@/lib/platforms/instagram";
 import { normalizeLinks } from "@/lib/profile-links";
 import type { KitDraft } from "./KitEditor";
+import type { PublicProduct } from "@/lib/commerce-shared";
 
 /** Response of GET /api/kits/[id]/preview: the non-editable half of the kit. */
 export type KitPreviewData = {
@@ -26,6 +27,7 @@ export type KitPreviewData = {
   instagramPosts: FetchedPost[];
   inquiryEnabled: boolean;
   referralCode: string | null;
+  products: PublicProduct[];
 };
 
 /**
@@ -55,6 +57,7 @@ export function LiveKit({ data, draft }: { data: KitPreviewData; draft: KitDraft
       embedded
       username={data.username}
       referralCode={data.referralCode}
+      products={data.products}
       creator={creator}
       links={links}
       platformStats={stats.platformStats}

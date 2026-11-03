@@ -16,6 +16,7 @@ import { DEFAULT_SECTION_VISIBILITY, type SectionVisibility } from "@/lib/kit-st
 import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
 import { DEFAULT_KIT_APPEARANCE, kitAppearanceToCssVarsWithOverrides, kitChartColors } from "@/lib/kit-appearance";
 import { audienceSummary, compactNumber, firstName } from "@/lib/kit-audience-summary";
+import type { PublicProduct } from "@/lib/commerce-shared";
 
 const GrowthAreaChart = dynamic(
   () => import("./MediaKitRecharts").then((m) => m.GrowthAreaChart),
@@ -57,6 +58,8 @@ interface MediaKitClientProps {
    * minimum and phone padding on the header (its breakpoints follow the window, not the kit).
    */
   embedded?: boolean;
+  /** Published products for the Shop section (lib/commerce). */
+  products?: PublicProduct[];
 }
 
 /** When Meta returns no time series, show a subtle trajectory from current follower count. */
@@ -234,7 +237,7 @@ const YT_ICON = (
  * What each part of the kit is, for the editor's preview: hovering or tapping an element with
  * data-kit-section opens the matching part of the editor (app/kit/edit).
  */
-export type KitSectionKind = "profile" | "numbers" | "audience" | "posts" | "youtube" | "growth" | "brands" | "rates" | "contact";
+export type KitSectionKind = "profile" | "numbers" | "audience" | "posts" | "youtube" | "growth" | "brands" | "products" | "rates" | "contact";
 
 /** A titled block of the kit. No card: sections are separated by space and a hairline. */
 function Section({ title, icon, children, id, kind }: { title: string; icon?: React.ReactNode; children: React.ReactNode; id?: string; kind: KitSectionKind }) {
@@ -308,6 +311,7 @@ export function MediaKitClient({
   embedded = false,
   instagramPosts = [],
   referralCode = null,
+  products = [],
 }: MediaKitClientProps) {
   // Footer/header "Create yours" links credit the kit owner as the referrer.
   const homeHref = referralCode ? `/?ref=${encodeURIComponent(referralCode)}` : "/";
@@ -893,6 +897,41 @@ export function MediaKitClient({
                           <span className="block font-display text-lg font-semibold leading-tight text-[var(--mk-text)]">{brand.name}</span>
                         )}
                         {brand.tagline && <span className="mt-1.5 block font-sans text-xs leading-snug text-[var(--mk-text-muted)]">{brand.tagline}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+
+              {/* ── Shop: the creator's published products (free downloads today) ── */}
+              {sectionVisibility.products !== false && products.length > 0 && (
+                <Section title="Shop" kind="products">
+                  <ul className="grid grid-cols-1 gap-4 @min-[640px]:grid-cols-2 @min-[1024px]:grid-cols-3">
+                    {products.map((p) => (
+                      <li key={p.id}>
+                        <a
+                          href={`/p/${p.id}`}
+                          className="group flex h-full flex-col overflow-hidden rounded-2xl bg-[var(--mk-surface)] transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mk-text)]"
+                        >
+                          {p.coverUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- base64 cover
+                            <img src={p.coverUrl} alt="" className="aspect-[4/3] w-full object-cover" />
+                          ) : (
+                            <span className="flex aspect-[4/3] w-full items-end p-4" style={{ backgroundColor: `${chartColors.stroke}1A` }} aria-hidden>
+                              <span className="font-display text-4xl font-semibold text-[var(--mk-text)]/70">{(p.title || "?").charAt(0)}</span>
+                            </span>
+                          )}
+                          <span className="flex flex-1 flex-col p-4">
+                            <span className="font-display text-lg font-semibold leading-snug text-[var(--mk-text)]">{p.title}</span>
+                            {p.description && <span className="mt-1 line-clamp-2 font-sans text-sm leading-relaxed text-[var(--mk-text-muted)]">{p.description}</span>}
+                            <span className="mt-auto flex items-center justify-between gap-3 pt-4 font-sans text-sm">
+                              <span className="font-semibold text-[var(--mk-text)]">{p.priceCents === 0 ? "Free" : formatUsd(p.priceCents / 100)}</span>
+                              <span className="text-[var(--mk-text-muted)] transition-colors group-hover:text-[var(--mk-text)]">
+                                {p.priceCents === 0 ? "Get it" : "Buy"} <span aria-hidden>→</span>
+                              </span>
+                            </span>
+                          </span>
+                        </a>
                       </li>
                     ))}
                   </ul>

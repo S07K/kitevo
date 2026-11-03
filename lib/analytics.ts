@@ -18,6 +18,8 @@ export const ANALYTICS_EVENTS = [
   "checkout_started", //     props: { tier, interval, trial, code (booleans) }
   "upgrade", //              props: { tier }
   "subscription_canceled",
+  "product_published", //    props: { productId }
+  "product_claimed", //      a new free claim (no buyer PII in props)
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

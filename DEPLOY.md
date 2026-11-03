@@ -341,6 +341,7 @@ on it without checking.
 | `20261101120000_referrals` | 3 new tables, 3 nullable `User` columns | Additive: playbook A |
 | `20261101130000_admin_ops` | 2 new tables | Additive: playbook A |
 | `20261102085600_custom_domains` | New `CustomDomain` table | Additive: playbook A. Rolling back code leaves connected domains on the Vercel project; they serve the old app's 404 for "/" until the code returns |
+| `20261103071939_commerce_products_orders` | New `Product` and `Order` tables | Additive: playbook A |
 
 Keep this table current: add a row with every new migration, and flag any contract-type
 migration in RELEASE.md together with its backup step.

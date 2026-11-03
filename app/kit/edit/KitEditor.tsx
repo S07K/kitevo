@@ -39,7 +39,7 @@ const newId = () => Math.random().toString(36).slice(2, 11);
 
 
 /** Editor card ids. The preview maps each kit section to one of these (EDITOR_TARGET). */
-export type EditorSectionId = "style" | "profile" | "numbers" | "live" | "brands" | "rates" | "contact";
+export type EditorSectionId = "style" | "profile" | "numbers" | "live" | "brands" | "shop" | "rates" | "contact";
 
 /** Which editor card (and row) a tapped kit section opens. */
 export const EDITOR_TARGET: Record<KitSectionKind, { section: EditorSectionId; row?: string; label: string }> = {
@@ -50,6 +50,7 @@ export const EDITOR_TARGET: Record<KitSectionKind, { section: EditorSectionId; r
   youtube: { section: "live", row: "posts", label: "Videos settings" },
   growth: { section: "live", row: "growth", label: "Growth settings" },
   brands: { section: "brands", label: "Edit brands" },
+  products: { section: "shop", label: "Shop settings" },
   rates: { section: "rates", label: "Edit rates" },
   contact: { section: "contact", label: "Edit contact" },
 };
@@ -640,7 +641,7 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
     if (!ready || deepLinked.current) return;
     deepLinked.current = true;
     const section = new URLSearchParams(window.location.search).get("section");
-    const ids: EditorSectionId[] = ["style", "profile", "numbers", "live", "brands", "rates", "contact"];
+    const ids: EditorSectionId[] = ["style", "profile", "numbers", "live", "brands", "shop", "rates", "contact"];
     if (section && (ids as string[]).includes(section)) {
       // After paint, so the card exists to scroll to.
       requestAnimationFrame(() => window.dispatchEvent(new CustomEvent(EDIT_SECTION_EVENT, { detail: { section } })));
@@ -918,6 +919,22 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
           <Button size="sm" variant="ghost" onClick={() => update("brands", (bs) => [...bs, { id: newId(), name: "", tagline: "" }])}>
             <Plus size={14} aria-hidden /> Add a brand
           </Button>
+        </div>
+      </Section>
+
+      {/* Shop (products are managed on /products; this controls the kit section) */}
+      <Section
+        id="shop"
+        flashed={flashed("shop")}
+        title="Shop"
+        hint="Free downloads you offer in exchange for an email (paid products coming soon). Published products show on your kit."
+        badge={<Switch checked={sectionVisibility.products !== false} onChange={(v) => setVisible("products", v)} label="Show shop on my kit" />}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">Create, publish and see who downloaded on the Products page.</p>
+          <ButtonLink href="/products" size="sm">
+            Manage products
+          </ButtonLink>
         </div>
       </Section>
 

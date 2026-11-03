@@ -96,6 +96,15 @@ export default function PrivacyPolicy() {
                 the records tax law requires.
               </li>
               <li>
+                <strong className="text-foreground">Download sign-ups:</strong>{" "}
+                If you get a free download from a creator&apos;s kit, we store the
+                name (optional) and email you enter and which product you got. We
+                email you the download link, and the creator who offered it can
+                see your name and email and may contact you. Kitevo doesn&apos;t
+                send marketing to these addresses. The record is deleted if the
+                creator deletes the product or their account.
+              </li>
+              <li>
                 <strong className="text-foreground">Usage data:</strong> Kit view
                 counts and referrer information (which URL sent a visitor to your
                 kit), used to display analytics in your dashboard. We also record
