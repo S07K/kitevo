@@ -1,6 +1,6 @@
 # Kitevo Product & Growth Plan
 
-**Status (2026-11-03):** Phase 0 **complete**. Sprint 2 done (free calculators, public kit redesign) and Sprint 3 done (comparison pages, payout-rail decision: **creator-owned payments**). **Phase 1 (commerce) started:** Release A, free downloads with email capture, is live; B (paid products) and C (bookings) are next. See §15–§16.
+**Status (2026-11-03):** Phase 0 **complete**. Sprint 2 done (free calculators, public kit redesign) and Sprint 3 done (comparison pages, payout-rail decision: **creator-owned payments**). **Phase 1 (commerce) started:** Release A (free downloads with email capture) is live; Release B (paid products on the creator's own Razorpay) is built; Stripe/PayPal connections and C (bookings) are next. See §15–§16.
 **Last updated:** 2026-11-03
 **Scope:** Competitive strategy, pricing architecture, feature roadmap, and the Phase 0 execution checklist.
 
@@ -623,4 +623,11 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - **Payout-rail decision**: creator-owned payments (Kajabi model). Dodo can't split payments and Stripe Connect is invite-only for Indian companies, so buyers pay the creator's own Razorpay/Stripe/PayPal and Kitevo never holds funds.
 - **Commerce Release A**: Products page ("Sell" in the sidebar), free downloads in exchange for an email, kit Shop section, product page in the creator's kit style, private delivery page + email, downloads list. Privacy policy updated.
 - **Dodo checkout fix**: the plan now links on return from checkout (via the `subscription_id` Dodo appends), checked against the signed-in user, instead of only via the webhook.
+
+## 17. Commerce Release B: paid products (Razorpay), 2026-11-03
+
+- Creators connect **their own Razorpay** (Key ID + Secret, verified, secret encrypted). Buyers pay through Razorpay Checkout straight into the creator's account; Kitevo takes 0% and never holds money.
+- Paid products are a **Starter/Pro** feature (the subscription is how Kitevo earns, since there's no cut). Free downloads stay on every plan.
+- Signature + payment checks server-side before delivery; no webhooks needed, and a paid-but-unconfirmed order is recovered when the buyer retries.
+- Next: Stripe (restricted key) and PayPal connections, then Release C (bookings).
 

@@ -106,6 +106,7 @@ model User {
   customDomains CustomDomain[]
   products      Product[]
   sales         Order[]   @relation("SellerOrders")
+  paymentConnections PaymentConnection[]
   analyticsEvents AnalyticsEvent[]
   // Referral program (lib/referrals.ts)
   referralCode         String?              @unique
@@ -465,11 +466,28 @@ model Order {
   currency    String   @default("USD")
   status      String   @default("free") // "free" | "pending" | "paid" | "refunded"
   provider    String?  // payment provider, for paid orders
-  providerRef String?
+  providerOrderId String? // the provider's order/session id (Razorpay order_…), set at checkout
+  providerRef String?  // the provider's payment id once paid
   accessToken String   @unique
   createdAt   DateTime @default(now())
 
   @@index([sellerId, createdAt])
   @@index([productId, buyerEmail])
+}
+
+/// A creator's own payment account (creator-owned payments: buyers pay the creator directly;
+/// Kitevo never holds funds). One per provider. The secret is encrypted with lib/token-crypto.
+model PaymentConnection {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        String   // "razorpay" (later: "stripe", "paypal")
+  publicKey       String   // e.g. Razorpay key id (rzp_live_… / rzp_test_…); not secret
+  secretEncrypted String   // encryptToken(key secret)
+  livemode        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, provider])
 }
 

@@ -351,20 +351,25 @@ export async function sendDownloadEmail({
   productTitle,
   creatorName,
   accessUrl,
+  paidAmount,
 }: {
   to: string;
   productTitle: string;
   creatorName: string;
   accessUrl: string;
+  /** Set for purchases, e.g. "₹499": the email then reads as a receipt. */
+  paidAmount?: string;
 }) {
   await send(
     {
       from: FROM,
       to,
-      subject: `Your download: ${productTitle}`,
+      subject: paidAmount ? `Your purchase: ${productTitle}` : `Your download: ${productTitle}`,
       html: emailHtml({
         heading: escapeHtml(productTitle),
-        body: `Thanks for signing up. Here's your download from <strong>${escapeHtml(creatorName)}</strong>. Keep this email: the link is yours and works any time.`,
+        body: paidAmount
+          ? `Thanks for your purchase from <strong>${escapeHtml(creatorName)}</strong> (${escapeHtml(paidAmount)}, paid to ${escapeHtml(creatorName)} through Razorpay). Keep this email: the link is yours and works any time.`
+          : `Thanks for signing up. Here's your download from <strong>${escapeHtml(creatorName)}</strong>. Keep this email: the link is yours and works any time.`,
         ctaLabel: "Open your download",
         ctaUrl: accessUrl,
         footer: `You received this because you entered this address on ${escapeHtml(creatorName)}'s media kit on Kitevo. ${escapeHtml(creatorName)} can see that you signed up.`,

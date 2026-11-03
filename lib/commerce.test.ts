@@ -37,3 +37,20 @@ describe("cleanEmail / newAccessToken", () => {
     expect(a).not.toBe(b);
   });
 });
+
+describe("normalizeProductInput: price", () => {
+  it("reads a major-unit price from the editor and defaults to INR", () => {
+    const r = normalizeProductInput({ title: "Guide", price: "499" });
+    expect(r.ok && [r.value.priceCents, r.value.currency]).toEqual([49900, "INR"]);
+    const u = normalizeProductInput({ title: "Guide", price: "19.5", currency: "USD" });
+    expect(u.ok && [u.value.priceCents, u.value.currency]).toEqual([1950, "USD"]);
+  });
+  it("0 or blank is a free download; tiny, negative or huge prices are refused", () => {
+    expect(normalizeProductInput({ title: "G", price: "" }).ok && (normalizeProductInput({ title: "G", price: "" }) as { value: { priceCents: number } }).value.priceCents).toBe(0);
+    for (const bad of ["0.5", "-1", "100001", "abc"]) expect(normalizeProductInput({ title: "G", price: bad })).toMatchObject({ ok: false, problem: { field: "priceCents" } });
+  });
+  it("only allows supported currencies", () => {
+    const r = normalizeProductInput({ title: "G", price: "5", currency: "BTC" });
+    expect(r.ok && r.value.currency).toBe("INR");
+  });
+});

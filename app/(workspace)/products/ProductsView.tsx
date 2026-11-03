@@ -7,9 +7,10 @@ import { Button, IconButton } from "@/app/components/workspace/Button";
 import { Modal } from "@/app/components/workspace/Modal";
 import { Badge } from "@/app/components/Badge";
 import { BrandChip } from "@/app/components/BrandChip";
+import { PaymentsPanel, type Connection } from "./PaymentsPanel";
 import { ListCardSkeleton } from "@/app/components/Skeleton";
 import { APP_URL } from "@/lib/app-url";
-import { MAX_DESCRIPTION, MAX_NOTE, MAX_PRODUCTS, MAX_TITLE } from "@/lib/commerce-shared";
+import { MAX_DESCRIPTION, MAX_NOTE, MAX_PRODUCTS, MAX_TITLE, PRODUCT_CURRENCIES, formatPrice } from "@/lib/commerce-shared";
 import { resizeImageFileToJpegDataUrl } from "@/lib/resize-image";
 
 type Product = {
@@ -21,11 +22,15 @@ type Product = {
   deliveryNote: string;
   status: "draft" | "published";
   orders: number;
+  priceCents: number;
+  currency: string;
 };
-type Draft = Omit<Product, "id" | "orders">;
+/** Editor state: price is typed in major units ("499"), saved as minor units by the API. */
+type Draft = Omit<Product, "id" | "orders" | "priceCents"> & { price: string };
 type Lead = { id: string; buyerEmail: string; buyerName: string | null; createdAt: string };
 
-const EMPTY: Draft = { title: "", description: "", coverUrl: null, deliveryUrl: "", deliveryNote: "", status: "draft" };
+const EMPTY: Draft = { title: "", description: "", coverUrl: null, deliveryUrl: "", deliveryNote: "", status: "draft", price: "", currency: "INR" };
+
 const base = APP_URL.replace(/\/$/, "");
 const field =
   "w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40";
@@ -37,6 +42,14 @@ export function ProductsView() {
   const [leadsFor, setLeadsFor] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState<Product | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  // undefined = loading, null = not connected
+  const [connection, setConnection] = useState<Connection | null | undefined>(undefined);
+  useEffect(() => {
+    fetch("/api/payments/connections", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows: Connection[]) => setConnection(rows.find((c) => c.provider === "razorpay") ?? null))
+      .catch(() => setConnection(null));
+  }, []);
 
   useEffect(() => {
     fetch("/api/products", { credentials: "include" })
@@ -65,7 +78,7 @@ export function ProductsView() {
       <PageHeader
         eyebrow="Sell"
         title="Products"
-        description="Offer free downloads on your kit in exchange for an email. Paid products are coming soon."
+        description="Sell digital products from your kit: free in exchange for an email, or for a price paid straight to you."
         actions={
           <Button variant="primary" onClick={() => setEditing({ id: null, draft: EMPTY })} disabled={!products || full}>
             <Plus size={15} aria-hidden /> New product
@@ -106,9 +119,10 @@ export function ProductsView() {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate font-medium text-foreground">{p.title || "Untitled"}</p>
                     {p.status === "published" ? <Badge variant="success" dot>Live</Badge> : <Badge>Draft</Badge>}
+                    <span className="text-xs font-medium tabular-nums text-muted-foreground">{formatPrice(p.priceCents, p.currency)}</span>
                   </div>
                   <button type="button" onClick={() => setLeadsFor(p)} className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                    <Users size={12} aria-hidden /> {p.orders} download{p.orders === 1 ? "" : "s"}
+                    <Users size={12} aria-hidden /> {p.orders} {p.priceCents ? `sale${p.orders === 1 ? "" : "s"}` : `download${p.orders === 1 ? "" : "s"}`}
                   </button>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -121,7 +135,19 @@ export function ProductsView() {
                   <IconButton
                     label="Edit"
                     onClick={() =>
-                      setEditing({ id: p.id, draft: { title: p.title, description: p.description, coverUrl: p.coverUrl, deliveryUrl: p.deliveryUrl ?? "", deliveryNote: p.deliveryNote, status: p.status } })
+                      setEditing({
+                        id: p.id,
+                        draft: {
+                          title: p.title,
+                          description: p.description,
+                          coverUrl: p.coverUrl,
+                          deliveryUrl: p.deliveryUrl ?? "",
+                          deliveryNote: p.deliveryNote,
+                          status: p.status,
+                          price: p.priceCents ? String(p.priceCents / 100) : "",
+                          currency: p.currency === "USD" ? "USD" : "INR",
+                        },
+                      })
                     }
                   >
                     <Pencil size={15} aria-hidden />
@@ -144,21 +170,17 @@ export function ProductsView() {
                 <BrandChip brand="dropbox" />, <BrandChip brand="notion" /> or any other link.
               </li>
               <li><strong className="font-medium text-foreground">2. Publish it.</strong> It appears in the Shop section of your kit.</li>
-              <li><strong className="font-medium text-foreground">3. Fans enter their email</strong> and get the file on a private page, also sent by email. You see every download here.</li>
+              <li><strong className="font-medium text-foreground">3. Fans enter their email</strong> (and pay, for paid products) and get the file on a private page, also sent by email. You see every buyer here.</li>
             </ol>
           </Panel>
-          <Panel title="Paid products" action={<Badge variant="accent">Coming soon</Badge>}>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Sell for a price, paid straight into your own <BrandChip brand="razorpay" />, <BrandChip brand="stripe" /> or{" "}
-              <BrandChip brand="paypal" /> account. Kitevo never holds your money and takes 0%.
-            </p>
-          </Panel>
+          <PaymentsPanel connection={connection} onChange={setConnection} />
         </aside>
       </div>
 
       {editing && (
         <ProductEditor
           initial={editing}
+          paymentsConnected={!!connection}
           onClose={() => setEditing(null)}
           onSaved={(p) => {
             setProducts((ps) => {
@@ -184,10 +206,12 @@ export function ProductsView() {
 
 function ProductEditor({
   initial,
+  paymentsConnected,
   onClose,
   onSaved,
 }: {
   initial: { id: string | null; draft: Draft };
+  paymentsConnected: boolean;
   onClose: () => void;
   onSaved: (p: Product) => void;
 }) {
@@ -237,7 +261,7 @@ function ProductEditor({
   const live = initial.draft.status === "published";
 
   return (
-    <Modal open onClose={onClose} dismissible={!saving} size="md" title={initial.id ? "Edit product" : "New product"} description="A free download, in exchange for an email.">
+    <Modal open onClose={onClose} dismissible={!saving} size="md" title={initial.id ? "Edit product" : "New product"} description="Free in exchange for an email, or for a price paid straight to you.">
       <div className="space-y-4">
         <div className="flex items-center gap-4">
           <button
@@ -273,9 +297,40 @@ function ProductEditor({
           <textarea id="pr-desc" rows={4} value={d.description} maxLength={MAX_DESCRIPTION} onChange={(e) => set({ description: e.target.value })} placeholder="Who it's for and what they get." className={`${field} resize-none`} />
         </div>
         <div>
+          <label htmlFor="pr-price" className="mb-1.5 block text-xs font-medium text-muted-foreground">Price</label>
+          <div className="flex gap-2">
+            <select
+              aria-label="Currency"
+              value={d.currency}
+              onChange={(e) => set({ currency: e.target.value })}
+              className="w-24 shrink-0 rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40"
+            >
+              {PRODUCT_CURRENCIES.map((c) => (
+                <option key={c} value={c}>{c === "INR" ? "₹ INR" : "$ USD"}</option>
+              ))}
+            </select>
+            <input
+              id="pr-price"
+              inputMode="decimal"
+              value={d.price}
+              onChange={(e) => set({ price: e.target.value.replace(/[^\d.]/g, "") })}
+              placeholder="0 = free download"
+              className={field}
+            />
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {Number(d.price) > 0
+              ? paymentsConnected
+                ? `Buyers pay ${formatPrice(Math.round(Number(d.price) * 100), d.currency)} straight into your Razorpay account. Kitevo takes 0%.`
+                : "Connect Razorpay (on this page) before publishing a paid product."
+              : "Leave empty or 0 for a free download in exchange for an email."}
+          </p>
+          {err("priceCents")}
+        </div>
+        <div>
           <label htmlFor="pr-url" className="mb-1.5 block text-xs font-medium text-muted-foreground">Link to the file</label>
           <input id="pr-url" value={d.deliveryUrl ?? ""} onChange={(e) => set({ deliveryUrl: e.target.value })} placeholder="drive.google.com/… (set sharing to “anyone with the link”)" className={field} />
-          <p className="mt-1 text-xs text-muted-foreground">Only shown after someone enters their email, on their private download page.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Only shown on the buyer&apos;s private download page, after they sign up or pay.</p>
           {err("deliveryUrl")}
         </div>
         <div>
