@@ -26,8 +26,11 @@ export const UNCONFIRMED = "—";
 export type Comparison = {
   slug: string;
   name: string;
-  /** Logo: a Simple Icons mark where one exists, else a neutral lettermark (never hand-drawn brand art). */
-  mark: { kind: "linktree" } | { kind: "letter"; letter: string };
+  /**
+   * Logo: a Simple Icons mark where one exists, else the company's own official favicon,
+   * downloaded from its website into public/brands/ (never hand-drawn brand art).
+   */
+  mark: { kind: "linktree" } | { kind: "image"; src: string };
   /** Which generic sketch illustrates the product type (not a copy of their UI). */
   art: "storefront" | "links" | "allinone" | "static";
   /** One line: what the competitor is, in their own terms. */
@@ -70,7 +73,7 @@ const canvaTemplates: Source = { label: "Canva: media kit templates", url: "http
 export const COMPARISONS: Comparison[] = [
   {
     slug: "stan-store",
-    mark: { kind: "letter", letter: "S" },
+    mark: { kind: "image", src: "/brands/stan.png" },
     art: "storefront",
     name: "Stan Store",
     whatTheyAre: "a link-in-bio storefront for selling digital products, courses, memberships and bookings",
@@ -141,7 +144,7 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: "beacons",
-    mark: { kind: "letter", letter: "B" },
+    mark: { kind: "image", src: "/brands/beacons.png" },
     art: "allinone",
     name: "Beacons",
     whatTheyAre: "an all-in-one creator platform: link-in-bio, store, email and a media kit",
@@ -172,7 +175,7 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: "canva-media-kit",
-    mark: { kind: "letter", letter: "C" },
+    mark: { kind: "image", src: "/brands/canva.png" },
     art: "static",
     name: "a Canva media kit",
     whatTheyAre: "a design tool with free media kit templates you fill in and export",
