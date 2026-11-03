@@ -130,6 +130,9 @@ export const stripeProvider: PaymentProvider = {
     };
   },
 
+  // Stripe substitutes {CHECKOUT_SESSION_ID} in the success URL; the session path links the plan.
+  checkoutSessionPlaceholder: true,
+
   async getSubscription(customerId, opts) {
     const subs = await stripeClient().subscriptions.list({
       customer: customerId,

@@ -143,6 +143,20 @@ export interface PaymentProvider {
     opts?: { activeOnly?: boolean }
   ): Promise<SubscriptionSnapshot | null>;
 
+  /**
+   * Look up one subscription by id, with the user id we put in its metadata at checkout.
+   * Optional: used where the checkout return URL carries a subscription id (Dodo appends
+   * `subscription_id=…`) so the success page can link the plan without waiting for the
+   * webhook. Callers must check `userId` against the signed-in user before trusting it.
+   */
+  getSubscriptionById?(subscriptionId: string): Promise<{ subscription: SubscriptionSnapshot; userId: string | null } | null>;
+
+  /**
+   * Whether the success URL should include `session_id={CHECKOUT_SESSION_ID}`. Stripe
+   * substitutes it; Dodo doesn't (it appends its own subscription_id/payment_id instead).
+   */
+  readonly checkoutSessionPlaceholder?: boolean;
+
   /** Move an existing subscription to a different price, prorating where supported. */
   changeSubscriptionPrice(subscription: SubscriptionSnapshot, newPriceId: string): Promise<void>;
 
