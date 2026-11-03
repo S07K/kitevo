@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { invalidateSubscription } from "@/lib/subscription-cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -92,6 +93,35 @@ export async function POST(req: Request) {
       });
       res.headers.set("Set-Cookie", setSubscriptionCookie(customerId));
       return res;
+    }
+
+    /*
+      Dodo fast path: its checkout return URL carries `subscription_id=…` (no session to
+      exchange). Look the subscription up and link it now instead of waiting for the webhook
+      (which can't reach localhost at all, and can lag in production). Only when the
+      subscription's metadata names THIS signed-in user, so a pasted id links nothing.
+      The webhook stays the source of truth; this just stops the success page showing Free.
+    */
+    const subscriptionId = typeof body.subscription_id === "string" ? body.subscription_id : undefined;
+    if (subscriptionId && authSession?.user?.id && payments.getSubscriptionById) {
+      const found = await payments.getSubscriptionById(subscriptionId).catch(() => null);
+      if (found && found.userId === authSession.user.id && found.subscription.customerId) {
+        const { subscription } = found;
+        const me = await prisma.user.findUnique({ where: { id: authSession.user.id }, select: { compedTier: true } });
+        await prisma.user
+          .update({
+            where: { id: authSession.user.id },
+            data: {
+              stripeCustomerId: subscription.customerId,
+              verifiedTier: resolveVerifiedTier(
+                subscription.isActive ? getVerifiedTierForPriceId(subscription.priceId) : null,
+                me?.compedTier ?? null,
+              ),
+            },
+          })
+          .catch((e) => console.error("[subscription-status] linking subscription failed:", e));
+        invalidateSubscription(subscription.customerId);
+      }
     }
 
     // Logged-in user: use only this user's stripeCustomerId from DB (do not use cookie — cookie may be from another account)

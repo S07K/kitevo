@@ -29,13 +29,16 @@ export function BrandPlanCard() {
   const [error, setError] = useState<string | null>(null);
   const [justUpgraded, setJustUpgraded] = useState(false);
 
-  const refreshStatus = useCallback(async (sessionId?: string) => {
+  const refreshStatus = useCallback(async (sessionId?: string, subscriptionId?: string) => {
     try {
       const res = await fetch("/api/subscription-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(sessionId ? { session_id: sessionId } : {}),
+        body: JSON.stringify({
+          ...(sessionId && sessionId !== "{CHECKOUT_SESSION_ID}" ? { session_id: sessionId } : {}),
+          ...(subscriptionId ? { subscription_id: subscriptionId } : {}),
+        }),
       });
       const d = await res.json().catch(() => ({}));
       setStatus({ loading: false, isPro: d?.verifiedTier === "brand_verified" });
@@ -51,11 +54,12 @@ export function BrandPlanCard() {
     if (success) setJustUpgraded(true);
     if (params.get("canceled") === "true") setError("Checkout canceled — no charge was made.");
 
-    // Finalize the checkout (links customer + syncs tier) when returning from Stripe.
-    refreshStatus(sessionId ?? undefined);
+    // Finalize the checkout (links customer + syncs tier): Stripe returns session_id, Dodo
+    // returns subscription_id.
+    refreshStatus(sessionId ?? undefined, params.get("subscription_id") ?? undefined);
 
     // Clean the query string so a refresh doesn't re-trigger.
-    if (success || sessionId || params.get("canceled")) {
+    if (success || sessionId || params.get("subscription_id") || params.get("canceled")) {
       const url = window.location.pathname;
       window.history.replaceState({}, "", url);
     }
