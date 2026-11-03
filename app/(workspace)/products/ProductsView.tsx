@@ -6,6 +6,7 @@ import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/Wo
 import { Button, IconButton } from "@/app/components/workspace/Button";
 import { Modal } from "@/app/components/workspace/Modal";
 import { Badge } from "@/app/components/Badge";
+import { BrandChip } from "@/app/components/BrandChip";
 import { ListCardSkeleton } from "@/app/components/Skeleton";
 import { APP_URL } from "@/lib/app-url";
 import { MAX_DESCRIPTION, MAX_NOTE, MAX_PRODUCTS, MAX_TITLE } from "@/lib/commerce-shared";
@@ -138,14 +139,18 @@ export function ProductsView() {
         <aside className="min-w-0 space-y-6">
           <Panel title="How it works">
             <ol className="space-y-3 text-sm text-muted-foreground">
-              <li><strong className="font-medium text-foreground">1. Add a product</strong> with a link to the file (Google Drive, Dropbox, Notion…).</li>
+              <li>
+                <strong className="font-medium text-foreground">1. Add a product</strong> with a link to the file: <BrandChip brand="googledrive" />,{" "}
+                <BrandChip brand="dropbox" />, <BrandChip brand="notion" /> or any other link.
+              </li>
               <li><strong className="font-medium text-foreground">2. Publish it.</strong> It appears in the Shop section of your kit.</li>
               <li><strong className="font-medium text-foreground">3. Fans enter their email</strong> and get the file on a private page, also sent by email. You see every download here.</li>
             </ol>
           </Panel>
           <Panel title="Paid products" action={<Badge variant="accent">Coming soon</Badge>}>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Sell for a price, paid straight into your own Razorpay, Stripe or PayPal account. Kitevo never holds your money and takes 0%.
+              Sell for a price, paid straight into your own <BrandChip brand="razorpay" />, <BrandChip brand="stripe" /> or{" "}
+              <BrandChip brand="paypal" /> account. Kitevo never holds your money and takes 0%.
             </p>
           </Panel>
         </aside>
