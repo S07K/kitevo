@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BlogHeader, BlogFooter } from "@/app/blog/BlogChrome";
 import { CHECKED_ON, COMPARISONS } from "@/lib/comparisons";
+import { VsLockup } from "./CompareArt";
 
 export const metadata: Metadata = {
   title: "Kitevo compared: Stan Store, Linktree, Beacons, Canva · Kitevo",
@@ -21,7 +22,8 @@ export default function CompareIndex() {
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
           {COMPARISONS.map((c) => (
             <Link key={c.slug} href={`/compare/${c.slug}`} className="group rounded-[24px] border border-border bg-background p-6 transition-colors hover:border-primary">
-              <p className="text-lg font-medium text-foreground">
+              <VsLockup c={c} size={30} />
+              <p className="mt-4 text-lg font-medium text-foreground">
                 Kitevo vs {c.name.replace(/^a /, "")} <span className="inline-block transition-transform group-hover:translate-x-0.5" aria-hidden>→</span>
               </p>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{c.name.charAt(0).toUpperCase() + c.name.slice(1)} is {c.whatTheyAre}.</p>

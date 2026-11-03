@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BlogCover, coverKind } from "./BlogArt";
 import Link from "next/link";
 import { getAllPosts, formatDate } from "@/lib/blog";
 import { APP_URL } from "@/lib/app-url";
@@ -40,13 +41,14 @@ export default function BlogIndex() {
           following into paid partnerships.
         </p>
 
-        <ul className="mt-14 flex flex-col divide-y divide-border border-t border-border">
+        <ul className="mt-14 grid gap-10 sm:grid-cols-2">
           {posts.length === 0 && (
-            <li className="text-muted-foreground py-8">New guides are on the way.</li>
+            <li className="text-muted-foreground">New guides are on the way.</li>
           )}
           {posts.map((post) => (
-            <li key={post.slug} className="py-8">
+            <li key={post.slug} className="min-w-0">
               <Link href={`/blog/${post.slug}`} className="group block">
+                <BlogCover kind={coverKind(post.cover)} className="mb-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
                 <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                   {formatDate(post.date)}
                 </p>

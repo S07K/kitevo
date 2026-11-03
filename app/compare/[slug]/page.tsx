@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import { BlogHeader, BlogFooter } from "@/app/blog/BlogChrome";
 import { APP_URL } from "@/lib/app-url";
 import { CHECKED_ON, COMPARISONS, UNCONFIRMED, comparisonBySlug, type Source } from "@/lib/comparisons";
+import { BrandMark, CompareHeroArt, VsLockup } from "../CompareArt";
 
 export const dynamicParams = false;
 export function generateStaticParams() {
@@ -60,22 +61,26 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <BlogHeader />
       <main>
-        <section className="mx-auto max-w-4xl px-5 pt-12 sm:px-8 sm:pt-20">
-          <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground">
-            <Link href="/compare" className="hover:text-foreground">Compare</Link> <span aria-hidden>/</span> <span className="text-foreground">Kitevo vs {short}</span>
-          </nav>
-          <h1 className="mt-4 max-w-3xl text-balance text-[clamp(30px,5vw,52px)] font-medium leading-[1.06] tracking-tight text-foreground">{c.title}</h1>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">{c.intro}</p>
-          <p className="mt-3 text-xs text-muted-foreground">Facts about {short} checked on {CHECKED_ON}, with sources below.</p>
+        <section className="mx-auto grid max-w-6xl items-center gap-10 px-5 pt-12 sm:px-8 sm:pt-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-14">
+          <div className="min-w-0">
+            <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground">
+              <Link href="/compare" className="hover:text-foreground">Compare</Link> <span aria-hidden>/</span> <span className="text-foreground">Kitevo vs {short}</span>
+            </nav>
+            <div className="mt-5"><VsLockup c={c} /></div>
+            <h1 className="mt-5 max-w-3xl text-balance text-[clamp(30px,4.6vw,52px)] font-medium leading-[1.06] tracking-tight text-foreground">{c.title}</h1>
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">{c.intro}</p>
+            <p className="mt-3 text-xs text-muted-foreground">Facts about {short} checked on {CHECKED_ON}, with sources below.</p>
+          </div>
+          <div className="mx-auto w-full max-w-[34rem] min-w-0"><CompareHeroArt c={c} /></div>
         </section>
 
         {/* Comparison table: a 3-column grid on wide screens, stacked pairs on phones */}
-        <section className="mx-auto max-w-4xl px-5 pt-10 sm:px-8">
+        <section className="mx-auto max-w-4xl px-5 pt-14 sm:px-8">
           <div className="overflow-hidden rounded-[24px] border border-border bg-background">
             <div className="hidden grid-cols-[11rem_minmax(0,1fr)_minmax(0,1fr)] gap-6 border-b border-border bg-muted/50 px-6 py-3 text-sm font-medium text-foreground md:grid">
               <span />
-              <span>Kitevo</span>
-              <span className="capitalize">{short}</span>
+              <span className="inline-flex items-center gap-2"><BrandMark who="kitevo" size={22} /> Kitevo</span>
+              <span className="inline-flex items-center gap-2"><BrandMark who={c.mark} size={22} /> {short}</span>
             </div>
             {rows.map((r) => (
               <div key={r.label} className="grid gap-2 border-b border-border px-5 py-4 last:border-0 md:grid-cols-[11rem_minmax(0,1fr)_minmax(0,1fr)] md:gap-6 md:px-6">
@@ -85,7 +90,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
                   {r.kitevo}
                 </div>
                 <div className="text-sm leading-relaxed text-muted-foreground">
-                  <span className="mb-0.5 block text-[11px] font-medium capitalize md:hidden">{short}</span>
+                  <span className="mb-0.5 block text-[11px] font-medium md:hidden">{short}</span>
                   {r.them.text}
                   {r.n && (
                     <a href={`#source-${r.n}`} className="ml-1 align-super text-[10px] font-medium text-primary hover:underline" aria-label={`Source ${r.n}`}>
@@ -109,7 +114,10 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
             { title: "Choose Kitevo if", items: c.chooseKitevo, us: true },
           ].map((col) => (
             <div key={col.title} className={`rounded-[24px] p-6 ${col.us ? "bg-primary text-primary-foreground" : "border border-border bg-background"}`}>
-              <h2 className="text-lg font-medium">{col.title}</h2>
+              <h2 className="flex items-center gap-2.5 text-lg font-medium">
+                <BrandMark who={col.us ? "kitevo" : c.mark} size={28} />
+                {col.title}
+              </h2>
               <ul className="mt-4 space-y-3">
                 {col.items.map((it) => (
                   <li key={it} className="flex gap-2.5 text-sm leading-relaxed">

@@ -26,6 +26,10 @@ export const UNCONFIRMED = "—";
 export type Comparison = {
   slug: string;
   name: string;
+  /** Logo: a Simple Icons mark where one exists, else a neutral lettermark (never hand-drawn brand art). */
+  mark: { kind: "linktree" } | { kind: "letter"; letter: string };
+  /** Which generic sketch illustrates the product type (not a copy of their UI). */
+  art: "storefront" | "links" | "allinone" | "static";
   /** One line: what the competitor is, in their own terms. */
   whatTheyAre: string;
   title: string;
@@ -66,6 +70,8 @@ const canvaTemplates: Source = { label: "Canva: media kit templates", url: "http
 export const COMPARISONS: Comparison[] = [
   {
     slug: "stan-store",
+    mark: { kind: "letter", letter: "S" },
+    art: "storefront",
     name: "Stan Store",
     whatTheyAre: "a link-in-bio storefront for selling digital products, courses, memberships and bookings",
     title: "Kitevo vs Stan Store: media kit or storefront?",
@@ -103,6 +109,8 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: "linktree",
+    mark: { kind: "linktree" },
+    art: "links",
     name: "Linktree",
     whatTheyAre: "a link-in-bio page that collects all your links in one place",
     title: "Kitevo vs Linktree: a media kit vs a link-in-bio",
@@ -133,6 +141,8 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: "beacons",
+    mark: { kind: "letter", letter: "B" },
+    art: "allinone",
     name: "Beacons",
     whatTheyAre: "an all-in-one creator platform: link-in-bio, store, email and a media kit",
     title: "Kitevo vs Beacons: which media kit should you use?",
@@ -162,6 +172,8 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: "canva-media-kit",
+    mark: { kind: "letter", letter: "C" },
+    art: "static",
     name: "a Canva media kit",
     whatTheyAre: "a design tool with free media kit templates you fill in and export",
     title: "Kitevo vs a Canva media kit: live page or static PDF?",
