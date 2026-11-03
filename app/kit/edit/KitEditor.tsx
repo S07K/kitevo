@@ -927,7 +927,7 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
         id="shop"
         flashed={flashed("shop")}
         title="Shop"
-        hint="Free downloads you offer in exchange for an email (paid products are coming). Published products show on your kit."
+        hint="Free downloads you offer in exchange for an email (paid products coming soon). Published products show on your kit."
         badge={<Switch checked={sectionVisibility.products !== false} onChange={(v) => setVisible("products", v)} label="Show shop on my kit" />}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">

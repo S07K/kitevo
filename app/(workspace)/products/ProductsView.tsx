@@ -64,7 +64,7 @@ export function ProductsView() {
       <PageHeader
         eyebrow="Sell"
         title="Products"
-        description="Offer free downloads on your kit in exchange for an email. Paid products are coming next."
+        description="Offer free downloads on your kit in exchange for an email. Paid products are coming soon."
         actions={
           <Button variant="primary" onClick={() => setEditing({ id: null, draft: EMPTY })} disabled={!products || full}>
             <Plus size={15} aria-hidden /> New product
@@ -143,9 +143,9 @@ export function ProductsView() {
               <li><strong className="font-medium text-foreground">3. Fans enter their email</strong> and get the file on a private page, also sent by email. You see every download here.</li>
             </ol>
           </Panel>
-          <Panel title="Paid products">
+          <Panel title="Paid products" action={<Badge variant="accent">Coming soon</Badge>}>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Coming next: sell for a price, paid straight into your own Razorpay, Stripe or PayPal account. Kitevo never holds your money and takes 0%.
+              Sell for a price, paid straight into your own Razorpay, Stripe or PayPal account. Kitevo never holds your money and takes 0%.
             </p>
           </Panel>
         </aside>
