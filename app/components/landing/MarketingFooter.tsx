@@ -17,6 +17,7 @@ const ACCOUNT = [
   { label: "Referral program", href: "/referral-program" },
   { label: "Rate calculator", href: "/tools/rate-calculator" },
   { label: "Engagement calculator", href: "/tools/engagement-rate-calculator" },
+  { label: "Compare Kitevo", href: "/compare" },
 ];
 
 const LEGAL = [
