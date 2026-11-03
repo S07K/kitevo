@@ -1,7 +1,7 @@
 # Kitevo Product & Growth Plan
 
-**Status (2026-11-02):** Phase 0 — **complete** (11/11 checklist items, all exit criteria met). R1 referral program shipped. Workspace + landing revamp shipped — see §15. Phases 1–3 not started.
-**Last updated:** 2026-11-02
+**Status (2026-11-03):** Phase 0 **complete**. Sprint 2 done (free calculators, public kit redesign) and Sprint 3 done (comparison pages, payout-rail decision: **creator-owned payments**). **Phase 1 (commerce) started:** Release A, free downloads with email capture, is live; B (paid products) and C (bookings) are next. See §15–§16.
+**Last updated:** 2026-11-03
 **Scope:** Competitive strategy, pricing architecture, feature roadmap, and the Phase 0 execution checklist.
 
 ---
@@ -504,7 +504,7 @@ Tooling: the `frontend-design` skill is installed for design passes; screenshot-
 |---|---|---|
 | 1 | P0-5 token encryption · P0-7 analytics funnel events · **R1 referral program** | Safe to scale; measure every channel; growth loop live |
 | 2 | **Free rate + engagement calculators** · public kit UI revamp | SEO/social top of funnel; better first impression for brands — *calculators ✅ (2026-11-02: `/tools`, `/tools/rate-calculator`, `/tools/engagement-rate-calculator`; formulas shown on the page, rates carry into the kit editor after sign-up); public kit revamp ✅ (2026-11-02, §11.4 step 1)* |
-| 3 | Landing revamp + comparison pages · P0-6 admin view · payout-rail decision | Conversion; ops for commerce — *landing revamp ✅, admin ✅, comparison pages ✅ (2026-11-03: `/compare` + Stan Store, Linktree, Beacons, Canva; sourced and dated in `lib/comparisons.ts`); payout-rail decision open* |
+| 3 | Landing revamp + comparison pages · P0-6 admin view · payout-rail decision | Conversion; ops for commerce — *landing revamp ✅, admin ✅, comparison pages ✅ (2026-11-03: `/compare` + Stan Store, Linktree, Beacons, Canva; sourced and dated in `lib/comparisons.ts`); payout-rail decision ✅ (2026-11-03: creator-owned payments, see §11.6 note)* |
 | 4–6 | **R3 digital products + bookings** (checkout, delivery, orders, receipts) · R6 custom domains | Commerce parity on the things that matter |
 | 7–8 | **R2 brand-deal payments** (milestones, 5% brand fee) · R4 Copilot beta | The expansion lever + the moat |
 
@@ -609,5 +609,18 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - **Campaign emails.** Brands hear about new applications; creators hear when they're accepted or declined.
 - **Fixes found along the way.** A brand could change applications on other brands' campaigns (now scoped to the campaign); the kit inquiry email inserted visitor input unescaped (all email templates now escape user text).
 
-**Still open from this plan:** Sprint 3 payout-rail decision; Phases 1–3. Smaller gaps tracked in CLAUDE.md "Other Pending": report/block, downgrade handling for the kit cap, DB indexes, Supabase Storage for images, brand team seats.
+**Still open from this plan:** Phase 1 commerce Releases B (paid products via creator-owned payments) and C (bookings); Phases 2–3. Smaller gaps tracked in CLAUDE.md "Other Pending": report/block, downgrade handling for the kit cap, DB indexes, Supabase Storage for images, brand team seats.
+
+---
+
+## 16. Shipped 2026-11-03
+
+- **Kit page redesign** (Sprint 2): audience-sentence headline from real data, stat strip, cardless sections, sticky rate-card rail on desktop and a sticky "Work with me" bar on phones.
+- **Kit editor**: mirrors the kit, profile and contact links editable in place, click any part of the preview to edit it, Mobile (iPhone) and Desktop (1280px browser window) previews. **Creator Settings became account-only.**
+- **Security**: contact links restricted to web/email URLs on save and on display (a `javascript:` link could previously run on a public kit).
+- **Comparison pages** (Sprint 3): `/compare` + Kitevo vs Stan Store, Linktree, Beacons, Canva. Every competitor fact sourced and dated; Kitevo's gaps stated. Official competitor icons, simple flat SVG illustrations. Correction found: Stan now offers custom domains on Creator Max.
+- **Blog**: cover illustrations per post, card-grid index, code blocks no longer widen the page on phones.
+- **Payout-rail decision**: creator-owned payments (Kajabi model). Dodo can't split payments and Stripe Connect is invite-only for Indian companies, so buyers pay the creator's own Razorpay/Stripe/PayPal and Kitevo never holds funds.
+- **Commerce Release A**: Products page ("Sell" in the sidebar), free downloads in exchange for an email, kit Shop section, product page in the creator's kit style, private delivery page + email, downloads list. Privacy policy updated.
+- **Dodo checkout fix**: the plan now links on return from checkout (via the `subscription_id` Dodo appends), checked against the signed-in user, instead of only via the webhook.
 
