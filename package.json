@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "postinstall": "prisma generate",
+    "predev": "node --env-file-if-exists=.env scripts/dev-migrate.cjs",
     "dev": "next dev --webpack",
     "build": "next build",
     "build:vercel": "node scripts/vercel-build.cjs",

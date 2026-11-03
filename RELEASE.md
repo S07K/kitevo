@@ -201,6 +201,8 @@ No new env vars (secrets reuse `TOKEN_ENCRYPTION_KEYS`). One migration (`2026110
 
 ## Notes for local development
 
+- `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.
+
 - Your local `.env` already has `TOKEN_ENCRYPTION_KEYS` and `ADMIN_EMAILS`. A bare key is
   now accepted (it used to need a `k1:` prefix, and without it token and payout saves threw an error).
 - `npm run db:migrate` / `db:studio` / `db:push` in `package.json` point at a database
