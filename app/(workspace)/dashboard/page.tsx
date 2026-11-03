@@ -160,6 +160,8 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const success = searchParams.get("success") === "true";
   const sessionId = searchParams.get("session_id") ?? null;
+  // Dodo returns subscription_id instead of a session id (see /api/subscription-status).
+  const returnedSubscriptionId = searchParams.get("subscription_id") ?? null;
   const instagramConnectedParam = searchParams.get("instagram_connected");
   const instagramErrorParam = searchParams.get("instagram_error");
   const youtubeParam = searchParams.get("youtube");
@@ -167,7 +169,10 @@ function DashboardContent() {
   useEffect(() => {
     let cancelled = false;
     async function check() {
-      const body = sessionId ? { session_id: sessionId } : {};
+      const body = {
+        ...(sessionId && sessionId !== "{CHECKOUT_SESSION_ID}" ? { session_id: sessionId } : {}),
+        ...(returnedSubscriptionId ? { subscription_id: returnedSubscriptionId } : {}),
+      };
       const res = await fetch("/api/subscription-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -187,7 +192,7 @@ function DashboardContent() {
     }
     check();
     return () => { cancelled = true; };
-  }, [sessionId]);
+  }, [sessionId, returnedSubscriptionId]);
 
   useEffect(() => {
     let cancelled = false;

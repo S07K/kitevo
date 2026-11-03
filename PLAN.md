@@ -45,7 +45,7 @@ Three strategic bets:
 | Growth | Affiliates (Pro), discounts, payment plans, BNPL (Pro), analytics/pixels |
 | AI | "Stanley" AI assistant |
 | Mobile | iOS apps |
-| Custom domain | Not supported |
+| Custom domain | **Creator Max plan only** (Creator/Creator Pro stay on stan.store/username) — Stan help centre, checked 2026-11-03 |
 | Limits | 1 community per store, 1 order bump per product, multi-store requires separate subscriptions |
 | Gaps | No variants/pricing tiers, no centralized customer portal, no physical inventory/shipping, no public team/agency plan |
 
@@ -64,7 +64,7 @@ Three strategic bets:
 | Brand side | Campaigns, creator discovery, messaging, applications |
 | Payments | Stripe or Dodo Payments (Merchant of Record), subscription billing |
 | Advantages | Live verified stats, design quality, multi-kit, brand inquiry pipeline, cheaper entry, Dodo MoR |
-| Gaps | No commerce, no courses/memberships/bookings, no customer portal, no payouts, no email marketing, no custom domains, no mobile apps |
+| Gaps | No commerce, no courses/memberships/bookings, no customer portal, no payouts, no email marketing, no mobile apps (custom domains ✅ 2026-11-02) |
 
 ### Positioning statement
 
@@ -504,7 +504,7 @@ Tooling: the `frontend-design` skill is installed for design passes; screenshot-
 |---|---|---|
 | 1 | P0-5 token encryption · P0-7 analytics funnel events · **R1 referral program** | Safe to scale; measure every channel; growth loop live |
 | 2 | **Free rate + engagement calculators** · public kit UI revamp | SEO/social top of funnel; better first impression for brands — *calculators ✅ (2026-11-02: `/tools`, `/tools/rate-calculator`, `/tools/engagement-rate-calculator`; formulas shown on the page, rates carry into the kit editor after sign-up); public kit revamp ✅ (2026-11-02, §11.4 step 1)* |
-| 3 | Landing revamp + comparison pages · P0-6 admin view · payout-rail decision | Conversion; ops for commerce — *landing revamp ✅ and admin ✅ (2026-11-01/02); comparison pages and payout-rail decision open* |
+| 3 | Landing revamp + comparison pages · P0-6 admin view · payout-rail decision | Conversion; ops for commerce — *landing revamp ✅, admin ✅, comparison pages ✅ (2026-11-03: `/compare` + Stan Store, Linktree, Beacons, Canva; sourced and dated in `lib/comparisons.ts`); payout-rail decision open* |
 | 4–6 | **R3 digital products + bookings** (checkout, delivery, orders, receipts) · R6 custom domains | Commerce parity on the things that matter |
 | 7–8 | **R2 brand-deal payments** (milestones, 5% brand fee) · R4 Copilot beta | The expansion lever + the moat |
 
@@ -609,5 +609,5 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - **Campaign emails.** Brands hear about new applications; creators hear when they're accepted or declined.
 - **Fixes found along the way.** A brand could change applications on other brands' campaigns (now scoped to the campaign); the kit inquiry email inserted visitor input unescaped (all email templates now escape user text).
 
-**Still open from this plan:** Sprint 3 comparison pages and payout-rail decision; Phases 1–3. Smaller gaps tracked in CLAUDE.md "Other Pending": report/block, downgrade handling for the kit cap, DB indexes, Supabase Storage for images, brand team seats.
+**Still open from this plan:** Sprint 3 payout-rail decision; Phases 1–3. Smaller gaps tracked in CLAUDE.md "Other Pending": report/block, downgrade handling for the kit cap, DB indexes, Supabase Storage for images, brand team seats.
 
