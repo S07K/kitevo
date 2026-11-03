@@ -3,6 +3,7 @@ title: "How to Pitch Brands as a Creator (With Email Templates)"
 description: "A practical guide to landing brand deals: finding the right contact, what to say, and copy-paste pitch templates that actually get replies."
 date: "2026-08-27"
 author: "Kitevo"
+cover: "pitch"
 ---
 
 Waiting for brands to find you is the slowest way to grow as a creator. The creators landing consistent deals are almost always the ones pitching first. The good news: most creators pitch badly, so a clear, confident pitch stands out immediately. Here is how to do it.

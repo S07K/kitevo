@@ -3,6 +3,7 @@ title: "How to Make a Media Kit That Actually Lands Brand Deals"
 description: "A step-by-step guide to building a creator media kit brands take seriously: what to include, what to leave out, and why a live link beats a static PDF."
 date: "2026-09-02"
 author: "Kitevo"
+cover: "kit"
 ---
 
 If you have ever pitched a brand and heard nothing back, your media kit might be the reason. Not because your audience is too small, but because the kit made a busy marketing manager work to find the one thing they care about: whether partnering with you is worth their budget.

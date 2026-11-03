@@ -15,6 +15,8 @@ export type PostMeta = {
   description: string;
   date: string;
   author: string;
+  /** Cover illustration (app/blog/BlogArt.tsx): "kit" | "pitch" | "examples". */
+  cover?: string;
 };
 
 export type Post = PostMeta & { html: string; readingTime: string };
@@ -42,6 +44,7 @@ function toMeta(slug: string, data: Record<string, unknown>): PostMeta {
     description: String(data.description ?? ""),
     date: String(data.date ?? ""),
     author: String(data.author ?? "Kitevo"),
+    cover: typeof data.cover === "string" ? data.cover : undefined,
   };
 }
 
