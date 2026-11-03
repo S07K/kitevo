@@ -154,6 +154,12 @@ The competitive/product strategy (Stan Store teardown, pricing, roadmap) now liv
 - ✅ Trials & coupons — see Key Technical Rules › Trials
 - ✅ Custom domains — see Key Technical Rules › Custom domains (Phase 0 complete)
 
+### Product Plan (Phase 1 — commerce)
+Money model decided 2026-11-03: **creator-owned payments** (see Key Technical Rules › Creator commerce).
+- ✅ Release A: products + free downloads with email capture (`/products`, kit Shop, `/p/[id]`, `/o/[token]`)
+- ⬜ Release B: paid digital products — creators connect their own Razorpay / Stripe (restricted key) / PayPal; keys encrypted with `lib/token-crypto`; checkout on the creator's account, webhook → `Order` paid → delivery
+- ⬜ Release C: bookings (free or paid), reusing Products + Orders
+
 ### Brand Revenue Model
 **Phase 1 — gate + monetize: ✅ DONE** (cap free brands at 1 open campaign, `brand_verified` Stripe plan wired, purple tick on creator-facing surfaces — see Brand Monetization above)
 
@@ -172,11 +178,12 @@ Phase 3 — Business tier:
 
 ### Other Pending
 - Supabase Storage migration (avatars/logos currently stored as base64 in DB — works but not ideal for scale)
-- Vercel deployment setup / env vars for production
 - DB indexes for scale
 - Report/block between users
 - Stripe tier enforcement: creator kit-count cap (campaign-count cap for brands ✅ done)
 - Wire `CampaignApplication.updatedAt` back into timeline once confirmed regenerated
+- Test hygiene: `lib/email.test.ts`, `lib/payments/dodo-provider.test.ts`, `lib/payments/stripe-provider.test.ts`, `app/api/me/admin/route.test.ts` use `beforeEach(() => x.mockReset())` (returns the mock → run as teardown); harmless today, wrap in braces when touched
+- Linktree prices on `/compare/linktree` are `reported` (independent review); confirm on linktr.ee and switch the source to official
 
 ---
 

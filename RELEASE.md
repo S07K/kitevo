@@ -3,7 +3,7 @@
 A running checklist for the work currently on feature branches. Updated as each branch
 lands. Tick items off as you go; delete the section once it's live.
 
-**Last updated:** 2026-11-02 (everything since row 10 is in feat/persistent-shell)
+**Last updated:** 2026-11-03 (PRs #9, #10, #11 merged; everything in §1 is live)
 
 ---
 
@@ -168,6 +168,21 @@ soon as this ships, and without them the dialog says "not switched on yet".
   date, amount, method and reference on `/admin/payouts`.
 - [ ] Decide when to move payouts to a vendor (PLAN.md §13: Rekomi / Dub / Affonso once
   payouts pass ~$300–500/month).
+
+---
+
+## 9. After the 2026-11-03 release (#9 compare + blog, #10 commerce A, #11 Dodo fix)
+
+No new env vars. One migration (`20261103071939_commerce_products_orders`, new tables only) applies on deploy.
+
+- [ ] GitHub Actions → **DB migrations** run for the merge commit is green.
+- [ ] `/compare` and the four comparison pages load; logos show (Stan, Beacons, Canva come from `/brands/*.png`).
+- [ ] `/blog` shows the cover cards; a post shows its cover.
+- [ ] **Products**: create a free download on your account, publish it, see it in your kit's Shop, claim it from a private window with a test email → the delivery page opens and the email arrives (Resend).
+- [ ] **Dodo**: a checkout now updates the plan straight away on return (no waiting for the webhook). The webhook still has to be subscribed to `payment.succeeded` / `refund.succeeded` for referral commissions (§4).
+- [ ] Check the Linktree prices on linktr.ee against `/compare/linktree`.
+
+**Local note:** Dodo webhooks can't reach localhost, so referral commissions only appear locally through a tunnel (`cloudflared tunnel --url http://localhost:3000`, then add `<tunnel>/api/webhook` in Dodo test mode).
 
 ---
 
