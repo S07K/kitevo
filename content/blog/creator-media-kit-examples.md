@@ -3,6 +3,7 @@ title: "Creator Media Kit Examples: What a Great One Looks Like"
 description: "Section-by-section breakdowns of strong creator media kits, by creator type, with a template you can copy for your own."
 date: "2026-08-30"
 author: "Kitevo"
+cover: "examples"
 ---
 
 When creators search for media kit examples, they are usually looking for one thing: a template they can copy without guessing. The problem with most examples online is that they show a pretty layout but hide the thinking behind it. A media kit is not a design exercise. It is a decision tool for a brand. This guide breaks down what a strong one contains, and how it shifts depending on the kind of creator you are.

@@ -277,7 +277,7 @@ export function WaysToEarn(): ReactNode {
 
 /* Example kits ───────────────────────────────────────────────────────────── */
 
-const EXAMPLES: Array<{ look: KitLook; panel: string; ink: string }> = [
+export const EXAMPLES: Array<{ look: KitLook; panel: string; ink: string }> = [
   {
     look: {
       name: "Theo Banks",

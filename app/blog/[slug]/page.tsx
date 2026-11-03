@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BlogCover, coverKind } from "../BlogArt";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllPostSlugs, getPostBySlug, formatDate } from "@/lib/blog";
@@ -78,6 +79,7 @@ export default async function BlogPost({
             {post.title}
           </h1>
           <p className="text-muted-foreground mt-4 text-lg">{post.description}</p>
+          <BlogCover kind={coverKind(post.cover)} className="mt-10" />
 
           <div
             className="blog-prose mt-10"
