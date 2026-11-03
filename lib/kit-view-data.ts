@@ -3,6 +3,7 @@ import { payments } from "@/lib/payments";
 import { getTierById, getTierByPriceId } from "@/config/subscriptions";
 import { getStatsForUser, getRecentPostsForUser } from "@/lib/instagram-api";
 import { ensureReferralCode } from "@/lib/referrals";
+import { publishedProductsFor, type PublicProduct } from "@/lib/commerce";
 import type { LiveKitStats } from "@/lib/kit-stats-compose";
 
 export type KitViewData = {
@@ -11,6 +12,8 @@ export type KitViewData = {
   instagramPosts: Awaited<ReturnType<typeof getRecentPostsForUser>>;
   inquiryEnabled: boolean;
   referralCode: string | null;
+  /** Published products for the kit's Shop section (never delivery links). */
+  products: PublicProduct[];
 };
 
 /**
@@ -74,5 +77,6 @@ export async function loadKitViewData(ownerId: string): Promise<KitViewData> {
   // Codes are created lazily, once per user.
   const referralCode = user?.referralCode ?? (await ensureReferralCode(ownerId).catch(() => null));
 
-  return { live, instagramConnected, instagramPosts, inquiryEnabled, referralCode };
+  const products = await publishedProductsFor(ownerId).catch(() => []);
+  return { live, instagramConnected, instagramPosts, inquiryEnabled, referralCode, products };
 }

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
-import { ArrowUpRight, ChevronsUpDown, Loader2, SquareKanban, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
+import { ArrowUpRight, ChevronsUpDown, Loader2, SquareKanban, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun, ShoppingBag } from "lucide-react";
 import { AvatarImg } from "./AvatarImg";
 import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
 import { Skeleton } from "@/app/components/Skeleton";
@@ -129,6 +129,7 @@ export function WorkspaceSidebar({
           { href: "/pipeline", label: "Pipeline", icon: <SquareKanban {...ICON} /> },
         ],
       },
+      { title: "Sell", items: [{ href: "/products", label: "Products", icon: <ShoppingBag {...ICON} /> }] },
       { title: "Grow", items: [earn] },
     ],
     footer: [
@@ -142,8 +143,9 @@ export function WorkspaceSidebar({
     { href: "/dashboard", label: "Home", icon: <House {...ICON} /> },
     creator.sections[1].items[0],
     { ...creator.sections[1].items[1], label: "Messages" },
+    // Settings lives in the avatar menu on phones, so the bar can carry Products.
+    { href: "/products", label: "Products", icon: <ShoppingBag {...ICON} /> },
     { ...earn, label: "Earn" },
-    { href: "/settings", label: "Settings", icon: <Settings {...ICON} /> },
   ];
 
   const brandInbox: Item = { href: "/messages", label: "Messages", icon: <MessageCircle {...ICON} />, badge };

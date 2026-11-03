@@ -344,3 +344,32 @@ function emailHtml({ heading, body, ctaLabel, ctaUrl, footer }: {
 function escapeHtml(v: string): string {
   return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
+
+/** Buyer: your free download from a creator's kit (product + private delivery page link). */
+export async function sendDownloadEmail({
+  to,
+  productTitle,
+  creatorName,
+  accessUrl,
+}: {
+  to: string;
+  productTitle: string;
+  creatorName: string;
+  accessUrl: string;
+}) {
+  await send(
+    {
+      from: FROM,
+      to,
+      subject: `Your download: ${productTitle}`,
+      html: emailHtml({
+        heading: escapeHtml(productTitle),
+        body: `Thanks for signing up. Here's your download from <strong>${escapeHtml(creatorName)}</strong>. Keep this email: the link is yours and works any time.`,
+        ctaLabel: "Open your download",
+        ctaUrl: accessUrl,
+        footer: `You received this because you entered this address on ${escapeHtml(creatorName)}'s media kit on Kitevo. ${escapeHtml(creatorName)} can see that you signed up.`,
+      }),
+    },
+    "download",
+  );
+}

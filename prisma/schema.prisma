@@ -104,6 +104,8 @@ model User {
   // Relations for Phase 8 (kits)
   kits      Kit[]
   customDomains CustomDomain[]
+  products      Product[]
+  sales         Order[]   @relation("SellerOrders")
   analyticsEvents AnalyticsEvent[]
   // Referral program (lib/referrals.ts)
   referralCode         String?              @unique
@@ -425,3 +427,49 @@ model ReferralPayout {
 
   @@index([referrerId])
 }
+
+/// Something a creator offers from their kit (lib/commerce.ts). Release A: free downloads
+/// delivered by a creator-supplied link; paid checkout (creator-owned payments) comes next.
+model Product {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   @default("download") // "download" (later: "booking")
+  title       String
+  description String   @default("")
+  coverUrl    String?  // base64 data URL, resized client-side like avatars
+  priceCents  Int      @default(0) // 0 = free (email capture)
+  currency    String   @default("USD")
+  deliveryUrl String?  // revealed only on the buyer's private delivery page
+  deliveryNote String  @default("")
+  status      String   @default("draft") // "draft" | "published"
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orders      Order[]
+
+  @@index([userId, status, position])
+}
+
+/// One claim or purchase of a product. Free claims are orders too (status "free"), so paid
+/// sales reuse the same table. accessToken opens the buyer's private delivery page.
+model Order {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sellerId    String
+  seller      User     @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Cascade)
+  buyerEmail  String
+  buyerName   String?
+  amountCents Int      @default(0)
+  currency    String   @default("USD")
+  status      String   @default("free") // "free" | "pending" | "paid" | "refunded"
+  provider    String?  // payment provider, for paid orders
+  providerRef String?
+  accessToken String   @unique
+  createdAt   DateTime @default(now())
+
+  @@index([sellerId, createdAt])
+  @@index([productId, buyerEmail])
+}
+
