@@ -6,9 +6,17 @@
 /** Must stay under API limit (see app/api/me/avatar/route.ts) so Neon/pg updates don't time out. */
 export const MAX_AVATAR_DATA_URL_CHARS = 180_000;
 
-export async function resizeImageFileToJpegDataUrl(file: File): Promise<string> {
+/**
+ * Defaults fit avatars (320px). Product covers pass a larger maxSide; maxChars must stay
+ * under the receiving API's limit.
+ */
+export async function resizeImageFileToJpegDataUrl(
+  file: File,
+  opts: { maxSide?: number; maxChars?: number } = {},
+): Promise<string> {
+  const limit = opts.maxChars ?? MAX_AVATAR_DATA_URL_CHARS;
   const bitmap = await createImageBitmap(file);
-  let maxSide = 320;
+  let maxSide = opts.maxSide ?? 320;
   let quality = 0.82;
   for (let i = 0; i < 12; i++) {
     const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
@@ -21,7 +29,7 @@ export async function resizeImageFileToJpegDataUrl(file: File): Promise<string> 
     if (!ctx) throw new Error("Could not create canvas");
     ctx.drawImage(bitmap, 0, 0, w, h);
     const url = canvas.toDataURL("image/jpeg", quality);
-    if (url.length <= MAX_AVATAR_DATA_URL_CHARS) {
+    if (url.length <= limit) {
       bitmap.close();
       return url;
     }

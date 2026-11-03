@@ -19,6 +19,8 @@ export interface SectionVisibility {
   growthChart: boolean;
   audience: boolean;
   links: boolean;
+  /** Shop section (published products). Optional: older kits default to shown. */
+  products?: boolean;
 }
 
 export const DEFAULT_SECTION_VISIBILITY: SectionVisibility = {
@@ -29,6 +31,7 @@ export const DEFAULT_SECTION_VISIBILITY: SectionVisibility = {
   growthChart: true,
   audience: true,
   links: true,
+  products: true,
 };
 
 export interface StoredKitContent {

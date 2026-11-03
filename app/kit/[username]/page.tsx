@@ -141,7 +141,7 @@ export default async function MediaKitPage({
     // Plan, live stats, posts, inquiry form and referral code (shared with the editor preview).
     const view = await loadKitViewData(result.kit.userId);
     const { platformStats, enabledPlatformIds, statsSource } = composeKitStats(result.kit.manualStats, view.live);
-    const { instagramConnected, instagramPosts, inquiryEnabled, referralCode } = view;
+    const { instagramConnected, instagramPosts, inquiryEnabled, referralCode, products } = view;
     return (
       <MediaKitClient
         username={result.creator.username}
@@ -168,6 +168,7 @@ export default async function MediaKitPage({
         inquiryEnabled={inquiryEnabled}
         isOwner={isOwner && !previewMode}
         referralCode={referralCode}
+        products={products}
       />
     );
   }
