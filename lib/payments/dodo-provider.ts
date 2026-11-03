@@ -181,6 +181,17 @@ export const dodoProvider: PaymentProvider = {
     return { customerId: null, userId: null, subscription: null };
   },
 
+  async getSubscriptionById(subscriptionId) {
+    // Dodo ids look like sub_…; anything else isn't worth a network call.
+    if (!/^sub_[A-Za-z0-9]{6,64}$/.test(subscriptionId)) return null;
+    try {
+      const sub = (await dodoClient().subscriptions.retrieve(subscriptionId)) as DodoSubscriptionLike;
+      return { subscription: toSnapshot(sub), userId: sub.metadata?.[USER_ID_KEY] ?? null };
+    } catch {
+      return null;
+    }
+  },
+
   async getSubscription(customerId, opts) {
     const page = await dodoClient().subscriptions.list({ customer_id: customerId, page_size: 10 });
     const items = (page.items ?? []) as DodoSubscriptionLike[];

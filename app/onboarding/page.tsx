@@ -146,11 +146,15 @@ function Onboarding() {
 
   // Back from hosted checkout (older links): refresh plan, drop the query string.
   useEffect(() => {
-    if (params.get("success") === "true" && params.get("session_id")) {
+    if (params.get("success") === "true" && (params.get("session_id") || params.get("subscription_id"))) {
+      const sessionId = params.get("session_id");
       fetch("/api/subscription-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: params.get("session_id") }),
+        body: JSON.stringify({
+          ...(sessionId && sessionId !== "{CHECKOUT_SESSION_ID}" ? { session_id: sessionId } : {}),
+          ...(params.get("subscription_id") ? { subscription_id: params.get("subscription_id") } : {}),
+        }),
         credentials: "include",
       }).finally(() => router.replace("/onboarding", { scroll: false }));
     }
