@@ -4,7 +4,7 @@ import { softEase, useReducedMotion } from "@/lib/motion";
 import { motion } from "motion/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { SiInstagram } from "@icons-pack/react-simple-icons";
+import { BrandIcon } from "@/app/components/BrandIcon";
 import { Megaphone, SquareKanban, Tag } from "lucide-react";
 import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
 import { KitCard, unsplashPortrait, type KitLook } from "./cutouts";
@@ -104,7 +104,7 @@ export function Hero(): ReactNode {
             </div>
             <ul className="mt-8 flex flex-wrap gap-2" aria-label="What's in Kitevo">
               {[
-                { icon: <SiInstagram size={13} aria-hidden />, label: "Live stats" },
+                { icon: <BrandIcon brand="instagram" mono size={13} />, label: "Live stats" },
                 { icon: <Tag size={14} aria-hidden />, label: "Rate card" },
                 { icon: <Megaphone size={14} aria-hidden />, label: "Brand campaigns" },
                 { icon: <SquareKanban size={14} aria-hidden />, label: "Deal pipeline" },

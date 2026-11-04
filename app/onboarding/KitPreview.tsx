@@ -1,6 +1,6 @@
 "use client";
 
-import { SiInstagram, SiInstagramHex, SiYoutube, SiYoutubeHex } from "@icons-pack/react-simple-icons";
+import { BrandIcon } from "@/app/components/BrandIcon";
 import { LogoMark } from "@/app/components/Logo";
 
 /**
@@ -35,8 +35,8 @@ export function KitPreview({
     .toUpperCase();
 
   const platforms = [
-    { id: "ig", label: "Instagram", connected: instagramConnected, Icon: SiInstagram, color: SiInstagramHex },
-    { id: "yt", label: "YouTube", connected: youtubeConnected, Icon: SiYoutube, color: SiYoutubeHex },
+    { id: "ig", label: "Instagram", connected: instagramConnected, brand: "instagram" as const },
+    { id: "yt", label: "YouTube", connected: youtubeConnected, brand: "youtube" as const },
   ];
 
   return (
@@ -92,7 +92,7 @@ export function KitPreview({
                   className={`rounded-2xl p-3 transition-colors ${p.connected ? "bg-muted/60" : "border border-dashed border-border"}`}
                 >
                   <div className="flex items-center gap-1.5">
-                    <p.Icon size={12} color={p.connected ? p.color : "currentColor"} className={p.connected ? "" : "text-muted-foreground/60"} />
+                    <BrandIcon brand={p.brand} size={12} mono={!p.connected} className={p.connected ? "" : "text-muted-foreground/60"} />
                     <span className="text-[10px] font-medium text-muted-foreground">{p.label}</span>
                   </div>
                   {p.connected ? (

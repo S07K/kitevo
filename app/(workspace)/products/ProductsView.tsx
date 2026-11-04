@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Copy, Download, ExternalLink, ImagePlus, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/WorkspaceShell";
-import { Button, IconButton } from "@/app/components/workspace/Button";
+import { Button, ButtonLink, IconButton } from "@/app/components/workspace/Button";
+import Link from "next/link";
 import { Modal } from "@/app/components/workspace/Modal";
 import { Badge } from "@/app/components/Badge";
 import { BrandChip } from "@/app/components/BrandChip";
-import { PaymentsPanel, type Connection } from "./PaymentsPanel";
+import type { Connection } from "../connectors/ConnectRazorpayDialog";
 import { ListCardSkeleton } from "@/app/components/Skeleton";
 import { APP_URL } from "@/lib/app-url";
 import { MAX_DESCRIPTION, MAX_NOTE, MAX_PRODUCTS, MAX_TITLE, PRODUCT_CURRENCIES, formatPrice } from "@/lib/commerce-shared";
@@ -173,7 +174,27 @@ export function ProductsView() {
               <li><strong className="font-medium text-foreground">3. Fans enter their email</strong> (and pay, for paid products) and get the file on a private page, also sent by email. You see every buyer here.</li>
             </ol>
           </Panel>
-          <PaymentsPanel connection={connection} onChange={setConnection} />
+          <Panel title="Payments" action={<Link href="/connectors" className="text-xs font-medium text-primary hover:underline">Connectors</Link>}>
+            {connection === undefined ? (
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : connection ? (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <BrandChip brand="razorpay" size={15} />
+                  <Badge variant="success" dot>Connected</Badge>
+                  {!connection.livemode && <Badge variant="warning">Test mode</Badge>}
+                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">Set a price on any product and buyers pay straight into your Razorpay account.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  To sell for a price, connect your <BrandChip brand="razorpay" /> account once in Connectors. Free downloads work without it.
+                </p>
+                <ButtonLink href="/connectors" size="sm">Open Connectors</ButtonLink>
+              </div>
+            )}
+          </Panel>
         </aside>
       </div>
 
@@ -261,7 +282,27 @@ function ProductEditor({
   const live = initial.draft.status === "published";
 
   return (
-    <Modal open onClose={onClose} dismissible={!saving} size="md" title={initial.id ? "Edit product" : "New product"} description="Free in exchange for an email, or for a price paid straight to you.">
+    <Modal
+      open
+      onClose={onClose}
+      dismissible={!saving}
+      size="lg"
+      title={initial.id ? "Edit product" : "New product"}
+      description="Free in exchange for an email, or for a price paid straight to you."
+      footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button onClick={onClose} disabled={saving}>Cancel</Button>
+            {live ? (
+              <Button onClick={() => save("draft")} disabled={saving}>Unpublish</Button>
+            ) : (
+              <Button onClick={() => save("draft")} disabled={saving}>Save draft</Button>
+            )}
+            <Button variant="primary" onClick={() => save("published")} disabled={saving || coverBusy}>
+              {saving ? "Saving…" : live ? "Save changes" : "Publish"}
+            </Button>
+          </div>
+      }
+    >
       <div className="space-y-4">
         <div className="flex items-center gap-4">
           <button
@@ -322,7 +363,7 @@ function ProductEditor({
             {Number(d.price) > 0
               ? paymentsConnected
                 ? `Buyers pay ${formatPrice(Math.round(Number(d.price) * 100), d.currency)} straight into your Razorpay account. Kitevo takes 0%.`
-                : "Connect Razorpay (on this page) before publishing a paid product."
+                : "Connect Razorpay in Connectors (sidebar) before publishing a paid product. Saving as a draft works now."
               : "Leave empty or 0 for a free download in exchange for an email."}
           </p>
           {err("priceCents")}
@@ -338,17 +379,6 @@ function ProductEditor({
           <textarea id="pr-note" rows={2} value={d.deliveryNote} maxLength={MAX_NOTE} onChange={(e) => set({ deliveryNote: e.target.value })} placeholder="e.g. How to install the presets." className={`${field} resize-none`} />
         </div>
         {error && !error.field && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error.message}</p>}
-      </div>
-      <div className="mt-6 flex flex-wrap justify-end gap-2">
-        <Button onClick={onClose} disabled={saving}>Cancel</Button>
-        {live ? (
-          <Button onClick={() => save("draft")} disabled={saving}>Unpublish</Button>
-        ) : (
-          <Button onClick={() => save("draft")} disabled={saving}>Save draft</Button>
-        )}
-        <Button variant="primary" onClick={() => save("published")} disabled={saving || coverBusy}>
-          {saving ? "Saving…" : live ? "Save changes" : "Publish"}
-        </Button>
       </div>
     </Modal>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense, type ReactNode } from "react";
+import { INSTAGRAM_ERROR_MESSAGES } from "@/lib/connect-messages";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -363,15 +364,7 @@ function DashboardContent() {
     }
   };
 
-  const instagramErrorMessages: Record<string, string> = {
-    not_configured: "Instagram connect is not configured. Add META_APP_ID and META_APP_SECRET.",
-    invalid: "Invalid or expired request. Try connecting again.",
-    no_pages: "No Facebook Page found. Create a Page and try again.",
-    permission_denied: "Meta declined access. Grant all requested permissions when prompted.",
-    no_instagram_account: "No Instagram Business or Creator account linked to your Page.",
-    server: "Something went wrong. Try again later.",
-    access_denied: "You declined access. Connect again to grant permissions.",
-  };
+  const instagramErrorMessages = INSTAGRAM_ERROR_MESSAGES;
 
 
 

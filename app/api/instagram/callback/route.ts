@@ -24,7 +24,7 @@ function clearReturnCookie() {
 function getReturnPath(cookieHeader: string): string {
   const match = cookieHeader.match(new RegExp(`${RETURN_COOKIE_NAME}=([^;]+)`));
   const value = match ? decodeURIComponent(match[1].trim()) : "";
-  return value === "onboarding" ? "/onboarding" : "/dashboard";
+  return value === "onboarding" ? "/onboarding" : value === "connectors" ? "/connectors" : "/dashboard";
 }
 
 function verifyState(cookieValue: string | null, queryState: string | null): boolean {

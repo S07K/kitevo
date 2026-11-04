@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { SiInstagram, SiInstagramHex, SiYoutube, SiYoutubeHex } from "@icons-pack/react-simple-icons";
+import { BrandIcon } from "@/app/components/BrandIcon";
 import { ArrowRight, ArrowUpRight, Check, CircleDashed, Copy, Eye, PenLine, Sparkles } from "lucide-react";
 import { AvatarImg } from "@/app/components/AvatarImg";
 import { Panel } from "@/app/components/workspace/WorkspaceShell";
@@ -324,7 +324,7 @@ export function ConnectionsPanel({
     {
       key: "instagram",
       name: "Instagram",
-      icon: <SiInstagram size={18} color={SiInstagramHex} title="Instagram" />,
+      icon: <BrandIcon brand="instagram" size={18} label="Instagram" />,
       connected: instagram.connected,
       detail: instagram.detail ?? (instagram.connected ? "Connected" : "Followers, engagement, Reels"),
       href: "/api/instagram/connect",
@@ -333,7 +333,7 @@ export function ConnectionsPanel({
     {
       key: "youtube",
       name: "YouTube",
-      icon: <SiYoutube size={18} color={SiYoutubeHex} title="YouTube" />,
+      icon: <BrandIcon brand="youtube" size={18} label="YouTube" />,
       connected: youtube.connected,
       detail: youtube.detail ?? (youtube.connected ? "Connected" : "Subscribers, views, videos"),
       href: "/api/youtube/connect",
@@ -341,7 +341,11 @@ export function ConnectionsPanel({
     },
   ];
   return (
-    <Panel title="Connections" bodyClassName="p-2">
+    <Panel
+      title="Connections"
+      bodyClassName="p-2"
+      action={<Link href="/connectors" className="text-xs font-medium text-primary hover:underline">All connectors</Link>}
+    >
       <div id="integrations" className="scroll-mt-24" />
       {rows.map((r) => (
         <div key={r.key} className="flex items-center gap-3 rounded-xl px-3 py-2.5">

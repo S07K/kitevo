@@ -19,9 +19,8 @@ export async function GET(req: NextRequest) {
   const userId = colonIdx >= 0 ? rawState.slice(0, colonIdx) : rawState;
   const returnTo = colonIdx >= 0 ? rawState.slice(colonIdx + 1) : "";
 
-  const baseRedirect = returnTo === "onboarding"
-    ? `${appUrl}/onboarding`
-    : `${appUrl}/dashboard`;
+  const baseRedirect =
+    returnTo === "onboarding" ? `${appUrl}/onboarding` : returnTo === "connectors" ? `${appUrl}/connectors` : `${appUrl}/dashboard`;
 
   if (error || !code || !userId) {
     return NextResponse.redirect(`${baseRedirect}?youtube=error`);

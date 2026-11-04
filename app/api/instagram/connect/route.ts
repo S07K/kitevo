@@ -9,7 +9,7 @@ const COOKIE_NAME = "instagram_connect_state";
 const RETURN_COOKIE_NAME = "instagram_connect_return";
 const COOKIE_MAX_AGE = 60 * 10; // 10 minutes
 
-const VALID_RETURN = new Set(["dashboard", "onboarding"]);
+const VALID_RETURN = new Set(["dashboard", "onboarding", "connectors"]);
 
 /** GET /api/instagram/connect — redirect to Meta OAuth (requires session). Query: return_to=onboarding|dashboard (default dashboard). */
 export async function GET(req: Request) {

@@ -3,7 +3,8 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { SiInstagram, SiInstagramHex, SiYoutube, SiYoutubeHex } from "@icons-pack/react-simple-icons";
+import { BrandIcon } from "@/app/components/BrandIcon";
+import type { BrandIconId } from "@/lib/brand-icons";
 import { ArrowLeft, ArrowRight, Check, Copy, Gift, Loader2, Megaphone, Sparkles, X } from "lucide-react";
 import { AppNav } from "../components/AppNav";
 import { CREATOR_NICHES, MAX_NICHES } from "@/lib/niches";
@@ -513,8 +514,7 @@ function Onboarding() {
 
               <div className="mt-8 space-y-3">
                 <PlatformCard
-                  Icon={SiInstagram}
-                  color={SiInstagramHex}
+                  brand="instagram"
                   name="Instagram"
                   detail="Followers, engagement, audience and your latest Reels"
                   connected={igConnected}
@@ -542,8 +542,7 @@ function Onboarding() {
                   )}
                 </PlatformCard>
                 <PlatformCard
-                  Icon={SiYoutube}
-                  color={SiYoutubeHex}
+                  brand="youtube"
                   name="YouTube"
                   detail="Subscribers, total views and your latest videos"
                   connected={ytConnected}
@@ -714,8 +713,7 @@ function Chip({ on, disabled, onClick, children }: { on: boolean; disabled?: boo
 }
 
 function PlatformCard({
-  Icon,
-  color,
+  brand,
   name,
   detail,
   connected,
@@ -723,8 +721,7 @@ function PlatformCard({
   error,
   children,
 }: {
-  Icon: typeof SiInstagram;
-  color: string;
+  brand: BrandIconId;
   name: string;
   detail: string;
   connected: boolean;
@@ -736,7 +733,7 @@ function PlatformCard({
     <div className={`rounded-2xl border bg-background p-5 transition-colors ${connected ? "border-green-500/40" : "border-border"}`}>
       <div className="flex items-center gap-4">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted">
-          <Icon size={22} color={color} title={name} />
+          <BrandIcon brand={brand} size={22} label={name} />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground">{name}</p>
