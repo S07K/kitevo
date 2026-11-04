@@ -10,6 +10,7 @@ import { bookingIsLive, canSellPaid, connectedSchedulers } from "@/lib/commerce"
 import { SCHEDULER_INFO, parseSchedulerUrl } from "@/lib/scheduler-links";
 import { BrandIcon } from "@/app/components/BrandIcon";
 import { connectedProviders } from "@/lib/payment-connections";
+import { paypalSupports } from "@/lib/paypal-creator";
 import { formatPrice } from "@/lib/commerce-shared";
 import { LogoMark } from "@/app/components/Logo";
 import { ClaimForm } from "./ClaimForm";
@@ -28,8 +29,9 @@ async function load(id: string) {
   const isBooking = product.type === "booking";
   const [seller, onSale, providers, schedulers] = await Promise.all([
     storefrontSeller(product.userId),
-    paid ? canSellPaid(product.userId) : Promise.resolve(true),
-    paid ? connectedProviders(product.userId) : Promise.resolve([]),
+    paid ? canSellPaid(product.userId, product.currency) : Promise.resolve(true),
+    // PayPal only for currencies it can take (no INR).
+    paid ? connectedProviders(product.userId).then((ps) => ps.filter((p) => p !== "paypal" || paypalSupports(product.currency))) : Promise.resolve([]),
     isBooking ? connectedSchedulers(product.userId) : Promise.resolve([]),
   ]);
   // Bookings embed the creator's own scheduler, and only while it's still connected.

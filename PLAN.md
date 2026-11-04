@@ -642,5 +642,11 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 
 - Decision: no native slot picker (built, then closed as PR #20). Creators connect the scheduler they already use (Calendly, Cal.com, Google Calendar appointment schedules); it owns availability, conflicts with their real calendar, reminders and payment.
 - A booking product embeds that scheduler on the creator's product page and shows on the kit as a "1:1 call".
-- Next: read bookings back (Calendly/Cal.com APIs + webhooks) so they appear in Kitevo; PayPal.
+- Next: read bookings back (Calendly/Cal.com APIs + webhooks) so they appear in Kitevo.
+
+## 20. PayPal for paid products, 2026-11-04
+
+- Creators connect their own PayPal REST app (Client ID + Secret; live/sandbox detected). Buyers approve on PayPal; Kitevo captures and verifies before delivery. 0% to Kitevo.
+- PayPal is offered for USD products only (PayPal no longer processes domestic INR); the buy box, checkout and publish rules enforce it.
+- Payment test coverage filled in: connect API for all three providers, PayPal return/capture, checkout per provider, publish/currency rules, recovery for all providers.
 

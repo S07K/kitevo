@@ -7,7 +7,7 @@ import { INTEGRATION_GROUPS, type Integration } from "@/lib/integrations";
 export const metadata: Metadata = {
   title: "Integrations: Instagram, YouTube, Razorpay, Stripe and more · Kitevo",
   description:
-    "What Kitevo connects to: live Instagram and YouTube stats on your media kit, paid products through your own Razorpay or Stripe account, file delivery from Google Drive, Dropbox or Notion, and your own domain.",
+    "What Kitevo connects to: live Instagram and YouTube stats on your media kit, paid products through your own Razorpay, Stripe or PayPal account, file delivery from Google Drive, Dropbox or Notion, and your own domain.",
   alternates: { canonical: "/integrations" },
 };
 
@@ -51,7 +51,7 @@ export default function IntegrationsPage() {
           Works with the accounts you already have
         </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
-          Kitevo pulls your real numbers from Instagram and YouTube, takes payments into your own Razorpay or Stripe account, and delivers files from wherever you keep them.
+          Kitevo pulls your real numbers from Instagram and YouTube, takes payments into your own Razorpay, Stripe or PayPal account, and delivers files from wherever you keep them.
         </p>
         <nav aria-label="Integration groups" className="mt-8 flex flex-wrap gap-2">
           {INTEGRATION_GROUPS.map((g) => (

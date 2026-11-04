@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { paypalSupports } from "@/lib/paypal-creator";
 import { prisma } from "@/lib/prisma";
 import { MAX_PRODUCTS, publicProduct, type PublicProduct } from "@/lib/commerce-shared";
 import { parseSchedulerUrl } from "@/lib/scheduler-links";
@@ -22,12 +23,12 @@ export async function publishedProductsFor(userId: string): Promise<PublicProduc
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     take: MAX_PRODUCTS,
   });
-  // Paid products only show while the creator can actually sell them (plan + payments);
-  // bookings only while their scheduler is still connected.
-  const sellable = rows.some((r) => r.priceCents > 0) ? await canSellPaid(userId) : false;
+  // Paid products only show while the creator can actually sell them (plan + an account that
+  // takes the product's currency); bookings only while their scheduler is still connected.
+  const sell = rows.some((r) => r.priceCents > 0) ? await sellingState(userId) : null;
   const schedulers = rows.some((r) => r.type === "booking") ? await connectedSchedulers(userId) : [];
   return rows
-    .filter((r) => (r.type === "booking" ? bookingIsLive(r.bookingUrl, schedulers) : r.priceCents === 0 || sellable))
+    .filter((r) => (r.type === "booking" ? bookingIsLive(r.bookingUrl, schedulers) : r.priceCents === 0 || !!(sell?.plan && canTake(sell.providers, r.currency))))
     .map(publicProduct);
 }
 
@@ -41,14 +42,27 @@ export function bookingIsLive(bookingUrl: string | null, connected: string[]): b
   return !!provider && connected.includes(provider);
 }
 
-/** Whether a creator can take payments right now: Starter/Pro and at least one connected payment account. */
-export async function canSellPaid(userId: string): Promise<boolean> {
+async function sellingState(userId: string) {
   const { hasPaidCreatorPlan } = await import("@/lib/creator-plan");
-  const [plan, connected] = await Promise.all([
+  const [plan, rows] = await Promise.all([
     hasPaidCreatorPlan(userId),
-    prisma.paymentConnection.count({ where: { userId, provider: { in: ["razorpay", "stripe"] } } }),
+    prisma.paymentConnection.findMany({ where: { userId, provider: { in: ["razorpay", "stripe", "paypal"] } }, select: { provider: true } }),
   ]);
-  return plan && connected > 0;
+  return { plan, providers: rows.map((r) => r.provider) };
+}
+
+/** Whether any connected account can take this currency (PayPal can't take INR). */
+export function canTake(providers: string[], currency: string): boolean {
+  return providers.some((p) => p !== "paypal" || paypalSupports(currency));
+}
+
+/**
+ * Whether a creator can take payments right now: Starter/Pro and a connected account that
+ * accepts `currency` (any account when no currency is given).
+ */
+export async function canSellPaid(userId: string, currency?: string): Promise<boolean> {
+  const s = await sellingState(userId);
+  return s.plan && (currency ? canTake(s.providers, currency) : s.providers.length > 0);
 }
 
 /**
@@ -70,12 +84,16 @@ export async function claimFreeProduct(productId: string, email: string, name: s
  * Why a paid product can't be published right now, or null. Paid products need Starter/Pro
  * (Kitevo takes 0% of sales; the plan is how it earns) and a connected payment account.
  */
-export async function paidPublishProblem(userId: string, value: { status: string; priceCents: number }): Promise<{ error: string; code: string } | null> {
+export async function paidPublishProblem(userId: string, value: { status: string; priceCents: number; currency: string }): Promise<{ error: string; code: string } | null> {
   if (value.status !== "published" || value.priceCents === 0) return null;
   const { hasPaidCreatorPlan } = await import("@/lib/creator-plan");
   if (!(await hasPaidCreatorPlan(userId))) return { error: "Selling paid products is included in Starter and Pro. Free downloads work on every plan.", code: "plan_required" };
-  const connected = await prisma.paymentConnection.count({ where: { userId, provider: { in: ["razorpay", "stripe"] } } });
-  if (!connected) return { error: "Connect Razorpay or Stripe in Connectors before publishing a paid product.", code: "payments_not_connected" };
+  const rows = await prisma.paymentConnection.findMany({ where: { userId, provider: { in: ["razorpay", "stripe", "paypal"] } }, select: { provider: true } });
+  if (!rows.length) return { error: "Connect Razorpay, Stripe or PayPal in Connectors before publishing a paid product.", code: "payments_not_connected" };
+  // PayPal can't take every currency (no INR); a product needs at least one account that can.
+  const { paypalSupports } = await import("@/lib/paypal-creator");
+  const usable = rows.filter((r) => r.provider !== "paypal" || paypalSupports(value.currency));
+  if (!usable.length) return { error: `PayPal can't take payments in ${value.currency}. Price it in USD, or connect Razorpay or Stripe.`, code: "currency_unsupported" };
   return null;
 }
 

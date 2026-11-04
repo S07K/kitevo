@@ -11,6 +11,7 @@ import type { BrandIconId } from "@/lib/brand-icons";
 import { INSTAGRAM_ERROR_MESSAGES, YOUTUBE_RESULT_MESSAGES } from "@/lib/connect-messages";
 import { ConnectRazorpayDialog, type Connection } from "./ConnectRazorpayDialog";
 import { ConnectStripeDialog } from "./ConnectStripeDialog";
+import { ConnectPayPalDialog } from "./ConnectPayPalDialog";
 import { ConnectSchedulerDialog, type SchedulerConnection } from "./ConnectSchedulerDialog";
 import { SCHEDULERS, SCHEDULER_INFO, type Scheduler } from "@/lib/scheduler-links";
 
@@ -89,6 +90,8 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
   const [razorpay, setRazorpay] = useState<Connection | null | undefined>(undefined);
   const [stripe, setStripe] = useState<Connection | null | undefined>(undefined);
   const [stripeOpen, setStripeOpen] = useState(false);
+  const [paypal, setPaypal] = useState<Connection | null | undefined>(undefined);
+  const [paypalOpen, setPaypalOpen] = useState(false);
   const [schedulers, setSchedulers] = useState<SchedulerConnection[] | undefined>(undefined);
   const [schedOpen, setSchedOpen] = useState<Scheduler | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -104,6 +107,7 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
     get("/api/payments/connections").then((rows: Connection[] | null) => {
       setRazorpay(rows?.find((c) => c.provider === "razorpay") ?? null);
       setStripe(rows?.find((c) => c.provider === "stripe") ?? null);
+      setPaypal(rows?.find((c) => c.provider === "paypal") ?? null);
     });
   }, []);
 
@@ -118,11 +122,11 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
     }
   }
 
-  async function disconnect(which: "instagram" | "youtube" | "razorpay" | "stripe") {
+  async function disconnect(which: "instagram" | "youtube" | "razorpay" | "stripe" | "paypal") {
     setBusy(which);
     try {
       const res =
-        which === "razorpay" || which === "stripe"
+        which === "razorpay" || which === "stripe" || which === "paypal"
           ? await fetch(`/api/payments/connections?provider=${which}`, { method: "DELETE", credentials: "include" })
           : await fetch(`/api/${which}/disconnect`, { method: "POST", credentials: "include" });
       if (res.ok) {
@@ -130,6 +134,7 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
         if (which === "youtube") setYoutube(false);
         if (which === "razorpay") setRazorpay(null);
         if (which === "stripe") setStripe(null);
+        if (which === "paypal") setPaypal(null);
       }
     } finally {
       setBusy(null);
@@ -139,7 +144,7 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
 
   const stat = (v: boolean | null): Status => (v === null ? "loading" : v ? "connected" : "off");
 
-  const disconnectButton = (which: "instagram" | "youtube" | "razorpay" | "stripe", name: string, warn: string) =>
+  const disconnectButton = (which: "instagram" | "youtube" | "razorpay" | "stripe" | "paypal", name: string, warn: string) =>
     confirmOff === which ? (
       <>
         <span className="w-full text-xs text-muted-foreground">{warn}</span>
@@ -272,7 +277,37 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
             )
           }
         />
-        <ConnectorCard brand="paypal" name="PayPal" powers="PayPal payments into your own PayPal account." status="soon" />
+        <ConnectorCard
+          brand="paypal"
+          name="PayPal"
+          powers="PayPal balance and cards on PayPal's own page, into your PayPal account. USD products."
+          status={paypal === undefined ? "loading" : paypal ? "connected" : "off"}
+          detail={
+            paypal ? (
+              <span className="inline-flex flex-wrap items-center gap-2">
+                <span className="font-mono">{paypal.keyHint}</span>
+                {!paypal.livemode && <Badge variant="warning">Sandbox</Badge>}
+              </span>
+            ) : undefined
+          }
+          note={
+            !paidPlan ? (
+              <>Selling paid products is included in Starter and Pro. <Link href="/pricing" className="font-medium text-primary hover:underline">See plans</Link></>
+            ) : paypal && !paypal.livemode ? (
+              "Sandbox credentials only take PayPal test accounts. Switch to your Live app before you start selling."
+            ) : null
+          }
+          actions={
+            paypal === undefined ? null : paypal ? (
+              <>
+                {confirmOff !== "paypal" && <Button size="sm" onClick={() => setPaypalOpen(true)}>Update credentials</Button>}
+                {disconnectButton("paypal", "PayPal", razorpay || stripe ? "Buyers will use your other payment accounts." : "Your paid products stop selling until you connect again.")}
+              </>
+            ) : (
+              <Button size="sm" variant="primary" onClick={() => setPaypalOpen(true)}>Connect PayPal</Button>
+            )
+          }
+        />
       </Section>
 
       <Section
@@ -323,6 +358,15 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
         Selling something? Set a price on any product in <Link href="/products" className="font-medium text-primary hover:underline">Products</Link>; its buy link is created for you.
       </p>
 
+      <ConnectPayPalDialog
+        open={paypalOpen}
+        onClose={() => setPaypalOpen(false)}
+        onConnected={(c) => {
+          setPaypal(c);
+          setPaypalOpen(false);
+          setFlash(`PayPal connected${c.livemode ? "" : " in sandbox mode"}. USD products can now take PayPal payments.`);
+        }}
+      />
       <ConnectSchedulerDialog
         provider={schedOpen}
         onClose={() => setSchedOpen(null)}
