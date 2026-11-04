@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getCachedSubscription } from "@/lib/subscription-cache";
-import { getTierById, getTierByPriceId } from "@/config/subscriptions";
+import { hasPaidCreatorPlan, PAID_CREATOR_TIERS } from "@/lib/creator-plan";
 
 /**
  * Custom domains (PLAN.md P0-8): a creator points their own domain at one kit.
@@ -16,7 +15,7 @@ import { getTierById, getTierByPriceId } from "@/config/subscriptions";
  */
 
 /** Plans that include a custom domain. */
-export const CUSTOM_DOMAIN_TIERS = ["starter", "pro"] as const;
+export const CUSTOM_DOMAIN_TIERS = PAID_CREATOR_TIERS;
 
 /** An unverified claim older than this can be taken over by someone else (anti-squatting). */
 export const STALE_PENDING_MS = 7 * 24 * 60 * 60 * 1000;
@@ -67,20 +66,9 @@ function appHostname(): string | null {
 
 // ─── Plan gate ───────────────────────────────────────────────────────────────
 
-/** Whether the user's plan (best of comp and active subscription) includes custom domains. */
+/** Whether the user's plan includes custom domains (Starter or Pro; see lib/creator-plan). */
 export async function canUseCustomDomain(userId: string): Promise<boolean> {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { compedTier: true, stripeCustomerId: true, accountType: true } });
-  if (!user || user.accountType === "brand") return false;
-  const ok = (id: string | null | undefined) => !!id && (CUSTOM_DOMAIN_TIERS as readonly string[]).includes(id);
-  if (ok(getTierById(user.compedTier ?? null)?.id)) return true;
-  if (!user.stripeCustomerId) return false;
-  try {
-    const sub = await getCachedSubscription(user.stripeCustomerId);
-    return !!sub?.isActive && ok(getTierByPriceId(sub.priceId)?.id);
-  } catch (e) {
-    console.error("[custom-domains] plan lookup failed:", e);
-    return false;
-  }
+  return hasPaidCreatorPlan(userId);
 }
 
 // ─── Vercel API ──────────────────────────────────────────────────────────────

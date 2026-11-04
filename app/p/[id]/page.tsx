@@ -6,6 +6,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { kitAppearanceToCssVarsWithOverrides } from "@/lib/kit-appearance";
 import { storefrontSeller } from "@/lib/creator-storefront";
+import { canSellPaid } from "@/lib/commerce";
+import { formatPrice } from "@/lib/commerce-shared";
 import { LogoMark } from "@/app/components/Logo";
 import { ClaimForm } from "./ClaimForm";
 
@@ -19,23 +21,26 @@ async function load(id: string) {
     const session = await getServerSession(authOptions);
     if (session?.user?.id !== product.userId) return null;
   }
-  return { product, seller: await storefrontSeller(product.userId) };
+  const [seller, onSale] = await Promise.all([storefrontSeller(product.userId), product.priceCents > 0 ? canSellPaid(product.userId) : Promise.resolve(true)]);
+  return { product, seller, onSale };
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const r = await load((await params).id);
   if (!r) return { title: "Kitevo" };
   const title = `${r.product.title} by ${r.seller.name}`;
-  const description = r.product.description.slice(0, 155) || `A free download from ${r.seller.name}.`;
+  const description = r.product.description.slice(0, 155) || (r.product.priceCents ? `A digital product from ${r.seller.name}.` : `A free download from ${r.seller.name}.`);
   return { title, description, openGraph: { title, description }, robots: r.product.status === "published" ? undefined : { index: false } };
 }
 
-/** A product's public page, in the creator's kit style. Release A: free downloads. */
+/** A product's public page, in the creator's kit style: free downloads and paid products. */
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const r = await load((await params).id);
   if (!r) notFound();
-  const { product, seller } = r;
+  const { product, seller, onSale } = r;
   const draft = product.status !== "published";
+  const paid = product.priceCents > 0;
+  const price = formatPrice(product.priceCents, product.currency);
   return (
     <div className="min-h-screen bg-[var(--mk-bg)] text-[var(--mk-text)] antialiased" style={kitAppearanceToCssVarsWithOverrides(seller.appearance)}>
       {draft && (
@@ -63,15 +68,21 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             // eslint-disable-next-line @next/next/no-img-element -- base64 cover
             <img src={product.coverUrl} alt="" className="mb-8 aspect-[4/3] w-full rounded-2xl object-cover" />
           )}
-          <p className="font-sans text-sm text-[var(--mk-text-muted)]">Free download from {seller.name}</p>
+          <p className="font-sans text-sm text-[var(--mk-text-muted)]">{paid ? "From" : "Free download from"} {seller.name}</p>
           <h1 className="mt-2 text-balance font-display text-[clamp(2rem,5vw,3.25rem)] font-semibold leading-[1.08] tracking-tight">{product.title || "Untitled"}</h1>
           {product.description && (
             <div className="mt-6 max-w-prose whitespace-pre-line font-sans text-base leading-relaxed text-[var(--mk-text-muted)]">{product.description}</div>
           )}
         </div>
         <aside className="md:sticky md:top-8 md:self-start">
-          <p className="mb-3 font-display text-2xl font-semibold">Free</p>
-          <ClaimForm productId={product.id} creatorName={seller.name} preview={draft} />
+          <p className="mb-3 font-display text-2xl font-semibold">{price}</p>
+          {paid && !onSale && !draft ? (
+            <div className="rounded-2xl bg-[var(--mk-surface)] p-6 font-sans text-sm text-[var(--mk-text-muted)]">
+              This product isn&apos;t on sale right now. Check back later.
+            </div>
+          ) : (
+            <ClaimForm productId={product.id} creatorName={seller.name} preview={draft} priceLabel={paid ? price : undefined} />
+          )}
         </aside>
       </main>
       <footer className="pb-10 text-center">

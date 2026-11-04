@@ -102,7 +102,10 @@ export default function PrivacyPolicy() {
                 email you the download link, and the creator who offered it can
                 see your name and email and may contact you. Kitevo doesn&apos;t
                 send marketing to these addresses. The record is deleted if the
-                creator deletes the product or their account.
+                creator deletes the product or their account. If you buy a paid
+                product, you pay the creator directly through their own payment
+                provider (Razorpay); Kitevo never sees your card or bank details
+                and only stores the payment&apos;s reference, amount and status.
               </li>
               <li>
                 <strong className="text-foreground">Usage data:</strong> Kit view

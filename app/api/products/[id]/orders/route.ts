@@ -13,7 +13,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const product = await prisma.product.findFirst({ where: { id, userId: session.user.id }, select: { id: true } });
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
   const orders = await prisma.order.findMany({
-    where: { productId: id },
+    where: { productId: id, status: { in: ["free", "paid"] } }, // abandoned checkouts are not buyers
     orderBy: { createdAt: "desc" },
     take: 500,
     select: { id: true, buyerEmail: true, buyerName: true, status: true, createdAt: true },

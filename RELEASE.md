@@ -186,7 +186,22 @@ No new env vars. One migration (`20261103071939_commerce_products_orders`, new t
 
 ---
 
+## 10. Paid products with Razorpay (`feat/commerce-paid-razorpay`)
+
+No new env vars (secrets reuse `TOKEN_ENCRYPTION_KEYS`). One migration (`20261103113633_commerce_payment_connections`, additive) applies on deploy.
+
+- [ ] GitHub Actions → **DB migrations** run for the merge commit is green.
+- [ ] On your comped-Pro account: **Products → Payments → Connect Razorpay** with **test** keys (Razorpay Dashboard → Account & Settings → API Keys, test mode). Wrong keys must be refused.
+- [ ] Set a product's price (e.g. 499 INR), publish, open it from a private window → **Buy** → pay with a Razorpay test card/UPI (`success@razorpay`) → the download page opens and the "Your purchase" email arrives. The product shows **1 sale**.
+- [ ] Close the Razorpay window mid-payment → the form resets with no order counted.
+- [ ] Disconnect Razorpay → the paid product disappears from the kit and its page says "not on sale right now". Reconnect.
+- [ ] When you're happy, swap to **live** keys (the panel shows "Test mode" until you do).
+
+---
+
 ## Notes for local development
+
+- `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.
 
 - Your local `.env` already has `TOKEN_ENCRYPTION_KEYS` and `ADMIN_EMAILS`. A bare key is
   now accepted (it used to need a `k1:` prefix, and without it token and payout saves threw an error).

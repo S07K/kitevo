@@ -21,7 +21,19 @@ export async function publishedProductsFor(userId: string): Promise<PublicProduc
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     take: MAX_PRODUCTS,
   });
-  return rows.map(publicProduct);
+  // Paid products only show while the creator can actually sell them (plan + payments).
+  const sellable = rows.some((r) => r.priceCents > 0) ? await canSellPaid(userId) : false;
+  return rows.filter((r) => r.priceCents === 0 || sellable).map(publicProduct);
+}
+
+/** Whether a creator can take payments right now: Starter/Pro and a connected Razorpay account. */
+export async function canSellPaid(userId: string): Promise<boolean> {
+  const { hasPaidCreatorPlan } = await import("@/lib/creator-plan");
+  const [plan, connected] = await Promise.all([
+    hasPaidCreatorPlan(userId),
+    prisma.paymentConnection.count({ where: { userId, provider: "razorpay" } }),
+  ]);
+  return plan && connected > 0;
 }
 
 /**
@@ -31,10 +43,23 @@ export async function publishedProductsFor(userId: string): Promise<PublicProduc
 export async function claimFreeProduct(productId: string, email: string, name: string | null) {
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product || product.status !== "published" || product.priceCents !== 0 || !product.deliveryUrl) return null;
-  const existing = await prisma.order.findFirst({ where: { productId, buyerEmail: email }, orderBy: { createdAt: "asc" } });
+  const existing = await prisma.order.findFirst({ where: { productId, buyerEmail: email, status: { in: ["free", "paid"] } }, orderBy: { createdAt: "asc" } });
   if (existing) return { order: existing, product, created: false };
   const order = await prisma.order.create({
     data: { productId, sellerId: product.userId, buyerEmail: email, buyerName: name, accessToken: newAccessToken(), status: "free", amountCents: 0, currency: product.currency },
   });
   return { order, product, created: true };
+}
+
+/**
+ * Why a paid product can't be published right now, or null. Paid products need Starter/Pro
+ * (Kitevo takes 0% of sales; the plan is how it earns) and a connected payment account.
+ */
+export async function paidPublishProblem(userId: string, value: { status: string; priceCents: number }): Promise<{ error: string; code: string } | null> {
+  if (value.status !== "published" || value.priceCents === 0) return null;
+  const { hasPaidCreatorPlan } = await import("@/lib/creator-plan");
+  if (!(await hasPaidCreatorPlan(userId))) return { error: "Selling paid products is included in Starter and Pro. Free downloads work on every plan.", code: "plan_required" };
+  const connected = await prisma.paymentConnection.count({ where: { userId, provider: "razorpay" } });
+  if (!connected) return { error: "Connect your Razorpay account before publishing a paid product.", code: "payments_not_connected" };
+  return null;
 }
