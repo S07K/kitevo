@@ -4,6 +4,7 @@ import { LaunchBanner } from "./components/LaunchBanner";
 import { MarketingNav } from "./components/landing/MarketingNav";
 import { Hero } from "./components/landing/Hero";
 import { HowItWorks } from "./components/landing/HowItWorks";
+import { IntegrationsStrip } from "./components/landing/IntegrationsStrip";
 import { NoCut, WaysToEarn, ExampleKits, OneLink, InboxWall } from "./components/landing/EarnSections";
 import { PricingSection } from "./components/landing/PricingSection";
 import { ReferralSection } from "./components/landing/ReferralSection";
@@ -27,6 +28,7 @@ export default function Home() {
           <OneLink />
           <InboxWall />
           <HowItWorks />
+          <IntegrationsStrip />
           <ReferralSection />
           <PricingSection />
           <FaqSection />
