@@ -3,7 +3,7 @@ import { payments } from "@/lib/payments";
 import { getTierById, getTierByPriceId } from "@/config/subscriptions";
 import { getStatsForUser, getRecentPostsForUser } from "@/lib/instagram-api";
 import { ensureReferralCode } from "@/lib/referrals";
-import { publishedProductsFor, type PublicProduct } from "@/lib/commerce";
+import { connectedSchedulers, publishedProductsFor, type PublicProduct } from "@/lib/commerce";
 import type { LiveKitStats } from "@/lib/kit-stats-compose";
 
 export type KitViewData = {
@@ -14,6 +14,8 @@ export type KitViewData = {
   referralCode: string | null;
   /** Published products for the kit's Shop section (never delivery links). */
   products: PublicProduct[];
+  /** Schedulers connected in Connectors; a kit's "Book a call" shows only on one of these. */
+  schedulers: string[];
 };
 
 /**
@@ -77,6 +79,6 @@ export async function loadKitViewData(ownerId: string): Promise<KitViewData> {
   // Codes are created lazily, once per user.
   const referralCode = user?.referralCode ?? (await ensureReferralCode(ownerId).catch(() => null));
 
-  const products = await publishedProductsFor(ownerId).catch(() => []);
-  return { live, instagramConnected, instagramPosts, inquiryEnabled, referralCode, products };
+  const [products, schedulers] = await Promise.all([publishedProductsFor(ownerId).catch(() => []), connectedSchedulers(ownerId).catch(() => [])]);
+  return { live, instagramConnected, instagramPosts, inquiryEnabled, referralCode, products, schedulers };
 }

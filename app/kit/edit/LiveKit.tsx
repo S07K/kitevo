@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { publicBooking } from "@/lib/kit-booking";
 import { MediaKitClient } from "@/app/kit/[username]/MediaKitClient";
 import { composeKitStats, type LiveKitStats } from "@/lib/kit-stats-compose";
 import type { FetchedPost } from "@/lib/platforms/instagram";
@@ -28,6 +29,8 @@ export type KitPreviewData = {
   inquiryEnabled: boolean;
   referralCode: string | null;
   products: PublicProduct[];
+  /** Schedulers connected in Connectors (Book a call shows only on one of these). */
+  schedulers?: string[];
 };
 
 /**
@@ -72,6 +75,7 @@ export function LiveKit({ data, draft }: { data: KitPreviewData; draft: KitDraft
       instagramPosts={data.instagramPosts}
       kitId={data.kitId}
       inquiryEnabled={data.inquiryEnabled}
+      booking={publicBooking(draft.booking, data.schedulers ?? [])}
     />
   );
 }

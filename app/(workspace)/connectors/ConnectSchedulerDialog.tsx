@@ -64,7 +64,7 @@ export function ConnectSchedulerDialog({ provider, onClose, onConnected }: { pro
       >
         <label htmlFor="sched-url" className="mb-1.5 block text-xs font-medium text-muted-foreground">Your scheduling link</label>
         <input id="sched-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder={info?.example} autoComplete="off" spellCheck={false} className={field} />
-        <p className="mt-1 text-xs text-muted-foreground">You can pick a different event link from the same account on each booking product.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Each kit can use a different event from the same account (set it in the kit editor&apos;s Contact card).</p>
         {error && <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
       </form>
     </Modal>

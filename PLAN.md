@@ -650,3 +650,8 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - PayPal is offered for USD products only (PayPal no longer processes domestic INR); the buy box, checkout and publish rules enforce it.
 - Payment test coverage filled in: connect API for all three providers, PayPal return/capture, checkout per provider, publish/currency rules, recovery for all providers.
 
+## 21. Book a call moves from Products to the kit, 2026-11-04
+
+- Owner feedback: a booking isn't something people buy and download; it's a way to reach the creator. Booking products are retired; each kit gets a **Book a call** button in "Work with {name}" that opens the creator's Calendly / Cal.com / Google page in a dialog. Set per kit in the editor's Contact card.
+- Existing booking products were copied onto their creators' kits by the migration; old links redirect to the kit with the dialog open.
+

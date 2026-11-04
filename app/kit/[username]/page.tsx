@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { publicBooking } from "@/lib/kit-booking";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
@@ -169,6 +170,7 @@ export default async function MediaKitPage({
         isOwner={isOwner && !previewMode}
         referralCode={referralCode}
         products={products}
+        booking={publicBooking(result.kit.booking, view.schedulers)}
       />
     );
   }

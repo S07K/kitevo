@@ -344,6 +344,7 @@ on it without checking.
 | `20261103071939_commerce_products_orders` | New `Product` and `Order` tables | Additive: playbook A |
 | `20261103113633_commerce_payment_connections` | New `PaymentConnection` table, nullable `Order.providerOrderId` | Additive: playbook A. Rolling back code leaves stored (encrypted) keys unused; paid products stop selling until the code returns |
 | `20261104095857_scheduling_connectors` | New `SchedulerConnection` table, nullable `Product.bookingUrl` | Additive: playbook A. Rolling back code hides booking products; stored links stay |
+| `20261104161344_kit_book_a_call` | `Kit.booking` (TEXT, default `{}`) + data copy of published booking products onto kits | Additive with a data UPDATE that only fills empty bookings: playbook A. Rolling back code ignores the column; old booking products still exist |
 
 Keep this table current: add a row with every new migration, and flag any contract-type
 migration in RELEASE.md together with its backup step.

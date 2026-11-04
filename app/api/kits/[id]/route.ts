@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { normalizeKitBooking } from "@/lib/kit-booking";
+import { parseSchedulerInput } from "@/lib/scheduler-connections";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -39,6 +41,7 @@ function toKitResponse(k: {
   sectionVisibility: string;
   appearance: string;
   manualStats: string;
+  booking?: string;
 }) {
   return {
     id: k.id,
@@ -51,6 +54,7 @@ function toKitResponse(k: {
     sectionVisibility: parseJson<SectionVisibility>(k.sectionVisibility, { ...DEFAULT_SECTION_VISIBILITY }),
     appearance: parseKitAppearance(k.appearance),
     manualStats: parseManualStats(k.manualStats),
+    booking: normalizeKitBooking(k.booking ?? "{}"),
   };
 }
 
@@ -101,6 +105,7 @@ export async function PUT(
     sectionVisibility: string;
     appearance: string;
     manualStats: string;
+    booking: string;
   }> = {};
   if (typeof body.name === "string") updates.name = body.name.trim() || kit.name;
   if (typeof body.slug === "string") {
@@ -132,6 +137,18 @@ export async function PUT(
   }
   if (body.manualStats !== undefined && body.manualStats !== null && typeof body.manualStats === "object") {
     updates.manualStats = serializeManualStats(body.manualStats as ManualStats);
+  }
+
+  // "Book a call": a link on a known scheduler (Google short links resolved first), or none.
+  if (body.booking !== undefined && body.booking !== null && typeof body.booking === "object") {
+    const b = body.booking as { url?: unknown; label?: unknown };
+    let url = b.url;
+    if (typeof url === "string" && url.trim()) {
+      const parsed = await parseSchedulerInput(url);
+      if (!parsed) return NextResponse.json({ error: "Use a Calendly, Cal.com or Google Calendar appointment link.", field: "booking" }, { status: 400 });
+      url = parsed.url;
+    }
+    updates.booking = JSON.stringify(normalizeKitBooking({ url, label: b.label }));
   }
 
   const updated = await prisma.kit.update({

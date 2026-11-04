@@ -56,14 +56,9 @@ export function normalizeProductInput(raw: unknown): { ok: true; value: ProductI
   const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
   const title = str(o.title, MAX_TITLE);
   const status = o.status === "published" ? "published" : "draft";
-  const type: ProductType = o.type === "booking" ? "booking" : "download";
-  // Bookings: the scheduler link must be a recognised Calendly / Cal.com / Google link.
-  // (Google short links are resolved by the API route before this runs.)
-  const bookingRaw = type === "booking" && typeof o.bookingUrl === "string" ? o.bookingUrl.trim() : "";
-  const bookingParsed = bookingRaw ? parseSchedulerUrl(bookingRaw) : null;
-  if (bookingRaw && !bookingParsed) {
-    return { ok: false, problem: { field: "bookingUrl", error: "Use a Calendly, Cal.com or Google Calendar appointment link." } };
-  }
+  // Booking products are retired: calls are now the kit's "Book a call" button (lib/kit-booking).
+  // Anything saved through here is a download; old booking rows are only read, never written.
+  const type: ProductType = "download";
   const deliveryRaw = typeof o.deliveryUrl === "string" ? o.deliveryUrl.trim() : "";
   // Delivery must be a web page (a file link), never mailto: or a script URL.
   const deliveryUrl = deliveryRaw ? normalizeLinkUrl(deliveryRaw) : null;
@@ -76,10 +71,8 @@ export function normalizeProductInput(raw: unknown): { ok: true; value: ProductI
   }
   // Price: given in major units by the editor ("499" or "19.50") or minor units by the API.
   const priceMajor = typeof o.price === "number" || typeof o.price === "string" ? Number(o.price) : null;
-  // Bookings are paid (if at all) inside the creator's scheduler, so Kitevo never charges for them.
-  const priceCents = type === "booking"
-    ? 0
-    : priceMajor !== null && o.price !== ""
+  const priceCents =
+    priceMajor !== null && o.price !== ""
       ? Math.round(priceMajor * 100)
       : typeof o.priceCents === "number" ? Math.round(o.priceCents) : 0;
   if (!Number.isFinite(priceCents) || priceCents < 0) return { ok: false, problem: { field: "priceCents", error: "Enter a price, or 0 for a free download." } };
@@ -89,12 +82,11 @@ export function normalizeProductInput(raw: unknown): { ok: true; value: ProductI
 
   if (status === "published") {
     if (!title) return { ok: false, problem: { field: "title", error: "Give it a name before publishing." } };
-    if (type === "download" && !deliveryUrl) return { ok: false, problem: { field: "deliveryUrl", error: "Add the link people get after they sign up." } };
-    if (type === "booking" && !bookingParsed) return { ok: false, problem: { field: "bookingUrl", error: "Choose which scheduling page people book on." } };
+    if (!deliveryUrl) return { ok: false, problem: { field: "deliveryUrl", error: "Add the link people get after they sign up." } };
   }
   return {
     ok: true,
-    value: { type, bookingUrl: bookingParsed?.url ?? null, title, description: str(o.description, MAX_DESCRIPTION), coverUrl: cover, deliveryUrl, deliveryNote: str(o.deliveryNote, MAX_NOTE), status, priceCents, currency },
+    value: { type, bookingUrl: null, title, description: str(o.description, MAX_DESCRIPTION), coverUrl: cover, deliveryUrl, deliveryNote: str(o.deliveryNote, MAX_NOTE), status, priceCents, currency },
   };
 }
 

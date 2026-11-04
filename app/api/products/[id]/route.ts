@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { bookingPublishProblem, normalizeProductInput, paidPublishProblem, withResolvedBookingUrl } from "@/lib/commerce";
+import { normalizeProductInput, paidPublishProblem } from "@/lib/commerce";
 import { trackEvent } from "@/lib/analytics";
 
 export const dynamic = "force-dynamic";
@@ -26,10 +26,10 @@ export async function PUT(req: Request, ctx: Ctx) {
     const updated = await prisma.product.update({ where: { id: r.product.id }, data: { position: Math.max(0, Math.floor(body.position)) } });
     return NextResponse.json(updated);
   }
-  const parsed = normalizeProductInput(await withResolvedBookingUrl({ ...r.product, ...body }));
+  const parsed = normalizeProductInput({ ...r.product, ...body });
   if (!parsed.ok) return NextResponse.json({ error: parsed.problem.error, field: parsed.problem.field }, { status: 400 });
-  const blocked = (await paidPublishProblem(r.product.userId, parsed.value)) ?? (await bookingPublishProblem(r.product.userId, parsed.value));
-  if (blocked) return NextResponse.json({ ...blocked, field: blocked.code.includes("scheduler") ? "bookingUrl" : "priceCents" }, { status: 403 });
+  const blocked = await paidPublishProblem(r.product.userId, parsed.value);
+  if (blocked) return NextResponse.json({ ...blocked, field: "priceCents" }, { status: 403 });
   const updated = await prisma.product.update({ where: { id: r.product.id }, data: parsed.value });
   if (r.product.status !== "published" && updated.status === "published") {
     void trackEvent("product_published", { userId: updated.userId, props: { productId: updated.id }, dedupeKey: `product_published:${updated.id}` });

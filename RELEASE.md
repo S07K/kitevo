@@ -237,6 +237,18 @@ No migration, no new env vars (the PayPal Secret is stored like the other keys, 
 
 ---
 
+## 14. Book a call on the kit (`feat/kit-book-a-call`)
+
+No new env vars. One migration (`20261104161344_kit_book_a_call`) adds `Kit.booking` and copies each creator's published booking product onto their kits.
+
+- [ ] GitHub Actions > **DB migrations** run for the merge commit is green.
+- [ ] Your kit: "Work with you" now starts with your booking button (it was "Connect with me" in the Shop). Click it: your scheduler opens in a dialog; Esc closes it.
+- [ ] The old product link (`/p/...` of the booking) redirects to your kit with the dialog open.
+- [ ] Products no longer offers "Booking"; the Shop shows downloads only.
+- [ ] Kit editor > Contact > **Book a call**: change the event link or button text, or switch it off.
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.
