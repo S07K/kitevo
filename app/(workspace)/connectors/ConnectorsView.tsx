@@ -29,7 +29,11 @@ function Notice({ tone, children }: { tone: "success" | "danger"; children: Reac
 
 type Status = "connected" | "off" | "soon" | "loading";
 
-/** One connector: logo, what it powers, status, and its connect/disconnect action. */
+/**
+ * One connector card. Every card in a row is the same height (grid stretch + h-full) and the
+ * footer is pinned to the bottom (mt-auto), so actions line up across the row however long
+ * the text above them is. `detail` is footer meta (key hint, link); `note` is a short caveat.
+ */
 function ConnectorCard({
   brand,
   name,
@@ -38,6 +42,7 @@ function ConnectorCard({
   detail,
   note,
   actions,
+  testMode,
 }: {
   brand: BrandIconId;
   name: string;
@@ -46,25 +51,36 @@ function ConnectorCard({
   detail?: ReactNode;
   note?: ReactNode;
   actions?: ReactNode;
+  /** Connected with test/sandbox keys: shown as a header badge next to Connected. */
+  testMode?: string | false;
 }) {
+  const connected = status === "connected";
   return (
-    <article className={`flex flex-col rounded-2xl border border-border bg-background p-5 ${status === "soon" ? "opacity-75" : ""}`}>
-      <div className="flex items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
-          <BrandIcon brand={brand} size={22} label={name} />
+    <article
+      className={`flex h-full flex-col rounded-2xl border bg-background p-5 transition-colors ${
+        connected ? "border-green-600/25 dark:border-green-400/25" : "border-border"
+      } ${status === "soon" ? "opacity-75" : ""}`}
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
+          <BrandIcon brand={brand} size={20} label={name} />
         </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground">{name}</h3>
-            {status === "connected" && <Badge variant="success" dot>Connected</Badge>}
-            {status === "soon" && <Badge>Coming soon</Badge>}
+        <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{name}</h3>
+        {connected && <Badge variant="success" dot>Connected</Badge>}
+        {connected && testMode && <Badge variant="warning">{testMode}</Badge>}
+        {status === "soon" && <Badge>Coming soon</Badge>}
+      </div>
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{powers}</p>
+      {note && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{note}</p>}
+
+      <div className="mt-auto pt-4">
+        <div className="flex min-h-9 flex-wrap items-center gap-x-3 gap-y-2 border-t border-border pt-4">
+          <div className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            {detail ?? (status === "off" ? "Not connected" : status === "loading" ? "Checking…" : null)}
           </div>
-          <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{powers}</p>
-          {detail && <div className="mt-1.5 text-xs text-muted-foreground">{detail}</div>}
+          {actions && <div className="flex flex-wrap items-center justify-end gap-2">{actions}</div>}
         </div>
       </div>
-      {note && <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{note}</p>}
-      {actions && <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">{actions}</div>}
     </article>
   );
 }
@@ -147,7 +163,7 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
   const disconnectButton = (which: "instagram" | "youtube" | "razorpay" | "stripe" | "paypal", name: string, warn: string) =>
     confirmOff === which ? (
       <>
-        <span className="w-full text-xs text-muted-foreground">{warn}</span>
+        <span className="basis-full text-right text-xs text-muted-foreground">{warn}</span>
         <Button size="sm" onClick={() => setConfirmOff(null)} disabled={busy === which}>Keep connected</Button>
         <Button size="sm" variant="danger" onClick={() => disconnect(which)} disabled={busy === which}>
           {busy === which ? "Disconnecting…" : `Disconnect ${name}`}
@@ -180,13 +196,17 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
         <ConnectorCard
           brand="instagram"
           name="Instagram"
-          powers="Followers, engagement, recent posts, audience and growth."
+          powers="Followers, engagement, posts, audience and growth."
           status={stat(instagram)}
-          note={planNote}
-          detail={
+          note={
             instagram === false ? (
-              <>Needs a Professional account linked to a Facebook Page. <Link href="/help/instagram" className="font-medium text-primary hover:underline">Setup help</Link></>
-            ) : undefined
+              <>
+                Needs a Professional account linked to a Facebook Page. <Link href="/help/instagram" className="font-medium text-primary hover:underline">Setup help</Link>
+                {planNote && <> · {planNote}</>}
+              </>
+            ) : (
+              planNote
+            )
           }
           actions={
             instagram === null ? null : instagram ? (
@@ -199,7 +219,7 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
         <ConnectorCard
           brand="youtube"
           name="YouTube"
-          powers="Subscribers, views per video and your latest videos."
+          powers="Subscribers, views per video and latest videos."
           status={stat(youtube)}
           note={planNote}
           actions={
@@ -216,16 +236,10 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
         <ConnectorCard
           brand="razorpay"
           name="Razorpay"
-          powers="UPI, cards and the other methods your Razorpay account accepts."
+          powers="UPI, cards and netbanking, paid into your Razorpay account."
           status={razorpay === undefined ? "loading" : razorpay ? "connected" : "off"}
-          detail={
-            razorpay ? (
-              <span className="inline-flex flex-wrap items-center gap-2">
-                <span className="font-mono">{razorpay.keyHint}</span>
-                {!razorpay.livemode && <Badge variant="warning">Test mode</Badge>}
-              </span>
-            ) : undefined
-          }
+          detail={razorpay ? <span className="font-mono" title={razorpay.keyHint}>{razorpay.keyHint}</span> : undefined}
+          testMode={!!razorpay && !razorpay.livemode && "Test mode"}
           note={
             !paidPlan ? (
               <>Selling paid products is included in Starter and Pro. <Link href="/pricing" className="font-medium text-primary hover:underline">See plans</Link></>
@@ -247,16 +261,10 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
         <ConnectorCard
           brand="stripe"
           name="Stripe"
-          powers="Cards and the wallets your Stripe account accepts, on Stripe's checkout page."
+          powers="Cards and wallets on Stripe's checkout, paid into your Stripe account."
           status={stripe === undefined ? "loading" : stripe ? "connected" : "off"}
-          detail={
-            stripe ? (
-              <span className="inline-flex flex-wrap items-center gap-2">
-                <span className="font-mono">{stripe.keyHint}</span>
-                {!stripe.livemode && <Badge variant="warning">Test mode</Badge>}
-              </span>
-            ) : undefined
-          }
+          detail={stripe ? <span className="font-mono" title={stripe.keyHint}>{stripe.keyHint}</span> : undefined}
+          testMode={!!stripe && !stripe.livemode && "Test mode"}
           note={
             !paidPlan ? (
               <>Selling paid products is included in Starter and Pro. <Link href="/pricing" className="font-medium text-primary hover:underline">See plans</Link></>
@@ -280,16 +288,10 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
         <ConnectorCard
           brand="paypal"
           name="PayPal"
-          powers="PayPal balance and cards on PayPal's own page, into your PayPal account. USD products."
+          powers="PayPal balance and cards, paid into your PayPal account. USD products."
           status={paypal === undefined ? "loading" : paypal ? "connected" : "off"}
-          detail={
-            paypal ? (
-              <span className="inline-flex flex-wrap items-center gap-2">
-                <span className="font-mono">{paypal.keyHint}</span>
-                {!paypal.livemode && <Badge variant="warning">Sandbox</Badge>}
-              </span>
-            ) : undefined
-          }
+          detail={paypal ? <span className="font-mono" title={paypal.keyHint}>{paypal.keyHint}</span> : undefined}
+          testMode={!!paypal && !paypal.livemode && "Sandbox"}
           note={
             !paidPlan ? (
               <>Selling paid products is included in Starter and Pro. <Link href="/pricing" className="font-medium text-primary hover:underline">See plans</Link></>
@@ -324,18 +326,16 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
               name={p === "google" ? "Google Calendar" : info.name}
               powers={
                 p === "google"
-                  ? "Appointment schedules: people book open times on your Google Calendar."
-                  : p === "calendly"
-                    ? "Your Calendly event types, with its availability and reminders."
-                    : "Your Cal.com event types, with its availability and reminders."
+                  ? "An appointment schedule: people book open times on your calendar."
+                  : `Your ${info.name} event types, embedded as bookable calls.`
               }
               status={schedulers === undefined ? "loading" : c ? "connected" : "off"}
-              detail={c ? <span className="break-all">{c.url.replace(/^https:\/\//, "")}</span> : undefined}
+              detail={c ? <span title={c.url}>{c.url.replace(/^https:\/\//, "")}</span> : undefined}
               actions={
                 schedulers === undefined ? null : c ? (
                   confirmOff === p ? (
                     <>
-                      <span className="w-full text-xs text-muted-foreground">Booking products using {info.name} stop showing until you connect again.</span>
+                      <span className="basis-full text-right text-xs text-muted-foreground">Booking products using {info.name} stop showing until you connect again.</span>
                       <Button size="sm" onClick={() => setConfirmOff(null)} disabled={busy === p}>Keep connected</Button>
                       <Button size="sm" variant="danger" onClick={() => disconnectScheduler(p)} disabled={busy === p}>{busy === p ? "Disconnecting…" : `Disconnect ${info.name}`}</Button>
                     </>
