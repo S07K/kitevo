@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MAX_PRODUCTS, normalizeProductInput, paidPublishProblem } from "@/lib/commerce";
+import { MAX_PRODUCTS, normalizeProductInput, paidPublishProblem, productData } from "@/lib/commerce";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +37,6 @@ export async function POST(req: Request) {
   if (!parsed.ok) return NextResponse.json({ error: parsed.problem.error, field: parsed.problem.field }, { status: 400 });
   const blocked = await paidPublishProblem(userId, parsed.value);
   if (blocked) return NextResponse.json({ ...blocked, field: "priceCents" }, { status: 403 });
-  const product = await prisma.product.create({ data: { ...parsed.value, userId, position: count } });
+  const product = await prisma.product.create({ data: { ...productData(parsed.value), userId, position: count } });
   return NextResponse.json({ ...product, orders: 0 }, { status: 201 });
 }

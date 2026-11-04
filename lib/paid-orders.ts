@@ -6,6 +6,7 @@ import { sendDownloadEmail } from "@/lib/email";
 import { trackEvent } from "@/lib/analytics";
 import { fetchOrderPayments, type RazorpayKeys } from "@/lib/razorpay";
 import { retrieveCheckoutSession, sessionPaysFor } from "@/lib/stripe-creator";
+import { confirmBookingForOrder, notifyBooking } from "@/lib/bookings";
 
 export function orderAccessUrl(accessToken: string) {
   return `${APP_URL.replace(/\/$/, "")}/o/${accessToken}`;
@@ -27,6 +28,13 @@ export async function markOrderPaid(
   const creatorName = seller?.name || seller?.username || "the creator";
   const accessUrl = orderAccessUrl(order.accessToken);
   const provider = order.provider ?? "razorpay";
+  const isBooking = (await prisma.booking.count({ where: { orderId: order.id } })) > 0;
+  if (isBooking) {
+    await confirmBookingForOrder(order.id);
+    await notifyBooking(order.id, { amount: formatPrice(order.amountCents, order.currency), via: PROVIDER_NAMES[provider] ?? "the creator's payment provider" });
+    void trackEvent("product_purchased", { userId: order.sellerId, props: { productId: order.productId, provider } });
+    return true;
+  }
   inBackground("purchase-email", () =>
     sendDownloadEmail({
       to: order.buyerEmail,

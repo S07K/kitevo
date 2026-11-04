@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createHmac } from "node:crypto";
 
-vi.mock("@/lib/prisma", () => ({ prisma: { order: { findUnique: vi.fn(), updateMany: vi.fn() }, user: { findUnique: vi.fn() } } }));
+vi.mock("@/lib/prisma", () => ({ prisma: { order: { findUnique: vi.fn(), updateMany: vi.fn() }, user: { findUnique: vi.fn() }, booking: { count: vi.fn(async () => 0) } } }));
 vi.mock("@/lib/payment-connections", () => ({ razorpayKeysFor: vi.fn() }));
 vi.mock("@/lib/razorpay", async (orig) => {
   const real = await orig<typeof import("@/lib/razorpay")>();

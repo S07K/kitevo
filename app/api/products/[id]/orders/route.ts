@@ -16,7 +16,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     where: { productId: id, status: { in: ["free", "paid"] } }, // abandoned checkouts are not buyers
     orderBy: { createdAt: "desc" },
     take: 500,
-    select: { id: true, buyerEmail: true, buyerName: true, status: true, createdAt: true },
+    select: { id: true, buyerEmail: true, buyerName: true, status: true, createdAt: true, booking: { select: { startsAt: true } } },
   });
   return NextResponse.json(orders);
 }

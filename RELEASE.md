@@ -211,6 +211,18 @@ No migration, no new env vars (the Stripe key is stored like the Razorpay secret
 
 ---
 
+## 12. Bookings (`feat/bookings`)
+
+No new env vars. One additive migration (`20261104074404_bookings`: `Booking` table + `Product.bookingConfig`) applies on deploy.
+
+- [ ] GitHub Actions > **DB migrations** run for the merge commit is green.
+- [ ] Products > **New product > Booking**: name, length, your time zone, weekly hours, your Zoom/Meet link, then Publish. It shows "30-min call" and appears in your kit's Shop with **Book**.
+- [ ] From a private window (ideally another time zone): pick a time, **Book free**. The booking page shows the time in your zone, **Join the call**, Google Calendar and .ics work; you and the buyer get emails. The slot disappears for the next visitor.
+- [ ] Set a price and book again with your test Razorpay/Stripe: after paying, the booking is confirmed. Abandon one payment: that slot comes back after about 35 min.
+- [ ] Products > the booking's "1 booking" opens the list with the booked time.
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.

@@ -1,4 +1,5 @@
 import { normalizeLinkUrl } from "@/lib/profile-links";
+import { normalizeBookingConfig, type BookingConfig } from "./booking-shared";
 
 /**
  * Client-safe commerce helpers (limits, validation, the public product shape). Server-only
@@ -30,7 +31,12 @@ export function formatPrice(minor: number, currency: string): string {
   }).format(major);
 }
 
+export type ProductType = "download" | "booking";
+
 export type ProductInput = {
+  type: ProductType;
+  /** Only for type "booking" (null for downloads). */
+  bookingConfig: BookingConfig | null;
   title: string;
   description: string;
   coverUrl: string | null;
@@ -42,7 +48,7 @@ export type ProductInput = {
   currency: ProductCurrency;
 };
 
-export type ProductProblem = { field: keyof ProductInput; error: string };
+export type ProductProblem = { field: keyof ProductInput | "meetingUrl" | "weekly"; error: string };
 
 /** Clean a product from the editor. Returns the cleaned input or the first problem. */
 export function normalizeProductInput(raw: unknown): { ok: true; value: ProductInput } | { ok: false; problem: ProductProblem } {
@@ -50,6 +56,13 @@ export function normalizeProductInput(raw: unknown): { ok: true; value: ProductI
   const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
   const title = str(o.title, MAX_TITLE);
   const status = o.status === "published" ? "published" : "draft";
+  const type: ProductType = o.type === "booking" ? "booking" : "download";
+  const bookingConfig = type === "booking" ? normalizeBookingConfig(o.bookingConfig) : null;
+  if (bookingConfig?.meetingUrl) {
+    const meeting = normalizeLinkUrl(bookingConfig.meetingUrl);
+    if (!meeting || meeting.startsWith("mailto:")) return { ok: false, problem: { field: "meetingUrl", error: "Use a web link for the call, like a Zoom or Google Meet link." } };
+    bookingConfig.meetingUrl = meeting;
+  }
   const deliveryRaw = typeof o.deliveryUrl === "string" ? o.deliveryUrl.trim() : "";
   // Delivery must be a web page (a file link), never mailto: or a script URL.
   const deliveryUrl = deliveryRaw ? normalizeLinkUrl(deliveryRaw) : null;
@@ -73,11 +86,13 @@ export function normalizeProductInput(raw: unknown): { ok: true; value: ProductI
 
   if (status === "published") {
     if (!title) return { ok: false, problem: { field: "title", error: "Give it a name before publishing." } };
-    if (!deliveryUrl) return { ok: false, problem: { field: "deliveryUrl", error: "Add the link people get after they sign up." } };
+    if (type === "download" && !deliveryUrl) return { ok: false, problem: { field: "deliveryUrl", error: "Add the link people get after they sign up." } };
+    if (bookingConfig && !bookingConfig.meetingUrl) return { ok: false, problem: { field: "meetingUrl", error: "Add the meeting link people join (Zoom, Google Meet…)." } };
+    if (bookingConfig && bookingConfig.weekly.every((d) => d.length === 0)) return { ok: false, problem: { field: "weekly", error: "Pick at least one day you're available." } };
   }
   return {
     ok: true,
-    value: { title, description: str(o.description, MAX_DESCRIPTION), coverUrl: cover, deliveryUrl, deliveryNote: str(o.deliveryNote, MAX_NOTE), status, priceCents, currency },
+    value: { type, bookingConfig, title, description: str(o.description, MAX_DESCRIPTION), coverUrl: cover, deliveryUrl, deliveryNote: str(o.deliveryNote, MAX_NOTE), status, priceCents, currency },
   };
 }
 
@@ -88,7 +103,9 @@ export function cleanEmail(raw: unknown): string | null {
 }
 
 /** What a kit or product page shows (never the delivery link). */
-export function publicProduct(p: { id: string; title: string; description: string; coverUrl: string | null; priceCents: number; currency: string; type: string }) {
-  return { id: p.id, title: p.title, description: p.description, coverUrl: p.coverUrl, priceCents: p.priceCents, currency: p.currency, type: p.type };
+export function publicProduct(p: { id: string; title: string; description: string; coverUrl: string | null; priceCents: number; currency: string; type: string; bookingConfig?: unknown }) {
+  // Bookings expose only their length publicly; hours come from the slots API, never the meeting link.
+  const durationMin = p.type === "booking" ? normalizeBookingConfig(p.bookingConfig).durationMin : null;
+  return { id: p.id, title: p.title, description: p.description, coverUrl: p.coverUrl, priceCents: p.priceCents, currency: p.currency, type: p.type, durationMin };
 }
 export type PublicProduct = ReturnType<typeof publicProduct>;

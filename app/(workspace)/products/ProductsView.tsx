@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Download, ExternalLink, ImagePlus, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { CalendarClock, Check, Copy, Download, ExternalLink, ImagePlus, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/WorkspaceShell";
 import { Button, ButtonLink, IconButton } from "@/app/components/workspace/Button";
 import Link from "next/link";
@@ -13,6 +13,8 @@ import { ListCardSkeleton } from "@/app/components/Skeleton";
 import { APP_URL } from "@/lib/app-url";
 import { MAX_DESCRIPTION, MAX_NOTE, MAX_PRODUCTS, MAX_TITLE, PRODUCT_CURRENCIES, formatPrice } from "@/lib/commerce-shared";
 import { resizeImageFileToJpegDataUrl } from "@/lib/resize-image";
+import { DEFAULT_BOOKING, normalizeBookingConfig, type BookingConfig } from "@/lib/booking-shared";
+import { BookingFields } from "./BookingFields";
 
 type Product = {
   id: string;
@@ -25,12 +27,16 @@ type Product = {
   orders: number;
   priceCents: number;
   currency: string;
+  type: "download" | "booking";
+  bookingConfig: BookingConfig | null;
 };
 /** Editor state: price is typed in major units ("499"), saved as minor units by the API. */
 type Draft = Omit<Product, "id" | "orders" | "priceCents"> & { price: string };
-type Lead = { id: string; buyerEmail: string; buyerName: string | null; createdAt: string };
+type Lead = { id: string; buyerEmail: string; buyerName: string | null; createdAt: string; booking?: { startsAt: string } | null };
 
-const EMPTY: Draft = { title: "", description: "", coverUrl: null, deliveryUrl: "", deliveryNote: "", status: "draft", price: "", currency: "INR" };
+const EMPTY: Draft = { title: "", description: "", coverUrl: null, deliveryUrl: "", deliveryNote: "", status: "draft", price: "", currency: "INR", type: "download", bookingConfig: null };
+/** A new booking starts in the creator's own time zone with weekday hours. */
+const newBookingConfig = (): BookingConfig => ({ ...DEFAULT_BOOKING, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" });
 
 const base = APP_URL.replace(/\/$/, "");
 const field =
@@ -80,7 +86,7 @@ export function ProductsView() {
       <PageHeader
         eyebrow="Sell"
         title="Products"
-        description="Sell digital products from your kit: free in exchange for an email, or for a price paid straight to you."
+        description="Sell downloads and calls from your kit: free in exchange for an email, or for a price paid straight to you."
         actions={
           <Button variant="primary" onClick={() => setEditing({ id: null, draft: EMPTY })} disabled={!products || full}>
             <Plus size={15} aria-hidden /> New product
@@ -113,6 +119,8 @@ export function ProductsView() {
                   {p.coverUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- base64 cover
                     <img src={p.coverUrl} alt="" className="h-full w-full object-cover" />
+                  ) : p.type === "booking" ? (
+                    <CalendarClock size={18} className="text-muted-foreground" aria-hidden />
                   ) : (
                     <Download size={18} className="text-muted-foreground" aria-hidden />
                   )}
@@ -121,10 +129,14 @@ export function ProductsView() {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate font-medium text-foreground">{p.title || "Untitled"}</p>
                     {p.status === "published" ? <Badge variant="success" dot>Live</Badge> : <Badge>Draft</Badge>}
-                    <span className="text-xs font-medium tabular-nums text-muted-foreground">{formatPrice(p.priceCents, p.currency)}</span>
+                    <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                      {formatPrice(p.priceCents, p.currency)}
+                      {p.type === "booking" && p.bookingConfig ? ` · ${normalizeBookingConfig(p.bookingConfig).durationMin}-min call` : ""}
+                    </span>
                   </div>
                   <button type="button" onClick={() => setLeadsFor(p)} className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                    <Users size={12} aria-hidden /> {p.orders} {p.priceCents ? `sale${p.orders === 1 ? "" : "s"}` : `download${p.orders === 1 ? "" : "s"}`}
+                    <Users size={12} aria-hidden /> {p.orders}{" "}
+                    {p.type === "booking" ? `booking${p.orders === 1 ? "" : "s"}` : p.priceCents ? `sale${p.orders === 1 ? "" : "s"}` : `download${p.orders === 1 ? "" : "s"}`}
                   </button>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -148,6 +160,8 @@ export function ProductsView() {
                           status: p.status,
                           price: p.priceCents ? String(p.priceCents / 100) : "",
                           currency: p.currency === "USD" ? "USD" : "INR",
+                          type: p.type === "booking" ? "booking" : "download",
+                          bookingConfig: p.type === "booking" ? normalizeBookingConfig(p.bookingConfig) : null,
                         },
                       })
                     }
@@ -309,6 +323,24 @@ function ProductEditor({
       }
     >
       <div className="space-y-4">
+        <div role="radiogroup" aria-label="Product type" className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+          {([
+            ["download", "Download", "A file people get"],
+            ["booking", "Booking", "A call people book"],
+          ] as const).map(([t, label, hint]) => (
+            <button
+              key={t}
+              type="button"
+              role="radio"
+              aria-checked={d.type === t}
+              onClick={() => set(t === "booking" ? { type: t, bookingConfig: d.bookingConfig ?? newBookingConfig() } : { type: t })}
+              className={`rounded-lg px-3 py-2 text-left transition-colors ${d.type === t ? "bg-background shadow-sm" : "hover:bg-background/60"}`}
+            >
+              <span className="block text-sm font-medium text-foreground">{label}</span>
+              <span className="block text-xs text-muted-foreground">{hint}</span>
+            </button>
+          ))}
+        </div>
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -335,7 +367,7 @@ function ProductEditor({
 
         <div>
           <label htmlFor="pr-title" className="mb-1.5 block text-xs font-medium text-muted-foreground">Name</label>
-          <input id="pr-title" value={d.title} maxLength={MAX_TITLE} onChange={(e) => set({ title: e.target.value })} placeholder="e.g. My Lightroom preset pack" className={field} />
+          <input id="pr-title" value={d.title} maxLength={MAX_TITLE} onChange={(e) => set({ title: e.target.value })} placeholder={d.type === "booking" ? "e.g. 30-min portfolio review" : "e.g. My Lightroom preset pack"} className={field} />
           {err("title")}
         </div>
         <div>
@@ -360,7 +392,7 @@ function ProductEditor({
               inputMode="decimal"
               value={d.price}
               onChange={(e) => set({ price: e.target.value.replace(/[^\d.]/g, "") })}
-              placeholder="0 = free download"
+              placeholder={d.type === "booking" ? "0 = free call" : "0 = free download"}
               className={field}
             />
           </div>
@@ -369,18 +401,26 @@ function ProductEditor({
               ? paymentsConnected
                 ? `Buyers pay ${formatPrice(Math.round(Number(d.price) * 100), d.currency)} straight into your own account. Kitevo takes 0%.`
                 : "Connect Razorpay or Stripe in Connectors (sidebar) before publishing a paid product. Saving as a draft works now."
-              : "Leave empty or 0 for a free download in exchange for an email."}
+              : d.type === "booking"
+                ? "Leave empty or 0 for a free call: people book with just their email."
+                : "Leave empty or 0 for a free download in exchange for an email."}
           </p>
           {err("priceCents")}
         </div>
+        {d.type === "booking" ? (
+          <BookingFields value={d.bookingConfig ?? newBookingConfig()} onChange={(bookingConfig) => set({ bookingConfig })} err={err} />
+        ) : (
+          <div>
+            <label htmlFor="pr-url" className="mb-1.5 block text-xs font-medium text-muted-foreground">Link to the file</label>
+            <input id="pr-url" value={d.deliveryUrl ?? ""} onChange={(e) => set({ deliveryUrl: e.target.value })} placeholder="drive.google.com/… (set sharing to “anyone with the link”)" className={field} />
+            <p className="mt-1 text-xs text-muted-foreground">Only shown on the buyer&apos;s private download page, after they sign up or pay.</p>
+            {err("deliveryUrl")}
+          </div>
+        )}
         <div>
-          <label htmlFor="pr-url" className="mb-1.5 block text-xs font-medium text-muted-foreground">Link to the file</label>
-          <input id="pr-url" value={d.deliveryUrl ?? ""} onChange={(e) => set({ deliveryUrl: e.target.value })} placeholder="drive.google.com/… (set sharing to “anyone with the link”)" className={field} />
-          <p className="mt-1 text-xs text-muted-foreground">Only shown on the buyer&apos;s private download page, after they sign up or pay.</p>
-          {err("deliveryUrl")}
-        </div>
-        <div>
-          <label htmlFor="pr-note" className="mb-1.5 block text-xs font-medium text-muted-foreground">Message on the download page (optional)</label>
+          <label htmlFor="pr-note" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            {d.type === "booking" ? "Message on the booking page (optional)" : "Message on the download page (optional)"}
+          </label>
           <textarea id="pr-note" rows={2} value={d.deliveryNote} maxLength={MAX_NOTE} onChange={(e) => set({ deliveryNote: e.target.value })} placeholder="e.g. How to install the presets." className={`${field} resize-none`} />
         </div>
         {error && !error.field && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error.message}</p>}
@@ -405,11 +445,11 @@ function LeadsDialog({ product, onClose }: { product: Product | null; onClose: (
   }, [product]);
 
   return (
-    <Modal open={!!product} onClose={onClose} size="md" title="Downloads" description={product?.title || "Untitled"}>
+    <Modal open={!!product} onClose={onClose} size="md" title={product?.type === "booking" ? "Bookings" : "Downloads"} description={product?.title || "Untitled"}>
       {!leads ? (
         <p className="py-6 text-sm text-muted-foreground">Loading…</p>
       ) : leads.length === 0 ? (
-        <p className="py-6 text-sm text-muted-foreground">No downloads yet. Share your kit or the product link to get the first one.</p>
+        <p className="py-6 text-sm text-muted-foreground">{product?.type === "booking" ? "No bookings yet. Share your kit or the booking link to get the first one." : "No downloads yet. Share your kit or the product link to get the first one."}</p>
       ) : (
         <>
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -433,7 +473,15 @@ function LeadsDialog({ product, onClose }: { product: Product | null; onClose: (
                   <span className="block truncate text-foreground">{l.buyerEmail}</span>
                   {l.buyerName && <span className="block truncate text-xs text-muted-foreground">{l.buyerName}</span>}
                 </span>
-                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{new Date(l.createdAt).toLocaleDateString()}</span>
+                <span className="shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                  {l.booking ? (
+                    <span className="font-medium text-foreground">
+                      {new Date(l.booking.startsAt).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                    </span>
+                  ) : (
+                    new Date(l.createdAt).toLocaleDateString()
+                  )}
+                </span>
               </li>
             ))}
           </ul>

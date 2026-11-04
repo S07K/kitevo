@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { MAX_PRODUCTS, publicProduct, type PublicProduct } from "@/lib/commerce-shared";
@@ -62,4 +63,9 @@ export async function paidPublishProblem(userId: string, value: { status: string
   const connected = await prisma.paymentConnection.count({ where: { userId, provider: { in: ["razorpay", "stripe"] } } });
   if (!connected) return { error: "Connect Razorpay or Stripe in Connectors before publishing a paid product.", code: "payments_not_connected" };
   return null;
+}
+
+/** A cleaned ProductInput as Prisma data (an empty JSON column must be Prisma.DbNull, not null). */
+export function productData(v: import("@/lib/commerce-shared").ProductInput) {
+  return { ...v, bookingConfig: v.bookingConfig ?? Prisma.DbNull };
 }

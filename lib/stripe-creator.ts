@@ -79,7 +79,7 @@ export type CheckoutSession = {
 /** A one-off Checkout Session on the creator's account; the price comes from the product. */
 export function createCheckoutSession(
   key: string,
-  p: { orderId: string; productId: string; title: string; amount: number; currency: string; email: string; successUrl: string; cancelUrl: string },
+  p: { orderId: string; productId: string; title: string; amount: number; currency: string; email: string; successUrl: string; cancelUrl: string; expiresInMin?: number },
 ): Promise<CheckoutSession> {
   return call<CheckoutSession>(key, "/checkout/sessions", {
     mode: "payment",
@@ -90,7 +90,8 @@ export function createCheckoutSession(
     line_items: [{ quantity: 1, price_data: { currency: p.currency.toLowerCase(), unit_amount: p.amount, product_data: { name: p.title.slice(0, 250) } } }],
     metadata: { kitevo_order_id: p.orderId, kitevo_product_id: p.productId },
     payment_intent_data: { metadata: { kitevo_order_id: p.orderId } },
-    expires_at: Math.floor(Date.now() / 1000) + 60 * 60, // 1h (Stripe minimum is 30 min)
+    // Stripe's minimum is 30 min. Bookings pass ~31 so the page closes before the slot hold ends.
+    expires_at: Math.floor(Date.now() / 1000) + 60 * Math.max(30, p.expiresInMin ?? 60),
   });
 }
 

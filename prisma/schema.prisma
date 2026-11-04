@@ -107,6 +107,7 @@ model User {
   products      Product[]
   sales         Order[]   @relation("SellerOrders")
   paymentConnections PaymentConnection[]
+  bookingsAsHost Booking[] @relation("HostBookings")
   analyticsEvents AnalyticsEvent[]
   // Referral program (lib/referrals.ts)
   referralCode         String?              @unique
@@ -435,7 +436,8 @@ model Product {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String   @default("download") // "download" (later: "booking")
+  type        String   @default("download") // "download" | "booking"
+  bookingConfig Json?  // type "booking": duration, time zone, weekly hours, meeting link (lib/booking-shared)
   title       String
   description String   @default("")
   coverUrl    String?  // base64 data URL, resized client-side like avatars
@@ -448,6 +450,7 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   orders      Order[]
+  bookings    Booking[]
 
   @@index([userId, status, position])
 }
@@ -470,6 +473,7 @@ model Order {
   providerRef String?  // the provider's payment id once paid
   accessToken String   @unique
   createdAt   DateTime @default(now())
+  booking     Booking?
 
   @@index([sellerId, createdAt])
   @@index([productId, buyerEmail])
@@ -489,5 +493,26 @@ model PaymentConnection {
   updatedAt       DateTime @updatedAt
 
   @@unique([userId, provider])
+}
+
+/// A booked time slot (Release C). One per order. Paid slots are "held" while the buyer pays
+/// (holdExpiresAt) and become "confirmed" when the payment is verified; free ones are
+/// confirmed at once. Overlaps are prevented per host inside a transaction (lib/bookings).
+model Booking {
+  id            String    @id @default(cuid())
+  orderId       String    @unique
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sellerId      String
+  seller        User      @relation("HostBookings", fields: [sellerId], references: [id], onDelete: Cascade)
+  startsAt      DateTime
+  endsAt        DateTime
+  status        String    @default("confirmed") // "held" | "confirmed" | "cancelled"
+  holdExpiresAt DateTime?
+  buyerTimezone String?
+  createdAt     DateTime  @default(now())
+
+  @@index([sellerId, startsAt])
 }
 

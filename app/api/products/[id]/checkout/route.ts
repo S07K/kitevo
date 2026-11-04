@@ -7,6 +7,8 @@ import { razorpayKeysFor, stripeKeyFor } from "@/lib/payment-connections";
 import { createOrder } from "@/lib/razorpay";
 import { createCheckoutSession } from "@/lib/stripe-creator";
 import { recoverPaidOrder } from "@/lib/paid-orders";
+import { parseSlot, reserveBooking } from "@/lib/bookings";
+import { normalizeBookingConfig } from "@/lib/booking-shared";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +22,7 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  const body = (await req.json().catch(() => ({}))) as { email?: unknown; name?: unknown; provider?: unknown };
+  const body = (await req.json().catch(() => ({}))) as { email?: unknown; name?: unknown; provider?: unknown; slot?: unknown; timezone?: unknown };
   const email = cleanEmail(body.email);
   if (!email) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   const name = typeof body.name === "string" && body.name.trim() ? body.name.trim().slice(0, 80) : null;
@@ -29,7 +31,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!ip.ok) return NextResponse.json({ error: "Too many tries. Wait a few minutes and try again." }, { status: 429 });
 
   const product = await prisma.product.findUnique({ where: { id } });
-  if (!product || product.status !== "published" || product.priceCents <= 0 || !product.deliveryUrl) {
+  const isBooking = product?.type === "booking";
+  const deliverable = isBooking ? !!normalizeBookingConfig(product?.bookingConfig).meetingUrl : !!product?.deliveryUrl;
+  if (!product || product.status !== "published" || product.priceCents <= 0 || !deliverable) {
     return NextResponse.json({ error: "This product isn't for sale." }, { status: 404 });
   }
   // Checked again at purchase time: a lapsed plan or a disconnected account stops sales.
@@ -44,10 +48,20 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!planOk || !provider) return NextResponse.json({ error: "This product isn't on sale right now. Try again later." }, { status: 409 });
 
   // Paid before but the confirmation never arrived (tab closed)? Hand back the link, don't charge again.
-  const recovered = await recoverPaidOrder({ razorpay: rpKeys, stripe: stripeKey }, product.id, email);
-  if (recovered) return NextResponse.json({ alreadyPaid: true, accessUrl: recovered });
+  // (Not for bookings: each booking is a new slot, and a lost one is still recovered on return.)
+  if (!isBooking) {
+    const recovered = await recoverPaidOrder({ razorpay: rpKeys, stripe: stripeKey }, product.id, email);
+    if (recovered) return NextResponse.json({ alreadyPaid: true, accessUrl: recovered });
+  }
 
-  const order = await prisma.order.create({
+  let order;
+  if (isBooking) {
+    const slot = parseSlot(body.slot);
+    if (slot === null) return NextResponse.json({ error: "Pick a time first." }, { status: 400 });
+    const r = await reserveBooking({ product, startMs: slot, buyerEmail: email, buyerName: name, buyerTimezone: typeof body.timezone === "string" ? body.timezone : null, paidVia: provider });
+    if (!r.ok) return NextResponse.json({ error: "That time was just taken. Pick another.", code: "slot_taken" }, { status: 409 });
+    order = r.order;
+  } else order = await prisma.order.create({
     data: {
       productId: product.id,
       sellerId: product.userId,
@@ -73,6 +87,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         // {CHECKOUT_SESSION_ID} is filled in by Stripe on the way back.
         successUrl: `${base}/api/orders/${order.id}/stripe-return?session_id={CHECKOUT_SESSION_ID}`,
         cancelUrl: `${base}/p/${product.id}?checkout=cancelled`,
+        expiresInMin: isBooking ? 31 : undefined,
       });
       if (!session.url) throw new Error("Stripe returned no checkout URL");
       await prisma.order.update({ where: { id: order.id }, data: { providerOrderId: session.id } });

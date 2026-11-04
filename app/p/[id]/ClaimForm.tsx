@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BrandIcon } from "@/app/components/BrandIcon";
+import { SlotPicker, browserTimeZone } from "./SlotPicker";
 
 type RazorpayResponse = { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string };
 type RazorpayInstance = { open: () => void; on: (event: string, cb: (r: { error?: { description?: string } }) => void) => void };
@@ -43,6 +44,7 @@ export function ClaimForm({
   priceLabel,
   providers = ["razorpay"],
   notice,
+  booking = false,
 }: {
   productId: string;
   creatorName: string;
@@ -53,8 +55,20 @@ export function ClaimForm({
   providers?: PayProvider[];
   /** A message from a returned checkout (e.g. cancelled on Stripe's page). */
   notice?: string;
+  /** A booking product: the buyer picks a time first. */
+  booking?: boolean;
 }) {
   const paid = !!priceLabel;
+  const [slot, setSlot] = useState<string | null>(null);
+  const [slotsKey, setSlotsKey] = useState(0);
+  const timePart = () => (booking ? { slot, timezone: browserTimeZone() } : {});
+  const slotTaken = (data: { code?: string; error?: string }) => {
+    if (data.code !== "slot_taken") return false;
+    setSlot(null);
+    setSlotsKey((k) => k + 1);
+    setState({ phase: "error", error: data.error ?? "That time was just taken. Pick another." });
+    return true;
+  };
   const [provider, setProvider] = useState<PayProvider>(providers[0] ?? "razorpay");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -63,16 +77,17 @@ export function ClaimForm({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (preview) return;
+    if (booking && !slot) return setState({ phase: "error", error: "Pick a time first." });
     if (paid) return buy();
     setState({ phase: "sending" });
     try {
       const res = await fetch(`/api/products/${productId}/claim`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name }),
+        body: JSON.stringify({ email, name, ...timePart() }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) return setState({ phase: "error", error: data.error ?? "That didn't go through. Try again." });
+      if (!res.ok) return slotTaken(data) || setState({ phase: "error", error: data.error ?? "That didn't go through. Try again." });
       setState({ phase: "done", accessUrl: data.accessUrl });
     } catch {
       setState({ phase: "error", error: "Couldn't connect. Check your connection and try again." });
@@ -84,10 +99,10 @@ export function ClaimForm({
     try {
       const [ready, res] = await Promise.all([
         provider === "razorpay" ? loadRazorpay() : Promise.resolve(true),
-        fetch(`/api/products/${productId}/checkout`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, name, provider }) }),
+        fetch(`/api/products/${productId}/checkout`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, name, provider, ...timePart() }) }),
       ]);
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) return setState({ phase: "error", error: data.error ?? "Couldn't start the payment. Try again." });
+      if (!res.ok) return slotTaken(data) || setState({ phase: "error", error: data.error ?? "Couldn't start the payment. Try again." });
       if (data.alreadyPaid) return setState({ phase: "done", accessUrl: data.accessUrl });
       // Stripe: the payment happens on Stripe's own page; it sends the buyer back to us after.
       if (data.redirectUrl) {
@@ -129,13 +144,15 @@ export function ClaimForm({
     }
   }
 
+  const cta = booking ? (paid ? `Book for ${priceLabel}` : "Book free") : paid ? `Buy for ${priceLabel}` : "Get it free";
+
   const input =
     "w-full rounded-xl border border-[var(--mk-border)] bg-[var(--mk-bg)] px-4 py-3 font-sans text-sm text-[var(--mk-text)] placeholder:text-[var(--mk-text-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--mk-text)]/30";
 
   if (state.phase === "done") {
     return (
       <div className="rounded-2xl bg-[var(--mk-surface)] p-6 text-center">
-        <p className="font-display text-xl font-semibold text-[var(--mk-text)]">It&apos;s yours</p>
+        <p className="font-display text-xl font-semibold text-[var(--mk-text)]">{booking ? "You're booked" : "It's yours"}</p>
         <p className="mt-1 font-sans text-sm text-[var(--mk-text-muted)]">
           {paid ? "Payment received. " : ""}We&apos;ve also emailed the link to {email}, so you can come back to it.
         </p>
@@ -143,17 +160,22 @@ export function ClaimForm({
           href={state.accessUrl}
           className="mt-5 inline-flex h-12 items-center justify-center rounded-full bg-[var(--mk-text)] px-7 font-sans text-sm font-semibold text-[var(--mk-bg)] transition-opacity hover:opacity-90"
         >
-          Open your download
+          {booking ? "See your booking" : "Open your download"}
         </a>
       </div>
     );
   }
   return (
     <form onSubmit={submit} className="space-y-3 rounded-2xl bg-[var(--mk-surface)] p-5 sm:p-6">
+      {booking && (
+        <div className="pb-2">
+          <SlotPicker productId={productId} value={slot} onChange={(v) => { setSlot(v); if (state.phase === "error") setState({ phase: "idle" }); }} refreshKey={slotsKey} />
+        </div>
+      )}
       <input aria-label="Your name" placeholder="Your name (optional)" value={name} onChange={(e) => setName(e.target.value)} className={input} />
       <input aria-label="Your email" type="email" required placeholder="Your email" value={email} onChange={(e) => setEmail(e.target.value)} className={input} />
       {paid && providers.length > 1 && (
-        <fieldset className="space-y-2">
+        <fieldset className="min-w-0 space-y-2">
           <legend className="mb-2 font-sans text-xs font-medium text-[var(--mk-text-muted)]">Pay with</legend>
           {providers.map((p) => (
             <label
@@ -182,10 +204,10 @@ export function ClaimForm({
         className="h-12 w-full rounded-full bg-[var(--mk-text)] font-sans text-sm font-semibold text-[var(--mk-bg)] transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {preview
-          ? `${paid ? `Buy for ${priceLabel}` : "Get it free"} (preview)`
+          ? `${cta} (preview)`
           : state.phase === "sending"
-            ? paid ? "Opening payment…" : "Sending…"
-            : paid ? `Buy for ${priceLabel}` : "Get it free"}
+            ? paid ? "Opening payment…" : booking ? "Booking…" : "Sending…"
+            : cta}
       </button>
       <p className="text-center font-sans text-[11px] leading-relaxed text-[var(--mk-text-soft)]">
         {paid

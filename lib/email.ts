@@ -381,3 +381,73 @@ export async function sendDownloadEmail({
     "download",
   );
 }
+
+/** Buyer: a booked call (free or paid). `when` is already formatted in the buyer's zone. */
+export async function sendBookingEmail({
+  to,
+  productTitle,
+  creatorName,
+  when,
+  accessUrl,
+  paidAmount,
+  paidVia,
+}: {
+  to: string;
+  productTitle: string;
+  creatorName: string;
+  when: string;
+  accessUrl: string;
+  paidAmount?: string;
+  paidVia?: string;
+}) {
+  const paidLine = paidAmount ? ` You paid ${escapeHtml(paidAmount)} to ${escapeHtml(creatorName)}${paidVia ? ` through ${escapeHtml(paidVia)}` : ""}.` : "";
+  await send(
+    {
+      from: FROM,
+      to,
+      subject: `Booked: ${productTitle} with ${creatorName}`,
+      html: emailHtml({
+        heading: escapeHtml(productTitle),
+        body: `You're booked with <strong>${escapeHtml(creatorName)}</strong> on <strong>${escapeHtml(when)}</strong>.${paidLine} Your booking page has the meeting link and an "Add to calendar" button.`,
+        ctaLabel: "Open your booking",
+        ctaUrl: accessUrl,
+        footer: `You received this because you booked time with ${escapeHtml(creatorName)} through their media kit on Kitevo.`,
+      }),
+    },
+    "booking",
+  );
+}
+
+/** Creator: someone booked a slot. `when` is formatted in the creator's own zone. */
+export async function sendBookingNotice({
+  to,
+  productTitle,
+  buyerName,
+  buyerEmail,
+  when,
+  manageUrl,
+}: {
+  to: string;
+  productTitle: string;
+  buyerName: string | null;
+  buyerEmail: string;
+  when: string;
+  manageUrl: string;
+}) {
+  const who = buyerName ? `${escapeHtml(buyerName)} (${escapeHtml(buyerEmail)})` : escapeHtml(buyerEmail);
+  await send(
+    {
+      from: FROM,
+      to,
+      subject: `New booking: ${productTitle}, ${when}`,
+      html: emailHtml({
+        heading: "New booking",
+        body: `${who} booked <strong>${escapeHtml(productTitle)}</strong> for <strong>${escapeHtml(when)}</strong>. They have your meeting link.`,
+        ctaLabel: "See your bookings",
+        ctaUrl: manageUrl,
+        footer: "You received this because someone booked time with you on Kitevo.",
+      }),
+    },
+    "booking-notice",
+  );
+}

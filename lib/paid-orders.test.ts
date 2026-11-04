@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/lib/prisma", () => ({ prisma: { order: { findMany: vi.fn(), updateMany: vi.fn() }, user: { findUnique: vi.fn() } } }));
+vi.mock("@/lib/prisma", () => ({ prisma: { order: { findMany: vi.fn(), updateMany: vi.fn() }, user: { findUnique: vi.fn() }, booking: { count: vi.fn(async () => 0) } } }));
 vi.mock("@/lib/app-url", () => ({ APP_URL: "https://getkitevo.com" }));
 vi.mock("@/lib/background", () => ({ inBackground: vi.fn() }));
 vi.mock("@/lib/email", () => ({ sendDownloadEmail: vi.fn() }));

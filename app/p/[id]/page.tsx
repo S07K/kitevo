@@ -9,6 +9,7 @@ import { storefrontSeller } from "@/lib/creator-storefront";
 import { canSellPaid } from "@/lib/commerce";
 import { connectedProviders } from "@/lib/payment-connections";
 import { formatPrice } from "@/lib/commerce-shared";
+import { normalizeBookingConfig } from "@/lib/booking-shared";
 import { LogoMark } from "@/app/components/Logo";
 import { ClaimForm } from "./ClaimForm";
 
@@ -35,7 +36,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const r = await load((await params).id);
   if (!r) return { title: "Kitevo" };
   const title = `${r.product.title} by ${r.seller.name}`;
-  const description = r.product.description.slice(0, 155) || (r.product.priceCents ? `A digital product from ${r.seller.name}.` : `A free download from ${r.seller.name}.`);
+  const description =
+    r.product.description.slice(0, 155) ||
+    (r.product.type === "booking" ? `Book a call with ${r.seller.name}.` : r.product.priceCents ? `A digital product from ${r.seller.name}.` : `A free download from ${r.seller.name}.`);
   return { title, description, openGraph: { title, description }, robots: r.product.status === "published" ? undefined : { index: false } };
 }
 
@@ -56,6 +59,8 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
   const draft = product.status !== "published";
   const paid = product.priceCents > 0;
   const price = formatPrice(product.priceCents, product.currency);
+  const isBooking = product.type === "booking";
+  const minutes = isBooking ? normalizeBookingConfig(product.bookingConfig).durationMin : null;
   return (
     <div className="min-h-screen bg-[var(--mk-bg)] text-[var(--mk-text)] antialiased" style={kitAppearanceToCssVarsWithOverrides(seller.appearance)}>
       {draft && (
@@ -77,19 +82,19 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
           <LogoMark size={14} mono on="auto" /> Kitevo
         </Link>
       </header>
-      <main className="mx-auto grid max-w-5xl gap-10 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] md:py-16">
+      <main className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)] gap-10 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] md:py-16">
         <div className="min-w-0">
           {product.coverUrl && (
             // eslint-disable-next-line @next/next/no-img-element -- base64 cover
             <img src={product.coverUrl} alt="" className="mb-8 aspect-[4/3] w-full rounded-2xl object-cover" />
           )}
-          <p className="font-sans text-sm text-[var(--mk-text-muted)]">{paid ? "From" : "Free download from"} {seller.name}</p>
+          <p className="font-sans text-sm text-[var(--mk-text-muted)]">{isBooking ? `${minutes}-min call with` : paid ? "From" : "Free download from"} {seller.name}</p>
           <h1 className="mt-2 text-balance font-display text-[clamp(2rem,5vw,3.25rem)] font-semibold leading-[1.08] tracking-tight">{product.title || "Untitled"}</h1>
           {product.description && (
             <div className="mt-6 max-w-prose whitespace-pre-line font-sans text-base leading-relaxed text-[var(--mk-text-muted)]">{product.description}</div>
           )}
         </div>
-        <aside className="md:sticky md:top-8 md:self-start">
+        <aside className="min-w-0 md:sticky md:top-8 md:self-start">
           <p className="mb-3 font-display text-2xl font-semibold">{price}</p>
           {paid && !onSale && !draft ? (
             <div className="rounded-2xl bg-[var(--mk-surface)] p-6 font-sans text-sm text-[var(--mk-text-muted)]">
@@ -102,6 +107,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
               preview={draft}
               priceLabel={paid ? price : undefined}
               providers={providers.length ? providers : undefined}
+              booking={isBooking}
               notice={checkout ? CHECKOUT_NOTICES[checkout] : undefined}
             />
           )}

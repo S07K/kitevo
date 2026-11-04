@@ -7,7 +7,7 @@ import { getTierById } from "@/config/subscriptions";
  *   centre; `reported` = an independent review we could read (shown as such on the page).
  *   Never state a competitor fact without one, and never claim a competitor *lacks*
  *   something unless their own docs say so.
- * - Say where Kitevo is weaker (e.g. downloads only: no courses, memberships or bookings yet).
+ * - Say where Kitevo is weaker (e.g. no courses or memberships yet).
  *   Update `KITEVO.commerce` as commerce grows.
  * - Re-check every entry when you edit it and bump CHECKED_ON. Kitevo's own prices come
  *   from config/subscriptions.ts so they can't drift.
@@ -60,7 +60,7 @@ export const KITEVO = {
   inquiries: "Brand contact form on your kit (Pro), with a deal pipeline to track each inquiry",
   campaigns: "Brands post campaigns you can apply to from your Kitevo account",
   domain: "Starter and Pro",
-  commerce: "Digital downloads, free (for an email) or paid on Starter and Pro, straight into your own Razorpay or Stripe with 0% to Kitevo. No courses, memberships or bookings yet.",
+  commerce: "Digital downloads and booked calls, free (for an email) or paid on Starter and Pro, straight into your own Razorpay or Stripe with 0% to Kitevo. No courses or memberships yet.",
 };
 
 const stanPricing: Source = { label: "Stan: pricing (updated 22 Jul 2026)", url: "https://stan.store/blog/stan-store-pricing/", kind: "official" };
@@ -105,7 +105,7 @@ export const COMPARISONS: Comparison[] = [
     together:
       "Many creators use both: their Stan link sells to fans, their Kitevo link goes in pitches and the 'business inquiries' line of their bio.",
     faq: [
-      { q: "Is Kitevo a Stan Store alternative?", a: "For brand deals, yes. For selling, partly: Kitevo sells digital downloads (free or paid, into your own Razorpay or Stripe), but not courses, memberships or bookings yet. If those are your main income, Stan covers more of it today." },
+      { q: "Is Kitevo a Stan Store alternative?", a: "For brand deals, yes. For selling, partly: Kitevo sells digital downloads and booked calls (free or paid, into your own Razorpay or Stripe), but not courses or memberships yet. If those are your main income, Stan covers more of it today." },
       { q: "Does Stan Store have a free plan?", a: "No. Stan offers a 14-day free trial and then a paid plan, according to its pricing page. Kitevo has a free plan with one media kit." },
       { q: "Can I use Kitevo and Stan together?", a: "Yes. Put your Kitevo media kit link wherever brands look (your bio's business line, pitch emails) and keep your Stan link for fans." },
     ],

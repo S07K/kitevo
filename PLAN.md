@@ -1,6 +1,6 @@
 # Kitevo Product & Growth Plan
 
-**Status (2026-11-03):** Phase 0 **complete**. Sprint 2 done (free calculators, public kit redesign) and Sprint 3 done (comparison pages, payout-rail decision: **creator-owned payments**). **Phase 1 (commerce) started:** Release A (free downloads with email capture) is live; Release B (paid products on the creator's own Razorpay or Stripe) is live; PayPal and C (bookings) are next. See §15–§16.
+**Status (2026-11-03):** Phase 0 **complete**. Sprint 2 done (free calculators, public kit redesign) and Sprint 3 done (comparison pages, payout-rail decision: **creator-owned payments**). **Phase 1 (commerce) started:** Release A (free downloads with email capture) is live; Release B (paid products on the creator's own Razorpay or Stripe) is live; Release C v1 (bookings) is built; PayPal, calendar sync and rescheduling are next. See §15–§16.
 **Last updated:** 2026-11-03
 **Scope:** Competitive strategy, pricing architecture, feature roadmap, and the Phase 0 execution checklist.
 
@@ -637,4 +637,12 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - With Razorpay and Stripe both connected, buyers choose (Razorpay for UPI in India, Stripe for international cards).
 - Compare pages updated: Kitevo now sells digital downloads (free or paid); courses, memberships and bookings are still gaps.
 - Next: PayPal, then Release C (bookings).
+
+## 19. Release C v1: bookings, 2026-11-04
+
+- A product can be a **booking**: length, the creator's weekly hours in their time zone, their own meeting link, free or paid (same Razorpay/Stripe checkout, 0% to Kitevo).
+- Buyers pick a time **in their own time zone**; paid slots are held 35 min while paying; a per-creator database lock prevents double-booking.
+- Confirmation page with Join the call + Google Calendar / .ics; emails to buyer and creator; creators see booked times on Products.
+- Compare pages updated (bookings no longer listed as a gap; courses and memberships still are).
+- Later: Google Calendar sync (busy times), rescheduling/cancellation, reminders, PayPal.
 

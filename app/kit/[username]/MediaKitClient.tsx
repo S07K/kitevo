@@ -925,9 +925,12 @@ export function MediaKitClient({
                             <span className="font-display text-lg font-semibold leading-snug text-[var(--mk-text)]">{p.title}</span>
                             {p.description && <span className="mt-1 line-clamp-2 font-sans text-sm leading-relaxed text-[var(--mk-text-muted)]">{p.description}</span>}
                             <span className="mt-auto flex items-center justify-between gap-3 pt-4 font-sans text-sm">
-                              <span className="font-semibold text-[var(--mk-text)]">{formatPrice(p.priceCents, p.currency)}</span>
+                              <span className="font-semibold text-[var(--mk-text)]">
+                                {formatPrice(p.priceCents, p.currency)}
+                                {p.type === "booking" && p.durationMin ? <span className="font-normal text-[var(--mk-text-muted)]"> · {p.durationMin} min</span> : null}
+                              </span>
                               <span className="text-[var(--mk-text-muted)] transition-colors group-hover:text-[var(--mk-text)]">
-                                {p.priceCents === 0 ? "Get it" : "Buy"} <span aria-hidden>→</span>
+                                {p.type === "booking" ? "Book" : p.priceCents === 0 ? "Get it" : "Buy"} <span aria-hidden>→</span>
                               </span>
                             </span>
                           </span>
