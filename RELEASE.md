@@ -211,6 +211,19 @@ No migration, no new env vars (the Stripe key is stored like the Razorpay secret
 
 ---
 
+## 13. PayPal for paid products (`feat/commerce-paypal`)
+
+No migration, no new env vars (the PayPal Secret is stored like the other keys, with `TOKEN_ENCRYPTION_KEYS`).
+
+- [ ] developer.paypal.com > Apps & Credentials > **Sandbox** > create an app "Kitevo"; copy Client ID + Secret.
+- [ ] Kitevo **Connectors > Connect PayPal**, paste both. Card shows Connected + **Sandbox**. Wrong credentials must be refused.
+- [ ] Price a product in **USD**, publish, open it from a private window: "Pay with" lists PayPal. Pick it, log in with a **sandbox personal account** (Sandbox > Accounts), pay. You land on the download page; the email says "through PayPal"; the product shows the sale.
+- [ ] Cancel on PayPal's page: the product page says "Payment cancelled. You weren't charged."
+- [ ] An **INR** product never offers PayPal.
+- [ ] Switch to your **Live** app's credentials (the card stops saying Sandbox).
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.

@@ -77,10 +77,10 @@ export const INTEGRATION_GROUPS: IntegrationGroup[] = [
       {
         id: "paypal",
         name: "PayPal",
-        status: "soon",
+        status: "live",
         plans: "Starter and Pro",
-        summary: "Let buyers pay with their PayPal balance, into your PayPal account.",
-        details: ["Same model: your account, your money, 0% to Kitevo"],
+        summary: "Buyers pay with their PayPal balance or card on PayPal's own page, into your PayPal account. For USD products.",
+        details: ["Connect with your own PayPal app's Client ID and Secret (stored encrypted)", "Every payment is captured and checked with PayPal before the buyer gets the file", "PayPal doesn't take INR, so INR products use Razorpay or Stripe"],
       },
     ],
   },

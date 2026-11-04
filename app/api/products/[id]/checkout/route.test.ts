@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/prisma", () => ({ prisma: { product: { findUnique: vi.fn() }, order: { create: vi.fn(), update: vi.fn(), delete: vi.fn() }, user: { findUnique: vi.fn() } } }));
 vi.mock("@/lib/creator-plan", () => ({ hasPaidCreatorPlan: vi.fn() }));
-vi.mock("@/lib/payment-connections", () => ({ razorpayKeysFor: vi.fn(), stripeKeyFor: vi.fn() }));
+vi.mock("@/lib/payment-connections", () => ({ razorpayKeysFor: vi.fn(), stripeKeyFor: vi.fn(), paypalCredsFor: vi.fn() }));
+vi.mock("@/lib/paypal-creator", async (orig) => ({ ...(await orig<typeof import("@/lib/paypal-creator")>()), createPayPalOrder: vi.fn() }));
 vi.mock("@/lib/stripe-creator", () => ({ createCheckoutSession: vi.fn() }));
 vi.mock("@/lib/app-url", () => ({ APP_URL: "https://getkitevo.com" }));
 vi.mock("@/lib/razorpay", () => ({ createOrder: vi.fn() }));
@@ -10,7 +11,8 @@ vi.mock("@/lib/paid-orders", () => ({ recoverPaidOrder: vi.fn() }));
 
 const { prisma } = await import("@/lib/prisma");
 const { hasPaidCreatorPlan } = await import("@/lib/creator-plan");
-const { razorpayKeysFor, stripeKeyFor } = await import("@/lib/payment-connections");
+const { razorpayKeysFor, stripeKeyFor, paypalCredsFor } = await import("@/lib/payment-connections");
+const { createPayPalOrder } = await import("@/lib/paypal-creator");
 const { createCheckoutSession } = await import("@/lib/stripe-creator");
 const { createOrder } = await import("@/lib/razorpay");
 const { recoverPaidOrder } = await import("@/lib/paid-orders");
@@ -29,6 +31,7 @@ describe("POST /api/products/[id]/checkout", () => {
     vi.mocked(hasPaidCreatorPlan).mockResolvedValue(true);
     vi.mocked(razorpayKeysFor).mockResolvedValue({ keyId: "rzp_test_abcdefgh12", keySecret: "s" });
     vi.mocked(stripeKeyFor).mockResolvedValue(null);
+    vi.mocked(paypalCredsFor).mockResolvedValue(null);
     vi.mocked(createOrder).mockResolvedValue({ id: "order_RP1", amount: 49900, currency: "INR", status: "created" });
   });
 
@@ -77,6 +80,38 @@ describe("POST /api/products/[id]/checkout", () => {
     vi.mocked(razorpayKeysFor).mockResolvedValue(null);
     await post();
     expect(createCheckoutSession).toHaveBeenCalledTimes(2);
+  });
+
+  it("PayPal: creates a PayPal order for USD products and sends the buyer to PayPal", async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(product({ currency: "USD", priceCents: 1950 }) as never);
+    vi.mocked(paypalCredsFor).mockResolvedValue({ clientId: "c", secret: "s", env: "sandbox" });
+    vi.mocked(createPayPalOrder).mockResolvedValue({ id: "PP1", status: "PAYER_ACTION_REQUIRED", links: [{ rel: "payer-action", href: "https://www.sandbox.paypal.com/checkoutnow?token=PP1" }] });
+    const res = await post({ email: "fan@x.com", provider: "paypal" });
+    expect(await res.json()).toEqual({ provider: "paypal", orderId: "ord_1", redirectUrl: "https://www.sandbox.paypal.com/checkoutnow?token=PP1" });
+    expect(createPayPalOrder).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ amount: 1950, currency: "USD", returnUrl: "https://getkitevo.com/api/orders/ord_1/paypal-return" }));
+    expect(prisma.order.update).toHaveBeenCalledWith({ where: { id: "ord_1" }, data: { providerOrderId: "PP1" } });
+  });
+
+  it("PayPal is never used for INR products, even when it's the only account", async () => {
+    vi.mocked(razorpayKeysFor).mockResolvedValue(null);
+    vi.mocked(paypalCredsFor).mockResolvedValue({ clientId: "c", secret: "s", env: "live" });
+    expect((await post({ email: "fan@x.com", provider: "paypal" })).status).toBe(409);
+    expect((await post()).status).toBe(409);
+    expect(createPayPalOrder).not.toHaveBeenCalled();
+  });
+
+  it("PayPal without an approval link removes the pending order", async () => {
+    vi.mocked(prisma.product.findUnique).mockResolvedValue(product({ currency: "USD" }) as never);
+    vi.mocked(paypalCredsFor).mockResolvedValue({ clientId: "c", secret: "s", env: "live" });
+    vi.mocked(createPayPalOrder).mockResolvedValue({ id: "PP1", status: "CREATED", links: [] });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await post({ email: "fan@x.com", provider: "paypal" })).status).toBe(502);
+    expect(prisma.order.delete).toHaveBeenCalledWith({ where: { id: "ord_1" } });
+  });
+
+  it("rejects bad emails before touching anything", async () => {
+    expect((await post({ email: "not-an-email" })).status).toBe(400);
+    expect(prisma.product.findUnique).not.toHaveBeenCalled();
   });
 
   it("refuses a provider the creator hasn't connected", async () => {

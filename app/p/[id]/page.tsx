@@ -8,6 +8,7 @@ import { kitAppearanceToCssVarsWithOverrides } from "@/lib/kit-appearance";
 import { storefrontSeller } from "@/lib/creator-storefront";
 import { canSellPaid } from "@/lib/commerce";
 import { connectedProviders } from "@/lib/payment-connections";
+import { paypalSupports } from "@/lib/paypal-creator";
 import { formatPrice } from "@/lib/commerce-shared";
 import { LogoMark } from "@/app/components/Logo";
 import { ClaimForm } from "./ClaimForm";
@@ -25,8 +26,9 @@ async function load(id: string) {
   const paid = product.priceCents > 0;
   const [seller, onSale, providers] = await Promise.all([
     storefrontSeller(product.userId),
-    paid ? canSellPaid(product.userId) : Promise.resolve(true),
-    paid ? connectedProviders(product.userId) : Promise.resolve([]),
+    paid ? canSellPaid(product.userId, product.currency) : Promise.resolve(true),
+    // PayPal only for currencies it can take (no INR).
+    paid ? connectedProviders(product.userId).then((ps) => ps.filter((p) => p !== "paypal" || paypalSupports(product.currency))) : Promise.resolve([]),
   ]);
   return { product, seller, onSale, providers };
 }

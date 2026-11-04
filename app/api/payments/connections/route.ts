@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { parseKeyId, verifyKeys } from "@/lib/razorpay";
 import { PAYMENT_PROVIDERS, publicConnection, saveRazorpayConnection, saveStripeConnection } from "@/lib/payment-connections";
 import { keyHint, parseRestrictedKey, verifyRestrictedKey } from "@/lib/stripe-creator";
+import { detectPayPalEnv, parsePayPalCreds } from "@/lib/paypal-creator";
+import { savePayPalConnection } from "@/lib/payment-connections";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +32,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const userId = await creatorId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = (await req.json().catch(() => ({}))) as { provider?: unknown; keyId?: unknown; keySecret?: unknown; key?: unknown };
+  const body = (await req.json().catch(() => ({}))) as { provider?: unknown; keyId?: unknown; keySecret?: unknown; key?: unknown; clientId?: unknown; secret?: unknown };
   if (body.provider === "stripe") return connectStripe(userId, body.key);
+  if (body.provider === "paypal") return connectPayPal(userId, body.clientId, body.secret);
   if (body.provider !== "razorpay") return NextResponse.json({ error: "Unknown payment provider." }, { status: 400 });
   const parsed = parseKeyId(body.keyId);
   if (!parsed) return NextResponse.json({ error: "That doesn't look like a Razorpay Key ID (it starts with rzp_live_ or rzp_test_).", field: "keyId" }, { status: 400 });
@@ -45,6 +48,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Couldn't reach Razorpay to check the keys. Try again in a moment." }, { status: 502 });
   }
   const row = await saveRazorpayConnection(userId, parsed.keyId, keySecret, parsed.livemode);
+  return NextResponse.json(publicConnection(row), { status: 201 });
+}
+
+async function connectPayPal(userId: string, rawId: unknown, rawSecret: unknown) {
+  const creds = parsePayPalCreds(rawId, rawSecret);
+  if (!creds) return NextResponse.json({ error: "Paste the Client ID and Secret from your PayPal app (Apps & Credentials).", field: "clientId" }, { status: 400 });
+  let env;
+  try {
+    env = await detectPayPalEnv(creds);
+  } catch {
+    return NextResponse.json({ error: "Couldn't reach PayPal to check the credentials. Try again in a moment." }, { status: 502 });
+  }
+  if (!env) return NextResponse.json({ error: "PayPal didn't accept these credentials. Copy both from the same app.", field: "secret" }, { status: 400 });
+  const row = await savePayPalConnection(userId, creds.clientId, creds.secret, env);
   return NextResponse.json(publicConnection(row), { status: 201 });
 }
 

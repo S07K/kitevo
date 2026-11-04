@@ -30,10 +30,11 @@ function loadRazorpay(): Promise<boolean> {
  * Paid: email → the CREATOR's own Razorpay (checkout window) or Stripe (hosted page) →
  * server verifies → download page. With both connected, the buyer picks.
  */
-export type PayProvider = "razorpay" | "stripe";
+export type PayProvider = "razorpay" | "stripe" | "paypal";
 const PAY_LABELS: Record<PayProvider, { name: string; methods: string }> = {
   razorpay: { name: "Razorpay", methods: "UPI, cards, netbanking" },
   stripe: { name: "Stripe", methods: "Cards & wallets" },
+  paypal: { name: "PayPal", methods: "PayPal balance & cards" },
 };
 
 export function ClaimForm({

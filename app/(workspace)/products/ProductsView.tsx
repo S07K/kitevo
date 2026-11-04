@@ -49,7 +49,7 @@ export function ProductsView() {
   useEffect(() => {
     fetch("/api/payments/connections", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
-      .then((rows: Connection[]) => setConnections(rows.filter((c) => c.provider === "razorpay" || c.provider === "stripe")))
+      .then((rows: Connection[]) => setConnections(rows.filter((c) => ["razorpay", "stripe", "paypal"].includes(c.provider))))
       .catch(() => setConnections([]));
   }, []);
 
@@ -182,19 +182,19 @@ export function ProductsView() {
               <div className="space-y-2">
                 {connections.map((c) => (
                   <div key={c.provider} className="flex flex-wrap items-center gap-2">
-                    <BrandChip brand={c.provider === "stripe" ? "stripe" : "razorpay"} size={15} />
+                    <BrandChip brand={c.provider === "stripe" ? "stripe" : c.provider === "paypal" ? "paypal" : "razorpay"} size={15} />
                     <Badge variant="success" dot>Connected</Badge>
                     {!c.livemode && <Badge variant="warning">Test mode</Badge>}
                   </div>
                 ))}
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  Set a price on any product and buyers pay straight into your account{connections.length > 1 ? "; they choose Razorpay or Stripe at checkout" : ""}.
+                  Set a price on any product and buyers pay straight into your account{connections.length > 1 ? "; they choose how to pay at checkout" : ""}.
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  To sell for a price, connect <BrandChip brand="razorpay" /> or <BrandChip brand="stripe" /> once in Connectors. Free downloads work without it.
+                  To sell for a price, connect <BrandChip brand="razorpay" />, <BrandChip brand="stripe" /> or <BrandChip brand="paypal" /> once in Connectors. Free downloads work without it.
                 </p>
                 <ButtonLink href="/connectors" size="sm">Open Connectors</ButtonLink>
               </div>
@@ -368,7 +368,7 @@ function ProductEditor({
             {Number(d.price) > 0
               ? paymentsConnected
                 ? `Buyers pay ${formatPrice(Math.round(Number(d.price) * 100), d.currency)} straight into your own account. Kitevo takes 0%.`
-                : "Connect Razorpay or Stripe in Connectors (sidebar) before publishing a paid product. Saving as a draft works now."
+                : "Connect Razorpay, Stripe or PayPal in Connectors (sidebar) before publishing a paid product. Saving as a draft works now."
               : "Leave empty or 0 for a free download in exchange for an email."}
           </p>
           {err("priceCents")}

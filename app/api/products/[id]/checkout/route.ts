@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { APP_URL } from "@/lib/app-url";
 import { cleanEmail, newAccessToken } from "@/lib/commerce";
 import { hasPaidCreatorPlan } from "@/lib/creator-plan";
-import { razorpayKeysFor, stripeKeyFor } from "@/lib/payment-connections";
+import { paypalCredsFor, razorpayKeysFor, stripeKeyFor } from "@/lib/payment-connections";
+import { approvalUrl, createPayPalOrder, paypalSupports } from "@/lib/paypal-creator";
 import { createOrder } from "@/lib/razorpay";
 import { createCheckoutSession } from "@/lib/stripe-creator";
 import { recoverPaidOrder } from "@/lib/paid-orders";
@@ -33,18 +34,22 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: "This product isn't for sale." }, { status: 404 });
   }
   // Checked again at purchase time: a lapsed plan or a disconnected account stops sales.
-  const [planOk, rpKeys, stripeKey, seller] = await Promise.all([
+  const [planOk, rpKeys, stripeKey, ppAll, seller] = await Promise.all([
     hasPaidCreatorPlan(product.userId),
     razorpayKeysFor(product.userId),
     stripeKeyFor(product.userId),
+    paypalCredsFor(product.userId),
     prisma.user.findUnique({ where: { id: product.userId }, select: { name: true, username: true } }),
   ]);
-  const wanted = body.provider === "stripe" || body.provider === "razorpay" ? body.provider : null;
-  const provider = wanted ? (wanted === "stripe" ? (stripeKey ? "stripe" : null) : rpKeys ? "razorpay" : null) : rpKeys ? "razorpay" : stripeKey ? "stripe" : null;
+  // PayPal only for currencies it supports (no INR).
+  const ppCreds = ppAll && paypalSupports(product.currency) ? ppAll : null;
+  const available = { razorpay: !!rpKeys, stripe: !!stripeKey, paypal: !!ppCreds };
+  const wanted = body.provider === "stripe" || body.provider === "razorpay" || body.provider === "paypal" ? body.provider : null;
+  const provider = wanted ? (available[wanted] ? wanted : null) : available.razorpay ? "razorpay" : available.stripe ? "stripe" : available.paypal ? "paypal" : null;
   if (!planOk || !provider) return NextResponse.json({ error: "This product isn't on sale right now. Try again later." }, { status: 409 });
 
   // Paid before but the confirmation never arrived (tab closed)? Hand back the link, don't charge again.
-  const recovered = await recoverPaidOrder({ razorpay: rpKeys, stripe: stripeKey }, product.id, email);
+  const recovered = await recoverPaidOrder({ razorpay: rpKeys, stripe: stripeKey, paypal: ppCreds }, product.id, email);
   if (recovered) return NextResponse.json({ alreadyPaid: true, accessUrl: recovered });
 
   const order = await prisma.order.create({
@@ -61,6 +66,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     },
   });
   try {
+    if (provider === "paypal") {
+      const base = APP_URL.replace(/\/$/, "");
+      const pp = await createPayPalOrder(ppCreds!, {
+        orderId: order.id,
+        title: product.title,
+        amount: product.priceCents,
+        currency: product.currency,
+        brandName: seller?.name || seller?.username || "Creator",
+        // PayPal appends ?token=<paypal order id>&PayerID=… on the way back.
+        returnUrl: `${base}/api/orders/${order.id}/paypal-return`,
+        cancelUrl: `${base}/p/${product.id}?checkout=cancelled`,
+      });
+      const href = approvalUrl(pp);
+      if (!href) throw new Error("PayPal returned no approval link");
+      await prisma.order.update({ where: { id: order.id }, data: { providerOrderId: pp.id } });
+      return NextResponse.json({ provider: "paypal", orderId: order.id, redirectUrl: href });
+    }
     if (provider === "stripe") {
       const base = APP_URL.replace(/\/$/, "");
       const session = await createCheckoutSession(stripeKey!, {

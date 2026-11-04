@@ -638,3 +638,9 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - Compare pages updated: Kitevo now sells digital downloads (free or paid); courses, memberships and bookings are still gaps.
 - Next: PayPal, then Release C (bookings).
 
+## 20. PayPal for paid products, 2026-11-04
+
+- Creators connect their own PayPal REST app (Client ID + Secret; live/sandbox detected). Buyers approve on PayPal; Kitevo captures and verifies before delivery. 0% to Kitevo.
+- PayPal is offered for USD products only (PayPal no longer processes domestic INR); the buy box, checkout and publish rules enforce it.
+- Payment test coverage filled in: connect API for all three providers, PayPal return/capture, checkout per provider, publish/currency rules, recovery for all providers.
+
