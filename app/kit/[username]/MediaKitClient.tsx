@@ -408,7 +408,7 @@ export function MediaKitClient({
 
   // ── Call to action: inquiry form (Pro) → links → nothing. Never a dead link. ──
   const ctaTarget =
-    inquiryEnabled && kitId ? "#work-together" : (sectionVisibility.links && links.length > 0) || booking ? "#contact" : null;
+    inquiryEnabled && kitId ? "#work-together" : sectionVisibility.links && links.length > 0 ? "#contact" : null;
   const [bookOpen, setBookOpen] = useState(false);
   const closeBook = useCallback(() => setBookOpen(false), []);
   // Shared "?book=1" links (and old booking-product links) open the scheduler straight away.
@@ -642,6 +642,27 @@ export function MediaKitClient({
 
               {creator.bio && (
                 <p className="mt-4 max-w-xl text-pretty font-sans text-[15px] leading-relaxed text-[var(--mk-text-muted)]">{creator.bio}</p>
+              )}
+
+              {/* Book a call: right under the profile (in the sticky rail on wide screens).
+                  Its own data-kit-section so a tap in the editor preview opens the Contact card. */}
+              {booking && (
+                <div data-kit-section="contact" className="mt-5 max-w-xl">
+                  <button
+                    type="button"
+                    onClick={() => !embedded && setBookOpen(true)}
+                    className="group flex w-full items-center gap-3 rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] px-4 py-3 text-left font-sans transition-colors hover:border-[var(--mk-text)]"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--mk-text)] text-[var(--mk-bg)]" aria-hidden>
+                      <CalendarDays size={16} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-[var(--mk-text)]">{booking.label}</span>
+                      <span className="block text-xs text-[var(--mk-text-muted)]">Pick a time that works for you</span>
+                    </span>
+                    <ArrowUpRight size={16} aria-hidden className="shrink-0 text-[var(--mk-text-soft)] transition-colors group-hover:text-[var(--mk-text)]" />
+                  </button>
+                </div>
               )}
 
               {/* Wide screens: rates + the main action live in the rail */}
@@ -962,22 +983,6 @@ export function MediaKitClient({
               {showContact && (
                 <div id="contact-area" className="space-y-6">
                   <Section title={`Work with ${first}`} id="contact" kind="contact">
-                    {booking && (
-                      <div className={sectionVisibility.links && links.length > 0 ? "mb-4" : ""}>
-                        <button
-                          type="button"
-                          onClick={() => !embedded && setBookOpen(true)}
-                          className="flex w-full items-center justify-between gap-3 rounded-2xl bg-[var(--mk-text)] px-5 py-4 text-left font-sans text-[var(--mk-bg)] transition-opacity hover:opacity-90"
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold">{booking.label}</span>
-                            <span className="block text-xs opacity-75">Pick a time that works for you</span>
-                          </span>
-                          <CalendarDays size={18} aria-hidden className="shrink-0" />
-                        </button>
-                        <BookCallDialog booking={booking} creatorName={creator.name} open={bookOpen} onClose={closeBook} />
-                      </div>
-                    )}
                     {sectionVisibility.links && links.length > 0 && (
                       <ul className="divide-y divide-[var(--mk-border-hairline)] overflow-hidden rounded-2xl border border-[var(--mk-border)]">
                         {links.map((link, i) => (
@@ -1017,6 +1022,8 @@ export function MediaKitClient({
               </div>
             </div>
           </div>
+
+          {booking && <BookCallDialog booking={booking} creatorName={creator.name} open={bookOpen} onClose={closeBook} />}
 
           {/* Sticky "Work with me" bar (narrow screens). Sticky, not fixed: the @container
               above contains fixed elements, and sticky also works inside the editor preview. */}

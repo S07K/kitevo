@@ -242,7 +242,7 @@ No migration, no new env vars (the PayPal Secret is stored like the other keys, 
 No new env vars. One migration (`20261104161344_kit_book_a_call`) adds `Kit.booking` and copies each creator's published booking product onto their kits.
 
 - [ ] GitHub Actions > **DB migrations** run for the merge commit is green.
-- [ ] Your kit: "Work with you" now starts with your booking button (it was "Connect with me" in the Shop). Click it: your scheduler opens in a dialog; Esc closes it.
+- [ ] Your kit: your booking button now sits under your profile (it was "Connect with me" in the Shop), and stays in view in the left column on desktop. Click it: your scheduler opens in a dialog; Esc closes it.
 - [ ] The old product link (`/p/...` of the booking) redirects to your kit with the dialog open.
 - [ ] Products no longer offers "Booking"; the Shop shows downloads only.
 - [ ] Kit editor > Contact > **Book a call**: change the event link or button text, or switch it off.

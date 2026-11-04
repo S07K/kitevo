@@ -652,6 +652,6 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 
 ## 21. Book a call moves from Products to the kit, 2026-11-04
 
-- Owner feedback: a booking isn't something people buy and download; it's a way to reach the creator. Booking products are retired; each kit gets a **Book a call** button in "Work with {name}" that opens the creator's Calendly / Cal.com / Google page in a dialog. Set per kit in the editor's Contact card.
+- Owner feedback: a booking isn't something people buy and download; it's a way to reach the creator. Booking products are retired; each kit gets a **Book a call** button under the profile that opens the creator's Calendly / Cal.com / Google page in a dialog. Set per kit in the editor's Contact card.
 - Existing booking products were copied onto their creators' kits by the migration; old links redirect to the kit with the dialog open.
 

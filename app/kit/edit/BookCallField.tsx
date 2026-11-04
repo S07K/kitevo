@@ -35,7 +35,7 @@ export function BookCallField({ value, onChange }: { value: KitBooking; onChange
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">Book a call</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">A button on your kit that opens your scheduler, so people book a time without leaving.</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">A button under your profile that opens your scheduler, so people book a time without leaving.</p>
         </div>
         {conns && conns.length > 0 && (
           <Switch
