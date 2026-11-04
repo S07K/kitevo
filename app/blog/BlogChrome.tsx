@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { LogoMark } from "@/app/components/Logo";
 
+/**
+ * Content widths the marketing pages use. Pass the page's main container width so the
+ * header and footer edges line up with the content (a fixed width looked off on wide pages).
+ * Static class names so Tailwind generates them.
+ */
+const WIDTH = { "3xl": "max-w-3xl", "4xl": "max-w-4xl", "5xl": "max-w-5xl", "6xl": "max-w-6xl" } as const;
+export type ChromeWidth = keyof typeof WIDTH;
+
 /** Lightweight header for blog pages — brand logo home + a single CTA. No in-page
  * anchors (those belong to the landing page), so it works on any blog URL. */
-export function BlogHeader() {
+export function BlogHeader({ width = "3xl" }: { width?: ChromeWidth }) {
   return (
     <header className="border-border border-b">
-      <div className="mx-auto flex h-[57px] max-w-3xl items-center justify-between px-5 sm:px-8">
+      <div className={`mx-auto flex h-[57px] ${WIDTH[width]} items-center justify-between px-5 sm:px-8`}>
         <Link
           href="/"
           className="font-display text-foreground flex shrink-0 items-center gap-2 rounded-sm text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
@@ -33,10 +41,10 @@ export function BlogHeader() {
   );
 }
 
-export function BlogFooter() {
+export function BlogFooter({ width = "3xl" }: { width?: ChromeWidth }) {
   return (
     <footer className="border-border mt-20 border-t">
-      <div className="text-muted-foreground mx-auto flex max-w-3xl flex-col items-start justify-between gap-4 px-5 py-10 text-sm sm:flex-row sm:items-center sm:px-8">
+      <div className={`text-muted-foreground mx-auto flex ${WIDTH[width]} flex-col items-start justify-between gap-4 px-5 py-10 text-sm sm:flex-row sm:items-center sm:px-8`}>
         <div className="flex items-center gap-2">
           <LogoMark size={18} on="auto" />
           <span>Live media kits for creators.</span>

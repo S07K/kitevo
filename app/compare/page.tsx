@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function CompareIndex() {
   return (
     <div className="min-h-screen bg-canvas">
-      <BlogHeader />
+      <BlogHeader width="4xl" />
       <main className="mx-auto max-w-4xl px-5 pt-12 sm:px-8 sm:pt-20">
         <h1 className="max-w-2xl text-balance text-[clamp(30px,5vw,52px)] font-medium leading-[1.06] tracking-tight text-foreground">How Kitevo compares</h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
@@ -32,7 +32,7 @@ export default function CompareIndex() {
         </div>
         <p className="mt-6 text-xs text-muted-foreground">Last checked {CHECKED_ON}.</p>
       </main>
-      <BlogFooter />
+      <BlogFooter width="4xl" />
     </div>
   );
 }

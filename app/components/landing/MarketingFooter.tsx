@@ -51,8 +51,8 @@ export function MarketingFooter(): ReactNode {
     <footer>
 
       {/* Statement bar */}
-      <div className="bg-foreground text-background px-5 py-12 sm:px-8 lg:px-10">
-        <div className="mx-auto max-w-[1440px] flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+      <div className="bg-foreground text-background py-12">
+        <div className="mx-auto flex max-w-[1200px] flex-col gap-6 px-6 sm:flex-row sm:items-end sm:justify-between sm:px-10">
           <div>
             <p className="text-background/50 text-xs font-semibold tracking-[0.2em] uppercase mb-3">
               Kitevo
@@ -72,7 +72,7 @@ export function MarketingFooter(): ReactNode {
 
       {/* Links grid */}
       <div className="border-border border-t">
-        <div className="mx-auto max-w-[1440px] px-5 py-12 sm:px-8 lg:px-10">
+        <div className="mx-auto max-w-[1200px] px-6 py-12 sm:px-10">
           <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3">
             {/* Product */}
             <div>

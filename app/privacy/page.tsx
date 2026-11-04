@@ -1,6 +1,5 @@
-import Link from "next/link";
+import { BlogHeader, BlogFooter } from "@/app/blog/BlogChrome";
 import type { Metadata } from "next";
-import { LogoMark } from "@/app/components/Logo";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Kitevo",
@@ -10,15 +9,7 @@ export const metadata: Metadata = {
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-canvas">
-      <header className="border-border border-b px-5 py-5 sm:px-8 lg:px-10">
-        <Link
-          href="/"
-          className="font-display text-foreground inline-flex items-center gap-2 text-lg font-semibold tracking-tight hover:opacity-70 transition-opacity"
-        >
-          <LogoMark size={22} on="auto" />
-          Kitevo
-        </Link>
-      </header>
+      <BlogHeader />
 
       <main className="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-24">
         <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-[0.18em] uppercase">
@@ -420,6 +411,7 @@ export default function PrivacyPolicy() {
           </section>
         </div>
       </main>
+      <BlogFooter />
     </div>
   );
 }

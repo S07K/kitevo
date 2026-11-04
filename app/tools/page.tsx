@@ -26,7 +26,7 @@ const TOOLS = [
 export default function ToolsPage() {
   return (
     <div className="min-h-screen bg-canvas">
-      <BlogHeader />
+      <BlogHeader width="5xl" />
       <main className="mx-auto max-w-5xl px-5 pt-12 sm:px-8 sm:pt-20">
         <h1 className="max-w-2xl text-[clamp(32px,5.5vw,56px)] font-medium leading-[1.05] tracking-tight text-foreground text-balance">
           Free tools for creators
@@ -49,7 +49,7 @@ export default function ToolsPage() {
           ))}
         </div>
       </main>
-      <BlogFooter />
+      <BlogFooter width="5xl" />
     </div>
   );
 }

@@ -45,7 +45,7 @@ function Card({ it }: { it: Integration }) {
 export default function IntegrationsPage() {
   return (
     <div className="min-h-screen bg-canvas">
-      <BlogHeader />
+      <BlogHeader width="5xl" />
       <main className="mx-auto max-w-5xl px-5 pb-8 pt-12 sm:px-8 sm:pt-20">
         <h1 className="max-w-2xl text-balance text-[clamp(30px,5vw,52px)] font-medium leading-[1.06] tracking-tight text-foreground">
           Works with the accounts you already have
@@ -82,7 +82,7 @@ export default function IntegrationsPage() {
           </div>
         </section>
       </main>
-      <BlogFooter />
+      <BlogFooter width="5xl" />
     </div>
   );
 }

@@ -59,7 +59,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
   return (
     <div className="min-h-screen bg-canvas">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <BlogHeader />
+      <BlogHeader width="6xl" />
       <main>
         <section className="mx-auto grid max-w-6xl items-center gap-10 px-5 pt-12 sm:px-8 sm:pt-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-14">
           <div className="min-w-0">
@@ -200,7 +200,7 @@ export default async function ComparisonPage({ params }: { params: Promise<{ slu
           </p>
         </section>
       </main>
-      <BlogFooter />
+      <BlogFooter width="6xl" />
     </div>
   );
 }

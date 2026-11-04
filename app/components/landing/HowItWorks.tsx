@@ -38,7 +38,7 @@ export function HowItWorks(): ReactNode {
   return (
     <section
       id="how-it-works"
-      className="mx-auto max-w-[1440px] scroll-mt-24 px-5 pb-24 sm:px-8 sm:pb-32 lg:px-10"
+      className="mx-auto max-w-[1200px] scroll-mt-24 px-6 pb-24 sm:px-10 sm:pb-32"
     >
       <SectionHeading
         label="How it works"
