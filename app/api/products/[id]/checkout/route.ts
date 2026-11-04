@@ -30,7 +30,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!ip.ok) return NextResponse.json({ error: "Too many tries. Wait a few minutes and try again." }, { status: 429 });
 
   const product = await prisma.product.findUnique({ where: { id } });
-  if (!product || product.status !== "published" || product.priceCents <= 0 || !product.deliveryUrl) {
+  if (!product || product.type !== "download" || product.status !== "published" || product.priceCents <= 0 || !product.deliveryUrl) {
     return NextResponse.json({ error: "This product isn't for sale." }, { status: 404 });
   }
   // Checked again at purchase time: a lapsed plan or a disconnected account stops sales.

@@ -54,3 +54,18 @@ describe("normalizeProductInput: price", () => {
     expect(r.ok && r.value.currency).toBe("INR");
   });
 });
+
+describe("normalizeProductInput: bookings", () => {
+  it("keeps a scheduler link, canonicalised, and never charges through Kitevo", () => {
+    const r = normalizeProductInput({ type: "booking", title: "Call", bookingUrl: "www.calendly.com/sana/30min?x=1", price: "499", status: "published" });
+    expect(r.ok && [r.value.type, r.value.bookingUrl, r.value.priceCents]).toEqual(["booking", "https://calendly.com/sana/30min", 0]);
+  });
+  it("needs a recognised scheduler link to publish", () => {
+    expect(normalizeProductInput({ type: "booking", title: "Call", status: "published" })).toMatchObject({ ok: false, problem: { field: "bookingUrl" } });
+    expect(normalizeProductInput({ type: "booking", title: "Call", bookingUrl: "https://example.com/book" })).toMatchObject({ ok: false, problem: { field: "bookingUrl" } });
+  });
+  it("downloads ignore any booking link", () => {
+    const r = normalizeProductInput({ title: "Guide", bookingUrl: "calendly.com/sana" });
+    expect(r.ok && [r.value.type, r.value.bookingUrl]).toEqual(["download", null]);
+  });
+});

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Download, ExternalLink, ImagePlus, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { CalendarClock, Check, Copy, Download, ExternalLink, ImagePlus, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { WorkspaceShell, PageHeader, Panel } from "@/app/components/workspace/WorkspaceShell";
 import { Button, ButtonLink, IconButton } from "@/app/components/workspace/Button";
 import Link from "next/link";
@@ -13,6 +13,8 @@ import { ListCardSkeleton } from "@/app/components/Skeleton";
 import { APP_URL } from "@/lib/app-url";
 import { MAX_DESCRIPTION, MAX_NOTE, MAX_PRODUCTS, MAX_TITLE, PRODUCT_CURRENCIES, formatPrice } from "@/lib/commerce-shared";
 import { resizeImageFileToJpegDataUrl } from "@/lib/resize-image";
+import { BookingSource, schedulerName } from "./BookingSource";
+import type { SchedulerConnection } from "../connectors/ConnectSchedulerDialog";
 
 type Product = {
   id: string;
@@ -25,12 +27,14 @@ type Product = {
   orders: number;
   priceCents: number;
   currency: string;
+  type: "download" | "booking";
+  bookingUrl: string | null;
 };
 /** Editor state: price is typed in major units ("499"), saved as minor units by the API. */
 type Draft = Omit<Product, "id" | "orders" | "priceCents"> & { price: string };
 type Lead = { id: string; buyerEmail: string; buyerName: string | null; createdAt: string };
 
-const EMPTY: Draft = { title: "", description: "", coverUrl: null, deliveryUrl: "", deliveryNote: "", status: "draft", price: "", currency: "INR" };
+const EMPTY: Draft = { title: "", description: "", coverUrl: null, deliveryUrl: "", deliveryNote: "", status: "draft", price: "", currency: "INR", type: "download", bookingUrl: null };
 
 const base = APP_URL.replace(/\/$/, "");
 const field =
@@ -43,9 +47,15 @@ export function ProductsView() {
   const [leadsFor, setLeadsFor] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState<Product | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  // undefined = loading, null = not connected
   // undefined = loading; [] = none connected
   const [connections, setConnections] = useState<Connection[] | undefined>(undefined);
+  const [schedulers, setSchedulers] = useState<SchedulerConnection[]>([]);
+  useEffect(() => {
+    fetch("/api/scheduling/connections", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setSchedulers)
+      .catch(() => setSchedulers([]));
+  }, []);
   useEffect(() => {
     fetch("/api/payments/connections", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
@@ -113,6 +123,8 @@ export function ProductsView() {
                   {p.coverUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- base64 cover
                     <img src={p.coverUrl} alt="" className="h-full w-full object-cover" />
+                  ) : p.type === "booking" ? (
+                    <CalendarClock size={18} className="text-muted-foreground" aria-hidden />
                   ) : (
                     <Download size={18} className="text-muted-foreground" aria-hidden />
                   )}
@@ -121,11 +133,17 @@ export function ProductsView() {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate font-medium text-foreground">{p.title || "Untitled"}</p>
                     {p.status === "published" ? <Badge variant="success" dot>Live</Badge> : <Badge>Draft</Badge>}
-                    <span className="text-xs font-medium tabular-nums text-muted-foreground">{formatPrice(p.priceCents, p.currency)}</span>
+                    {p.type !== "booking" && <span className="text-xs font-medium tabular-nums text-muted-foreground">{formatPrice(p.priceCents, p.currency)}</span>}
                   </div>
-                  <button type="button" onClick={() => setLeadsFor(p)} className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                    <Users size={12} aria-hidden /> {p.orders} {p.priceCents ? `sale${p.orders === 1 ? "" : "s"}` : `download${p.orders === 1 ? "" : "s"}`}
-                  </button>
+                  {p.type === "booking" ? (
+                    <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <CalendarClock size={12} aria-hidden /> Booked calls · bookings and payments are in {schedulerName(p.bookingUrl)}
+                    </p>
+                  ) : (
+                    <button type="button" onClick={() => setLeadsFor(p)} className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                      <Users size={12} aria-hidden /> {p.orders} {p.priceCents ? `sale${p.orders === 1 ? "" : "s"}` : `download${p.orders === 1 ? "" : "s"}`}
+                    </button>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <IconButton label={copied === p.id ? "Copied" : "Copy link"} onClick={() => copy(p)}>
@@ -148,6 +166,8 @@ export function ProductsView() {
                           status: p.status,
                           price: p.priceCents ? String(p.priceCents / 100) : "",
                           currency: p.currency === "USD" ? "USD" : "INR",
+                          type: p.type === "booking" ? "booking" : "download",
+                          bookingUrl: p.bookingUrl,
                         },
                       })
                     }
@@ -207,6 +227,7 @@ export function ProductsView() {
         <ProductEditor
           initial={editing}
           paymentsConnected={!!connections?.length}
+          schedulers={schedulers}
           onClose={() => setEditing(null)}
           onSaved={(p) => {
             setProducts((ps) => {
@@ -233,11 +254,13 @@ export function ProductsView() {
 function ProductEditor({
   initial,
   paymentsConnected,
+  schedulers,
   onClose,
   onSaved,
 }: {
   initial: { id: string | null; draft: Draft };
   paymentsConnected: boolean;
+  schedulers: SchedulerConnection[];
   onClose: () => void;
   onSaved: (p: Product) => void;
 }) {
@@ -293,7 +316,7 @@ function ProductEditor({
       dismissible={!saving}
       size="lg"
       title={initial.id ? "Edit product" : "New product"}
-      description="Free in exchange for an email, or for a price paid straight to you."
+      description={d.type === "booking" ? "A call people book on your own Calendly, Cal.com or Google Calendar." : "Free in exchange for an email, or for a price paid straight to you."}
       footer={
           <div className="flex flex-wrap justify-end gap-2">
             <Button onClick={onClose} disabled={saving}>Cancel</Button>
@@ -309,6 +332,24 @@ function ProductEditor({
       }
     >
       <div className="space-y-4">
+        <div role="radiogroup" aria-label="Product type" className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+          {([
+            ["download", "Download", "A file people get"],
+            ["booking", "Booking", "A call people book"],
+          ] as const).map(([t, label, hint]) => (
+            <button
+              key={t}
+              type="button"
+              role="radio"
+              aria-checked={d.type === t}
+              onClick={() => set(t === "booking" ? { type: t, bookingUrl: d.bookingUrl ?? schedulers[0]?.url ?? null } : { type: t })}
+              className={`rounded-lg px-3 py-2 text-left transition-colors ${d.type === t ? "bg-background shadow-sm" : "hover:bg-background/60"}`}
+            >
+              <span className="block text-sm font-medium text-foreground">{label}</span>
+              <span className="block text-xs text-muted-foreground">{hint}</span>
+            </button>
+          ))}
+        </div>
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -342,6 +383,10 @@ function ProductEditor({
           <label htmlFor="pr-desc" className="mb-1.5 block text-xs font-medium text-muted-foreground">What&apos;s inside</label>
           <textarea id="pr-desc" rows={4} value={d.description} maxLength={MAX_DESCRIPTION} onChange={(e) => set({ description: e.target.value })} placeholder="Who it's for and what they get." className={`${field} resize-none`} />
         </div>
+        {d.type === "booking" ? (
+          <BookingSource draft={d} schedulers={schedulers} set={set} err={err} />
+        ) : (
+          <>
         <div>
           <label htmlFor="pr-price" className="mb-1.5 block text-xs font-medium text-muted-foreground">Price</label>
           <div className="flex gap-2">
@@ -383,6 +428,8 @@ function ProductEditor({
           <label htmlFor="pr-note" className="mb-1.5 block text-xs font-medium text-muted-foreground">Message on the download page (optional)</label>
           <textarea id="pr-note" rows={2} value={d.deliveryNote} maxLength={MAX_NOTE} onChange={(e) => set({ deliveryNote: e.target.value })} placeholder="e.g. How to install the presets." className={`${field} resize-none`} />
         </div>
+          </>
+        )}
         {error && !error.field && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error.message}</p>}
       </div>
     </Modal>

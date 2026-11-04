@@ -12,6 +12,8 @@ import { INSTAGRAM_ERROR_MESSAGES, YOUTUBE_RESULT_MESSAGES } from "@/lib/connect
 import { ConnectRazorpayDialog, type Connection } from "./ConnectRazorpayDialog";
 import { ConnectStripeDialog } from "./ConnectStripeDialog";
 import { ConnectPayPalDialog } from "./ConnectPayPalDialog";
+import { ConnectSchedulerDialog, type SchedulerConnection } from "./ConnectSchedulerDialog";
+import { SCHEDULERS, SCHEDULER_INFO, type Scheduler } from "@/lib/scheduler-links";
 
 function Notice({ tone, children }: { tone: "success" | "danger"; children: ReactNode }) {
   const cls =
@@ -90,6 +92,8 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
   const [stripeOpen, setStripeOpen] = useState(false);
   const [paypal, setPaypal] = useState<Connection | null | undefined>(undefined);
   const [paypalOpen, setPaypalOpen] = useState(false);
+  const [schedulers, setSchedulers] = useState<SchedulerConnection[] | undefined>(undefined);
+  const [schedOpen, setSchedOpen] = useState<Scheduler | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [rpOpen, setRpOpen] = useState(false);
   const [confirmOff, setConfirmOff] = useState<string | null>(null);
@@ -99,12 +103,24 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
     const get = (url: string) => fetch(url, { credentials: "include" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     get("/api/instagram/status").then((d) => setInstagram(d?.connected === true));
     get("/api/youtube/status").then((d) => setYoutube(d?.connected === true));
+    get("/api/scheduling/connections").then((rows: SchedulerConnection[] | null) => setSchedulers(rows ?? []));
     get("/api/payments/connections").then((rows: Connection[] | null) => {
       setRazorpay(rows?.find((c) => c.provider === "razorpay") ?? null);
       setStripe(rows?.find((c) => c.provider === "stripe") ?? null);
       setPaypal(rows?.find((c) => c.provider === "paypal") ?? null);
     });
   }, []);
+
+  async function disconnectScheduler(p: Scheduler) {
+    setBusy(p);
+    try {
+      const res = await fetch(`/api/scheduling/connections?provider=${p}`, { method: "DELETE", credentials: "include" });
+      if (res.ok) setSchedulers((xs) => (xs ?? []).filter((x) => x.provider !== p));
+    } finally {
+      setBusy(null);
+      setConfirmOff(null);
+    }
+  }
 
   async function disconnect(which: "instagram" | "youtube" | "razorpay" | "stripe" | "paypal") {
     setBusy(which);
@@ -294,6 +310,50 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
         />
       </Section>
 
+      <Section
+        title="Scheduling for booked calls"
+        hint="Sell calls with the scheduler you already use. It keeps your availability, calendar conflicts, reminders and payment; Kitevo embeds it on your booking product."
+      >
+        {SCHEDULERS.map((p) => {
+          const info = SCHEDULER_INFO[p];
+          const c = schedulers?.find((x) => x.provider === p);
+          return (
+            <ConnectorCard
+              key={p}
+              brand={info.icon}
+              name={p === "google" ? "Google Calendar" : info.name}
+              powers={
+                p === "google"
+                  ? "Appointment schedules: people book open times on your Google Calendar."
+                  : p === "calendly"
+                    ? "Your Calendly event types, with its availability and reminders."
+                    : "Your Cal.com event types, with its availability and reminders."
+              }
+              status={schedulers === undefined ? "loading" : c ? "connected" : "off"}
+              detail={c ? <span className="break-all">{c.url.replace(/^https:\/\//, "")}</span> : undefined}
+              actions={
+                schedulers === undefined ? null : c ? (
+                  confirmOff === p ? (
+                    <>
+                      <span className="w-full text-xs text-muted-foreground">Booking products using {info.name} stop showing until you connect again.</span>
+                      <Button size="sm" onClick={() => setConfirmOff(null)} disabled={busy === p}>Keep connected</Button>
+                      <Button size="sm" variant="danger" onClick={() => disconnectScheduler(p)} disabled={busy === p}>{busy === p ? "Disconnecting…" : `Disconnect ${info.name}`}</Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button size="sm" onClick={() => setSchedOpen(p)}>Change link</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setConfirmOff(p)}>Disconnect</Button>
+                    </>
+                  )
+                ) : (
+                  <Button size="sm" variant="primary" onClick={() => setSchedOpen(p)}>Connect {p === "google" ? "Google Calendar" : info.name}</Button>
+                )
+              }
+            />
+          );
+        })}
+      </Section>
+
       <p className="text-sm text-muted-foreground">
         Selling something? Set a price on any product in <Link href="/products" className="font-medium text-primary hover:underline">Products</Link>; its buy link is created for you.
       </p>
@@ -305,6 +365,15 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
           setPaypal(c);
           setPaypalOpen(false);
           setFlash(`PayPal connected${c.livemode ? "" : " in sandbox mode"}. USD products can now take PayPal payments.`);
+        }}
+      />
+      <ConnectSchedulerDialog
+        provider={schedOpen}
+        onClose={() => setSchedOpen(null)}
+        onConnected={(c) => {
+          setSchedulers((xs) => [...(xs ?? []).filter((x) => x.provider !== c.provider), c]);
+          setSchedOpen(null);
+          setFlash(`${SCHEDULER_INFO[c.provider].name} connected. Add a booking in Products to start selling calls.`);
         }}
       />
       <ConnectStripeDialog
