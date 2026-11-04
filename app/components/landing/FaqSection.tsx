@@ -129,7 +129,7 @@ export function FaqSection(): ReactNode {
   return (
     <section
       id="faq"
-      className="mx-auto max-w-[1440px] scroll-mt-24 px-5 pb-24 sm:px-8 sm:pb-32 lg:px-10"
+      className="mx-auto max-w-[1200px] scroll-mt-24 px-6 pb-24 sm:px-10 sm:pb-32"
     >
       <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
         <SectionHeading

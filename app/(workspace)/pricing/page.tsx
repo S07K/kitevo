@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { AppNav } from "@/app/components/AppNav";
+import { BlogHeader, BlogFooter } from "@/app/blog/BlogChrome";
 import { WorkspaceShell, PageHeader } from "@/app/components/workspace/WorkspaceShell";
 import { CanceledMessage } from "./CanceledMessage";
 import { PricingContent } from "./PricingContent";
@@ -43,9 +43,9 @@ export default async function PricingPage() {
 
   return (
     <div className="min-h-screen">
-      <AppNav links={[{ href: "/dashboard", label: "Dashboard" }]} />
+      <BlogHeader width="4xl" />
 
-      <main className="pt-[calc(8rem+env(safe-area-inset-top))] px-6 pb-24 max-w-4xl mx-auto text-center">
+      <main className="mx-auto max-w-4xl px-5 pb-16 pt-14 text-center sm:px-8 sm:pt-20">
         <CanceledMessage />
         <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground mb-6">
           Pricing
@@ -65,6 +65,7 @@ export default async function PricingPage() {
           Secure checkout. Manage or upgrade your subscription anytime.
         </p>
       </main>
+      <BlogFooter width="4xl" />
     </div>
   );
 }

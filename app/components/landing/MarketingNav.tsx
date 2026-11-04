@@ -76,7 +76,7 @@ export function MarketingNav({ overDark = false }: { overDark?: boolean } = {}):
           overDark && !scrolled && !menuOpen ? "dark" : "",
         ].join(" ")}
       >
-        <div className="mx-auto flex h-[57px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-10">
+        <div className="mx-auto flex h-[57px] max-w-[1200px] items-center justify-between px-6 sm:px-10">
           {/* Logo */}
           <Link
             href="/"

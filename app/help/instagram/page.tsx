@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AppNav } from "@/app/components/AppNav";
+import { BlogHeader, BlogFooter } from "@/app/blog/BlogChrome";
 
 export const metadata = {
   title: "Connect Instagram — Help | Kitevo",
@@ -9,14 +9,9 @@ export const metadata = {
 export default function InstagramHelpPage() {
   return (
     <div className="min-h-screen bg-canvas">
-      <AppNav
-        links={[
-          { href: "/pricing", label: "Pricing" },
-          { href: "/dashboard", label: "Dashboard" },
-        ]}
-      />
+      <BlogHeader />
 
-      <main className="pt-[calc(7rem+env(safe-area-inset-top))] px-6 pb-24 max-w-2xl mx-auto">
+      <main className="mx-auto max-w-3xl px-5 pb-16 pt-12 sm:px-8 sm:pt-16">
         <Link
           href="/dashboard"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
@@ -140,6 +135,7 @@ export default function InstagramHelpPage() {
           </Link>
         </div>
       </main>
+      <BlogFooter />
     </div>
   );
 }

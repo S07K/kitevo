@@ -25,7 +25,7 @@ export function ReferralSection(): ReactNode {
   const usd = (n: number) => `$${n.toFixed(2)}`;
 
   return (
-    <section id="earn" className="mx-auto max-w-[1440px] scroll-mt-24 px-5 pb-24 sm:px-8 sm:pb-32 lg:px-10">
+    <section id="earn" className="mx-auto max-w-[1200px] scroll-mt-24 px-6 pb-24 sm:px-10 sm:pb-32">
       <div
         style={{ backgroundColor: "var(--surface)", color: "var(--surface-foreground)" }}
         className="grid items-center gap-12 overflow-hidden rounded-[40px] px-6 py-16 sm:px-12 sm:py-20 lg:grid-cols-2 lg:gap-16"

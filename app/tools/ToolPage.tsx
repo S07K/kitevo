@@ -51,7 +51,7 @@ export function ToolPage({
   return (
     <div className="min-h-screen bg-canvas">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <BlogHeader />
+      <BlogHeader width="5xl" />
       <main>
         <section className="mx-auto max-w-5xl px-5 pt-12 pb-8 sm:px-8 sm:pt-20">
           <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground">
@@ -104,7 +104,7 @@ export function ToolPage({
           </div>
         </section>
       </main>
-      <BlogFooter />
+      <BlogFooter width="5xl" />
     </div>
   );
 }

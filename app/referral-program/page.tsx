@@ -63,7 +63,7 @@ export default function ReferralProgramPage() {
 
   return (
     <div className="min-h-screen bg-canvas">
-      <BlogHeader />
+      <BlogHeader width="5xl" />
 
       <main>
         {/* Hero */}
@@ -174,7 +174,7 @@ export default function ReferralProgramPage() {
         </section>
       </main>
 
-      <BlogFooter />
+      <BlogFooter width="5xl" />
     </div>
   );
 }
