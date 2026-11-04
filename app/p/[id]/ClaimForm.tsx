@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BrandIcon } from "@/app/components/BrandIcon";
 
 type RazorpayResponse = { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string };
 type RazorpayInstance = { open: () => void; on: (event: string, cb: (r: { error?: { description?: string } }) => void) => void };
@@ -162,6 +163,11 @@ export function ClaimForm({
               }`}
             >
               <input type="radio" name="pay-with" value={p} checked={provider === p} onChange={() => setProvider(p)} className="accent-[var(--mk-text)]" />
+              {/* White tile: the page uses the creator's kit colours (any light or dark style), so the
+                  full-colour mark always sits on white rather than following the app theme. */}
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-black/10">
+                <BrandIcon brand={p} size={16} lightOnly />
+              </span>
               <span className="font-medium">{PAY_LABELS[p].name}</span>
               <span className="ml-auto text-xs text-[var(--mk-text-soft)]">{PAY_LABELS[p].methods}</span>
             </label>
