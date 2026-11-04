@@ -16,7 +16,7 @@ const { createOrder } = await import("@/lib/razorpay");
 const { recoverPaidOrder } = await import("@/lib/paid-orders");
 const { POST } = await import("./route");
 
-const product = (over = {}) => ({ id: "p1", userId: "u_seller", status: "published", priceCents: 49900, currency: "INR", deliveryUrl: "https://drive.google.com/x", title: "Guide", ...over });
+const product = (over = {}) => ({ id: "p1", userId: "u_seller", type: "download", status: "published", priceCents: 49900, currency: "INR", deliveryUrl: "https://drive.google.com/x", title: "Guide", ...over });
 const post = (b: object = { email: "fan@x.com" }) => POST(new Request("http://x", { method: "POST", body: JSON.stringify(b) }), { params: Promise.resolve({ id: "p1" }) });
 
 describe("POST /api/products/[id]/checkout", () => {

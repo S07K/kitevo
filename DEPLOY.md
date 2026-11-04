@@ -343,6 +343,7 @@ on it without checking.
 | `20261102085600_custom_domains` | New `CustomDomain` table | Additive: playbook A. Rolling back code leaves connected domains on the Vercel project; they serve the old app's 404 for "/" until the code returns |
 | `20261103071939_commerce_products_orders` | New `Product` and `Order` tables | Additive: playbook A |
 | `20261103113633_commerce_payment_connections` | New `PaymentConnection` table, nullable `Order.providerOrderId` | Additive: playbook A. Rolling back code leaves stored (encrypted) keys unused; paid products stop selling until the code returns |
+| `20261104095857_scheduling_connectors` | New `SchedulerConnection` table, nullable `Product.bookingUrl` | Additive: playbook A. Rolling back code hides booking products; stored links stay |
 
 Keep this table current: add a row with every new migration, and flag any contract-type
 migration in RELEASE.md together with its backup step.

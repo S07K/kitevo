@@ -12,10 +12,10 @@ export function IntegrationsStrip(): ReactNode {
       <SectionHeading
         label="Integrations"
         title="Works with the accounts you already have"
-        description="Real numbers from Instagram and YouTube, payments into your own account, files from wherever you keep them."
+        description="Real numbers from Instagram and YouTube, payments into your own account, calls on the scheduler you already use, files from wherever you keep them."
         align="center"
       />
-      <div className="mt-14 grid gap-6 md:grid-cols-3">
+      <div className="mt-14 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {groups.map((g) => (
           <div key={g.id} className="rounded-3xl border border-border p-8">
             <h3 className="text-xl font-medium tracking-tight text-foreground">{g.title}</h3>

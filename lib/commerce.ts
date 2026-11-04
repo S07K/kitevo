@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { MAX_PRODUCTS, publicProduct, type PublicProduct } from "@/lib/commerce-shared";
+import { parseSchedulerUrl } from "@/lib/scheduler-links";
 
 export * from "@/lib/commerce-shared";
 
@@ -21,9 +22,23 @@ export async function publishedProductsFor(userId: string): Promise<PublicProduc
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     take: MAX_PRODUCTS,
   });
-  // Paid products only show while the creator can actually sell them (plan + payments).
+  // Paid products only show while the creator can actually sell them (plan + payments);
+  // bookings only while their scheduler is still connected.
   const sellable = rows.some((r) => r.priceCents > 0) ? await canSellPaid(userId) : false;
-  return rows.filter((r) => r.priceCents === 0 || sellable).map(publicProduct);
+  const schedulers = rows.some((r) => r.type === "booking") ? await connectedSchedulers(userId) : [];
+  return rows
+    .filter((r) => (r.type === "booking" ? bookingIsLive(r.bookingUrl, schedulers) : r.priceCents === 0 || sellable))
+    .map(publicProduct);
+}
+
+export async function connectedSchedulers(userId: string): Promise<string[]> {
+  return (await prisma.schedulerConnection.findMany({ where: { userId }, select: { provider: true } })).map((r) => r.provider);
+}
+
+/** A booking shows only with a valid link on a scheduler the creator still has connected. */
+export function bookingIsLive(bookingUrl: string | null, connected: string[]): boolean {
+  const provider = bookingUrl ? parseSchedulerUrl(bookingUrl)?.provider : null;
+  return !!provider && connected.includes(provider);
 }
 
 /** Whether a creator can take payments right now: Starter/Pro and at least one connected payment account. */
@@ -42,7 +57,7 @@ export async function canSellPaid(userId: string): Promise<boolean> {
  */
 export async function claimFreeProduct(productId: string, email: string, name: string | null) {
   const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product || product.status !== "published" || product.priceCents !== 0 || !product.deliveryUrl) return null;
+  if (!product || product.type !== "download" || product.status !== "published" || product.priceCents !== 0 || !product.deliveryUrl) return null;
   const existing = await prisma.order.findFirst({ where: { productId, buyerEmail: email, status: { in: ["free", "paid"] } }, orderBy: { createdAt: "asc" } });
   if (existing) return { order: existing, product, created: false };
   const order = await prisma.order.create({
@@ -62,4 +77,23 @@ export async function paidPublishProblem(userId: string, value: { status: string
   const connected = await prisma.paymentConnection.count({ where: { userId, provider: { in: ["razorpay", "stripe"] } } });
   if (!connected) return { error: "Connect Razorpay or Stripe in Connectors before publishing a paid product.", code: "payments_not_connected" };
   return null;
+}
+
+/** Resolve a pasted Google short link in `bookingUrl` before validation (it can't be embedded as is). */
+export async function withResolvedBookingUrl(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const { isGoogleShortLink } = await import("@/lib/scheduler-links");
+  if (!isGoogleShortLink(body.bookingUrl)) return body;
+  const { resolveGoogleShortLink } = await import("@/lib/scheduler-connections");
+  const full = await resolveGoogleShortLink(body.bookingUrl as string).catch(() => null);
+  return { ...body, bookingUrl: full ?? body.bookingUrl };
+}
+
+/** A booking can only be published on a scheduler the creator has connected in Connectors. */
+export async function bookingPublishProblem(userId: string, value: { type: string; status: string; bookingUrl: string | null }): Promise<{ error: string; code: string } | null> {
+  if (value.type !== "booking" || value.status !== "published" || !value.bookingUrl) return null;
+  const { parseSchedulerUrl, SCHEDULER_INFO } = await import("@/lib/scheduler-links");
+  const provider = parseSchedulerUrl(value.bookingUrl)?.provider;
+  if (!provider) return { error: "Use a Calendly, Cal.com or Google Calendar appointment link.", code: "bad_scheduler" };
+  const n = await prisma.schedulerConnection.count({ where: { userId, provider } });
+  return n ? null : { error: `Connect ${SCHEDULER_INFO[provider].name} in Connectors before publishing this booking.`, code: "scheduler_not_connected" };
 }

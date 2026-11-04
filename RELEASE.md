@@ -211,6 +211,19 @@ No migration, no new env vars (the Stripe key is stored like the Razorpay secret
 
 ---
 
+## 12. Booked calls via Calendly / Cal.com / Google Calendar (`feat/scheduling-connectors`)
+
+No new env vars. One additive migration (`20261104095857_scheduling_connectors`) applies on deploy.
+
+- [ ] GitHub Actions > **DB migrations** run for the merge commit is green.
+- [ ] **Connectors > Scheduling**: connect your Calendly (or Cal.com / Google appointment schedule) by pasting its link. A link from the wrong service must be refused.
+- [ ] **Products > New product > Booking**: pick the scheduler, keep or paste a specific event link, Publish. Your kit's Shop shows "1:1 call" with **Book**.
+- [ ] Open the product page from a private window: your scheduler is embedded and you can pick a time (cancel it in your scheduler afterwards).
+- [ ] Google Calendar: paste your appointment schedule's share link (calendar.app.google/...) and check the embed shows your open times.
+- [ ] Disconnect the scheduler: the booking disappears from the kit and its page says booking isn't open. Reconnect.
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.

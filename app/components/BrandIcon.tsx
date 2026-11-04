@@ -1,4 +1,4 @@
-import { BRAND_ICONS, DARK_ON_DARK, GLYPH_IN_BRAND_COLOUR, type BrandIconId } from "@/lib/brand-icons";
+import { BRAND_ICONS, DARK_ON_DARK, FAVICON_ICONS, GLYPH_IN_BRAND_COLOUR, type BrandIconId } from "@/lib/brand-icons";
 
 /**
  * An official brand mark (from `thesvg`, see lib/brand-icons.ts), sized as a square box.
@@ -31,6 +31,13 @@ export function BrandIcon({
   const fit = "[&>svg]:h-full [&>svg]:w-full";
   const tint = "[&_svg]:fill-current";
 
+  const favicon = FAVICON_ICONS[brand];
+  if (favicon) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- tiny local brand icon
+      <img src={favicon} alt={label ?? ""} aria-hidden={label ? undefined : true} width={size} height={size} className={`inline-block shrink-0 rounded-[22%] ${className}`} style={style} />
+    );
+  }
   if (mono) {
     return <span {...a11y} className={`inline-flex shrink-0 ${fit} ${tint} ${className}`} style={style} dangerouslySetInnerHTML={{ __html: monoSvg }} />;
   }

@@ -5,7 +5,7 @@
  * (Kitevo only reads platform data; it never posts, edits or deletes).
  */
 
-export type IntegrationLogo = "instagram" | "youtube" | "razorpay" | "stripe" | "paypal" | "googledrive" | "dropbox" | "notion" | "domain";
+export type IntegrationLogo = "instagram" | "youtube" | "razorpay" | "stripe" | "paypal" | "googledrive" | "dropbox" | "notion" | "calendly" | "calcom" | "googlecalendar" | "domain";
 
 export type Integration = {
   id: IntegrationLogo;
@@ -82,6 +82,16 @@ export const INTEGRATION_GROUPS: IntegrationGroup[] = [
         summary: "Let buyers pay with their PayPal balance, into your PayPal account.",
         details: ["Same model: your account, your money, 0% to Kitevo"],
       },
+    ],
+  },
+  {
+    id: "calls",
+    title: "Sell booked calls",
+    intro: "Use the scheduler you already have. It keeps your availability, calendar conflicts, reminders and payment; Kitevo puts it on your kit.",
+    items: [
+      { id: "calendly", name: "Calendly", status: "live", plans: "Every plan", summary: "Embed any Calendly event type as a bookable call on your kit.", details: ["Connect once by pasting your Calendly link", "Bookings, reminders and payments stay in Calendly"] },
+      { id: "calcom", name: "Cal.com", status: "live", plans: "Every plan", summary: "Embed your Cal.com event types as bookable calls.", details: ["Connect once by pasting your Cal.com link", "Bookings, reminders and payments stay in Cal.com"] },
+      { id: "googlecalendar", name: "Google Calendar", status: "live", plans: "Every plan", summary: "Embed a Google Calendar appointment schedule so people book your open times.", details: ["Paste your appointment schedule's booking link", "Bookings land straight in your Google Calendar"] },
     ],
   },
   {
