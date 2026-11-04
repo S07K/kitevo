@@ -1,6 +1,6 @@
 # Kitevo Product & Growth Plan
 
-**Status (2026-11-03):** Phase 0 **complete**. Sprint 2 done (free calculators, public kit redesign) and Sprint 3 done (comparison pages, payout-rail decision: **creator-owned payments**). **Phase 1 (commerce) started:** Release A (free downloads with email capture) is live; Release B (paid products on the creator's own Razorpay) is built; Stripe/PayPal connections and C (bookings) are next. See §15–§16.
+**Status (2026-11-03):** Phase 0 **complete**. Sprint 2 done (free calculators, public kit redesign) and Sprint 3 done (comparison pages, payout-rail decision: **creator-owned payments**). **Phase 1 (commerce) started:** Release A (free downloads with email capture) is live; Release B (paid products on the creator's own Razorpay or Stripe) is live; PayPal and C (bookings) are next. See §15–§16.
 **Last updated:** 2026-11-03
 **Scope:** Competitive strategy, pricing architecture, feature roadmap, and the Phase 0 execution checklist.
 
@@ -630,4 +630,11 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - Paid products are a **Starter/Pro** feature (the subscription is how Kitevo earns, since there's no cut). Free downloads stay on every plan.
 - Signature + payment checks server-side before delivery; no webhooks needed, and a paid-but-unconfirmed order is recovered when the buyer retries.
 - Next: Stripe (restricted key) and PayPal connections, then Release C (bookings).
+
+## 18. Stripe for paid products, 2026-11-04
+
+- Creators connect their own Stripe with a **restricted key** limited to Checkout (full secret keys are refused). Buyers pay on Stripe's hosted page; the session is verified with Stripe before delivery. 0% to Kitevo.
+- With Razorpay and Stripe both connected, buyers choose (Razorpay for UPI in India, Stripe for international cards).
+- Compare pages updated: Kitevo now sells digital downloads (free or paid); courses, memberships and bookings are still gaps.
+- Next: PayPal, then Release C (bookings).
 

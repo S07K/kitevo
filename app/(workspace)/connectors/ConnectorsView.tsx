@@ -10,6 +10,7 @@ import { BrandIcon } from "@/app/components/BrandIcon";
 import type { BrandIconId } from "@/lib/brand-icons";
 import { INSTAGRAM_ERROR_MESSAGES, YOUTUBE_RESULT_MESSAGES } from "@/lib/connect-messages";
 import { ConnectRazorpayDialog, type Connection } from "./ConnectRazorpayDialog";
+import { ConnectStripeDialog } from "./ConnectStripeDialog";
 
 function Notice({ tone, children }: { tone: "success" | "danger"; children: ReactNode }) {
   const cls =
@@ -84,6 +85,8 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
   const [instagram, setInstagram] = useState<boolean | null>(null);
   const [youtube, setYoutube] = useState<boolean | null>(null);
   const [razorpay, setRazorpay] = useState<Connection | null | undefined>(undefined);
+  const [stripe, setStripe] = useState<Connection | null | undefined>(undefined);
+  const [stripeOpen, setStripeOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [rpOpen, setRpOpen] = useState(false);
   const [confirmOff, setConfirmOff] = useState<string | null>(null);
@@ -93,20 +96,24 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
     const get = (url: string) => fetch(url, { credentials: "include" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     get("/api/instagram/status").then((d) => setInstagram(d?.connected === true));
     get("/api/youtube/status").then((d) => setYoutube(d?.connected === true));
-    get("/api/payments/connections").then((rows: Connection[] | null) => setRazorpay(rows?.find((c) => c.provider === "razorpay") ?? null));
+    get("/api/payments/connections").then((rows: Connection[] | null) => {
+      setRazorpay(rows?.find((c) => c.provider === "razorpay") ?? null);
+      setStripe(rows?.find((c) => c.provider === "stripe") ?? null);
+    });
   }, []);
 
-  async function disconnect(which: "instagram" | "youtube" | "razorpay") {
+  async function disconnect(which: "instagram" | "youtube" | "razorpay" | "stripe") {
     setBusy(which);
     try {
       const res =
-        which === "razorpay"
-          ? await fetch("/api/payments/connections?provider=razorpay", { method: "DELETE", credentials: "include" })
+        which === "razorpay" || which === "stripe"
+          ? await fetch(`/api/payments/connections?provider=${which}`, { method: "DELETE", credentials: "include" })
           : await fetch(`/api/${which}/disconnect`, { method: "POST", credentials: "include" });
       if (res.ok) {
         if (which === "instagram") setInstagram(false);
         if (which === "youtube") setYoutube(false);
         if (which === "razorpay") setRazorpay(null);
+        if (which === "stripe") setStripe(null);
       }
     } finally {
       setBusy(null);
@@ -116,7 +123,7 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
 
   const stat = (v: boolean | null): Status => (v === null ? "loading" : v ? "connected" : "off");
 
-  const disconnectButton = (which: "instagram" | "youtube" | "razorpay", name: string, warn: string) =>
+  const disconnectButton = (which: "instagram" | "youtube" | "razorpay" | "stripe", name: string, warn: string) =>
     confirmOff === which ? (
       <>
         <span className="w-full text-xs text-muted-foreground">{warn}</span>
@@ -209,14 +216,46 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
             razorpay === undefined ? null : razorpay ? (
               <>
                 {confirmOff !== "razorpay" && <Button size="sm" onClick={() => setRpOpen(true)}>Update keys</Button>}
-                {disconnectButton("razorpay", "Razorpay", "Your paid products stop selling until you connect again.")}
+                {disconnectButton("razorpay", "Razorpay", stripe ? "Buyers will pay through Stripe only." : "Your paid products stop selling until you connect again.")}
               </>
             ) : (
               <Button size="sm" variant="primary" onClick={() => setRpOpen(true)}>Connect Razorpay</Button>
             )
           }
         />
-        <ConnectorCard brand="stripe" name="Stripe" powers="Card payments into your own Stripe account." status="soon" />
+        <ConnectorCard
+          brand="stripe"
+          name="Stripe"
+          powers="Cards and the wallets your Stripe account accepts, on Stripe's checkout page."
+          status={stripe === undefined ? "loading" : stripe ? "connected" : "off"}
+          detail={
+            stripe ? (
+              <span className="inline-flex flex-wrap items-center gap-2">
+                <span className="font-mono">{stripe.keyHint}</span>
+                {!stripe.livemode && <Badge variant="warning">Test mode</Badge>}
+              </span>
+            ) : undefined
+          }
+          note={
+            !paidPlan ? (
+              <>Selling paid products is included in Starter and Pro. <Link href="/pricing" className="font-medium text-primary hover:underline">See plans</Link></>
+            ) : stripe && !stripe.livemode ? (
+              "Test keys only accept Stripe's test cards. Switch to a live key before you start selling."
+            ) : razorpay && !stripe ? (
+              "Connect both and buyers choose: Razorpay for UPI, Stripe for international cards."
+            ) : null
+          }
+          actions={
+            stripe === undefined ? null : stripe ? (
+              <>
+                {confirmOff !== "stripe" && <Button size="sm" onClick={() => setStripeOpen(true)}>Update key</Button>}
+                {disconnectButton("stripe", "Stripe", razorpay ? "Buyers will pay through Razorpay only." : "Your paid products stop selling until you connect again.")}
+              </>
+            ) : (
+              <Button size="sm" variant="primary" onClick={() => setStripeOpen(true)}>Connect Stripe</Button>
+            )
+          }
+        />
         <ConnectorCard brand="paypal" name="PayPal" powers="PayPal payments into your own PayPal account." status="soon" />
       </Section>
 
@@ -224,6 +263,15 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
         Selling something? Set a price on any product in <Link href="/products" className="font-medium text-primary hover:underline">Products</Link>; its buy link is created for you.
       </p>
 
+      <ConnectStripeDialog
+        open={stripeOpen}
+        onClose={() => setStripeOpen(false)}
+        onConnected={(c) => {
+          setStripe(c);
+          setStripeOpen(false);
+          setFlash(`Stripe connected${c.livemode ? "" : " in test mode"}. Your paid products can now take card payments.`);
+        }}
+      />
       <ConnectRazorpayDialog
         open={rpOpen}
         onClose={() => setRpOpen(false)}

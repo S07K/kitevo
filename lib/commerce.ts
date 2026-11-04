@@ -26,12 +26,12 @@ export async function publishedProductsFor(userId: string): Promise<PublicProduc
   return rows.filter((r) => r.priceCents === 0 || sellable).map(publicProduct);
 }
 
-/** Whether a creator can take payments right now: Starter/Pro and a connected Razorpay account. */
+/** Whether a creator can take payments right now: Starter/Pro and at least one connected payment account. */
 export async function canSellPaid(userId: string): Promise<boolean> {
   const { hasPaidCreatorPlan } = await import("@/lib/creator-plan");
   const [plan, connected] = await Promise.all([
     hasPaidCreatorPlan(userId),
-    prisma.paymentConnection.count({ where: { userId, provider: "razorpay" } }),
+    prisma.paymentConnection.count({ where: { userId, provider: { in: ["razorpay", "stripe"] } } }),
   ]);
   return plan && connected > 0;
 }
@@ -59,7 +59,7 @@ export async function paidPublishProblem(userId: string, value: { status: string
   if (value.status !== "published" || value.priceCents === 0) return null;
   const { hasPaidCreatorPlan } = await import("@/lib/creator-plan");
   if (!(await hasPaidCreatorPlan(userId))) return { error: "Selling paid products is included in Starter and Pro. Free downloads work on every plan.", code: "plan_required" };
-  const connected = await prisma.paymentConnection.count({ where: { userId, provider: "razorpay" } });
-  if (!connected) return { error: "Connect your Razorpay account before publishing a paid product.", code: "payments_not_connected" };
+  const connected = await prisma.paymentConnection.count({ where: { userId, provider: { in: ["razorpay", "stripe"] } } });
+  if (!connected) return { error: "Connect Razorpay or Stripe in Connectors before publishing a paid product.", code: "payments_not_connected" };
   return null;
 }

@@ -8,7 +8,30 @@ import type { RazorpayKeys } from "@/lib/razorpay";
  * secret (or this module's internal shape) to a client: use publicConnection.
  */
 
-export type ConnectionProvider = "razorpay";
+export const PAYMENT_PROVIDERS = ["razorpay", "stripe"] as const;
+export type ConnectionProvider = (typeof PAYMENT_PROVIDERS)[number];
+
+/** Which payment accounts a creator has connected (no secrets). */
+export async function connectedProviders(userId: string): Promise<ConnectionProvider[]> {
+  const rows = await prisma.paymentConnection.findMany({ where: { userId, provider: { in: [...PAYMENT_PROVIDERS] } }, select: { provider: true } });
+  return PAYMENT_PROVIDERS.filter((p) => rows.some((r) => r.provider === p));
+}
+
+/** Stripe: the restricted key is the secret; publicKey stores only its hint (rk_live_…AbCd). */
+export async function saveStripeConnection(userId: string, key: string, hint: string, livemode: boolean) {
+  const data = { publicKey: hint, secretEncrypted: encryptToken(key), livemode };
+  return prisma.paymentConnection.upsert({
+    where: { userId_provider: { userId, provider: "stripe" } },
+    create: { userId, provider: "stripe", ...data },
+    update: data,
+  });
+}
+
+/** The creator's Stripe restricted key, decrypted; null if not connected or unreadable. */
+export async function stripeKeyFor(userId: string): Promise<string | null> {
+  const row = await prisma.paymentConnection.findUnique({ where: { userId_provider: { userId, provider: "stripe" } } });
+  return row ? decryptToken(row.secretEncrypted) : null;
+}
 
 export async function saveRazorpayConnection(userId: string, keyId: string, keySecret: string, livemode: boolean) {
   const data = { publicKey: keyId, secretEncrypted: encryptToken(keySecret), livemode };
@@ -28,7 +51,8 @@ export async function razorpayKeysFor(userId: string): Promise<RazorpayKeys | nu
 }
 
 export function publicConnection(row: { provider: string; publicKey: string; livemode: boolean; createdAt: Date }) {
-  // Show enough of the key id to recognise it, never the secret.
+  // Show enough of the key id to recognise it, never the secret. (Stripe rows already store a hint.)
   const k = row.publicKey;
-  return { provider: row.provider, keyHint: `${k.slice(0, 9)}…${k.slice(-4)}`, livemode: row.livemode, connectedAt: row.createdAt.toISOString() };
+  const keyHint = row.provider === "stripe" ? k : `${k.slice(0, 9)}…${k.slice(-4)}`;
+  return { provider: row.provider, keyHint, livemode: row.livemode, connectedAt: row.createdAt.toISOString() };
 }

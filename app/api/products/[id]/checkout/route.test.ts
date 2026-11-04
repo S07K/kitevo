@@ -2,13 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/prisma", () => ({ prisma: { product: { findUnique: vi.fn() }, order: { create: vi.fn(), update: vi.fn(), delete: vi.fn() }, user: { findUnique: vi.fn() } } }));
 vi.mock("@/lib/creator-plan", () => ({ hasPaidCreatorPlan: vi.fn() }));
-vi.mock("@/lib/payment-connections", () => ({ razorpayKeysFor: vi.fn() }));
+vi.mock("@/lib/payment-connections", () => ({ razorpayKeysFor: vi.fn(), stripeKeyFor: vi.fn() }));
+vi.mock("@/lib/stripe-creator", () => ({ createCheckoutSession: vi.fn() }));
+vi.mock("@/lib/app-url", () => ({ APP_URL: "https://getkitevo.com" }));
 vi.mock("@/lib/razorpay", () => ({ createOrder: vi.fn() }));
 vi.mock("@/lib/paid-orders", () => ({ recoverPaidOrder: vi.fn() }));
 
 const { prisma } = await import("@/lib/prisma");
 const { hasPaidCreatorPlan } = await import("@/lib/creator-plan");
-const { razorpayKeysFor } = await import("@/lib/payment-connections");
+const { razorpayKeysFor, stripeKeyFor } = await import("@/lib/payment-connections");
+const { createCheckoutSession } = await import("@/lib/stripe-creator");
 const { createOrder } = await import("@/lib/razorpay");
 const { recoverPaidOrder } = await import("@/lib/paid-orders");
 const { POST } = await import("./route");
@@ -25,6 +28,7 @@ describe("POST /api/products/[id]/checkout", () => {
     vi.mocked(prisma.order.delete).mockResolvedValue({} as never);
     vi.mocked(hasPaidCreatorPlan).mockResolvedValue(true);
     vi.mocked(razorpayKeysFor).mockResolvedValue({ keyId: "rzp_test_abcdefgh12", keySecret: "s" });
+    vi.mocked(stripeKeyFor).mockResolvedValue(null);
     vi.mocked(createOrder).mockResolvedValue({ id: "order_RP1", amount: 49900, currency: "INR", status: "created" });
   });
 
@@ -59,6 +63,24 @@ describe("POST /api/products/[id]/checkout", () => {
     expect(await res.json()).toEqual({ alreadyPaid: true, accessUrl: "https://getkitevo.com/o/tok" });
     expect(prisma.order.create).not.toHaveBeenCalled();
     expect(createOrder).not.toHaveBeenCalled();
+  });
+
+  it("uses Stripe Checkout when asked (or when it's the only account) and returns its URL", async () => {
+    vi.mocked(stripeKeyFor).mockResolvedValue("rk_test_key");
+    vi.mocked(createCheckoutSession).mockResolvedValue({ id: "cs_1", url: "https://checkout.stripe.com/c/pay/cs_1" } as never);
+    const res = await post({ email: "fan@x.com", provider: "stripe" });
+    expect(await res.json()).toEqual({ provider: "stripe", orderId: "ord_1", redirectUrl: "https://checkout.stripe.com/c/pay/cs_1" });
+    expect(createCheckoutSession).toHaveBeenCalledWith("rk_test_key", expect.objectContaining({ amount: 49900, currency: "INR", successUrl: "https://getkitevo.com/api/orders/ord_1/stripe-return?session_id={CHECKOUT_SESSION_ID}" }));
+    expect(prisma.order.update).toHaveBeenCalledWith({ where: { id: "ord_1" }, data: { providerOrderId: "cs_1" } });
+    expect(createOrder).not.toHaveBeenCalled();
+
+    vi.mocked(razorpayKeysFor).mockResolvedValue(null);
+    await post();
+    expect(createCheckoutSession).toHaveBeenCalledTimes(2);
+  });
+
+  it("refuses a provider the creator hasn't connected", async () => {
+    expect((await post({ email: "fan@x.com", provider: "stripe" })).status).toBe(409);
   });
 
   it("removes the pending order if Razorpay fails", async () => {

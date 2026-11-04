@@ -54,7 +54,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
       "Live stats & growth charts",
       "Audience demographics",
       "Your own domain (kit.yourname.com)",
-      "Sell paid products (your own Razorpay)",
+      "Sell paid products (your own Razorpay or Stripe)",
       "Section visibility controls",
     ],
   },
