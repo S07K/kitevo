@@ -1,22 +1,26 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { APP_URL } from "@/lib/app-url";
 import { cleanEmail, newAccessToken } from "@/lib/commerce";
 import { hasPaidCreatorPlan } from "@/lib/creator-plan";
-import { razorpayKeysFor } from "@/lib/payment-connections";
+import { razorpayKeysFor, stripeKeyFor } from "@/lib/payment-connections";
 import { createOrder } from "@/lib/razorpay";
+import { createCheckoutSession } from "@/lib/stripe-creator";
 import { recoverPaidOrder } from "@/lib/paid-orders";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 /**
- * POST { email, name? } — start buying a paid product. Creates a pending Order and a Razorpay
- * order on the CREATOR's own account (creator-owned payments), and returns what Razorpay
- * Checkout needs. The amount always comes from the product, never the client.
+ * POST { email, name?, provider? } — start buying a paid product on the CREATOR's own payment
+ * account (creator-owned payments). The amount always comes from the product, never the client.
+ *  - razorpay: pending Order + Razorpay order → returns what Razorpay Checkout needs.
+ *  - stripe:   pending Order + Stripe Checkout Session → returns { redirectUrl } (Stripe-hosted page).
+ * `provider` picks between connected accounts; omitted → the only one connected (Razorpay first).
  */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  const body = (await req.json().catch(() => ({}))) as { email?: unknown; name?: unknown };
+  const body = (await req.json().catch(() => ({}))) as { email?: unknown; name?: unknown; provider?: unknown };
   const email = cleanEmail(body.email);
   if (!email) return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
   const name = typeof body.name === "string" && body.name.trim() ? body.name.trim().slice(0, 80) : null;
@@ -29,15 +33,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: "This product isn't for sale." }, { status: 404 });
   }
   // Checked again at purchase time: a lapsed plan or a disconnected account stops sales.
-  const [planOk, keys, seller] = await Promise.all([
+  const [planOk, rpKeys, stripeKey, seller] = await Promise.all([
     hasPaidCreatorPlan(product.userId),
     razorpayKeysFor(product.userId),
+    stripeKeyFor(product.userId),
     prisma.user.findUnique({ where: { id: product.userId }, select: { name: true, username: true } }),
   ]);
-  if (!planOk || !keys) return NextResponse.json({ error: "This product isn't on sale right now. Try again later." }, { status: 409 });
+  const wanted = body.provider === "stripe" || body.provider === "razorpay" ? body.provider : null;
+  const provider = wanted ? (wanted === "stripe" ? (stripeKey ? "stripe" : null) : rpKeys ? "razorpay" : null) : rpKeys ? "razorpay" : stripeKey ? "stripe" : null;
+  if (!planOk || !provider) return NextResponse.json({ error: "This product isn't on sale right now. Try again later." }, { status: 409 });
 
   // Paid before but the confirmation never arrived (tab closed)? Hand back the link, don't charge again.
-  const recovered = await recoverPaidOrder(keys, product.id, email);
+  const recovered = await recoverPaidOrder({ razorpay: rpKeys, stripe: stripeKey }, product.id, email);
   if (recovered) return NextResponse.json({ alreadyPaid: true, accessUrl: recovered });
 
   const order = await prisma.order.create({
@@ -49,12 +56,29 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       amountCents: product.priceCents,
       currency: product.currency,
       status: "pending",
-      provider: "razorpay",
+      provider,
       accessToken: newAccessToken(),
     },
   });
   try {
-    const rp = await createOrder(keys, {
+    if (provider === "stripe") {
+      const base = APP_URL.replace(/\/$/, "");
+      const session = await createCheckoutSession(stripeKey!, {
+        orderId: order.id,
+        productId: product.id,
+        title: product.title,
+        amount: product.priceCents,
+        currency: product.currency,
+        email,
+        // {CHECKOUT_SESSION_ID} is filled in by Stripe on the way back.
+        successUrl: `${base}/api/orders/${order.id}/stripe-return?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${base}/p/${product.id}?checkout=cancelled`,
+      });
+      if (!session.url) throw new Error("Stripe returned no checkout URL");
+      await prisma.order.update({ where: { id: order.id }, data: { providerOrderId: session.id } });
+      return NextResponse.json({ provider: "stripe", orderId: order.id, redirectUrl: session.url });
+    }
+    const rp = await createOrder(rpKeys!, {
       amount: product.priceCents,
       currency: product.currency,
       receipt: order.id,
@@ -64,7 +88,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({
       provider: "razorpay",
       orderId: order.id,
-      keyId: keys.keyId,
+      keyId: rpKeys!.keyId,
       razorpayOrderId: rp.id,
       amount: rp.amount,
       currency: rp.currency,
@@ -74,7 +98,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     });
   } catch (e) {
     await prisma.order.delete({ where: { id: order.id } }).catch(() => {});
-    console.error("[checkout] razorpay order failed:", e);
+    console.error(`[checkout] ${provider} checkout failed:`, e);
     return NextResponse.json({ error: "Couldn't start the payment. Try again in a moment." }, { status: 502 });
   }
 }

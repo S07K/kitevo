@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { kitAppearanceToCssVarsWithOverrides } from "@/lib/kit-appearance";
 import { storefrontSeller } from "@/lib/creator-storefront";
 import { canSellPaid } from "@/lib/commerce";
+import { connectedProviders } from "@/lib/payment-connections";
 import { formatPrice } from "@/lib/commerce-shared";
 import { LogoMark } from "@/app/components/Logo";
 import { ClaimForm } from "./ClaimForm";
@@ -21,8 +22,13 @@ async function load(id: string) {
     const session = await getServerSession(authOptions);
     if (session?.user?.id !== product.userId) return null;
   }
-  const [seller, onSale] = await Promise.all([storefrontSeller(product.userId), product.priceCents > 0 ? canSellPaid(product.userId) : Promise.resolve(true)]);
-  return { product, seller, onSale };
+  const paid = product.priceCents > 0;
+  const [seller, onSale, providers] = await Promise.all([
+    storefrontSeller(product.userId),
+    paid ? canSellPaid(product.userId) : Promise.resolve(true),
+    paid ? connectedProviders(product.userId) : Promise.resolve([]),
+  ]);
+  return { product, seller, onSale, providers };
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -34,10 +40,19 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 /** A product's public page, in the creator's kit style: free downloads and paid products. */
-export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+/** Why the buyer is back from Stripe without a purchase (?checkout=…). */
+const CHECKOUT_NOTICES: Record<string, string> = {
+  cancelled: "Payment cancelled. You weren't charged.",
+  processing: "Your payment is still processing. If you were charged, try again with the same email in a minute to get your link.",
+  mismatch: "We couldn't match that payment to this order. If you were charged, try again with the same email to get your link.",
+  unavailable: "This product isn't on sale right now. If you were charged, contact the creator.",
+};
+
+export default async function ProductPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ checkout?: string }> }) {
+  const checkout = (await searchParams).checkout;
   const r = await load((await params).id);
   if (!r) notFound();
-  const { product, seller, onSale } = r;
+  const { product, seller, onSale, providers } = r;
   const draft = product.status !== "published";
   const paid = product.priceCents > 0;
   const price = formatPrice(product.priceCents, product.currency);
@@ -81,7 +96,14 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               This product isn&apos;t on sale right now. Check back later.
             </div>
           ) : (
-            <ClaimForm productId={product.id} creatorName={seller.name} preview={draft} priceLabel={paid ? price : undefined} />
+            <ClaimForm
+              productId={product.id}
+              creatorName={seller.name}
+              preview={draft}
+              priceLabel={paid ? price : undefined}
+              providers={providers.length ? providers : undefined}
+              notice={checkout ? CHECKOUT_NOTICES[checkout] : undefined}
+            />
           )}
         </aside>
       </main>

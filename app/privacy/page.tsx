@@ -95,7 +95,7 @@ export default function PrivacyPolicy() {
                 send marketing to these addresses. The record is deleted if the
                 creator deletes the product or their account. If you buy a paid
                 product, you pay the creator directly through their own payment
-                provider (Razorpay); Kitevo never sees your card or bank details
+                provider (Razorpay or Stripe); Kitevo never sees your card or bank details
                 and only stores the payment&apos;s reference, amount and status.
               </li>
               <li>

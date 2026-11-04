@@ -26,21 +26,35 @@ function loadRazorpay(): Promise<boolean> {
 
 /**
  * The buy box on a product page. Free: email → private download page (and email).
- * Paid: email → Razorpay Checkout on the CREATOR's account → server verifies → download page.
+ * Paid: email → the CREATOR's own Razorpay (checkout window) or Stripe (hosted page) →
+ * server verifies → download page. With both connected, the buyer picks.
  */
+export type PayProvider = "razorpay" | "stripe";
+const PAY_LABELS: Record<PayProvider, { name: string; methods: string }> = {
+  razorpay: { name: "Razorpay", methods: "UPI, cards, netbanking" },
+  stripe: { name: "Stripe", methods: "Cards & wallets" },
+};
+
 export function ClaimForm({
   productId,
   creatorName,
   preview,
   priceLabel,
+  providers = ["razorpay"],
+  notice,
 }: {
   productId: string;
   creatorName: string;
   preview?: boolean;
   /** e.g. "₹499" for a paid product; omitted for free downloads. */
   priceLabel?: string;
+  /** The creator's connected payment accounts, in display order. */
+  providers?: PayProvider[];
+  /** A message from a returned checkout (e.g. cancelled on Stripe's page). */
+  notice?: string;
 }) {
   const paid = !!priceLabel;
+  const [provider, setProvider] = useState<PayProvider>(providers[0] ?? "razorpay");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [state, setState] = useState<{ phase: "idle" | "sending" | "done" | "error"; accessUrl?: string; error?: string }>({ phase: "idle" });
@@ -68,12 +82,17 @@ export function ClaimForm({
     setState({ phase: "sending" });
     try {
       const [ready, res] = await Promise.all([
-        loadRazorpay(),
-        fetch(`/api/products/${productId}/checkout`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, name }) }),
+        provider === "razorpay" ? loadRazorpay() : Promise.resolve(true),
+        fetch(`/api/products/${productId}/checkout`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, name, provider }) }),
       ]);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) return setState({ phase: "error", error: data.error ?? "Couldn't start the payment. Try again." });
       if (data.alreadyPaid) return setState({ phase: "done", accessUrl: data.accessUrl });
+      // Stripe: the payment happens on Stripe's own page; it sends the buyer back to us after.
+      if (data.redirectUrl) {
+        window.location.assign(data.redirectUrl);
+        return;
+      }
       if (!ready || !window.Razorpay) return setState({ phase: "error", error: "Couldn't load the payment window. Check your connection or turn off blockers for this page." });
 
       const rzp = new window.Razorpay({
@@ -132,6 +151,24 @@ export function ClaimForm({
     <form onSubmit={submit} className="space-y-3 rounded-2xl bg-[var(--mk-surface)] p-5 sm:p-6">
       <input aria-label="Your name" placeholder="Your name (optional)" value={name} onChange={(e) => setName(e.target.value)} className={input} />
       <input aria-label="Your email" type="email" required placeholder="Your email" value={email} onChange={(e) => setEmail(e.target.value)} className={input} />
+      {paid && providers.length > 1 && (
+        <fieldset className="space-y-2">
+          <legend className="mb-2 font-sans text-xs font-medium text-[var(--mk-text-muted)]">Pay with</legend>
+          {providers.map((p) => (
+            <label
+              key={p}
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 font-sans text-sm transition-colors ${
+                provider === p ? "border-[var(--mk-text)] text-[var(--mk-text)]" : "border-[var(--mk-border)] text-[var(--mk-text-muted)]"
+              }`}
+            >
+              <input type="radio" name="pay-with" value={p} checked={provider === p} onChange={() => setProvider(p)} className="accent-[var(--mk-text)]" />
+              <span className="font-medium">{PAY_LABELS[p].name}</span>
+              <span className="ml-auto text-xs text-[var(--mk-text-soft)]">{PAY_LABELS[p].methods}</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
+      {notice && state.phase !== "error" && <p role="status" className="font-sans text-sm text-[var(--mk-text-muted)]">{notice}</p>}
       {state.phase === "error" && <p role="alert" className="font-sans text-sm text-red-600">{state.error}</p>}
       <button
         type="submit"
@@ -146,7 +183,7 @@ export function ClaimForm({
       </button>
       <p className="text-center font-sans text-[11px] leading-relaxed text-[var(--mk-text-soft)]">
         {paid
-          ? `You pay ${creatorName} directly through Razorpay. ${creatorName} will see your name and email.`
+          ? `You pay ${creatorName} directly through ${PAY_LABELS[provider].name}. ${creatorName} will see your name and email.`
           : `${creatorName} will see your name and email and may contact you about their work.`}
       </p>
     </form>
