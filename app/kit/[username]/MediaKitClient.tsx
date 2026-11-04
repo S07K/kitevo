@@ -3,8 +3,8 @@
 import type React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, MapPin } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
 import { LogoMark } from "@/app/components/Logo";
 import { CountUp } from "@/app/components/Skeleton";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
@@ -17,6 +17,8 @@ import type { KitAppearance, KitAppearancePreset } from "@/lib/kit-appearance";
 import { DEFAULT_KIT_APPEARANCE, kitAppearanceToCssVarsWithOverrides, kitChartColors } from "@/lib/kit-appearance";
 import { audienceSummary, compactNumber, firstName } from "@/lib/kit-audience-summary";
 import { formatPrice, type PublicProduct } from "@/lib/commerce-shared";
+import type { PublicBooking } from "@/lib/kit-booking";
+import { BookCallDialog } from "./BookCallDialog";
 
 const GrowthAreaChart = dynamic(
   () => import("./MediaKitRecharts").then((m) => m.GrowthAreaChart),
@@ -49,6 +51,8 @@ interface MediaKitClientProps {
   kitId?: string;
   /** When true, show the brand inquiry form (Pro feature) */
   inquiryEnabled?: boolean;
+  /** "Book a call" on the creator's connected scheduler (null = no button). */
+  booking?: PublicBooking | null;
   /** When true, the logged-in user owns this kit — show dashboard nav bar */
   isOwner?: boolean;
   /** Real Instagram posts for the grid */
@@ -312,6 +316,7 @@ export function MediaKitClient({
   instagramPosts = [],
   referralCode = null,
   products = [],
+  booking = null,
 }: MediaKitClientProps) {
   // Footer/header "Create yours" links credit the kit owner as the referrer.
   const homeHref = referralCode ? `/?ref=${encodeURIComponent(referralCode)}` : "/";
@@ -402,7 +407,15 @@ export function MediaKitClient({
     : [];
 
   // ── Call to action: inquiry form (Pro) → links → nothing. Never a dead link. ──
-  const ctaTarget = inquiryEnabled && kitId ? "#work-together" : sectionVisibility.links && links.length > 0 ? "#contact" : null;
+  const ctaTarget =
+    inquiryEnabled && kitId ? "#work-together" : sectionVisibility.links && links.length > 0 ? "#contact" : null;
+  const [bookOpen, setBookOpen] = useState(false);
+  const closeBook = useCallback(() => setBookOpen(false), []);
+  // Shared "?book=1" links (and old booking-product links) open the scheduler straight away.
+  useEffect(() => {
+    if (!booking || embedded || typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("book") === "1") setBookOpen(true);
+  }, [booking, embedded]);
   const ctaLabel = rates.ctaLabel || `Work with ${first}`;
   const showRates = sectionVisibility.rates && hasPublicRates(rates);
   const rateItems = showRates ? publicRateItems(rates) : [];
@@ -629,6 +642,27 @@ export function MediaKitClient({
 
               {creator.bio && (
                 <p className="mt-4 max-w-xl text-pretty font-sans text-[15px] leading-relaxed text-[var(--mk-text-muted)]">{creator.bio}</p>
+              )}
+
+              {/* Book a call: right under the profile (in the sticky rail on wide screens).
+                  Its own data-kit-section so a tap in the editor preview opens the Contact card. */}
+              {booking && (
+                <div data-kit-section="contact" className="mt-5 max-w-xl">
+                  <button
+                    type="button"
+                    onClick={() => !embedded && setBookOpen(true)}
+                    className="group flex w-full items-center gap-3 rounded-2xl border border-[var(--mk-border)] bg-[var(--mk-surface)] px-4 py-3 text-left font-sans transition-colors hover:border-[var(--mk-text)]"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--mk-text)] text-[var(--mk-bg)]" aria-hidden>
+                      <CalendarDays size={16} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-[var(--mk-text)]">{booking.label}</span>
+                      <span className="block text-xs text-[var(--mk-text-muted)]">Pick a time that works for you</span>
+                    </span>
+                    <ArrowUpRight size={16} aria-hidden className="shrink-0 text-[var(--mk-text-soft)] transition-colors group-hover:text-[var(--mk-text)]" />
+                  </button>
+                </div>
               )}
 
               {/* Wide screens: rates + the main action live in the rail */}
@@ -988,6 +1022,8 @@ export function MediaKitClient({
               </div>
             </div>
           </div>
+
+          {booking && <BookCallDialog booking={booking} creatorName={creator.name} open={bookOpen} onClose={closeBook} />}
 
           {/* Sticky "Work with me" bar (narrow screens). Sticky, not fixed: the @container
               above contains fixed elements, and sticky also works inside the editor preview. */}

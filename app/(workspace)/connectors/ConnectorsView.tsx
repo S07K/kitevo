@@ -314,7 +314,7 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
 
       <Section
         title="Scheduling for booked calls"
-        hint="Sell calls with the scheduler you already use. It keeps your availability, calendar conflicts, reminders and payment; Kitevo embeds it on your booking product."
+        hint="Sell calls with the scheduler you already use. It keeps your availability, calendar conflicts, reminders and payment; Kitevo adds a Book a call button to your kit."
       >
         {SCHEDULERS.map((p) => {
           const info = SCHEDULER_INFO[p];
@@ -373,7 +373,7 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
         onConnected={(c) => {
           setSchedulers((xs) => [...(xs ?? []).filter((x) => x.provider !== c.provider), c]);
           setSchedOpen(null);
-          setFlash(`${SCHEDULER_INFO[c.provider].name} connected. Add a booking in Products to start selling calls.`);
+          setFlash(`${SCHEDULER_INFO[c.provider].name} connected. Turn on Book a call in your kit editor's Contact card.`);
         }}
       />
       <ConnectStripeDialog

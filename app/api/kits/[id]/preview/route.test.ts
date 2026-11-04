@@ -39,7 +39,7 @@ describe("GET /api/kits/[id]/preview", () => {
       kit: { id: "k1", userId: "user-1" },
       creator: { name: "Maya", username: "maya", bio: "", niches: ["Beauty"], location: null, links: [{ label: "Site", url: "https://m.co" }] },
     } as never);
-    vi.mocked(loadKitViewData).mockResolvedValue({ live: {}, instagramConnected: false, instagramPosts: [], inquiryEnabled: true, products: [], referralCode: "abc" });
+    vi.mocked(loadKitViewData).mockResolvedValue({ live: {}, instagramConnected: false, instagramPosts: [], inquiryEnabled: true, products: [], schedulers: [], referralCode: "abc" });
     const res = await GET(new Request("http://x"), { params: params("k1") });
     expect(res.status).toBe(200);
     expect(res.headers.get("Cache-Control")).toContain("no-store");

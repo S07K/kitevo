@@ -4,6 +4,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { normalizeKitBooking, type KitBooking } from "@/lib/kit-booking";
 import { normalizeLinks } from "@/lib/profile-links";
 import { DEFAULT_SECTION_VISIBILITY } from "@/lib/kit-storage";
 import type { SectionVisibility } from "@/lib/kit-storage";
@@ -44,6 +45,7 @@ export type PublicKit = {
   sectionVisibility: SectionVisibility;
   appearance: KitAppearance;
   manualStats: ManualStats;
+  booking: KitBooking;
 };
 
 export type PublicCreator = {
@@ -99,6 +101,7 @@ export async function getKitBySlug(slug: string): Promise<KitBySlugResult> {
       sectionVisibility,
       appearance: parseKitAppearance(kit.appearance),
       manualStats: parseManualStats(kit.manualStats),
+      booking: normalizeKitBooking(kit.booking),
     },
     creator,
   };

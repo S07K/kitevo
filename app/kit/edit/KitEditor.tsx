@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { normalizeKitBooking, type KitBooking } from "@/lib/kit-booking";
+import { BookCallField } from "./BookCallField";
+import { Switch } from "./Switch";
 import Link from "next/link";
 import { Camera, Check, Lock, Plus, X } from "lucide-react";
 import { BRAND_LOGO_RATIO_OPTIONS, type BrandPartner, type KitRates, type RateItem } from "@/lib/mock-data";
@@ -100,25 +103,6 @@ function SharedBadge() {
 
 function PlanBadge({ plan }: { plan: string }) {
   return <span className="shrink-0 rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-semibold text-primary-soft-foreground">{plan}</span>;
-}
-
-/** Accessible on/off switch. */
-function Switch({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 ${
-        checked ? "bg-primary" : "bg-muted ring-1 ring-inset ring-border"
-      }`}
-    >
-      <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-[18px]" : "translate-x-0.5"}`} />
-    </button>
-  );
 }
 
 function NumberField({
@@ -433,6 +417,7 @@ export type KitDraft = {
   sectionVisibility: SectionVisibility;
   appearance: KitAppearance;
   manualStats: ManualStats;
+  booking: KitBooking;
   profile: ProfileDraft;
 };
 
@@ -443,6 +428,7 @@ const kitPart = (d: KitDraft) => ({
   sectionVisibility: { ...d.sectionVisibility, rates: d.rates.show },
   appearance: d.appearance,
   manualStats: d.manualStats,
+  booking: d.booking,
 });
 const profilePart = (p: ProfileDraft) => ({
   name: p.name,
@@ -504,6 +490,7 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
                 ? parseKitAppearance(data.appearance)
                 : DEFAULT_KIT_APPEARANCE,
           manualStats: normalizeManualStats(data.manualStats),
+          booking: normalizeKitBooking(data.booking),
           profile: {
             name: typeof p.name === "string" ? p.name : "",
             bio: typeof p.bio === "string" ? p.bio : "",
@@ -1040,6 +1027,7 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
         hint="How brands reach you. The rate card's button and the sticky bar on phones point here."
         badge={<Switch checked={sectionVisibility.links} onChange={(v) => setVisible("links", v)} label="Show contact links on my kit" />}
       >
+        <BookCallField value={draft.booking} onChange={(booking) => update("booking", booking)} />
         <LinksField links={profile.links} onChange={(links) => updateProfile({ links })} disabled={!sectionVisibility.links} />
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-muted/60 px-4 py-3">
           <p className="text-xs text-muted-foreground">

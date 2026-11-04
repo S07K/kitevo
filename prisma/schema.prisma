@@ -138,6 +138,7 @@ model Kit {
   sectionVisibility String   // JSON
   appearance        String   @default("{}") // kit theme JSON: { preset: warm|cool|paper|noir }
   manualStats       String   @default("{}") // JSON: creator-reported stats used when a platform is not connected
+  booking           String   @default("{}") // JSON: { url, label } — "Book a call" via the creator's connected scheduler (lib/kit-booking)
   passwordHash      String?  // bcrypt hash; null = public kit
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

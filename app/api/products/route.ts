@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { MAX_PRODUCTS, bookingPublishProblem, normalizeProductInput, paidPublishProblem, withResolvedBookingUrl } from "@/lib/commerce";
+import { MAX_PRODUCTS, normalizeProductInput, paidPublishProblem } from "@/lib/commerce";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,8 @@ export async function GET() {
   const userId = await creatorId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const rows = await prisma.product.findMany({
-    where: { userId },
+    // Old booking products are retired (moved to the kit's Book a call); only downloads list.
+    where: { userId, type: "download" },
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     include: { _count: { select: { orders: { where: { status: { in: ["free", "paid"] } } } } } },
   });
@@ -31,12 +32,12 @@ export async function GET() {
 export async function POST(req: Request) {
   const userId = await creatorId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const count = await prisma.product.count({ where: { userId } });
+  const count = await prisma.product.count({ where: { userId, type: "download" } });
   if (count >= MAX_PRODUCTS) return NextResponse.json({ error: `You can have up to ${MAX_PRODUCTS} products.` }, { status: 400 });
-  const parsed = normalizeProductInput(await withResolvedBookingUrl(((await req.json().catch(() => ({}))) ?? {}) as Record<string, unknown>));
+  const parsed = normalizeProductInput(await req.json().catch(() => ({})));
   if (!parsed.ok) return NextResponse.json({ error: parsed.problem.error, field: parsed.problem.field }, { status: 400 });
-  const blocked = (await paidPublishProblem(userId, parsed.value)) ?? (await bookingPublishProblem(userId, parsed.value));
-  if (blocked) return NextResponse.json({ ...blocked, field: blocked.code.includes("scheduler") ? "bookingUrl" : "priceCents" }, { status: 403 });
+  const blocked = await paidPublishProblem(userId, parsed.value);
+  if (blocked) return NextResponse.json({ ...blocked, field: "priceCents" }, { status: 403 });
   const product = await prisma.product.create({ data: { ...parsed.value, userId, position: count } });
   return NextResponse.json({ ...product, orders: 0 }, { status: 201 });
 }
