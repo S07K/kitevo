@@ -352,6 +352,7 @@ export async function sendDownloadEmail({
   creatorName,
   accessUrl,
   paidAmount,
+  paidVia = "Razorpay",
 }: {
   to: string;
   productTitle: string;
@@ -359,6 +360,8 @@ export async function sendDownloadEmail({
   accessUrl: string;
   /** Set for purchases, e.g. "₹499": the email then reads as a receipt. */
   paidAmount?: string;
+  /** Who processed the payment, for the receipt line ("Razorpay", "Stripe"). */
+  paidVia?: string;
 }) {
   await send(
     {
@@ -368,7 +371,7 @@ export async function sendDownloadEmail({
       html: emailHtml({
         heading: escapeHtml(productTitle),
         body: paidAmount
-          ? `Thanks for your purchase from <strong>${escapeHtml(creatorName)}</strong> (${escapeHtml(paidAmount)}, paid to ${escapeHtml(creatorName)} through Razorpay). Keep this email: the link is yours and works any time.`
+          ? `Thanks for your purchase from <strong>${escapeHtml(creatorName)}</strong> (${escapeHtml(paidAmount)}, paid to ${escapeHtml(creatorName)} through ${escapeHtml(paidVia)}). Keep this email: the link is yours and works any time.`
           : `Thanks for signing up. Here's your download from <strong>${escapeHtml(creatorName)}</strong>. Keep this email: the link is yours and works any time.`,
         ctaLabel: "Open your download",
         ctaUrl: accessUrl,

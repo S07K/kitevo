@@ -69,10 +69,10 @@ export const INTEGRATION_GROUPS: IntegrationGroup[] = [
       {
         id: "stripe",
         name: "Stripe",
-        status: "soon",
+        status: "live",
         plans: "Starter and Pro",
-        summary: "Card payments into your own Stripe account, for creators selling outside India.",
-        details: ["Same model: your account, your money, 0% to Kitevo"],
+        summary: "Cards and the wallets your Stripe account accepts, on Stripe's own checkout page, paid into your Stripe account. Works for buyers anywhere.",
+        details: ["Connect with a restricted key that can only create checkouts (stored encrypted)", "Every payment is verified with Stripe before the buyer gets the file", "Connect Razorpay too and buyers choose at checkout"],
       },
       {
         id: "paypal",

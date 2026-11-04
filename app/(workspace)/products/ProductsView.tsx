@@ -44,12 +44,13 @@ export function ProductsView() {
   const [deleting, setDeleting] = useState<Product | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   // undefined = loading, null = not connected
-  const [connection, setConnection] = useState<Connection | null | undefined>(undefined);
+  // undefined = loading; [] = none connected
+  const [connections, setConnections] = useState<Connection[] | undefined>(undefined);
   useEffect(() => {
     fetch("/api/payments/connections", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
-      .then((rows: Connection[]) => setConnection(rows.find((c) => c.provider === "razorpay") ?? null))
-      .catch(() => setConnection(null));
+      .then((rows: Connection[]) => setConnections(rows.filter((c) => c.provider === "razorpay" || c.provider === "stripe")))
+      .catch(() => setConnections([]));
   }, []);
 
   useEffect(() => {
@@ -175,21 +176,25 @@ export function ProductsView() {
             </ol>
           </Panel>
           <Panel title="Payments" action={<Link href="/connectors" className="text-xs font-medium text-primary hover:underline">Connectors</Link>}>
-            {connection === undefined ? (
+            {connections === undefined ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
-            ) : connection ? (
+            ) : connections.length ? (
               <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <BrandChip brand="razorpay" size={15} />
-                  <Badge variant="success" dot>Connected</Badge>
-                  {!connection.livemode && <Badge variant="warning">Test mode</Badge>}
-                </div>
-                <p className="text-sm leading-relaxed text-muted-foreground">Set a price on any product and buyers pay straight into your Razorpay account.</p>
+                {connections.map((c) => (
+                  <div key={c.provider} className="flex flex-wrap items-center gap-2">
+                    <BrandChip brand={c.provider === "stripe" ? "stripe" : "razorpay"} size={15} />
+                    <Badge variant="success" dot>Connected</Badge>
+                    {!c.livemode && <Badge variant="warning">Test mode</Badge>}
+                  </div>
+                ))}
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Set a price on any product and buyers pay straight into your account{connections.length > 1 ? "; they choose Razorpay or Stripe at checkout" : ""}.
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  To sell for a price, connect your <BrandChip brand="razorpay" /> account once in Connectors. Free downloads work without it.
+                  To sell for a price, connect <BrandChip brand="razorpay" /> or <BrandChip brand="stripe" /> once in Connectors. Free downloads work without it.
                 </p>
                 <ButtonLink href="/connectors" size="sm">Open Connectors</ButtonLink>
               </div>
@@ -201,7 +206,7 @@ export function ProductsView() {
       {editing && (
         <ProductEditor
           initial={editing}
-          paymentsConnected={!!connection}
+          paymentsConnected={!!connections?.length}
           onClose={() => setEditing(null)}
           onSaved={(p) => {
             setProducts((ps) => {
@@ -362,8 +367,8 @@ function ProductEditor({
           <p className="mt-1 text-xs text-muted-foreground">
             {Number(d.price) > 0
               ? paymentsConnected
-                ? `Buyers pay ${formatPrice(Math.round(Number(d.price) * 100), d.currency)} straight into your Razorpay account. Kitevo takes 0%.`
-                : "Connect Razorpay in Connectors (sidebar) before publishing a paid product. Saving as a draft works now."
+                ? `Buyers pay ${formatPrice(Math.round(Number(d.price) * 100), d.currency)} straight into your own account. Kitevo takes 0%.`
+                : "Connect Razorpay or Stripe in Connectors (sidebar) before publishing a paid product. Saving as a draft works now."
               : "Leave empty or 0 for a free download in exchange for an email."}
           </p>
           {err("priceCents")}

@@ -199,6 +199,18 @@ No new env vars (secrets reuse `TOKEN_ENCRYPTION_KEYS`). One migration (`2026110
 
 ---
 
+## 11. Stripe for paid products (`feat/commerce-stripe`)
+
+No migration, no new env vars (the Stripe key is stored like the Razorpay secret, with `TOKEN_ENCRYPTION_KEYS`).
+
+- [ ] In Stripe (test mode): Developers → API keys → **Create restricted key** "Kitevo", **Checkout Sessions: Write**, everything else None. Copy the `rk_test_…` key.
+- [ ] Kitevo **Connectors → Connect Stripe**, paste it. A full `sk_` key must be refused with a message.
+- [ ] Price a product in **USD**, publish, open it from a private window. With Razorpay also connected you'll see a "Pay with" choice; pick **Stripe** → Stripe's page → card `4242 4242 4242 4242`, any future date and CVC → you land on the download page, the "Your purchase" email says "through Stripe", the product shows the sale.
+- [ ] On Stripe's page press back/cancel → the product page says "Payment cancelled. You weren't charged."
+- [ ] When happy, replace it with a **live** restricted key (same permission).
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.
