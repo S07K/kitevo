@@ -1,4 +1,5 @@
 import { normalizeLinkUrl } from "@/lib/profile-links";
+import { parseSchedulerUrl } from "@/lib/scheduler-links";
 
 /**
  * Client-safe commerce helpers (limits, validation, the public product shape). Server-only
@@ -30,7 +31,12 @@ export function formatPrice(minor: number, currency: string): string {
   }).format(major);
 }
 
+export type ProductType = "download" | "booking";
+
 export type ProductInput = {
+  type: ProductType;
+  /** Type "booking": the creator's Calendly / Cal.com / Google appointment link (canonical). */
+  bookingUrl: string | null;
   title: string;
   description: string;
   coverUrl: string | null;
@@ -50,6 +56,14 @@ export function normalizeProductInput(raw: unknown): { ok: true; value: ProductI
   const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
   const title = str(o.title, MAX_TITLE);
   const status = o.status === "published" ? "published" : "draft";
+  const type: ProductType = o.type === "booking" ? "booking" : "download";
+  // Bookings: the scheduler link must be a recognised Calendly / Cal.com / Google link.
+  // (Google short links are resolved by the API route before this runs.)
+  const bookingRaw = type === "booking" && typeof o.bookingUrl === "string" ? o.bookingUrl.trim() : "";
+  const bookingParsed = bookingRaw ? parseSchedulerUrl(bookingRaw) : null;
+  if (bookingRaw && !bookingParsed) {
+    return { ok: false, problem: { field: "bookingUrl", error: "Use a Calendly, Cal.com or Google Calendar appointment link." } };
+  }
   const deliveryRaw = typeof o.deliveryUrl === "string" ? o.deliveryUrl.trim() : "";
   // Delivery must be a web page (a file link), never mailto: or a script URL.
   const deliveryUrl = deliveryRaw ? normalizeLinkUrl(deliveryRaw) : null;
@@ -62,8 +76,10 @@ export function normalizeProductInput(raw: unknown): { ok: true; value: ProductI
   }
   // Price: given in major units by the editor ("499" or "19.50") or minor units by the API.
   const priceMajor = typeof o.price === "number" || typeof o.price === "string" ? Number(o.price) : null;
-  const priceCents =
-    priceMajor !== null && o.price !== ""
+  // Bookings are paid (if at all) inside the creator's scheduler, so Kitevo never charges for them.
+  const priceCents = type === "booking"
+    ? 0
+    : priceMajor !== null && o.price !== ""
       ? Math.round(priceMajor * 100)
       : typeof o.priceCents === "number" ? Math.round(o.priceCents) : 0;
   if (!Number.isFinite(priceCents) || priceCents < 0) return { ok: false, problem: { field: "priceCents", error: "Enter a price, or 0 for a free download." } };
@@ -73,11 +89,12 @@ export function normalizeProductInput(raw: unknown): { ok: true; value: ProductI
 
   if (status === "published") {
     if (!title) return { ok: false, problem: { field: "title", error: "Give it a name before publishing." } };
-    if (!deliveryUrl) return { ok: false, problem: { field: "deliveryUrl", error: "Add the link people get after they sign up." } };
+    if (type === "download" && !deliveryUrl) return { ok: false, problem: { field: "deliveryUrl", error: "Add the link people get after they sign up." } };
+    if (type === "booking" && !bookingParsed) return { ok: false, problem: { field: "bookingUrl", error: "Choose which scheduling page people book on." } };
   }
   return {
     ok: true,
-    value: { title, description: str(o.description, MAX_DESCRIPTION), coverUrl: cover, deliveryUrl, deliveryNote: str(o.deliveryNote, MAX_NOTE), status, priceCents, currency },
+    value: { type, bookingUrl: bookingParsed?.url ?? null, title, description: str(o.description, MAX_DESCRIPTION), coverUrl: cover, deliveryUrl, deliveryNote: str(o.deliveryNote, MAX_NOTE), status, priceCents, currency },
   };
 }
 
@@ -88,7 +105,9 @@ export function cleanEmail(raw: unknown): string | null {
 }
 
 /** What a kit or product page shows (never the delivery link). */
-export function publicProduct(p: { id: string; title: string; description: string; coverUrl: string | null; priceCents: number; currency: string; type: string }) {
-  return { id: p.id, title: p.title, description: p.description, coverUrl: p.coverUrl, priceCents: p.priceCents, currency: p.currency, type: p.type };
+export function publicProduct(p: { id: string; title: string; description: string; coverUrl: string | null; priceCents: number; currency: string; type: string; bookingUrl?: string | null }) {
+  // Booking links are public (they're embedded on the product page), so the provider can show.
+  const scheduler = p.type === "booking" && p.bookingUrl ? (parseSchedulerUrl(p.bookingUrl)?.provider ?? null) : null;
+  return { id: p.id, title: p.title, description: p.description, coverUrl: p.coverUrl, priceCents: p.priceCents, currency: p.currency, type: p.type, scheduler };
 }
 export type PublicProduct = ReturnType<typeof publicProduct>;

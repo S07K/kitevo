@@ -15,6 +15,9 @@ import notion from "thesvg/notion";
 import linktree from "thesvg/linktree";
 import canva from "thesvg/canva";
 import wise from "thesvg/wise";
+import calendly from "thesvg/calendly";
+import calcom from "thesvg/cal-com";
+import googleCalendar from "thesvg/google-calendar";
 
 type Icon = { title: string; hex: string; svg: string; variants: Record<string, string> };
 
@@ -30,6 +33,9 @@ export const BRAND_ICONS = {
   linktree,
   canva,
   wise,
+  calendly,
+  calcom,
+  googlecalendar: googleCalendar,
 } satisfies Record<string, Icon>;
 
 export type BrandIconId = keyof typeof BRAND_ICONS;
@@ -44,4 +50,10 @@ export const DARK_ON_DARK: ReadonlySet<BrandIconId> = new Set(["razorpay", "payp
  * Brands whose full-colour "default" is a wordmark, unreadable at icon size: render their
  * glyph (the mono variant) in the brand colour instead.
  */
-export const GLYPH_IN_BRAND_COLOUR: ReadonlySet<BrandIconId> = new Set(["stripe"]);
+export const GLYPH_IN_BRAND_COLOUR: ReadonlySet<BrandIconId> = new Set(["stripe", "calendly"]);
+
+/**
+ * Brands whose only thesvg mark is a wordmark (unreadable at icon size): use the company's
+ * official favicon, downloaded from its own site into public/brands/ (CLAUDE.md icon rule).
+ */
+export const FAVICON_ICONS: Partial<Record<BrandIconId, string>> = { calcom: "/brands/calcom.png" };

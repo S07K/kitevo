@@ -107,6 +107,7 @@ model User {
   products      Product[]
   sales         Order[]   @relation("SellerOrders")
   paymentConnections PaymentConnection[]
+  schedulerConnections SchedulerConnection[]
   analyticsEvents AnalyticsEvent[]
   // Referral program (lib/referrals.ts)
   referralCode         String?              @unique
@@ -435,7 +436,8 @@ model Product {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String   @default("download") // "download" (later: "booking")
+  type        String   @default("download") // "download" | "booking"
+  bookingUrl  String?  // type "booking": the creator's Calendly / Cal.com / Google appointment link (public; embedded)
   title       String
   description String   @default("")
   coverUrl    String?  // base64 data URL, resized client-side like avatars
@@ -487,6 +489,21 @@ model PaymentConnection {
   livemode        Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@unique([userId, provider])
+}
+
+/// A creator's own scheduling page (Calendly, Cal.com, Google Calendar appointment schedule),
+/// connected once in Connectors and used by their booking products. The scheduler owns
+/// availability, calendar conflicts, reminders and any payment. No secrets: links are public.
+model SchedulerConnection {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider  String   // "calendly" | "calcom" | "google"
+  url       String   // canonical public link (lib/scheduler-links parseSchedulerUrl)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, provider])
 }

@@ -1,6 +1,6 @@
 # Kitevo Product & Growth Plan
 
-**Status (2026-11-03):** Phase 0 **complete**. Sprint 2 done (free calculators, public kit redesign) and Sprint 3 done (comparison pages, payout-rail decision: **creator-owned payments**). **Phase 1 (commerce) started:** Release A (free downloads with email capture) is live; Release B (paid products on the creator's own Razorpay or Stripe) is live; PayPal and C (bookings) are next. See §15–§16.
+**Status (2026-11-03):** Phase 0 **complete**. Sprint 2 done (free calculators, public kit redesign) and Sprint 3 done (comparison pages, payout-rail decision: **creator-owned payments**). **Phase 1 (commerce) started:** Release A (free downloads with email capture) is live; Release B (paid products on the creator's own Razorpay or Stripe) is live; Release C (booked calls via the creator's own Calendly / Cal.com / Google Calendar) is built; PayPal and booking sync are next. See §15–§16.
 **Last updated:** 2026-11-03
 **Scope:** Competitive strategy, pricing architecture, feature roadmap, and the Phase 0 execution checklist.
 
@@ -637,4 +637,10 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - With Razorpay and Stripe both connected, buyers choose (Razorpay for UPI in India, Stripe for international cards).
 - Compare pages updated: Kitevo now sells digital downloads (free or paid); courses, memberships and bookings are still gaps.
 - Next: PayPal, then Release C (bookings).
+
+## 19. Release C: booked calls, integrations-first, 2026-11-04
+
+- Decision: no native slot picker (built, then closed as PR #20). Creators connect the scheduler they already use (Calendly, Cal.com, Google Calendar appointment schedules); it owns availability, conflicts with their real calendar, reminders and payment.
+- A booking product embeds that scheduler on the creator's product page and shows on the kit as a "1:1 call".
+- Next: read bookings back (Calendly/Cal.com APIs + webhooks) so they appear in Kitevo; PayPal.
 
