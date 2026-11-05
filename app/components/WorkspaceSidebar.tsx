@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
-import { ArrowUpRight, ChevronsUpDown, Loader2, SquareKanban, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun, ShoppingBag, Plug } from "lucide-react";
+import { ArrowUpRight, ChevronsUpDown, Loader2, SquareKanban, Compass, CreditCard, Gift, House, LogOut, Megaphone, MessageCircle, Moon, Settings, ShieldCheck, Sun, ShoppingBag, Plug, Handshake } from "lucide-react";
 import { AvatarImg } from "./AvatarImg";
 import { REFERRAL_RATE_PCT } from "@/lib/referral-terms";
 import { Skeleton } from "@/app/components/Skeleton";
@@ -112,6 +112,7 @@ export function WorkspaceSidebar({
 
   const badge = inboxBadge ?? unread;
   const earn: Item = { href: "/referrals", label: "Invite & earn", icon: <Gift {...ICON} /> };
+  const deals: Item = { href: "/deals", label: "Deals", icon: <Handshake {...ICON} />, match: (p) => p.startsWith("/deals") };
 
   const creator: { sections: Section[]; footer: Item[]; mobile: Item[] } = {
     sections: [
@@ -131,6 +132,7 @@ export function WorkspaceSidebar({
             match: (p) => p.startsWith("/campaigns"),
           },
           { href: "/messages", label: "Messages", icon: <MessageCircle {...ICON} />, badge },
+          deals,
           { href: "/pipeline", label: "Pipeline", icon: <SquareKanban {...ICON} /> },
         ],
       },
@@ -148,9 +150,9 @@ export function WorkspaceSidebar({
     { href: "/dashboard", label: "Home", icon: <House {...ICON} /> },
     creator.sections[1].items[0],
     { ...creator.sections[1].items[1], label: "Messages" },
-    // Settings lives in the avatar menu on phones, so the bar can carry Products.
+    // Settings and Invite & earn live in the avatar menu on phones, so the bar carries Deals.
+    deals,
     { href: "/products", label: "Products", icon: <ShoppingBag {...ICON} /> },
-    { ...earn, label: "Earn" },
   ];
 
   const brandInbox: Item = { href: "/messages", label: "Messages", icon: <MessageCircle {...ICON} />, badge };
@@ -166,6 +168,7 @@ export function WorkspaceSidebar({
             match: (p) => p.startsWith("/campaigns"),
           },
           brandInbox,
+          deals,
         ],
       },
       { title: "Grow", items: [earn] },
@@ -173,7 +176,7 @@ export function WorkspaceSidebar({
     footer: [{ href: "/settings", label: "Settings", icon: <Settings {...ICON} /> }],
     mobile: [],
   };
-  brand.mobile = [...brand.sections[0].items, { ...earn, label: "Earn" }, brand.footer[0]];
+  brand.mobile = [...brand.sections[0].items.slice(0, 3), deals, brand.footer[0]];
 
   const admin: Item = { href: "/admin", label: "Admin", icon: <ShieldCheck {...ICON} />, match: (p) => p.startsWith("/admin") };
   if (isAdmin) {

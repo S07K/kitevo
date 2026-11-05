@@ -249,6 +249,19 @@ No new env vars. One migration (`20261104161344_kit_book_a_call`) adds `Kit.book
 
 ---
 
+## 15. Brand deals with payments (`feat/brand-deals`)
+
+No new env vars. One additive migration (`20261105072400_brand_deals`) applies on deploy.
+
+- [ ] GitHub Actions > **DB migrations** run for the merge commit is green.
+- [ ] As a creator: **Deals > New deal** (or "Send your quote" on an accepted campaign / "Send quote" in a message thread or a Pipeline inquiry). Add deliverables, amount, a 50% advance, send.
+- [ ] The brand gets an email with a private link (or sees it under Deals if they have an account): accept, counter or decline. A counter shows as a new version; history shows every step for both sides.
+- [ ] After acceptance the advance is **Due**: pay it from the brand side with your test Razorpay/Stripe/PayPal. It shows Paid with the provider, and the creator gets a "Payment received" email.
+- [ ] Creator: **Mark as delivered** → the balance becomes due → pay it → the deal shows **Completed**.
+- [ ] Try to change terms after a payment: not offered. Try the brand link with a wrong token: 404.
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.

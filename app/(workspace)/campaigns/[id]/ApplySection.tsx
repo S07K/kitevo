@@ -11,6 +11,8 @@ type Props = {
   appliedAt: string | null;
   reviewedAt: string | null;
   hasConversation: boolean;
+  /** Set once applied; an accepted application can turn into a deal (quote → paid via Kitevo). */
+  applicationId?: string | null;
 };
 
 function fmt(iso: string) {
@@ -107,7 +109,7 @@ const labelColors: Record<string, string> = {
   warning: "text-amber-600 dark:text-amber-400",
 };
 
-export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt, hasConversation }: Props) {
+export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt, hasConversation, applicationId }: Props) {
   const [status, setStatus] = useState<string | null>(initialStatus);
   const [localAppliedAt, setLocalAppliedAt] = useState<string | null>(appliedAt);
   const [showForm, setShowForm] = useState(false);
@@ -197,13 +199,18 @@ export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt,
                       </Link>
                     )}
                     {step.key === "decision" && isAccepted && (
-                      <Link
-                        href="/messages"
-                        className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline mt-1"
-                      >
-                        Check inbox
-                        <ArrowRight size={11} aria-hidden />
-                      </Link>
+                      <span className="mt-1 flex flex-wrap items-center gap-3">
+                        {applicationId && (
+                          <Link href={`/deals/new?source=campaign&ref=${applicationId}`} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                            Send your quote
+                            <ArrowRight size={11} aria-hidden />
+                          </Link>
+                        )}
+                        <Link href="/messages" className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:underline">
+                          Check inbox
+                          <ArrowRight size={11} aria-hidden />
+                        </Link>
+                      </span>
                     )}
                   </div>
                 </div>

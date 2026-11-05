@@ -94,13 +94,13 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
   }
 
   // Check if the logged-in creator already applied + conversation with brand
-  let myApplication: { status: string; createdAt: Date } | null = null;
+  let myApplication: { id: string; status: string; createdAt: Date } | null = null;
   let hasConversation = false;
   if (session?.user?.id) {
     const [app, convo] = await Promise.all([
       prisma.campaignApplication.findFirst({
         where: { campaignId: id, creatorId: session.user.id },
-        select: { status: true, createdAt: true },
+        select: { id: true, status: true, createdAt: true },
       }),
       prisma.conversation.findFirst({
         where: {
@@ -217,6 +217,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
                 appliedAt={myApplication?.createdAt?.toISOString() ?? null}
                 reviewedAt={null}
                 hasConversation={hasConversation}
+                applicationId={myApplication?.id ?? null}
               />
             ) : (
               <div>

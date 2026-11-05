@@ -381,3 +381,25 @@ export async function sendDownloadEmail({
     "download",
   );
 }
+
+/**
+ * Brand deals: one template for every step (quote, counter, accepted, payment due, paid,
+ * delivered). `lines` are plain text (escaped here); the link opens the deal.
+ */
+export async function sendDealEmail({ to, subject, heading, lines, ctaLabel, ctaUrl }: { to: string; subject: string; heading: string; lines: string[]; ctaLabel: string; ctaUrl: string }) {
+  await send(
+    {
+      from: FROM,
+      to,
+      subject,
+      html: emailHtml({
+        heading: escapeHtml(heading),
+        body: lines.map((l) => escapeHtml(l)).join("<br><br>"),
+        ctaLabel,
+        ctaUrl,
+        footer: "You received this because you're part of a brand deal on Kitevo. Payments go straight to the creator; Kitevo never holds the money.",
+      }),
+    },
+    "deal",
+  );
+}
