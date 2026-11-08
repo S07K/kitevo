@@ -58,8 +58,20 @@ export function creatorAiTarget(provider: AiProvider, apiKey: string, model: str
 export type CompletionRequest = { system: string; prompt: string; maxTokens?: number; temperature?: number };
 export type CompletionResult = { text: string; model: string };
 
+/**
+ * Reasoning models (gpt-oss) think before they answer, and the thinking counts against
+ * max_tokens: with a short-draft budget they can spend it all and return no text. For them,
+ * ask for low reasoning effort and add headroom. Only gpt-oss gets the extra parameter;
+ * other models may reject it.
+ */
+export function isReasoningModel(model: string): boolean {
+  return /(^|\/)gpt-oss/i.test(model);
+}
+const REASONING_HEADROOM = 1500;
+
 export async function complete(target: AiTarget, req: CompletionRequest, fetchImpl: typeof fetch = fetch): Promise<CompletionResult> {
-  const maxTokens = req.maxTokens ?? 600;
+  const reasoning = target.provider !== "anthropic" && isReasoningModel(target.model);
+  const maxTokens = (req.maxTokens ?? 600) + (reasoning ? REASONING_HEADROOM : 0);
   const temperature = req.temperature ?? 0.7;
   const anthropic = target.provider === "anthropic";
   const url = anthropic ? `${target.baseUrl}/messages` : `${target.baseUrl}/chat/completions`;
@@ -73,6 +85,7 @@ export async function complete(target: AiTarget, req: CompletionRequest, fetchIm
           { role: "system", content: req.system },
           { role: "user", content: req.prompt },
         ],
+        ...(reasoning ? { reasoning_effort: "low" } : {}),
       };
 
   let res: Response;

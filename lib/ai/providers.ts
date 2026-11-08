@@ -11,7 +11,10 @@ export type AiProvider = (typeof AI_PROVIDERS)[number];
 export type AiProviderInfo = {
   name: string;
   icon: BrandIconId;
-  /** Used when no model is set. Free/cheap, good-at-writing defaults; any model id works. */
+  /**
+   * Used when no model is set; any model id works. Groq and OpenRouter default to OpenAI's
+   * open-weight gpt-oss-120b (free tier on Groq, fractions of a cent per draft on OpenRouter).
+   */
   defaultModel: string;
   /** OpenAI-compatible base URL (Anthropic uses its own Messages API). */
   baseUrl: string;
@@ -25,18 +28,18 @@ export const AI_PROVIDER_INFO: Record<AiProvider, AiProviderInfo> = {
   groq: {
     name: "Groq",
     icon: "groq",
-    defaultModel: "llama-3.3-70b-versatile",
+    defaultModel: "openai/gpt-oss-120b",
     baseUrl: "https://api.groq.com/openai/v1",
     keysUrl: "https://console.groq.com/keys",
-    hint: "Fast open models (Llama, Qwen) with a free tier.",
+    hint: "Fast open models (gpt-oss, Llama, Qwen) with a free tier.",
   },
   openrouter: {
     name: "OpenRouter",
     icon: "openrouter",
-    defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+    defaultModel: "openai/gpt-oss-120b",
     baseUrl: "https://openrouter.ai/api/v1",
     keysUrl: "https://openrouter.ai/settings/keys",
-    hint: "One key for hundreds of models, including free ones (ids ending in :free).",
+    hint: "One key for hundreds of models, open and closed, some free (ids ending in :free).",
   },
   openai: {
     name: "OpenAI",

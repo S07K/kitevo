@@ -277,8 +277,8 @@ No env vars, no migration. Preview deployments used to run `prisma migrate deplo
 One additive migration (`20261108085646_copilot`) applies on deploy. Copilot is off until an AI key exists, either yours (env) or a creator's own (Connectors → AI).
 
 **To run it on Kitevo's key (optional; free options):**
-- [ ] Get a free key: Groq (console.groq.com/keys) or OpenRouter (openrouter.ai/settings/keys).
-- [ ] Vercel → Settings → Environment Variables (Production): `AI_PROVIDER=groq` (or `openrouter`), `AI_API_KEY=<key>`. Optional: `AI_MODEL` (OpenRouter free models end in `:free`, e.g. `meta-llama/llama-3.3-70b-instruct:free`), `COPILOT_MONTHLY_LIMIT` (default 50 per Pro creator per month). Redeploy.
+- [ ] Get a free key from Groq (console.groq.com/keys).
+- [ ] Vercel → Settings → Environment Variables (Production): `AI_PROVIDER=groq`, `AI_API_KEY=<Groq key>`. The model defaults to `openai/gpt-oss-120b` (free on Groq's free tier); set `AI_MODEL` only to change it. On OpenRouter (`AI_PROVIDER=openrouter`) the same default costs a fraction of a cent per draft. Optional: `COPILOT_MONTHLY_LIMIT` (default 50 per Pro creator per month). Redeploy.
 - [ ] Later, to move to Claude: `AI_PROVIDER=anthropic`, `AI_API_KEY=<Anthropic key>`, `AI_MODEL=claude-haiku-5-5`. No code change.
 
 **Check after deploy:**

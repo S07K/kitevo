@@ -9,7 +9,7 @@ describe("kitevoAiTarget (env)", () => {
     expect(kitevoAiTarget({ AI_PROVIDER: "groq" } as never)).toBeNull();
   });
   it("defaults to Groq and the provider's default model", () => {
-    expect(kitevoAiTarget({ AI_API_KEY: "k" } as never)).toEqual({ provider: "groq", apiKey: "k", model: "llama-3.3-70b-versatile", baseUrl: "https://api.groq.com/openai/v1" });
+    expect(kitevoAiTarget({ AI_API_KEY: "k" } as never)).toEqual({ provider: "groq", apiKey: "k", model: "openai/gpt-oss-120b", baseUrl: "https://api.groq.com/openai/v1" });
   });
   it("takes provider, model and a base URL override", () => {
     expect(kitevoAiTarget({ AI_PROVIDER: "OpenRouter", AI_API_KEY: "k", AI_MODEL: "qwen/qwen3:free", AI_BASE_URL: "https://x.test/v1/" } as never)).toEqual({
@@ -29,13 +29,24 @@ describe("kitevoAiTarget (env)", () => {
 describe("complete", () => {
   it("speaks OpenAI chat completions with a bearer key", async () => {
     const f = vi.fn(async () => json({ choices: [{ message: { content: " Hello " } }] }));
-    const out = await complete(creatorAiTarget("groq", "gsk_key", null), { system: "S", prompt: "P", maxTokens: 50 }, f as never);
+    const out = await complete(creatorAiTarget("groq", "gsk_key", "llama-3.3-70b-versatile"), { system: "S", prompt: "P", maxTokens: 50 }, f as never);
     expect(out).toEqual({ text: "Hello", model: "llama-3.3-70b-versatile" });
     const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://api.groq.com/openai/v1/chat/completions");
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer gsk_key");
     const body = JSON.parse(String(init.body));
     expect(body).toMatchObject({ model: "llama-3.3-70b-versatile", max_tokens: 50, messages: [{ role: "system", content: "S" }, { role: "user", content: "P" }] });
+    expect(body.reasoning_effort).toBeUndefined();
+  });
+
+  it("gives gpt-oss (the default) low reasoning effort and room to think", async () => {
+    for (const provider of ["groq", "openrouter"] as const) {
+      const f = vi.fn(async () => json({ choices: [{ message: { content: "Hi", reasoning: "thinking…" } }] }));
+      const out = await complete(creatorAiTarget(provider, "key", null), { system: "S", prompt: "P", maxTokens: 200 }, f as never);
+      expect(out).toEqual({ text: "Hi", model: "openai/gpt-oss-120b" });
+      const body = JSON.parse(String((f.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+      expect(body).toMatchObject({ model: "openai/gpt-oss-120b", reasoning_effort: "low", max_tokens: 1700 });
+    }
   });
 
   it("speaks Anthropic messages with x-api-key", async () => {

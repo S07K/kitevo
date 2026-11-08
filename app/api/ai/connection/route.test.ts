@@ -35,7 +35,7 @@ describe("/api/ai/connection", () => {
     const res = await post({ provider: "groq", key: KEY, model: "qwen/qwen3-32b" });
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body).toEqual({ provider: "groq", keyHint: "gsk_…WXYZ", model: "qwen/qwen3-32b", defaultModel: "llama-3.3-70b-versatile", connectedAt: new Date(0).toISOString() });
+    expect(body).toEqual({ provider: "groq", keyHint: "gsk_…WXYZ", model: "qwen/qwen3-32b", defaultModel: "openai/gpt-oss-120b", connectedAt: new Date(0).toISOString() });
     expect(JSON.stringify(body)).not.toContain(KEY);
     expect(vi.mocked(prisma.aiConnection.upsert).mock.calls[0][0]).toMatchObject({ create: { userId: "u1", provider: "groq", keyEncrypted: `enc(${KEY})` } });
   });
