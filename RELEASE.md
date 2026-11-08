@@ -272,6 +272,24 @@ No env vars, no migration. Preview deployments used to run `prisma migrate deplo
 
 ---
 
+## 17. Copilot (`feat/copilot`)
+
+One additive migration (`20261108085646_copilot`) applies on deploy. Copilot is off until an AI key exists, either yours (env) or a creator's own (Connectors → AI).
+
+**To run it on Kitevo's key (optional; free options):**
+- [ ] Get a free key: Groq (console.groq.com/keys) or OpenRouter (openrouter.ai/settings/keys).
+- [ ] Vercel → Settings → Environment Variables (Production): `AI_PROVIDER=groq` (or `openrouter`), `AI_API_KEY=<key>`. Optional: `AI_MODEL` (OpenRouter free models end in `:free`, e.g. `meta-llama/llama-3.3-70b-instruct:free`), `COPILOT_MONTHLY_LIMIT` (default 50 per Pro creator per month). Redeploy.
+- [ ] Later, to move to Claude: `AI_PROVIDER=anthropic`, `AI_API_KEY=<Anthropic key>`, `AI_MODEL=claude-haiku-5-5`. No code change.
+
+**Check after deploy:**
+- [ ] GitHub Actions > **DB migrations** run for the merge commit is green.
+- [ ] Connectors → **AI for Copilot**: connect a Groq/OpenRouter key; a wrong key is refused; the card shows the model.
+- [ ] Kit editor → Profile → **Write my bio with Copilot**: a draft appears, "Use this" fills the bio. Rates → **Suggest rates from my stats** lists prices with what they're based on.
+- [ ] A campaign → Apply → **Draft my pitch with Copilot**. Pipeline → an inquiry → **Draft a reply with Copilot** → "Open in email" opens your mail app with the text.
+- [ ] Disconnect your key: on Pro with `AI_API_KEY` set, the Connectors line shows "N of 50 drafts left"; without it, Copilot asks for a key.
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.

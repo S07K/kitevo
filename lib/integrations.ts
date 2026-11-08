@@ -5,7 +5,7 @@
  * (Kitevo only reads platform data; it never posts, edits or deletes).
  */
 
-export type IntegrationLogo = "instagram" | "youtube" | "razorpay" | "stripe" | "paypal" | "googledrive" | "dropbox" | "notion" | "calendly" | "calcom" | "googlecalendar" | "domain";
+export type IntegrationLogo = "instagram" | "youtube" | "razorpay" | "stripe" | "paypal" | "googledrive" | "dropbox" | "notion" | "calendly" | "calcom" | "googlecalendar" | "groq" | "openrouter" | "openai" | "gemini" | "anthropic" | "domain";
 
 export type Integration = {
   id: IntegrationLogo;
@@ -102,6 +102,18 @@ export const INTEGRATION_GROUPS: IntegrationGroup[] = [
       { id: "googledrive", name: "Google Drive", status: "live", plans: "Every plan", summary: "PDFs, presets, templates: share the file and paste the link.", details: ["Set sharing to “anyone with the link”"] },
       { id: "dropbox", name: "Dropbox", status: "live", plans: "Every plan", summary: "Share a file or folder link for bigger downloads.", details: ["Works for single files and whole folders"] },
       { id: "notion", name: "Notion", status: "live", plans: "Every plan", summary: "Guides and resource lists as a published Notion page.", details: ["Publish the page to the web, then paste its link"] },
+    ],
+  },
+  {
+    id: "ai",
+    title: "AI for Copilot",
+    intro: "Copilot drafts your bio, campaign pitches and replies to brand inquiries from your kit's real numbers. It runs on Kitevo's AI with Pro, or on your own AI account on any plan.",
+    items: [
+      { id: "groq", name: "Groq", status: "live", plans: "Every plan, your own key", summary: "Fast open models (Llama, Qwen) with a free tier.", details: ["Paste an API key from the Groq console (stored encrypted)", "Pick any model your account can use"] },
+      { id: "openrouter", name: "OpenRouter", status: "live", plans: "Every plan, your own key", summary: "One key for hundreds of models, including free ones.", details: ["Paste an API key from OpenRouter (stored encrypted)", "Free models end in :free"] },
+      { id: "openai", name: "OpenAI", status: "live", plans: "Every plan, your own key", summary: "GPT models, billed to your OpenAI account.", details: ["Paste an API key from the OpenAI platform (stored encrypted)"] },
+      { id: "gemini", name: "Google Gemini", status: "live", plans: "Every plan, your own key", summary: "Gemini models with a free tier in Google AI Studio.", details: ["Paste an API key from Google AI Studio (stored encrypted)"] },
+      { id: "anthropic", name: "Anthropic", status: "live", plans: "Every plan, your own key", summary: "Claude models, billed to your Anthropic account.", details: ["Paste an API key from the Anthropic console (stored encrypted)"] },
     ],
   },
   {

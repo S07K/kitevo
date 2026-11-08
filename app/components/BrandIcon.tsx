@@ -1,4 +1,4 @@
-import { BRAND_ICONS, DARK_ON_DARK, FAVICON_ICONS, GLYPH_IN_BRAND_COLOUR, type BrandIconId } from "@/lib/brand-icons";
+import { BRAND_ICONS, DARK_ON_DARK, FAVICON_ICONS, GLYPH_IN_BRAND_COLOUR, MONO_IN_TEXT_COLOUR, type BrandIconId } from "@/lib/brand-icons";
 
 /**
  * An official brand mark (from `thesvg`, see lib/brand-icons.ts), sized as a square box.
@@ -24,7 +24,7 @@ export function BrandIcon({
   label?: string;
 }) {
   const icon = BRAND_ICONS[brand];
-  const monoSvg = icon.variants.mono ?? icon.svg;
+  const monoSvg = icon.variants.mono ?? (MONO_IN_TEXT_COLOUR.has(brand) ? icon.variants.light : undefined) ?? icon.svg;
   const a11y = label ? { role: "img" as const, "aria-label": label } : { "aria-hidden": true as const };
   const style = { width: size, height: size };
   // [&>svg] sizes the injected SVG to the box; mono variants have no fill, so they take currentColor.
@@ -38,7 +38,7 @@ export function BrandIcon({
       <img src={favicon} alt={label ?? ""} aria-hidden={label ? undefined : true} width={size} height={size} className={`inline-block shrink-0 rounded-[22%] ${className}`} style={style} />
     );
   }
-  if (mono) {
+  if (mono || MONO_IN_TEXT_COLOUR.has(brand)) {
     return <span {...a11y} className={`inline-flex shrink-0 ${fit} ${tint} ${className}`} style={style} dangerouslySetInnerHTML={{ __html: monoSvg }} />;
   }
   if (GLYPH_IN_BRAND_COLOUR.has(brand)) {
