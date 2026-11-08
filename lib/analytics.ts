@@ -21,6 +21,7 @@ export const ANALYTICS_EVENTS = [
   "product_published", //    props: { productId }
   "product_claimed", //      a new free claim (no buyer PII in props)
   "product_purchased", //    a paid order confirmed; props: { productId, provider }
+  "copilot_used", //         a Copilot draft; props: { task, source: "kitevo" | "own" }
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

@@ -506,7 +506,7 @@ Tooling: the `frontend-design` skill is installed for design passes; screenshot-
 | 2 | **Free rate + engagement calculators** · public kit UI revamp | SEO/social top of funnel; better first impression for brands — *calculators ✅ (2026-11-02: `/tools`, `/tools/rate-calculator`, `/tools/engagement-rate-calculator`; formulas shown on the page, rates carry into the kit editor after sign-up); public kit revamp ✅ (2026-11-02, §11.4 step 1)* |
 | 3 | Landing revamp + comparison pages · P0-6 admin view · payout-rail decision | Conversion; ops for commerce — *landing revamp ✅, admin ✅, comparison pages ✅ (2026-11-03: `/compare` + Stan Store, Linktree, Beacons, Canva; sourced and dated in `lib/comparisons.ts`); payout-rail decision ✅ (2026-11-03: creator-owned payments, see §11.6 note)* |
 | 4–6 | **R3 digital products + bookings** (checkout, delivery, orders, receipts) · R6 custom domains | Commerce parity on the things that matter |
-| 7–8 | **R2 brand-deal payments** (milestones, 5% brand fee) · R4 Copilot beta | The expansion lever + the moat |
+| 7–8 | **R2 brand-deal payments** (milestones, 5% brand fee) · R4 Copilot beta | The expansion lever + the moat — *brand deals ✅ (2026-11-05, creator-owned, 0%); Copilot ✅ (2026-11-08, §23)* |
 
 Sources: [Sacra — Stan](https://sacra.com/research/stan), [Sacra — Stan's Shopify vs Whop's Amazon](https://sacra.com/research/stans-shopify-vs-whops-amazon/), [Schoolmaker — Stan pricing 2026](https://schoolmaker.com/blog/stan-store-pricing).
 
@@ -654,6 +654,16 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 
 - Owner feedback: a booking isn't something people buy and download; it's a way to reach the creator. Booking products are retired; each kit gets a **Book a call** button under the profile that opens the creator's Calendly / Cal.com / Google page in a dialog. Set per kit in the editor's Contact card.
 - Existing booking products were copied onto their creators' kits by the migration; old links redirect to the kit with the dialog open.
+
+## 23. Copilot (R4), 2026-11-08
+
+- Owner ask: AI drafts without paying for Claude tokens at the start, and let creators bring their own AI.
+- Provider-agnostic fetch client (`lib/ai/client.ts`): OpenAI-compatible (Groq, OpenRouter, OpenAI, Gemini, any custom URL) + Anthropic. Kitevo's key from env (`AI_PROVIDER`/`AI_API_KEY`/`AI_MODEL`), switchable to Claude later with no code change.
+- Creators can connect their own key (Connectors → AI, encrypted): Copilot on any plan, no cap. Kitevo's key: Pro only, `COPILOT_MONTHLY_LIMIT` per month.
+- v1 tasks: bio (kit editor), campaign pitch (Apply), inquiry reply (Pipeline → email). Rate suggestions are the rate calculator's formulas on the kit's own numbers, no AI.
+- Deal notes were left out on purpose: notes become agreed terms, and a model must never write terms.
+- Grounding: the model only sees the kit's facts with their source (live vs self-reported); brand-written text is quoted as data.
+- Next: usage numbers in /admin, more tasks (deal summaries for brands, follow-ups), streaming.
 
 ## 22. Brand deals with payments through Kitevo, 2026-11-05
 

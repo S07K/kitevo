@@ -6,7 +6,8 @@ import { INTEGRATION_GROUPS } from "@/lib/integrations";
 
 /** Landing: the integrations, grouped by job, linking to /integrations. Same data as that page. */
 export function IntegrationsStrip(): ReactNode {
-  const groups = INTEGRATION_GROUPS.filter((g) => g.id !== "domain");
+  // Four columns: the domain and AI groups live on /integrations only.
+  const groups = INTEGRATION_GROUPS.filter((g) => g.id !== "domain" && g.id !== "ai");
   return (
     <section id="integrations" className="mx-auto max-w-[1200px] scroll-mt-24 px-6 pb-24 sm:px-10 sm:pb-32">
       <SectionHeading

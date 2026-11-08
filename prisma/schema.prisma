@@ -108,6 +108,8 @@ model User {
   sales         Order[]   @relation("SellerOrders")
   paymentConnections PaymentConnection[]
   schedulerConnections SchedulerConnection[]
+  aiConnection         AiConnection?
+  copilotUsage         CopilotUsage[]
   dealsAsCreator Deal[] @relation("CreatorDeals")
   dealsAsBrand   Deal[] @relation("BrandDeals")
   analyticsEvents AnalyticsEvent[]
@@ -606,3 +608,31 @@ model DealEvent {
   @@index([dealId, createdAt])
 }
 
+
+/// A creator's own AI provider key for Copilot (Connectors → AI). One per user; connecting
+/// another provider replaces it. The key is encrypted with lib/token-crypto and never sent
+/// back to a client (only `keyHint`). When present, Copilot runs on it with no Kitevo cap.
+model AiConnection {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     String   // lib/ai/providers AI_PROVIDERS: groq | openrouter | openai | gemini | anthropic
+  keyEncrypted String   // encryptToken(api key)
+  keyHint      String   // e.g. "gsk_…AbCd"
+  model        String?  // null = the provider's default model
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+/// One Copilot generation. `source` "kitevo" counts against the monthly cap on Kitevo's own
+/// key; "own" (the creator's key) is recorded for analytics only. No prompt or output text.
+model CopilotUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task      String   // bio | pitch | inquiry_reply
+  source    String   // kitevo | own
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}

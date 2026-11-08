@@ -22,6 +22,8 @@ import { normalizeManualStats, type ManualStats } from "@/lib/manual-stats";
 import { EMPTY_RATES, MAX_RATE_ITEMS, normalizeRates } from "@/lib/kit-rates";
 import { KitEditorSkeleton } from "@/app/components/Skeleton";
 import { CalculatorRatesOffer } from "./CalculatorRatesOffer";
+import { SuggestRates } from "./SuggestRates";
+import { CopilotDraft } from "@/app/components/copilot/CopilotDraft";
 import { Button, ButtonLink } from "@/app/components/workspace/Button";
 import { CREATOR_NICHES, MAX_NICHES } from "@/lib/niches";
 import { MAX_LINKS, MAX_LINK_LABEL, MAX_LOCATION, normalizeLinkUrl } from "@/lib/profile-links";
@@ -159,10 +161,12 @@ function ProfileFields({
   profile,
   onChange,
   instagramConnected,
+  kitId,
 }: {
   profile: ProfileDraft;
   onChange: (patch: Partial<ProfileDraft>) => void;
   instagramConnected: boolean;
+  kitId: string;
 }) {
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -326,6 +330,13 @@ function ProfileFields({
           onChange={(e) => onChange({ bio: e.target.value })}
           placeholder="What you make and who it's for, in a sentence or two."
           className={`${fieldCls} resize-none leading-relaxed`}
+        />
+        <CopilotDraft
+          className="mt-2"
+          task="bio"
+          params={{ kitId }}
+          label={profile.bio.trim() ? "Improve with Copilot" : "Write my bio with Copilot"}
+          onUse={(bio) => onChange({ bio: bio.slice(0, MAX_BIO) })}
         />
       </div>
     </div>
@@ -687,7 +698,7 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
         hint="The top of your kit. Changes here show on all your kits."
         badge={<SharedBadge />}
       >
-        <ProfileFields profile={profile} onChange={updateProfile} instagramConnected={instagramConnected} />
+        <ProfileFields profile={profile} onChange={updateProfile} instagramConnected={instagramConnected} kitId={kitId} />
       </Section>
 
       {/* Style */}
@@ -914,7 +925,7 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
         id="shop"
         flashed={flashed("shop")}
         title="Shop"
-        hint="Free downloads you offer in exchange for an email (paid products coming soon). Published products show on your kit."
+        hint="Downloads you offer: free in exchange for an email, or paid into your own account. Published products show on your kit."
         badge={<Switch checked={sectionVisibility.products !== false} onChange={(v) => setVisible("products", v)} label="Show shop on my kit" />}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -944,6 +955,11 @@ export function KitEditor({ kitId, tierId, onLoaded, onSaved, onStatusChange, re
           <p className="text-sm text-muted-foreground">Rates are hidden on your kit. Turn them on to add your prices.</p>
         ) : (
           <div className="space-y-4">
+            <SuggestRates
+              kitId={kitId}
+              hasRates={(rates.items ?? []).some((it) => it.label.trim() && typeof it.price === "number")}
+              onUse={(items) => update("rates", (r) => ({ ...r, show: true, items: items.slice(0, MAX_RATE_ITEMS).map((i) => ({ id: newId(), label: i.label, price: i.price })) }))}
+            />
             <div className="space-y-2">
               {(rates.items ?? []).map((it, i) => (
                 <div key={it.id} className="flex items-center gap-2">

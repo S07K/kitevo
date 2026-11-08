@@ -18,6 +18,7 @@ import {
 import { Columns3, List, Mail } from "lucide-react";
 import { Modal } from "@/app/components/workspace/Modal";
 import { Button, buttonClass } from "@/app/components/workspace/Button";
+import { CopilotDraft } from "@/app/components/copilot/CopilotDraft";
 
 export type DealStatus = "new" | "reviewing" | "negotiating" | "won" | "lost";
 
@@ -175,6 +176,19 @@ function DetailDialog({
       {inq && (
         <>
           <p className="whitespace-pre-line rounded-xl bg-muted/50 p-4 text-sm leading-relaxed text-foreground">{inq.message}</p>
+
+          {/* Draft a reply from the kit, then send it from the creator's own email. */}
+          <CopilotDraft
+            key={inq.id}
+            className="mt-3"
+            task="inquiry_reply"
+            params={{ inquiryId: inq.id }}
+            label="Draft a reply with Copilot"
+            useLabel="Open in email"
+            onUse={(text) => {
+              window.location.href = `mailto:${inq.email}?subject=${encodeURIComponent("Re: collaboration inquiry")}&body=${encodeURIComponent(text)}`;
+            }}
+          />
 
           <p className="mb-2 mt-5 text-xs font-medium text-muted-foreground">Stage</p>
           <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Stage">

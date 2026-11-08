@@ -18,6 +18,11 @@ import wise from "thesvg/wise";
 import calendly from "thesvg/calendly";
 import calcom from "thesvg/cal-com";
 import googleCalendar from "thesvg/google-calendar";
+import groq from "thesvg/groq";
+import openrouter from "thesvg/openrouter";
+import openai from "thesvg/openai";
+import gemini from "thesvg/google-gemini";
+import anthropic from "thesvg/anthropic";
 
 type Icon = { title: string; hex: string; svg: string; variants: Record<string, string> };
 
@@ -36,6 +41,11 @@ export const BRAND_ICONS = {
   calendly,
   calcom,
   googlecalendar: googleCalendar,
+  groq,
+  openrouter,
+  openai,
+  gemini,
+  anthropic,
 } satisfies Record<string, Icon>;
 
 export type BrandIconId = keyof typeof BRAND_ICONS;
@@ -56,4 +66,11 @@ export const GLYPH_IN_BRAND_COLOUR: ReadonlySet<BrandIconId> = new Set(["stripe"
  * Brands whose only thesvg mark is a wordmark (unreadable at icon size): use the company's
  * official favicon, downloaded from its own site into public/brands/ (CLAUDE.md icon rule).
  */
+/**
+ * Single-colour marks whose full-colour default is white (made for dark tiles): render the
+ * glyph (mono, else the fill-less light variant) in the current text colour, so it reads in
+ * both themes.
+ */
+export const MONO_IN_TEXT_COLOUR: ReadonlySet<BrandIconId> = new Set(["openai", "anthropic", "openrouter"]);
+
 export const FAVICON_ICONS: Partial<Record<BrandIconId, string>> = { calcom: "/brands/calcom.png" };

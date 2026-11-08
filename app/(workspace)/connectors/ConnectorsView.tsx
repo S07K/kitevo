@@ -14,6 +14,8 @@ import { ConnectStripeDialog } from "./ConnectStripeDialog";
 import { ConnectPayPalDialog } from "./ConnectPayPalDialog";
 import { ConnectSchedulerDialog, type SchedulerConnection } from "./ConnectSchedulerDialog";
 import { SCHEDULERS, SCHEDULER_INFO, type Scheduler } from "@/lib/scheduler-links";
+import { ConnectAiDialog, type AiConnection } from "./ConnectAiDialog";
+import { AI_PROVIDERS, AI_PROVIDER_INFO, type AiProvider } from "@/lib/ai/providers";
 
 function Notice({ tone, children }: { tone: "success" | "danger"; children: ReactNode }) {
   const cls =
@@ -85,11 +87,11 @@ function ConnectorCard({
   );
 }
 
-function Section({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
+function Section({ id, title, hint, children }: { id?: string; title: string; hint: ReactNode; children: ReactNode }) {
   return (
-    <section className="mb-10">
+    <section id={id} className="mb-10 scroll-mt-24">
       <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{hint}</p>
+      <div className="mt-1 max-w-2xl text-sm text-muted-foreground">{hint}</div>
       <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{children}</div>
     </section>
   );
@@ -114,11 +116,16 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
   const [rpOpen, setRpOpen] = useState(false);
   const [confirmOff, setConfirmOff] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
+  const [ai, setAi] = useState<AiConnection | null | undefined>(undefined);
+  const [aiOpen, setAiOpen] = useState<AiProvider | null>(null);
+  const [copilot, setCopilot] = useState<CopilotStatus | null>(null);
 
   useEffect(() => {
     const get = (url: string) => fetch(url, { credentials: "include" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     get("/api/instagram/status").then((d) => setInstagram(d?.connected === true));
     get("/api/youtube/status").then((d) => setYoutube(d?.connected === true));
+    get("/api/ai/connection").then((c: AiConnection | null) => setAi(c ?? null));
+    get("/api/copilot").then((s: CopilotStatus | null) => setCopilot(s));
     get("/api/scheduling/connections").then((rows: SchedulerConnection[] | null) => setSchedulers(rows ?? []));
     get("/api/payments/connections").then((rows: Connection[] | null) => {
       setRazorpay(rows?.find((c) => c.provider === "razorpay") ?? null);
@@ -126,6 +133,20 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
       setPaypal(rows?.find((c) => c.provider === "paypal") ?? null);
     });
   }, []);
+
+  async function disconnectAi() {
+    setBusy("ai");
+    try {
+      const res = await fetch("/api/ai/connection", { method: "DELETE", credentials: "include" });
+      if (res.ok) {
+        setAi(null);
+        fetch("/api/copilot", { credentials: "include" }).then((r) => (r.ok ? r.json() : null)).then(setCopilot).catch(() => {});
+      }
+    } finally {
+      setBusy(null);
+      setConfirmOff(null);
+    }
+  }
 
   async function disconnectScheduler(p: Scheduler) {
     setBusy(p);
@@ -354,10 +375,56 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
         })}
       </Section>
 
+      <Section id="ai" title="AI for Copilot" hint={<CopilotLine status={copilot} own={ai ?? null} />}>
+        {AI_PROVIDERS.map((p) => {
+          const info = AI_PROVIDER_INFO[p];
+          const on = ai?.provider === p;
+          return (
+            <ConnectorCard
+              key={p}
+              brand={info.icon}
+              name={info.name}
+              powers={info.hint}
+              status={ai === undefined ? "loading" : on ? "connected" : "off"}
+              detail={on && ai ? <span className="font-mono" title={`${ai.keyHint} · ${ai.model ?? ai.defaultModel}`}>{ai.model ?? ai.defaultModel}</span> : undefined}
+              actions={
+                ai === undefined ? null : on ? (
+                  confirmOff === "ai" ? (
+                    <>
+                      <span className="basis-full text-right text-xs text-muted-foreground">Copilot goes back to Kitevo&apos;s AI (Pro, monthly limit).</span>
+                      <Button size="sm" onClick={() => setConfirmOff(null)} disabled={busy === "ai"}>Keep connected</Button>
+                      <Button size="sm" variant="danger" onClick={disconnectAi} disabled={busy === "ai"}>{busy === "ai" ? "Disconnecting…" : `Disconnect ${info.name}`}</Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button size="sm" onClick={() => setAiOpen(p)}>Change</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setConfirmOff("ai")}>Disconnect</Button>
+                    </>
+                  )
+                ) : (
+                  <Button size="sm" variant={ai ? "secondary" : "primary"} onClick={() => setAiOpen(p)}>{ai ? "Switch to" : "Connect"} {info.name}</Button>
+                )
+              }
+            />
+          );
+        })}
+      </Section>
+
       <p className="text-sm text-muted-foreground">
         Selling something? Set a price on any product in <Link href="/products" className="font-medium text-primary hover:underline">Products</Link>; its buy link is created for you.
       </p>
 
+      <ConnectAiDialog
+        provider={aiOpen}
+        current={ai ?? null}
+        onClose={() => setAiOpen(null)}
+        onConnected={(c) => {
+          setAi(c);
+          setAiOpen(null);
+          setCopilot({ ok: true, source: "own", provider: c.provider, providerName: AI_PROVIDER_INFO[c.provider].name });
+          setFlash(`${AI_PROVIDER_INFO[c.provider].name} connected. Copilot now writes with your own AI account.`);
+        }}
+      />
       <ConnectPayPalDialog
         open={paypalOpen}
         onClose={() => setPaypalOpen(false)}
@@ -396,4 +463,20 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
       />
     </WorkspaceShell>
   );
+}
+
+type CopilotStatus =
+  | { ok: true; source: "own"; provider: AiProvider; providerName: string }
+  | { ok: true; source: "kitevo"; remaining: number; limit: number }
+  | { ok: false; reason: "plan_required" | "limit_reached" | "not_configured"; limit?: number };
+
+/** What Copilot runs on right now, in one line. */
+function CopilotLine({ status, own }: { status: CopilotStatus | null; own: AiConnection | null }) {
+  const base = "Copilot drafts your bio, pitches and inquiry replies from your kit.";
+  if (!status) return <p>{base}</p>;
+  if (status.ok && status.source === "own") return <p>{base} It&apos;s using your {status.providerName} account{own ? ` (${own.model ?? own.defaultModel})` : ""}, with no monthly limit.</p>;
+  if (status.ok) return <p>{base} You&apos;re on Kitevo&apos;s AI with Pro: {status.remaining} of {status.limit} drafts left this month. Connect your own key for no limit.</p>;
+  if (status.reason === "plan_required") return <p>{base} Kitevo&apos;s AI is included in <Link href="/pricing" className="font-medium text-primary hover:underline">Pro</Link>, or connect your own key below to use it on any plan.</p>;
+  if (status.reason === "limit_reached") return <p>{base} You&apos;ve used this month&apos;s {status.limit} drafts on Kitevo&apos;s AI. Connect your own key to keep going.</p>;
+  return <p>{base} Connect an AI key below to turn it on.</p>;
 }

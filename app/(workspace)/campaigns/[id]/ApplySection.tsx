@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/app/components/workspace/Button";
+import { CopilotDraft } from "@/app/components/copilot/CopilotDraft";
 
 type Props = {
   campaignId: string;
@@ -235,6 +236,13 @@ export function ApplySection({ campaignId, initialStatus, appliedAt, reviewedAt,
           </p>
         </div>
         {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+        <CopilotDraft
+          task="pitch"
+          params={{ campaignId }}
+          label={pitch.trim() ? "Draft another with Copilot" : "Draft my pitch with Copilot"}
+          useLabel={pitch.trim() ? "Replace my pitch" : "Use this"}
+          onUse={setPitch}
+        />
         <textarea
           id="apply-pitch"
           value={pitch}
