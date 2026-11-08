@@ -61,9 +61,14 @@ the session pooler is the right answer here.
 - Schema changes are **versioned migrations**, applied automatically at
   deploy time — twice over, redundantly and safely:
   1. `scripts/vercel-build.cjs` runs `prisma migrate deploy` **before**
-     `next build`, so a deploy either lands with the new schema or does not
-     land at all (a failed migration fails the build; the old version keeps
-     serving).
+     `next build` on **production** builds, so a deploy either lands with the
+     new schema or does not land at all (a failed migration fails the build;
+     the old version keeps serving). **Preview builds skip it**: previews share
+     the production `DATABASE_URL`, so migrating there would apply an unmerged
+     branch's schema to the live database on push. A preview with its own
+     database can opt in with `MIGRATE_ON_PREVIEW=1` (Preview env only). A
+     preview of a branch with a new migration therefore runs on the old schema;
+     test schema changes locally.
   2. A GitHub Action (`.github/workflows/db-migrate.yml`) runs the same
      `prisma migrate deploy` on every push to `main` after the test suite
      passes. Whichever runs first applies a pending migration; the other
@@ -270,7 +275,8 @@ works without one.
 
 - Migrations apply **automatically on every push to `main`**, from two places: the GitHub
   Action (`.github/workflows/db-migrate.yml`, after `npm test`) and the Vercel build
-  (`scripts/vercel-build.cjs`), whichever runs first.
+  (`scripts/vercel-build.cjs`, production builds only — previews never migrate), whichever
+  runs first.
 - The Vercel build applies migrations **before** `next build`. A migration can land even if
   that build then fails, so the **previous** deployment keeps serving traffic on the **new**
   schema.
