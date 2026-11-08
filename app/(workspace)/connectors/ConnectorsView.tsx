@@ -313,8 +313,8 @@ export function ConnectorsView({ paidPlan }: { paidPlan: boolean }) {
       </Section>
 
       <Section
-        title="Scheduling for booked calls"
-        hint="Sell calls with the scheduler you already use. It keeps your availability, calendar conflicts, reminders and payment; Kitevo adds a Book a call button to your kit."
+        title="Scheduling"
+        hint="Connect the scheduler you already use and Kitevo adds a Book a call button to your kit. Your availability, calendar conflicts and reminders stay in the scheduler."
       >
         {SCHEDULERS.map((p) => {
           const info = SCHEDULER_INFO[p];

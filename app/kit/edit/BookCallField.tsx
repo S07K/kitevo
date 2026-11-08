@@ -48,7 +48,7 @@ export function BookCallField({ value, onChange }: { value: KitBooking; onChange
 
       {conns === null ? null : conns.length === 0 ? (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/60 px-3 py-2.5">
-          <p className="min-w-0 flex-1 text-xs text-muted-foreground">Connect Calendly, Cal.com or Google Calendar first. It keeps your availability, calendar conflicts and any payment.</p>
+          <p className="min-w-0 flex-1 text-xs text-muted-foreground">Connect Calendly, Cal.com or Google Calendar first. It keeps your availability, calendar conflicts and reminders.</p>
           <ButtonLink href="/connectors" size="sm">Open Connectors</ButtonLink>
         </div>
       ) : on ? (
@@ -82,7 +82,7 @@ export function BookCallField({ value, onChange }: { value: KitBooking; onChange
           <div>
             <label htmlFor="bk-label" className="mb-1.5 block text-xs font-medium text-muted-foreground">Button text</label>
             <input id="bk-label" value={value.label} maxLength={MAX_BOOKING_LABEL} onChange={(e) => onChange({ ...value, label: e.target.value })} placeholder={DEFAULT_BOOKING_LABEL} className={field} />
-            <p className="mt-1 text-xs text-muted-foreground">e.g. “Partnership intro call” on a brand kit, “1:1 coaching” on a fan kit. Price and length are set in your scheduler.</p>
+            <p className="mt-1 text-xs text-muted-foreground">e.g. “Partnership intro call” on a brand kit, “1:1 coaching” on a fan kit. Length and availability are set in your scheduler.</p>
           </div>
         </div>
       ) : null}

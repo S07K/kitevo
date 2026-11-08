@@ -60,7 +60,7 @@ export const KITEVO = {
   inquiries: "Brand contact form on your kit (Pro), with a deal pipeline to track each inquiry",
   campaigns: "Brands post campaigns you can apply to from your Kitevo account",
   domain: "Starter and Pro",
-  commerce: "Digital downloads, free (for an email) or paid on Starter and Pro straight into your own Razorpay, Stripe or PayPal with 0% to Kitevo; booked calls through your own Calendly, Cal.com or Google Calendar. No courses or memberships yet.",
+  commerce: "Digital downloads, free (for an email) or paid on Starter and Pro straight into your own Razorpay, Stripe or PayPal with 0% to Kitevo; a Book a call button that opens your own Calendly, Cal.com or Google Calendar. No courses or memberships yet.",
 };
 
 const stanPricing: Source = { label: "Stan: pricing (updated 22 Jul 2026)", url: "https://stan.store/blog/stan-store-pricing/", kind: "official" };
