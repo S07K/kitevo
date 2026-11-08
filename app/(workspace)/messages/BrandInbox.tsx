@@ -256,6 +256,12 @@ function BrandInboxContent() {
                         <p className="text-sm font-semibold text-foreground">{activeConvo.other.name ?? activeConvo.other.username}</p>
                         <VerifiedBadge tier={activeConvo.other.verifiedTier} size="sm" />
                       </div>
+                      {/* Agree the terms here instead of in loose messages: offer → accepted → paid. */}
+                      {activeId && (
+                        <Link href={`/deals/new?source=conversation&ref=${activeId}`} className="ml-auto shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary">
+                          Send offer
+                        </Link>
+                      )}
                     </>
                   )}
                 </div>

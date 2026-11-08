@@ -79,7 +79,7 @@ export type CheckoutSession = {
 /** A one-off Checkout Session on the creator's account; the price comes from the product. */
 export function createCheckoutSession(
   key: string,
-  p: { orderId: string; productId: string; title: string; amount: number; currency: string; email: string; successUrl: string; cancelUrl: string },
+  p: { orderId: string; productId?: string; title: string; amount: number; currency: string; email: string; successUrl: string; cancelUrl: string },
 ): Promise<CheckoutSession> {
   return call<CheckoutSession>(key, "/checkout/sessions", {
     mode: "payment",
@@ -88,7 +88,7 @@ export function createCheckoutSession(
     success_url: p.successUrl,
     cancel_url: p.cancelUrl,
     line_items: [{ quantity: 1, price_data: { currency: p.currency.toLowerCase(), unit_amount: p.amount, product_data: { name: p.title.slice(0, 250) } } }],
-    metadata: { kitevo_order_id: p.orderId, kitevo_product_id: p.productId },
+    metadata: { kitevo_order_id: p.orderId, ...(p.productId ? { kitevo_product_id: p.productId } : {}) },
     payment_intent_data: { metadata: { kitevo_order_id: p.orderId } },
     expires_at: Math.floor(Date.now() / 1000) + 60 * 60, // 1h (Stripe minimum is 30 min)
   });

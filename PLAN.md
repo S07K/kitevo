@@ -655,3 +655,10 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - Owner feedback: a booking isn't something people buy and download; it's a way to reach the creator. Booking products are retired; each kit gets a **Book a call** button under the profile that opens the creator's Calendly / Cal.com / Google page in a dialog. Set per kit in the editor's Contact card.
 - Existing booking products were copied onto their creators' kits by the migration; old links redirect to the kit with the dialog open.
 
+## 22. Brand deals with payments through Kitevo, 2026-11-05
+
+- Owner ask: transparent, exact-amount brand deals paid through the platform. Built creator-owned (brands pay the creator's own Razorpay/Stripe/PayPal; Kitevo holds nothing, 0%, every plan).
+- A deal = numbered versions of terms (deliverables, amount, payment plan: full upfront, advance + balance, or on delivery) that the other side must accept; terms lock once money moves; an append-only history both sides see; payments with receipts.
+- Starts from accepted campaign applications, message threads, kit inquiries (brand pays via a private link, no account) or directly.
+- Next: escrow option (Razorpay Route / Stripe Connect) if creators ask for payment protection; invoices/GST; deal analytics on the dashboard.
+

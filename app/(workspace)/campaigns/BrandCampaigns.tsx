@@ -468,6 +468,7 @@ export default function BrandCampaigns() {
                                       )}
                                       {kit && <ButtonLink href={`/kit/${kit.slug}`} target="_blank" size="sm" variant="ghost">View kit</ButtonLink>}
                                       <Button size="sm" variant="ghost" onClick={() => startConversation(a.creator.id)}>Message</Button>
+                                      {a.status === "accepted" && <ButtonLink href={`/deals/new?source=campaign&ref=${a.id}`} size="sm" variant="secondary">Send offer</ButtonLink>}
                                     </div>
                                   </div>
                                 </div>

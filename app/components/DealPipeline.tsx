@@ -200,8 +200,12 @@ function DetailDialog({
 
           <div className="mt-6 flex justify-end gap-2">
             <Button onClick={onClose}>Close</Button>
-            <a href={`mailto:${inq.email}?subject=Re: collaboration inquiry`} className={buttonClass({ variant: "primary" })}>
+            <a href={`mailto:${inq.email}?subject=Re: collaboration inquiry`} className={buttonClass({ variant: "secondary" })}>
               <Mail size={14} aria-hidden /> Reply by email
+            </a>
+            {/* A quote turns the inquiry into a tracked deal the brand can accept and pay. */}
+            <a href={`/deals/new?source=inquiry&ref=${inq.id}`} className={buttonClass({ variant: "primary" })}>
+              Send quote
             </a>
           </div>
         </>

@@ -108,6 +108,8 @@ model User {
   sales         Order[]   @relation("SellerOrders")
   paymentConnections PaymentConnection[]
   schedulerConnections SchedulerConnection[]
+  dealsAsCreator Deal[] @relation("CreatorDeals")
+  dealsAsBrand   Deal[] @relation("BrandDeals")
   analyticsEvents AnalyticsEvent[]
   // Referral program (lib/referrals.ts)
   referralCode         String?              @unique
@@ -507,5 +509,100 @@ model SchedulerConnection {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, provider])
+}
+
+/// A brand deal agreed and paid through Kitevo. Money goes straight into the CREATOR's own
+/// Razorpay / Stripe / PayPal (creator-owned payments; Kitevo never holds funds, 0% fee).
+/// Transparency: every quote/offer is a DealVersion; accepting locks it; any change needs a
+/// new version accepted by the other side; every step is a DealEvent both sides see.
+model Deal {
+  id           String   @id @default(cuid())
+  creatorId    String
+  creator      User     @relation("CreatorDeals", fields: [creatorId], references: [id], onDelete: Cascade)
+  /// Brand with a Kitevo account (campaigns, messages). Null for kit-inquiry brands (email only).
+  brandUserId  String?
+  brandUser    User?    @relation("BrandDeals", fields: [brandUserId], references: [id], onDelete: SetNull)
+  brandName    String
+  brandEmail   String
+  title        String
+  /// "campaign" | "conversation" | "inquiry" | "direct"
+  source       String   @default("direct")
+  campaignApplicationId String?
+  conversationId        String?
+  inquiryId             String?
+  /// "proposed" (a version awaits a reply) | "accepted" | "delivered" | "completed" | "declined" | "cancelled"
+  status       String   @default("proposed")
+  /// Private link for brands without an account (/d/<token>); also works for account brands.
+  brandToken   String   @unique
+  deliveredAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  versions DealVersion[]
+  payments DealPayment[]
+  events   DealEvent[]
+
+  @@index([creatorId, updatedAt])
+  @@index([brandUserId, updatedAt])
+}
+
+model DealVersion {
+  id           String   @id @default(cuid())
+  dealId       String
+  deal         Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  number       Int
+  /// "creator" | "brand"
+  proposedBy   String
+  /// [{ label, quantity }]
+  deliverables Json
+  amountCents  Int
+  currency     String
+  /// 0 = full payment upfront on acceptance; 1–99 = that % on acceptance, the rest on delivery;
+  /// 100 is not used (full upfront is 0's "upfront" mode); see lib/deals-shared splitPlan.
+  advancePct   Int      @default(0)
+  /// "upfront" | "split" | "on_delivery"
+  paymentPlan  String   @default("upfront")
+  dueDate      DateTime?
+  notes        String   @default("")
+  /// "open" | "accepted" | "declined" | "superseded" | "withdrawn"
+  status       String   @default("open")
+  respondedAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  @@unique([dealId, number])
+}
+
+model DealPayment {
+  id              String   @id @default(cuid())
+  dealId          String
+  deal            Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  /// "full" | "advance" | "balance"
+  kind            String
+  amountCents     Int
+  currency        String
+  /// "scheduled" (not payable yet: balance before delivery) | "due" | "pending" (checkout started) | "paid"
+  status          String   @default("scheduled")
+  provider        String?
+  providerOrderId String?
+  providerRef     String?
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([dealId])
+}
+
+model DealEvent {
+  id        String   @id @default(cuid())
+  dealId    String
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  /// "creator" | "brand" | "system"
+  actor     String
+  /// proposed | countered | accepted | declined | withdrawn | cancelled | payment_due | paid | delivered | completed
+  type      String
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([dealId, createdAt])
 }
 

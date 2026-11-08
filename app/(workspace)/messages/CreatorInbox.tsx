@@ -269,6 +269,12 @@ export default function CreatorInbox() {
                           <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
                           <VerifiedBadge tier={other.verifiedTier} size="sm" />
                         </div>
+                        {/* Agree the terms here instead of in loose messages: quote → accepted → paid. */}
+                        {other.brandProfile && activeId && (
+                          <Link href={`/deals/new?source=conversation&ref=${activeId}`} className="ml-auto shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary">
+                            Send quote
+                          </Link>
+                        )}
                       </>
                     );
                   })()}
