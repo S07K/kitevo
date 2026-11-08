@@ -64,15 +64,23 @@ export function brandText(s: string, max = 2500): string {
   return `<brand_text>\n${s.replace(/[<>]/g, "").slice(0, max).trim()}\n</brand_text>`;
 }
 
+/*
+ * Prompts are built as arrays joined at the end, not long `a + (cond ? b : "") + c` chains:
+ * the production minifier (SWC, Next 16 webpack build) dropped the first segment of such a
+ * chain in the bio prompt, which only showed up in a real build.
+ */
+const join = (parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join("");
+
 export function bioPrompt(f: CreatorFacts): CopilotPrompt {
   return {
     system: SYSTEM,
-    prompt:
-      `Write a bio for this creator's media kit, read by brands deciding whether to work with them.\n` +
-      `Two short sentences, at most ${MAX_BIO_CHARS - 40} characters in total: what they make, for whom, and why a brand would care. ` +
-      `Mention a number only if it is in the stats below. Don't start with their name.` +
-      (f.bio.trim() ? ` Improve on their current bio rather than repeating it.` : "") +
+    prompt: join([
+      "Write a bio for this creator's media kit, read by brands deciding whether to work with them.\n",
+      `Two short sentences, at most ${MAX_BIO_CHARS - 40} characters in total: what they make, for whom, and why a brand would care. `,
+      "Mention a number only if it is in the stats below. Don't start with their name.",
+      !!f.bio.trim() && " Improve on their current bio rather than repeating it.",
       `\n\nCreator facts:\n${factsBlock(f)}`,
+    ]),
     maxTokens: 200,
     temperature: 0.8,
   };
@@ -81,16 +89,17 @@ export function bioPrompt(f: CreatorFacts): CopilotPrompt {
 export function pitchPrompt(f: CreatorFacts, c: CampaignBrief): CopilotPrompt {
   return {
     system: SYSTEM,
-    prompt:
-      `Write this creator's application message for a brand campaign on Kitevo. The brand sees it next to the creator's media kit.\n` +
-      `90 to 150 words. No subject line. Open with why this campaign fits them (specific to the brief), give one or two relevant facts, ` +
-      `suggest a content idea that fits the brief, and close with a friendly next step.` +
-      (f.kitUrl ? ` Don't paste the kit link; the brand already sees the kit.` : "") +
-      `\n\nCampaign from ${c.brandName.replace(/[<>]/g, "")}:\nTitle: ${c.title.replace(/[<>]/g, "")}` +
-      (c.niche ? `\nNiche: ${c.niche}` : "") +
-      (c.budget ? `\nBudget: ${c.budget.replace(/[<>]/g, "")}` : "") +
-      `\nBrief:\n${brandText(c.description)}` +
+    prompt: join([
+      "Write this creator's application message for a brand campaign on Kitevo. The brand sees it next to the creator's media kit.\n",
+      "90 to 150 words. No subject line. Open with why this campaign fits them (specific to the brief), give one or two relevant facts, ",
+      "suggest a content idea that fits the brief, and close with a friendly next step.",
+      !!f.kitUrl && " Don't paste the kit link; the brand already sees the kit.",
+      `\n\nCampaign from ${c.brandName.replace(/[<>]/g, "")}:\nTitle: ${c.title.replace(/[<>]/g, "")}`,
+      !!c.niche && `\nNiche: ${c.niche}`,
+      !!c.budget && `\nBudget: ${c.budget!.replace(/[<>]/g, "")}`,
+      `\nBrief:\n${brandText(c.description)}`,
       `\n\nCreator facts:\n${factsBlock(f)}`,
+    ]),
     maxTokens: 450,
     temperature: 0.7,
   };
@@ -99,13 +108,16 @@ export function pitchPrompt(f: CreatorFacts, c: CampaignBrief): CopilotPrompt {
 export function inquiryReplyPrompt(f: CreatorFacts, q: InquiryBrief): CopilotPrompt {
   return {
     system: SYSTEM,
-    prompt:
-      `A brand contacted this creator through the form on their media kit. Write the creator's email reply.\n` +
-      `80 to 140 words. Thank them, respond to what they asked, and propose a next step (a short call or the brief and timeline). ` +
-      `Quote a price only if it is one of the creator's rates below, and say final pricing depends on the brief. ` +
-      `Never agree to terms, dates or usage rights. Sign off with the creator's first name. No subject line.` +
-      `\n\nInquiry from ${q.fromName.replace(/[<>]/g, "")}${q.company ? ` (${q.company.replace(/[<>]/g, "")})` : ""}:\n${brandText(q.message)}` +
+    prompt: join([
+      "A brand contacted this creator through the form on their media kit. Write the creator's email reply.\n",
+      "80 to 140 words. Thank them, respond to what they asked, and propose a next step (a short call or the brief and timeline). ",
+      "Quote a price only if it is one of the creator's rates below, and say final pricing depends on the brief. ",
+      "Never agree to terms, dates or usage rights. Sign off with the creator's first name. No subject line.",
+      `\n\nInquiry from ${q.fromName.replace(/[<>]/g, "")}`,
+      !!q.company && ` (${q.company!.replace(/[<>]/g, "")})`,
+      `:\n${brandText(q.message)}`,
       `\n\nCreator facts:\n${factsBlock(f)}`,
+    ]),
     maxTokens: 450,
     temperature: 0.6,
   };
