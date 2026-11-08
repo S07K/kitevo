@@ -1,6 +1,5 @@
 /**
- * Vercel build entry: check env, generate client, migrate when DB URL exists, then Next build.
- * Preview deployments often omit DATABASE_URL — migrate deploy would fail immediately.
+ * Vercel build entry: check env, generate client, migrate (production only), then Next build.
  */
 const { execSync } = require("node:child_process");
 
@@ -217,7 +216,42 @@ checkTokenKeys();
 
 run("npx prisma generate");
 
-if (process.env.DATABASE_URL && String(process.env.DATABASE_URL).trim() !== "") {
+migrate();
+
+/**
+ * Apply pending migrations, on PRODUCTION builds only.
+ *
+ * Preview deployments share the production DATABASE_URL, so running `migrate deploy` there
+ * applied an unmerged branch's migration to the live database the moment the branch was
+ * pushed (it happened with 20261105072400_brand_deals). Additive migrations survive that;
+ * a drop or rename would hit production before review, and keep applying even if the PR is
+ * closed. Production builds (and the GitHub Action on main) are the only writers now.
+ *
+ * A preview with its OWN database can opt back in with MIGRATE_ON_PREVIEW=1 (set it on the
+ * Preview environment only, alongside that database's DATABASE_URL/DIRECT_URL).
+ *
+ * Consequence: a preview of a branch that adds tables runs against the old schema, so its
+ * new pages error until the migration ships. Test schema changes locally (`npm run dev`
+ * migrates the local DB).
+ */
+function migrate() {
+  const env = process.env.VERCEL_ENV;
+  const hasDb = !!(process.env.DATABASE_URL && String(process.env.DATABASE_URL).trim() !== "");
+  if (!hasDb) {
+    console.log(
+      "\n[vercel-build] DATABASE_URL not set — skipping prisma migrate deploy.\n" +
+        "  Production: set DATABASE_URL and DIRECT_URL on Vercel so migrations run.\n"
+    );
+    return;
+  }
+  if (env !== "production" && process.env.MIGRATE_ON_PREVIEW !== "1") {
+    console.log(
+      `\n[vercel-build] ${env || "non-Vercel"} build — skipping prisma migrate deploy.\n` +
+        "  Migrations only run on production deploys, so an unmerged branch never changes\n" +
+        "  the live database. Set MIGRATE_ON_PREVIEW=1 for a preview with its own database.\n"
+    );
+    return;
+  }
   checkDbUrls();
   // Versioned migrations (prisma/migrations) applied before the build — a pending
   // migration that fails fails the deploy, so new code never ships against an old
@@ -226,11 +260,6 @@ if (process.env.DATABASE_URL && String(process.env.DATABASE_URL).trim() !== "") 
   // other is a no-op. Never use `db push` here again: it accepts data loss and it
   // drifts from migration history.
   run("npx prisma migrate deploy");
-} else {
-  console.log(
-    "\n[vercel-build] DATABASE_URL not set — skipping prisma migrate deploy.\n" +
-      "  Production: set DATABASE_URL and DIRECT_URL on Vercel so migrations run.\n"
-  );
 }
 
 /**

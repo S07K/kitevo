@@ -262,6 +262,16 @@ No new env vars. One additive migration (`20261105072400_brand_deals`) applies o
 
 ---
 
+## 16. Preview builds no longer migrate the database (`fix/preview-skip-migrations`)
+
+No env vars, no migration. Preview deployments used to run `prisma migrate deploy` against the production database (they share its `DATABASE_URL`), so an unmerged branch's migration reached production on push. Now only production builds (and the GitHub Action on `main`) migrate.
+
+- [ ] The next preview build log says "preview build — skipping prisma migrate deploy".
+- [ ] The production build after merging still shows "No pending migrations" (or applies any pending one).
+- [ ] Expect: a preview of a branch that adds tables errors on its new pages until merged. Test schema changes locally.
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.
