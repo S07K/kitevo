@@ -11,6 +11,7 @@ import { Badge } from "@/app/components/Badge";
 import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { vibeFor } from "./KitActions";
 import { Skeleton } from "@/app/components/Skeleton";
+import type { NextStep, WorkspaceSummary } from "@/lib/next-steps";
 
 /* ─── Kit spotlight ──────────────────────────────────────────────────────── */
 
@@ -571,6 +572,141 @@ export function InquiriesPanel({ inquiries, loaded }: { inquiries: InquirySummar
             </li>
           ))}
         </ul>
+      )}
+    </Panel>
+  );
+}
+
+/* ─── What to do next ────────────────────────────────────────────────────── */
+
+/**
+ * The few most useful actions right now (lib/next-steps: waiting brands first, then money,
+ * then setup). Hidden when there's nothing to do, so it never nags.
+ */
+export function NextStepsCard({ steps, loaded }: { steps: NextStep[]; loaded: boolean }) {
+  if (!loaded) return <Skeleton className="h-[168px] rounded-2xl" />;
+  if (steps.length === 0) return null;
+  return (
+    <section aria-labelledby="next-steps-title" className="rounded-2xl border border-border bg-background">
+      <h2 id="next-steps-title" className="px-5 pb-1 pt-5 text-sm font-semibold text-foreground">What to do next</h2>
+      <ul className="divide-y divide-border">
+        {steps.map((s) => (
+          <li key={s.id}>
+            <Link href={s.href} className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/40">
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-foreground">{s.title}</span>
+                <span className="mt-0.5 block text-sm leading-relaxed text-muted-foreground">{s.why}</span>
+              </span>
+              <span className="hidden shrink-0 items-center gap-1 text-xs font-semibold text-primary sm:inline-flex">
+                {s.cta} <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
+              </span>
+              <ArrowRight size={16} className="shrink-0 text-muted-foreground sm:hidden" aria-hidden />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/* ─── Deals ──────────────────────────────────────────────────────────────── */
+
+const moneyFmt = (cents: number, currency: string) =>
+  new Intl.NumberFormat(currency === "INR" ? "en-IN" : "en-US", { style: "currency", currency, maximumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100);
+
+/** Active brand deals: who's waiting on whom, and what's due to the creator. */
+export function DealsPanel({ deals, loaded }: { deals: WorkspaceSummary["deals"] | null; loaded: boolean }) {
+  return (
+    <Panel
+      title={
+        <span className="inline-flex items-center gap-2">
+          Deals
+          {!!deals?.yourTurn && (
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
+              {deals.yourTurn}
+              <span className="sr-only"> waiting on you</span>
+            </span>
+          )}
+        </span>
+      }
+      action={
+        <Link href="/deals" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+          All deals
+        </Link>
+      }
+      bodyClassName="p-2"
+    >
+      {!loaded || !deals ? (
+        <div className="space-y-2 p-3" aria-hidden>
+          <Skeleton className="h-10 rounded-xl" />
+        </div>
+      ) : deals.active.length === 0 ? (
+        <div className="px-3 py-3">
+          <p className="text-sm text-muted-foreground">No active deals. Send a quote and the brand can accept and pay it here, straight to your account.</p>
+          <Link href="/deals/new" className="mt-2 inline-block text-xs font-semibold text-primary hover:underline">New deal</Link>
+        </div>
+      ) : (
+        <ul>
+          {deals.active.map((d) => {
+            const label = d.awaiting === "creator" ? "Your turn" : d.awaiting === "brand" ? "Brand's turn" : d.status === "accepted" ? "Agreed" : "Delivered";
+            const tone = d.awaiting === "creator" ? "accent" : d.status === "delivered" ? "success" : "default";
+            return (
+              <li key={d.id}>
+                <Link href={`/deals/${d.id}`} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted/60">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-foreground">{d.title}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {d.counterpart}
+                      {d.dueCents > 0 && ` · ${moneyFmt(d.dueCents, d.currency)} due`}
+                    </span>
+                  </span>
+                  <Badge variant={tone as "accent" | "success" | "default"}>{label}</Badge>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
+/* ─── Products ───────────────────────────────────────────────────────────── */
+
+/** Downloads and sales in the last 30 days; links to Products. */
+export function ProductsPanel({ products, loaded }: { products: WorkspaceSummary["products"] | null; loaded: boolean }) {
+  if (!loaded || !products) return null;
+  const none = products.published === 0 && products.drafts === 0;
+  return (
+    <Panel
+      title="Products"
+      action={
+        <Link href="/products" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+          {none ? "Create" : "Manage"}
+        </Link>
+      }
+    >
+      {none ? (
+        <p className="text-sm text-muted-foreground">Offer a guide, preset or template from your kit: free for an email, or paid into your own account.</p>
+      ) : (
+        <dl className="grid grid-cols-3 gap-3">
+          <div>
+            <dt className="text-xs text-muted-foreground">Live</dt>
+            <dd className="mt-0.5 font-display text-xl text-foreground">{products.published}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Downloads</dt>
+            <dd className="mt-0.5 font-display text-xl text-foreground">{products.claims30d}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Sales</dt>
+            <dd className="mt-0.5 font-display text-xl text-foreground">{products.sales30d}</dd>
+          </div>
+          <p className="col-span-3 -mt-1 text-xs text-muted-foreground">
+            Last 30 days{products.revenue30d.length ? ` · ${products.revenue30d.map((r) => moneyFmt(r.cents, r.currency)).join(" + ")} earned` : ""}
+            {products.drafts > 0 && ` · ${products.drafts} draft${products.drafts === 1 ? "" : "s"}`}
+          </p>
+        </dl>
       )}
     </Panel>
   );

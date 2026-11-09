@@ -16,7 +16,8 @@ import { ReferralCard } from "./ReferralCard";
 import { WorkspaceShell, PageHeader, SectionTitle, Eyebrow } from "@/app/components/workspace/WorkspaceShell";
 import { Button, ButtonLink } from "@/app/components/workspace/Button";
 import { Modal } from "@/app/components/workspace/Modal";
-import { KitSpotlight, SetupChecklist, OpportunitiesPanel, ConnectionsPanel, PlanPanel, InquiriesPanel } from "./WorkspaceWidgets";
+import { KitSpotlight, SetupChecklist, OpportunitiesPanel, ConnectionsPanel, PlanPanel, InquiriesPanel, NextStepsCard, DealsPanel, ProductsPanel } from "./WorkspaceWidgets";
+import { nextSteps, type WorkspaceSummary } from "@/lib/next-steps";
 import { KitActionsMenu, vibeFor } from "./KitActions";
 import { CreateKitModal } from "./CreateKitModal";
 import { hasPublicRates } from "@/lib/kit-rates";
@@ -145,6 +146,8 @@ function DashboardContent() {
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [inquiries, setInquiries] = useState<InquiryRecord[]>([]);
   const [inquiriesLoaded, setInquiriesLoaded] = useState(false);
+  const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
+  const [summaryLoaded, setSummaryLoaded] = useState(false);
   const [kitViews, setKitViews] = useState<KitViewRecord[]>([]);
   const [kitViewsThisWeek, setKitViewsThisWeek] = useState(0);
   const [kitViewsTotal, setKitViewsTotal] = useState(0);
@@ -243,6 +246,18 @@ function DashboardContent() {
         if (!cancelled) { setInquiries(Array.isArray(data) ? data : []); setInquiriesLoaded(true); }
       })
       .catch(() => { if (!cancelled) setInquiriesLoaded(true); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Deals, products and setup in one cheap read (lib/workspace-summary): "What to do next" + rail.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/me/summary", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled) { setSummary(data); setSummaryLoaded(true); }
+      })
+      .catch(() => { if (!cancelled) setSummaryLoaded(true); });
     return () => { cancelled = true; };
   }, []);
 
@@ -458,6 +473,8 @@ function DashboardContent() {
   // Free plans: self-reported headline numbers (entered in KitEditor) stand in for live stats.
   const manual = kits[0]?.manualStats;
   const mainKit = kits[0] ?? null;
+  // Plan-dependent steps (payments) wait for the plan; the rest show as soon as the summary lands.
+  const steps = summary && kitsLoaded ? nextSteps(summary, { paidPlan: isPaidTier, kitId: mainKit?.id ?? null }) : [];
   const otherKits = kits.slice(1);
   const unreadInquiries = inquiries.filter((i) => !i.read).length;
   const anyConnected = instagramConnected || youtubeConnected;
@@ -689,6 +706,8 @@ function DashboardContent() {
                 />
               ) : null}
 
+              <NextStepsCard steps={steps} loaded={summaryLoaded && kitsLoaded} />
+
               <div className="lg:hidden">{checklist}</div>
 
               {metrics}
@@ -839,6 +858,10 @@ function DashboardContent() {
               {/* Inquiries come from the Pro-only kit contact form; show the card to Pro creators,
                   or to anyone who already has inquiries (e.g. after a downgrade). */}
               {(tierId === "pro" || inquiries.length > 0) && <InquiriesPanel inquiries={inquiries} loaded={inquiriesLoaded} />}
+
+              <DealsPanel deals={summary?.deals ?? null} loaded={summaryLoaded} />
+
+              <ProductsPanel products={summary?.products ?? null} loaded={summaryLoaded} />
 
               <OpportunitiesPanel niches={profile?.niches ?? []} />
 

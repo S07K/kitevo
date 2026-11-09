@@ -302,6 +302,15 @@ No env vars. One additive migration (`20261109060909_report_block`) applies on d
 
 ---
 
+## 19. Dashboard refresh (`feat/dashboard-refresh`)
+
+No env vars, no migration.
+
+- [ ] Dashboard shows **What to do next** under your kit when something is pending (a brand waiting on a deal, new inquiries, no rates, no Book a call, no product…), at most three, each linking to the right place. It disappears when there's nothing to do.
+- [ ] Right rail: **Deals** (active deals, "Your turn" / "Brand's turn", amounts due) and **Products** (live, downloads, sales and earnings in the last 30 days).
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.

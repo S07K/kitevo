@@ -655,6 +655,10 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - Owner feedback: a booking isn't something people buy and download; it's a way to reach the creator. Booking products are retired; each kit gets a **Book a call** button under the profile that opens the creator's Calendly / Cal.com / Google page in a dialog. Set per kit in the editor's Contact card.
 - Existing booking products were copied onto their creators' kits by the migration; old links redirect to the kit with the dialog open.
 
+## 25. Dashboard refresh, 2026-11-09
+
+- The creator home predated Products, Deals, Book a call and Copilot. Added "What to do next" (≤3 actions ranked: people waiting on you → money → setup that brings more), a Deals panel and a Products panel. Rules in `lib/next-steps.ts`, tested; data from one counts-only summary read.
+
 ## 24. Report & block, 2026-11-09
 
 - Why now: brands send offers and payment links and contact creators through kit forms; creators had no way to stop or flag a bad actor.
