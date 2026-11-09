@@ -655,6 +655,11 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - Owner feedback: a booking isn't something people buy and download; it's a way to reach the creator. Booking products are retired; each kit gets a **Book a call** button under the profile that opens the creator's Calendly / Cal.com / Google page in a dialog. Set per kit in the editor's Contact card.
 - Existing booking products were copied onto their creators' kits by the migration; old links redirect to the kit with the dialog open.
 
+## 26. Copilot follow-ups, 2026-11-09
+
+- Message drafts in brand threads: a reply, or a follow-up when the brand went quiet (never agrees to terms; suggests a Kitevo quote instead).
+- Admin visibility: Copilot usage by task and key, active creators, own-key providers, heaviest users against the cap — to judge cost and whether to raise/lower `COPILOT_MONTHLY_LIMIT`.
+
 ## 25. Dashboard refresh, 2026-11-09
 
 - The creator home predated Products, Deals, Book a call and Copilot. Added "What to do next" (≤3 actions ranked: people waiting on you → money → setup that brings more), a Deals panel and a Products panel. Rules in `lib/next-steps.ts`, tested; data from one counts-only summary read.

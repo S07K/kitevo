@@ -311,6 +311,15 @@ No env vars, no migration.
 
 ---
 
+## 20. Copilot follow-ups (`feat/copilot-followups`)
+
+No env vars, no migration.
+
+- [ ] Messages → a thread with a brand → **Draft a reply** (or **Draft a follow-up** when you sent the last message): the draft goes into the message box; edit, then Enter to send. Shift+Enter adds a line.
+- [ ] /admin shows **Copilot · last 30 days** (drafts by task, Kitevo's key vs creators' keys, active creators, heaviest users vs the monthly cap) and an **Open reports** count linking to Reports.
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.

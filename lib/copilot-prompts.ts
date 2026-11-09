@@ -8,7 +8,7 @@
  * before anything is sent.
  */
 
-export const COPILOT_TASKS = ["bio", "pitch", "inquiry_reply"] as const;
+export const COPILOT_TASKS = ["bio", "pitch", "inquiry_reply", "message"] as const;
 export type CopilotTask = (typeof COPILOT_TASKS)[number];
 
 export function isCopilotTask(v: unknown): v is CopilotTask {
@@ -31,6 +31,10 @@ export type CreatorFacts = {
 
 export type CampaignBrief = { brandName: string; title: string; description: string; niche: string | null; budget: string | null };
 export type InquiryBrief = { fromName: string; company: string | null; message: string };
+/** A message thread with a brand, oldest first; `mine` = written by the creator. */
+export type ThreadBrief = { brandName: string; messages: Array<{ mine: boolean; body: string; at: Date }>; now?: Date };
+
+export const THREAD_CONTEXT = 12;
 
 export type CopilotPrompt = { system: string; prompt: string; maxTokens: number; temperature: number };
 
@@ -119,6 +123,38 @@ export function inquiryReplyPrompt(f: CreatorFacts, q: InquiryBrief): CopilotPro
       `\n\nCreator facts:\n${factsBlock(f)}`,
     ]),
     maxTokens: 450,
+    temperature: 0.6,
+  };
+}
+
+/**
+ * The creator's next message in a thread with a brand: a reply when the brand spoke last, a
+ * short follow-up when the creator did (the brand went quiet). Only the brand's messages are
+ * brand_text; the creator's own words are plain context.
+ */
+export function messagePrompt(f: CreatorFacts, t: ThreadBrief): CopilotPrompt {
+  const recent = t.messages.slice(-THREAD_CONTEXT);
+  const last = recent[recent.length - 1];
+  const followUp = !!last?.mine;
+  const days = last ? Math.max(0, Math.floor(((t.now ?? new Date()).getTime() - last.at.getTime()) / 86_400_000)) : 0;
+  const brand = t.brandName.replace(/[<>]/g, "");
+  const thread = recent
+    .map((m) => (m.mine ? `Creator: ${m.body.replace(/[<>]/g, "").slice(0, 1200)}` : `${brand}:\n${brandText(m.body, 1200)}`))
+    .join("\n\n");
+  return {
+    system: SYSTEM,
+    prompt: join([
+      followUp
+        ? `The creator messaged ${brand} on Kitevo and hasn't heard back${days > 0 ? ` for ${days} day${days === 1 ? "" : "s"}` : ""}. Write a short, friendly follow-up from the creator. `
+        : `Write the creator's reply to ${brand}'s latest message on Kitevo. `,
+      followUp
+        ? "40 to 80 words. Don't repeat the earlier message; add one useful thing (an idea, availability, or a link to their kit) and one easy next step. Not pushy, no guilt."
+        : "40 to 120 words. Answer what they asked, using only the creator facts below. If they ask for a price, quote only the creator's listed rates and say final pricing depends on the brief.",
+      " Never agree to terms, dates, usage rights or payments outside Kitevo; suggest sending a quote on Kitevo instead. Chat style: no subject line, no sign-off needed.",
+      `\n\nConversation so far (oldest first):\n${thread || "(no messages yet)"}`,
+      `\n\nCreator facts:\n${factsBlock(f)}`,
+    ]),
+    maxTokens: 350,
     temperature: 0.6,
   };
 }

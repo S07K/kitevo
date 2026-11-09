@@ -7,7 +7,7 @@ import { creatorPlanId } from "@/lib/creator-plan";
 import { parseManualStats } from "@/lib/manual-stats";
 import { normalizeRates, publicRateItems } from "@/lib/kit-rates";
 import { statFacts, suggestRates } from "@/lib/copilot-stats";
-import { bioPrompt, cleanOutput, inquiryReplyPrompt, pitchPrompt, type CopilotPrompt, type CopilotTask, type CreatorFacts } from "@/lib/copilot-prompts";
+import { THREAD_CONTEXT, bioPrompt, cleanOutput, inquiryReplyPrompt, messagePrompt, pitchPrompt, type CopilotPrompt, type CopilotTask, type CreatorFacts } from "@/lib/copilot-prompts";
 import { trackEvent } from "@/lib/analytics";
 import type { LiveKitStats } from "@/lib/kit-stats-compose";
 
@@ -144,7 +144,7 @@ export class CopilotError extends Error {
   }
 }
 
-export type CopilotInput = { task: CopilotTask; kitId?: string | null; campaignId?: string | null; inquiryId?: string | null };
+export type CopilotInput = { task: CopilotTask; kitId?: string | null; campaignId?: string | null; inquiryId?: string | null; conversationId?: string | null };
 
 async function buildPrompt(userId: string, input: CopilotInput): Promise<CopilotPrompt> {
   const { facts } = await creatorFacts(userId, input.kitId);
@@ -157,6 +157,30 @@ async function buildPrompt(userId: string, input: CopilotInput): Promise<Copilot
     });
     if (!c || c.status === "draft") throw new CopilotError("not_found", "Campaign not found.", 404);
     return pitchPrompt(facts, { brandName: c.brand.brandProfile?.companyName || c.brand.name || "the brand", title: c.title, description: c.description, niche: c.niche, budget: c.budget });
+  }
+  if (input.task === "message") {
+    if (!input.conversationId) throw new CopilotError("bad_input", "Missing conversation.");
+    // Only my own threads, only with a brand, and not across a block.
+    const me = await prisma.conversationParticipant.findUnique({ where: { conversationId_userId: { conversationId: input.conversationId, userId } }, select: { id: true } });
+    const other = me
+      ? await prisma.conversationParticipant.findFirst({
+          where: { conversationId: input.conversationId, userId: { not: userId } },
+          select: { userId: true, user: { select: { name: true, accountType: true, brandProfile: { select: { companyName: true } } } } },
+        })
+      : null;
+    if (!other) throw new CopilotError("not_found", "Conversation not found.", 404);
+    const { isBlocked } = await import("@/lib/safety");
+    if (await isBlocked(userId, other.userId)) throw new CopilotError("bad_input", "You can't message this account.", 403);
+    const rows = await prisma.message.findMany({
+      where: { conversationId: input.conversationId },
+      orderBy: { createdAt: "desc" },
+      take: THREAD_CONTEXT,
+      select: { senderId: true, body: true, createdAt: true },
+    });
+    return messagePrompt(facts, {
+      brandName: other.user.brandProfile?.companyName || other.user.name || "the brand",
+      messages: rows.reverse().map((m) => ({ mine: m.senderId === userId, body: m.body, at: m.createdAt })),
+    });
   }
   if (!input.inquiryId) throw new CopilotError("bad_input", "Missing inquiry.");
   const q = await prisma.inquiry.findFirst({ where: { id: input.inquiryId, kit: { userId } }, select: { name: true, company: true, message: true } });

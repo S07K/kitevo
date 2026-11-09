@@ -7,6 +7,7 @@ import { useRealtimeStream } from "@/app/hooks/useRealtimeStream";
 import { useInboxBadge } from "@/app/components/workspace/WorkspaceFrame";
 import { ConversationRowSkeleton } from "@/app/components/Skeleton";
 import { BlockedNotice, SafetyMenu } from "@/app/components/safety/SafetyMenu";
+import { CopilotDraft } from "@/app/components/copilot/CopilotDraft";
 
 type Conversation = {
   id: string;
@@ -330,7 +331,7 @@ export default function CreatorInbox() {
                               <div className="h-7 w-7 rounded-full overflow-hidden bg-muted border border-border shrink-0 mb-0.5">{inner}</div>
                             );
                           })()}
-                          <div className={`max-w-[68%] px-4 py-2.5 text-sm leading-relaxed ${mine ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md" : "bg-muted text-foreground rounded-2xl rounded-bl-md"}`}>
+                          <div className={`max-w-[68%] whitespace-pre-line break-words px-4 py-2.5 text-sm leading-relaxed ${mine ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md" : "bg-muted text-foreground rounded-2xl rounded-bl-md"}`}>
                             {m.body}
                           </div>
                         </div>
@@ -349,14 +350,27 @@ export default function CreatorInbox() {
                     />
                   ) : (
                   <>
-                  <div className="flex items-center gap-3 bg-muted/40 border border-border rounded-2xl px-4 py-2.5">
-                    <input
-                      type="text"
+                  {/* Copilot: a reply, or a follow-up when the brand hasn't answered (only brand threads). */}
+                  {activeConvo?.other?.brandProfile && activeId && (
+                    <CopilotDraft
+                      key={activeId}
+                      className="mb-2"
+                      task="message"
+                      params={{ conversationId: activeId }}
+                      label={messages.length > 0 && messages[messages.length - 1].senderId === myUserId ? "Draft a follow-up" : "Draft a reply"}
+                      useLabel="Put in message box"
+                      onUse={setMsgInput}
+                    />
+                  )}
+                  <div className="flex items-end gap-3 bg-muted/40 border border-border rounded-2xl px-4 py-2.5">
+                    <textarea
                       value={msgInput}
                       onChange={(e) => setMsgInput(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                       placeholder="Type a message…"
-                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                      aria-label="Message"
+                      rows={Math.min(6, Math.max(1, msgInput.split("\n").length + Math.floor(msgInput.length / 90)))}
+                      className="flex-1 resize-none bg-transparent py-1 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none"
                     />
                     <button
                       type="button"
@@ -371,7 +385,7 @@ export default function CreatorInbox() {
                       )}
                     </button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1.5 ml-1">Enter to send</p>
+                  <p className="text-[10px] text-muted-foreground mt-1.5 ml-1">Enter to send · Shift+Enter for a new line</p>
                   </>
                   )}
                 </div>

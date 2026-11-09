@@ -7,6 +7,7 @@ import { payments } from "@/lib/payments";
 import { AdminFrame, adminCard, adminEyebrow, fmtDateTime, StatusPill } from "./AdminFrame";
 import { AuditTable } from "./AuditTable";
 import { ReplayButton } from "./AdminActions";
+import { CopilotUsage } from "./CopilotUsage";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin", robots: { index: false, follow: false } };
@@ -64,6 +65,7 @@ export default async function AdminPage({
       prisma.user.count({ where: { compedTier: { not: null } } }),
       prisma.user.count({ where: { stripeCustomerId: { not: null } } }),
       prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
+      prisma.userReport.count({ where: { status: "open" } }),
     ]),
     prisma.webhookEvent.count({ where: { status: { in: ["failed", "rejected"] }, updatedAt: { gte: weekAgo } } }),
     userWhere
@@ -85,7 +87,7 @@ export default async function AdminPage({
     }),
     prisma.adminAuditLog.findMany({ orderBy: { createdAt: "desc" }, take: 25 }),
   ]);
-  const [totalUsers, brands, comped, customers, newThisWeek] = counts;
+  const [totalUsers, brands, comped, customers, newThisWeek, openReports] = counts;
 
   // Resolve emails for audit targets and webhook customers in two small lookups.
   const refs = webhooks.map((w) => eventRefs(w.payload));
@@ -106,6 +108,7 @@ export default async function AdminPage({
     { label: "Paying customers", value: customers, sub: "have a customer id" },
     { label: "Comped", value: comped },
     { label: "Webhook problems", value: problems7d, sub: "last 7 days", alert: problems7d > 0 },
+    { label: "Open reports", value: openReports, sub: "review in Reports", alert: openReports > 0, href: "/admin/reports" },
   ];
 
   return (
@@ -114,15 +117,18 @@ export default async function AdminPage({
       title="Users & ops"
       description={`Look up an account, change its comp, resync its plan from ${payments.id}, and watch payment webhooks.`}
     >
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {stats.map((s) => (
-          <div key={s.label} className={`${adminCard} p-4 ${s.alert ? "border-red-500/40" : ""}`}>
+          <div key={s.label} className={`${adminCard} relative p-4 ${s.alert ? "border-red-500/40" : ""}`}>
+            {"href" in s && s.href && <Link href={s.href} className="absolute inset-0 rounded-2xl" aria-label={s.label} />}
             <div className={adminEyebrow}>{s.label}</div>
             <div className={`mt-1 text-xl font-semibold tabular-nums ${s.alert ? "text-red-700 dark:text-red-400" : ""}`}>{s.value}</div>
             {s.sub && <div className="text-muted-foreground text-xs">{s.sub}</div>}
           </div>
         ))}
       </div>
+
+      <CopilotUsage />
 
       <section className={`${adminCard} mt-6 p-5`}>
         <h2 className={adminEyebrow}>Find a user</h2>
