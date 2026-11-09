@@ -1,7 +1,8 @@
 import { LogoMark } from "@/app/components/Logo";
 import { PublicKitSkeleton } from "@/app/components/Skeleton";
 
-export default function KitPageLoading() {
+/** The kit skeleton: Suspense fallback while live stats load (lives in the page, not loading.tsx, so a missing kit can still answer 404). */
+export function KitLoading() {
   return (
     <div className="min-h-screen bg-[#F5F3F0]">
       <header className="fixed top-0 left-0 right-0 z-50 px-5 sm:px-8 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 flex items-center justify-between bg-[#F5F3F0]/90 backdrop-blur-md border-b border-[#E5E2DE]">
