@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { normalizeProductInput, paidPublishProblem } from "@/lib/commerce";
+import { MediaError, resolveCover } from "@/lib/media-storage";
 import { trackEvent } from "@/lib/analytics";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,14 @@ export async function PUT(req: Request, ctx: Ctx) {
   if (!parsed.ok) return NextResponse.json({ error: parsed.problem.error, field: parsed.problem.field }, { status: 400 });
   const blocked = await paidPublishProblem(r.product.userId, parsed.value);
   if (blocked) return NextResponse.json({ ...blocked, field: "priceCents" }, { status: 403 });
-  const updated = await prisma.product.update({ where: { id: r.product.id }, data: parsed.value });
+  let coverUrl: string | null;
+  try {
+    coverUrl = await resolveCover(parsed.value.coverUrl, r.product.coverUrl);
+  } catch (e) {
+    if (e instanceof MediaError) return NextResponse.json({ error: e.message, field: "coverUrl" }, { status: 502 });
+    throw e;
+  }
+  const updated = await prisma.product.update({ where: { id: r.product.id }, data: { ...parsed.value, coverUrl } });
   if (r.product.status !== "published" && updated.status === "published") {
     void trackEvent("product_published", { userId: updated.userId, props: { productId: updated.id }, dedupeKey: `product_published:${updated.id}` });
   }

@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { MediaError, storeImage } from "@/lib/media-storage";
 
 /**
  * Keep payloads small: large TEXT updates over Neon's pooler can hit timeouts / P1017
@@ -49,10 +50,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Only JPEG, PNG, or WebP data URLs are allowed." }, { status: 400 });
   }
 
+  // Upload to Storage and save the short URL (unchanged data URL when Storage isn't configured).
+  let stored: string;
+  try {
+    stored = await storeImage(raw, "avatars");
+  } catch (e) {
+    if (e instanceof MediaError) return NextResponse.json({ error: e.message }, { status: 502 });
+    throw e;
+  }
+
   const updateOnce = () =>
     prisma.user.update({
       where: { id: session.user.id },
-      data: { avatarUrl: raw },
+      data: { avatarUrl: stored },
       select: { avatarUrl: true },
     });
 

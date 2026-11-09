@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { MediaError, storeImage } from "@/lib/media-storage";
 
 const MAX_DATA_URL_LENGTH = 200_000;
 
@@ -48,11 +49,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Only JPEG, PNG, or WebP images are allowed." }, { status: 400 });
   }
 
+  // Upload to Storage and save the short URL (unchanged data URL when Storage isn't configured).
+  let stored: string;
+  try {
+    stored = await storeImage(raw, "logos");
+  } catch (e) {
+    if (e instanceof MediaError) return NextResponse.json({ error: e.message }, { status: 502 });
+    throw e;
+  }
+
   const upsertLogo = () =>
     prisma.brandProfile.upsert({
       where: { userId },
-      create: { userId, logoUrl: raw, companyName: "", industry: "", budgetRange: "" },
-      update: { logoUrl: raw },
+      create: { userId, logoUrl: stored, companyName: "", industry: "", budgetRange: "" },
+      update: { logoUrl: stored },
       select: { logoUrl: true },
     });
 
