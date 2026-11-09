@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Panel } from "@/app/components/workspace/WorkspaceShell";
@@ -64,6 +64,7 @@ export function AccountPanels({ email }: { email: string | null }) {
 
   return (
     <>
+      <BlockedPanel />
       <Panel title="Account">
         <p className="text-xs text-muted-foreground">Signed in as</p>
         <p className="mt-0.5 truncate text-sm font-medium text-foreground">{email ?? "—"}</p>
@@ -148,5 +149,57 @@ export function AccountPanels({ email }: { email: string | null }) {
         </div>
       </section>
     </>
+  );
+}
+
+type Blocked = { accounts: { id: string; name: string; accountType: string }[]; emails: { email: string }[] };
+
+/** Accounts (and inquiry emails) I've blocked, each with Unblock. Hidden when there are none. */
+function BlockedPanel() {
+  const [data, setData] = useState<Blocked | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/safety/block", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setData)
+      .catch(() => {});
+  }, []);
+  if (!data || (data.accounts.length === 0 && data.emails.length === 0)) return null;
+
+  async function unblockAccount(id: string) {
+    setBusy(id);
+    const res = await fetch(`/api/safety/block?userId=${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" }).catch(() => null);
+    if (res?.ok) setData((d) => (d ? { ...d, accounts: d.accounts.filter((a) => a.id !== id) } : d));
+    setBusy(null);
+  }
+  async function unblockEmail(email: string) {
+    setBusy(email);
+    const res = await fetch(`/api/safety/inquiry-block?email=${encodeURIComponent(email)}`, { method: "DELETE", credentials: "include" }).catch(() => null);
+    if (res?.ok) setData((d) => (d ? { ...d, emails: d.emails.filter((e) => e.email !== email) } : d));
+    setBusy(null);
+  }
+
+  const row = "flex items-center justify-between gap-3 py-2";
+  return (
+    <Panel title="Blocked">
+      <ul className="-my-2 divide-y divide-border">
+        {data.accounts.map((a) => (
+          <li key={a.id} className={row}>
+            <span className="min-w-0 truncate text-sm text-foreground">
+              {a.name} <span className="text-xs text-muted-foreground">· {a.accountType === "brand" ? "brand" : "creator"}</span>
+            </span>
+            <Button size="sm" variant="ghost" onClick={() => unblockAccount(a.id)} disabled={busy === a.id}>{busy === a.id ? "…" : "Unblock"}</Button>
+          </li>
+        ))}
+        {data.emails.map((e) => (
+          <li key={e.email} className={row}>
+            <span className="min-w-0 truncate text-sm text-foreground">
+              {e.email} <span className="text-xs text-muted-foreground">· inquiries</span>
+            </span>
+            <Button size="sm" variant="ghost" onClick={() => unblockEmail(e.email)} disabled={busy === e.email}>{busy === e.email ? "…" : "Unblock"}</Button>
+          </li>
+        ))}
+      </ul>
+    </Panel>
   );
 }

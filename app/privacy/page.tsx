@@ -108,6 +108,17 @@ export default function PrivacyPolicy() {
                 people use Kitevo. These records contain no message content or
                 platform tokens and are deleted with your account.
               </li>
+              <li>
+                <strong className="text-foreground">Blocks and reports:</strong>{" "}
+                If you block someone, we store that you blocked them so they
+                can&apos;t message you, apply to your campaigns or start deals with
+                you; they aren&apos;t told. If you block a kit-inquiry sender, we
+                store their email address to drop their later inquiries. If you
+                report an account, we store the reason, your optional note and
+                where you reported it from, so Kitevo can review it. The reported
+                account is never told who reported them. These records are deleted
+                if either account is deleted.
+              </li>
             </ul>
           </section>
 

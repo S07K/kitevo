@@ -11,11 +11,13 @@ vi.mock("@/lib/prisma", () => ({
     deal: { findMany: vi.fn() },
   },
 }));
+vi.mock("@/lib/safety", () => ({ activeGuard: vi.fn(async () => null), blockedGuard: vi.fn(async () => null) }));
 vi.mock("@/lib/deals", async (o) => ({ ...(await o<typeof import("@/lib/deals")>()), createDeal: vi.fn(async () => ({ id: "d1" })) }));
 
 const { getServerSession } = await import("next-auth");
 const { prisma } = await import("@/lib/prisma");
 const { createDeal } = await import("@/lib/deals");
+const { blockedGuard } = await import("@/lib/safety");
 const { POST } = await import("./route");
 
 const quote = { deliverables: [{ label: "Reel", quantity: 1 }], amount: "25000", currency: "INR" };
@@ -74,6 +76,16 @@ describe("POST /api/deals", () => {
     asUser({ id: "u_c", accountType: "creator" });
     expect(await (await post({ source: "direct", quote: { ...quote, amount: "0" } })).json()).toMatchObject({ field: "amount" });
     expect(await (await post({ source: "direct", title: " " })).json()).toMatchObject({ field: "title" });
+    expect(createDeal).not.toHaveBeenCalled();
+  });
+
+  it("no new deal between accounts that blocked each other", async () => {
+    asUser({ id: "c1", accountType: "creator" });
+    vi.mocked(prisma.campaignApplication.findUnique).mockResolvedValue({ id: "a1", creatorId: "c1", status: "accepted", campaign: { brandId: "b1", title: "T", brand: { email: "b@x.com", name: "B", username: "b", brandProfile: { companyName: "Brand" } } } } as never);
+    vi.mocked(blockedGuard).mockResolvedValueOnce(new Response(JSON.stringify({ error: "blocked", code: "blocked" }), { status: 403 }) as never);
+    const res = await post({ source: "campaign", ref: "a1" });
+    expect(res.status).toBe(403);
+    expect(blockedGuard).toHaveBeenCalledWith("c1", "b1");
     expect(createDeal).not.toHaveBeenCalled();
   });
 });

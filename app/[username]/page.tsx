@@ -28,8 +28,8 @@ function parseLinks(raw: string | null): { label: string; url: string }[] {
 }
 
 async function getCreatorProfile(username: string) {
-  const user = await prisma.user.findUnique({
-    where: { username },
+  const user = await prisma.user.findFirst({
+    where: { username, suspendedAt: null },
     select: {
       id: true,
       name: true,

@@ -3,6 +3,7 @@ import { dealForViewer, publicDeal } from "@/lib/deal-access";
 import { normalizeQuote } from "@/lib/deals-shared";
 import { cancel, DealError, markDelivered, proposeVersion, respond, withdraw } from "@/lib/deals";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { activeGuard, blockedGuard } from "@/lib/safety";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!rateLimit(`deal-action:${clientIp(req)}`, 30, 10 * 60 * 1000).ok) return NextResponse.json({ error: "Too many changes. Wait a moment." }, { status: 429 });
   const v = await dealForViewer(id, typeof body.token === "string" ? body.token : null);
   if (!v) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // New terms need both sides on speaking terms; finishing what's agreed (decline, withdraw,
+  // cancel, deliver, pay) stays open so nobody is trapped in a deal by a block.
+  if (body.action === "propose" || body.action === "accept") {
+    const stop = (v.userId ? await activeGuard(v.userId) : null) ?? (await blockedGuard(v.deal.creatorId, v.deal.brandUserId));
+    if (stop) return stop;
+  }
   try {
     let deal;
     switch (body.action) {

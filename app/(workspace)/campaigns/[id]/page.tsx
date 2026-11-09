@@ -12,12 +12,14 @@ import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { WorkspaceShell, Panel } from "@/app/components/workspace/WorkspaceShell";
 import { ButtonLink } from "@/app/components/workspace/Button";
+import { SafetyMenu } from "@/app/components/safety/SafetyMenu";
+import { blockState } from "@/lib/safety";
 
 type Params = { id: string };
 
 async function getCampaign(id: string) {
   return prisma.campaign.findFirst({
-    where: { id, status: "open" },
+    where: { id, status: "open", brand: { suspendedAt: null } },
     select: {
       id: true,
       title: true,
@@ -113,6 +115,9 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
     myApplication = app ?? null;
     hasConversation = !!convo;
   }
+  const viewerId = session?.user?.id ?? null;
+  const canReport = !!viewerId && viewerId !== campaign.brand.id;
+  const blockedByMe = canReport ? (await blockState(viewerId, campaign.brand.id)).iBlocked : false;
 
   const company =
     campaign.brand.brandProfile?.companyName ?? campaign.brand.name ?? "Brand";
@@ -163,6 +168,11 @@ export default async function CampaignDetailPage({ params }: { params: Promise<P
           <p className="text-sm font-medium text-foreground">{company}</p>
           <VerifiedBadge tier={campaign.brand.verifiedTier} size="sm" />
           {campaign.brand.brandProfile?.industry && <span className="text-sm text-muted-foreground">· {campaign.brand.brandProfile.industry}</span>}
+          {canReport && (
+            <div className="ml-auto">
+              <SafetyMenu userId={campaign.brand.id} name={company} context={`campaign:${campaign.id}`} blockedByMe={blockedByMe} />
+            </div>
+          )}
         </div>
         <h1 className="mt-3 font-display text-[28px] font-semibold leading-tight tracking-tight text-foreground sm:text-[32px]">{campaign.title}</h1>
         <div className="mt-3 flex flex-wrap gap-2">

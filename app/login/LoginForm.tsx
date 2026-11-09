@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AuthLayout } from "@/app/components/AuthLayout";
 
+const SUSPENDED_LOGIN = "This account has been suspended after a review of reports about it.";
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -15,7 +17,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(errorParam === "ACCOUNT_SUSPENDED" ? SUSPENDED_LOGIN : "");
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [resendStatus, setResendStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [loading, setLoading] = useState(false);
@@ -29,6 +31,11 @@ function LoginForm() {
       const res = await signIn("credentials", { email: email.trim().toLowerCase(), password, redirect: false });
       if (res?.error === "EMAIL_NOT_VERIFIED") {
         setUnverifiedEmail(email.trim().toLowerCase());
+        setLoading(false);
+        return;
+      }
+      if (res?.error === "ACCOUNT_SUSPENDED") {
+        setError(SUSPENDED_LOGIN);
         setLoading(false);
         return;
       }

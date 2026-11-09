@@ -403,3 +403,25 @@ export async function sendDealEmail({ to, subject, heading, lines, ctaLabel, cta
     "deal",
   );
 }
+
+/** New report → every ADMIN_EMAILS address. Carries no reporter text (the note stays in /admin). */
+export async function sendReportAlert(reportId: string, reason: string) {
+  const to = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim()).filter(Boolean);
+  if (!to.length) return;
+  const { reasonLabel } = await import("@/lib/safety-shared");
+  await send(
+    {
+      from: FROM,
+      to,
+      subject: `New report: ${reasonLabel(reason)}`,
+      html: emailHtml({
+        heading: "Someone reported an account",
+        body: `Reason: ${escapeHtml(reasonLabel(reason))}.<br><br>Review it in the admin reports queue, where you can dismiss it or suspend the account.`,
+        ctaLabel: "Open reports",
+        ctaUrl: `${APP_URL}/admin/reports#${encodeURIComponent(reportId)}`,
+        footer: "Sent to Kitevo admins for every new report.",
+      }),
+    },
+    "report-alert",
+  );
+}

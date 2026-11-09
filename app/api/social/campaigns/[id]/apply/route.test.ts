@@ -10,10 +10,13 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 vi.mock("@/lib/email", () => ({ sendApplicationReceivedEmail: vi.fn() }));
+vi.mock("@/lib/safety", () => ({ activeGuard: vi.fn(async () => null), blockedGuard: vi.fn(async () => null) }));
+
 
 const { getServerSession } = await import("next-auth");
 const { prisma } = await import("@/lib/prisma");
 const { sendApplicationReceivedEmail } = await import("@/lib/email");
+const { blockedGuard } = await import("@/lib/safety");
 const { POST } = await import("./route");
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -27,7 +30,7 @@ describe("POST /api/social/campaigns/[id]/apply", () => {
     vi.mocked(prisma.user.findUnique)
       .mockResolvedValueOnce({ accountType: "creator" } as never) // role check
       .mockResolvedValueOnce({ name: "Maya", username: "maya" } as never); // email lookup
-    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({ status: "open", title: "Summer glow", brand: { email: "brand@x.com" } } as never);
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValue({ status: "open", title: "Summer glow", brandId: "brand-1", brand: { email: "brand@x.com", suspendedAt: null } } as never);
     vi.mocked(prisma.campaignApplication.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.campaignApplication.create).mockResolvedValue({ id: "a1", message: "Love your SPF" } as never);
   });
@@ -60,5 +63,18 @@ describe("POST /api/social/campaigns/[id]/apply", () => {
     expect(res.status).toBe(409);
     await flush();
     expect(sendApplicationReceivedEmail).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the creator and the brand have blocked each other (either way)", async () => {
+    vi.mocked(blockedGuard).mockResolvedValueOnce(new Response(JSON.stringify({ error: "blocked", code: "blocked" }), { status: 403 }) as never);
+    const res = await POST(req({ message: "hi" }), { params });
+    expect(res.status).toBe(403);
+    expect(blockedGuard).toHaveBeenCalledWith("creator-1", "brand-1");
+    expect(prisma.campaignApplication.create).not.toHaveBeenCalled();
+  });
+
+  it("hides campaigns of suspended brands", async () => {
+    vi.mocked(prisma.campaign.findUnique).mockResolvedValueOnce({ status: "open", title: "x", brandId: "brand-1", brand: { email: "b@x.com", suspendedAt: new Date() } } as never);
+    expect((await POST(req({}), { params })).status).toBe(404);
   });
 });

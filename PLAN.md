@@ -655,6 +655,13 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - Owner feedback: a booking isn't something people buy and download; it's a way to reach the creator. Booking products are retired; each kit gets a **Book a call** button under the profile that opens the creator's Calendly / Cal.com / Google page in a dialog. Set per kit in the editor's Contact card.
 - Existing booking products were copied onto their creators' kits by the migration; old links redirect to the kit with the dialog open.
 
+## 24. Report & block, 2026-11-09
+
+- Why now: brands send offers and payment links and contact creators through kit forms; creators had no way to stop or flag a bad actor.
+- Block (either way) stops new contact but never traps anyone in a deal (finishing, paying and cancelling still work). Inquiry senders are blocked by email, silently.
+- Reports → admin email + /admin/reports (dismiss or suspend). Suspension refuses sign-in, ends open sessions at the workspace, refuses guarded actions and hides public pages; reversible and audited.
+- Next: report counts in admin overview; automatic hold after N reports if volume ever needs it (not before).
+
 ## 23. Copilot (R4), 2026-11-08
 
 - Owner ask: AI drafts without paying for Claude tokens at the start, and let creators bring their own AI.

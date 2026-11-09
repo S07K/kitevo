@@ -353,6 +353,7 @@ on it without checking.
 | `20261104161344_kit_book_a_call` | `Kit.booking` (TEXT, default `{}`) + data copy of published booking products onto kits | Additive with a data UPDATE that only fills empty bookings: playbook A. Rolling back code ignores the column; old booking products still exist |
 | `20261105072400_brand_deals` | New `Deal`, `DealVersion`, `DealPayment`, `DealEvent` tables | Additive: playbook A. Rolling back code hides deals; rows stay |
 | `20261108085646_copilot` | New `AiConnection` (creator AI keys, encrypted) and `CopilotUsage` tables | Additive: playbook A. Rolling back code hides Copilot; rows stay |
+| `20261109060909_report_block` | New `UserBlock`, `InquiryBlock`, `UserReport` tables; nullable `User.suspendedAt` | Additive: playbook A. Rolling back code ignores blocks and suspensions (a suspended account could sign in again); rows stay |
 
 Keep this table current: add a row with every new migration, and flag any contract-type
 migration in RELEASE.md together with its backup step.

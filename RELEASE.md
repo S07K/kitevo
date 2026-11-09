@@ -290,6 +290,18 @@ One additive migration (`20261108085646_copilot`) applies on deploy. Copilot is 
 
 ---
 
+## 18. Report & block (`feat/report-block`)
+
+No env vars. One additive migration (`20261109060909_report_block`) applies on deploy. Report alerts go to `ADMIN_EMAILS` (already set).
+
+- [ ] GitHub Actions > **DB migrations** run for the merge commit is green.
+- [ ] Messages → open a thread → **⋯ → Block**: the composer is replaced by "You blocked …"; the other account sees "You can't reply". Unblock from the notice or **Settings → Blocked**.
+- [ ] **⋯ → Report** (reason + note, "Also block" ticked): an admin email "New report" arrives; **/admin/reports** lists it.
+- [ ] On /admin/reports: **Dismiss** closes it; **Suspend account** (on a test account) → that account can't sign in ("suspended"), its kit/profile/campaigns 404, and an open session shows the suspended screen. Lift it from the user's admin page (**Safety → Lift suspension**). Both show in the audit log.
+- [ ] Pipeline → an inquiry → **Block sender**: a new inquiry from that email "succeeds" for the sender but never shows up.
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.

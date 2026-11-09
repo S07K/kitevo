@@ -6,6 +6,7 @@ import { VerifiedBadge } from "@/app/components/VerifiedBadge";
 import { useRealtimeStream } from "@/app/hooks/useRealtimeStream";
 import { useInboxBadge } from "@/app/components/workspace/WorkspaceFrame";
 import { ConversationRowSkeleton } from "@/app/components/Skeleton";
+import { BlockedNotice, SafetyMenu } from "@/app/components/safety/SafetyMenu";
 
 type Conversation = {
   id: string;
@@ -21,6 +22,8 @@ type Conversation = {
   lastMessage: { body: string; at: string; mine: boolean } | null;
   unread: boolean;
   lastReadAt: string | null;
+  /** "me" = I blocked them, "them" = they blocked me. */
+  blocked?: "me" | "them" | null;
 };
 
 type Message = {
@@ -121,16 +124,28 @@ export default function CreatorInbox() {
     onConversationsUpdated: loadConvos,
   });
 
+  async function unblockActive() {
+    const otherId = conversations.find((c) => c.id === activeId)?.other?.id;
+    if (!otherId) return;
+    await fetch(`/api/safety/block?userId=${encodeURIComponent(otherId)}`, { method: "DELETE", credentials: "include" });
+    loadConvos();
+  }
+
   async function sendMessage() {
     if (!msgInput.trim() || !activeId) return;
     setSending(true);
     try {
-      await fetch(`/api/social/conversations/${activeId}`, {
+      const sent = await fetch(`/api/social/conversations/${activeId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ body: msgInput.trim() }),
         credentials: "include",
       });
+      // Blocked (or suspended) since the thread was opened: refresh so the notice replaces the composer.
+      if (sent.status === 403) {
+        loadConvos();
+        return;
+      }
       setMsgInput("");
       // Optimistically fetch updated thread after sending
       const d = await fetch(`/api/social/conversations/${activeId}`, { credentials: "include" }).then((r) => r.json());
@@ -270,11 +285,14 @@ export default function CreatorInbox() {
                           <VerifiedBadge tier={other.verifiedTier} size="sm" />
                         </div>
                         {/* Agree the terms here instead of in loose messages: quote → accepted → paid. */}
-                        {other.brandProfile && activeId && (
-                          <Link href={`/deals/new?source=conversation&ref=${activeId}`} className="ml-auto shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary">
-                            Send quote
-                          </Link>
-                        )}
+                        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                          {other.brandProfile && activeId && !activeConvo.blocked && (
+                            <Link href={`/deals/new?source=conversation&ref=${activeId}`} className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary">
+                              Send quote
+                            </Link>
+                          )}
+                          <SafetyMenu userId={other.id} name={displayName} context={`conversation:${activeConvo.id}`} blockedByMe={activeConvo.blocked === "me"} onBlockChange={() => loadConvos()} />
+                        </div>
                       </>
                     );
                   })()}
@@ -323,6 +341,14 @@ export default function CreatorInbox() {
                 </div>
 
                 <div className="px-6 py-4 border-t border-border shrink-0">
+                  {activeConvo?.blocked ? (
+                    <BlockedNotice
+                      blockedBy={activeConvo.blocked}
+                      name={activeConvo.other?.brandProfile?.companyName ?? activeConvo.other?.name ?? "this account"}
+                      onUnblock={unblockActive}
+                    />
+                  ) : (
+                  <>
                   <div className="flex items-center gap-3 bg-muted/40 border border-border rounded-2xl px-4 py-2.5">
                     <input
                       type="text"
@@ -346,6 +372,8 @@ export default function CreatorInbox() {
                     </button>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1.5 ml-1">Enter to send</p>
+                  </>
+                  )}
                 </div>
               </>
             )}

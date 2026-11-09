@@ -9,6 +9,7 @@ export const adminEyebrow = "text-[11px] font-semibold uppercase tracking-[0.16e
 const TABS = [
   { href: "/admin", label: "Users & ops" },
   { href: "/admin/payouts", label: "Referral payouts" },
+  { href: "/admin/reports", label: "Reports" },
 ] as const;
 
 export function AdminFrame({
@@ -60,6 +61,10 @@ const STATUS_STYLE: Record<string, string> = {
   ignored: "bg-muted text-muted-foreground",
   failed: "bg-red-500/10 text-red-700 dark:text-red-400",
   rejected: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  // Reports (lib/safety)
+  open: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  dismissed: "bg-muted text-muted-foreground",
+  actioned: "bg-red-500/10 text-red-700 dark:text-red-400",
 };
 export function StatusPill({ status }: { status: string }) {
   return (
