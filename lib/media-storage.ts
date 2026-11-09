@@ -103,22 +103,6 @@ export async function storeImage(dataUrl: string, kind: MediaKind, fetchImpl: ty
   throw new MediaError("Couldn't save the image. Try again.");
 }
 
-/** Create the public bucket if it doesn't exist (backfill script / first deploy). Idempotent. */
-export async function ensureBucket(fetchImpl: typeof fetch = fetch, env: NodeJS.ProcessEnv = process.env): Promise<"created" | "exists"> {
-  const cfg = storageConfig(env);
-  if (!cfg) throw new MediaError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set.");
-  const headers = { ...authHeaders(cfg.key), "Content-Type": "application/json" };
-  const got = await fetchImpl(`${cfg.url}/storage/v1/bucket/${cfg.bucket}`, { headers });
-  if (got.ok) return "exists";
-  const res = await fetchImpl(`${cfg.url}/storage/v1/bucket`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ id: cfg.bucket, name: cfg.bucket, public: true, file_size_limit: MAX_MEDIA_BYTES, allowed_mime_types: Object.keys(ALLOWED) }),
-  });
-  if (!res.ok) throw new MediaError(`Couldn't create bucket "${cfg.bucket}": ${res.status} ${await res.text().catch(() => "")}`);
-  return "created";
-}
-
 /**
  * Product cover as saved: a new data URL is uploaded; one of our Storage URLs is kept; anything
  * else (another host, a stale shape) becomes `fallback` (the product's current cover on edit).

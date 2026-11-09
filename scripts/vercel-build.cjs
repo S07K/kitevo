@@ -208,7 +208,7 @@ function checkMediaStorage() {
   console.log(
     "\n[vercel-build] Note: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set on PRODUCTION.\n" +
       "  New avatars, logos and product covers are stored as base64 in the database.\n" +
-      "  Set both, redeploy, then run scripts/move-images-to-storage.ts (RELEASE.md).\n"
+      "  Set both (same Supabase project as the media bucket) and redeploy (RELEASE.md).\n"
   );
 }
 

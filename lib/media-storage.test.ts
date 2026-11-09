@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { __setRetryDelay, authHeaders, ensureBucket, isStoredMediaUrl, MediaError, parseDataUrl, resolveCover, storageConfig, storeImage } from "./media-storage";
+import { __setRetryDelay, authHeaders, isStoredMediaUrl, MediaError, parseDataUrl, resolveCover, storageConfig, storeImage } from "./media-storage";
 
 const ENV = { SUPABASE_URL: "https://abc.supabase.co/", SUPABASE_SERVICE_ROLE_KEY: "service-key" } as unknown as NodeJS.ProcessEnv;
 // 1x1 PNG
@@ -78,19 +78,6 @@ describe("media storage", () => {
     expect(isStoredMediaUrl(ours.replace("/media/", "/other/"), ENV)).toBe(false);
     expect(isStoredMediaUrl(ours + "?x=1", ENV)).toBe(false);
     expect(isStoredMediaUrl(ours, {} as NodeJS.ProcessEnv)).toBe(false);
-  });
-
-  it("creates the public bucket once", async () => {
-    const exists = vi.fn(async () => ok());
-    expect(await ensureBucket(exists as never, ENV)).toBe("exists");
-    const calls: string[] = [];
-    const missing = vi.fn(async (u: string, init?: RequestInit) => {
-      calls.push(`${init?.method ?? "GET"} ${u}`);
-      return u.endsWith("/bucket/media") ? new Response("", { status: 404 }) : ok();
-    });
-    expect(await ensureBucket(missing as never, ENV)).toBe("created");
-    expect(calls).toEqual(["GET https://abc.supabase.co/storage/v1/bucket/media", "POST https://abc.supabase.co/storage/v1/bucket"]);
-    expect(JSON.parse(String((missing.mock.calls[1] as unknown as [string, RequestInit])[1].body))).toMatchObject({ id: "media", public: true });
   });
 });
 
