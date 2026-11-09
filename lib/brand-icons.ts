@@ -21,12 +21,12 @@ import googleCalendar from "thesvg/google-calendar";
 import groq from "thesvg/groq";
 import openrouter from "thesvg/openrouter";
 import openai from "thesvg/openai";
-import gemini from "thesvg/google-gemini";
+import gemini from "thesvg/gemini";
 import anthropic from "thesvg/anthropic";
 
 type Icon = { title: string; hex: string; svg: string; variants: Record<string, string> };
 
-export const BRAND_ICONS = {
+const RAW_ICONS = {
   instagram,
   youtube,
   razorpay,
@@ -47,6 +47,29 @@ export const BRAND_ICONS = {
   gemini,
   anthropic,
 } satisfies Record<string, Icon>;
+
+/**
+ * Prefix every SVG id (and its url(#…) / href="#…" references) with the brand, because these
+ * marks are injected inline into one document: Gemini and Instagram both use ids a–h, so on a
+ * page showing both, Gemini's gradients resolved to Instagram's. Scoped, no two brands can collide.
+ */
+function scopeIds(svg: string, scope: string): string {
+  return svg
+    .replace(/\bid="([^"]+)"/g, (_, id) => `id="${scope}-${id}"`)
+    .replace(/url\(#([^)]+)\)/g, (_, id) => `url(#${scope}-${id})`)
+    .replace(/((?:xlink:)?href)="#([^"]+)"/g, (_, attr, id) => `${attr}="#${scope}-${id}"`);
+}
+
+function scoped<T extends Record<string, Icon>>(icons: T): T {
+  return Object.fromEntries(
+    Object.entries(icons).map(([name, icon]) => [
+      name,
+      { ...icon, svg: scopeIds(icon.svg, `bi-${name}`), variants: Object.fromEntries(Object.entries(icon.variants).map(([k, v]) => [k, scopeIds(v, `bi-${name}-${k}`)])) },
+    ]),
+  ) as T;
+}
+
+export const BRAND_ICONS = scoped(RAW_ICONS);
 
 export type BrandIconId = keyof typeof BRAND_ICONS;
 
@@ -71,6 +94,7 @@ export const GLYPH_IN_BRAND_COLOUR: ReadonlySet<BrandIconId> = new Set(["stripe"
  * glyph (mono, else the fill-less light variant) in the current text colour, so it reads in
  * both themes.
  */
-export const MONO_IN_TEXT_COLOUR: ReadonlySet<BrandIconId> = new Set(["openai", "anthropic", "openrouter"]);
+export const MONO_IN_TEXT_COLOUR: ReadonlySet<BrandIconId> = new Set(["openai", "anthropic"]);
 
-export const FAVICON_ICONS: Partial<Record<BrandIconId, string>> = { calcom: "/brands/calcom.png" };
+// OpenRouter rebranded to an "OR" mark; thesvg still ships the old arrows (checked 2026-11-09).
+export const FAVICON_ICONS: Partial<Record<BrandIconId, string>> = { calcom: "/brands/calcom.png", openrouter: "/brands/openrouter.png" };
