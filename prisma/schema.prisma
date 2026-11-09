@@ -134,6 +134,8 @@ model User {
   // Shortlist / save creators (brand saves creators)
   savedCreators SavedCreator[] @relation("BrandSaved")   // as brand: creators I saved
   savedByBrands SavedCreator[] @relation("SavedByBrand") // as creator: brands that saved me
+
+  @@index([accountType, createdAt]) // Discover: newest creators
 }
 
 
@@ -195,6 +197,7 @@ model KitView {
 
   @@index([kitId])
   @@index([viewedAt])
+  @@index([kitId, viewedAt]) // views over a date range per kit (dashboard analytics)
 }
 
 model Inquiry {
@@ -211,6 +214,7 @@ model Inquiry {
 
   @@index([kitId])
   @@index([createdAt])
+  @@index([kitId, createdAt]) // a kit's inquiries, newest first (Pipeline)
 }
 
 // Brand identity (one per brand account)
@@ -259,6 +263,7 @@ model Message {
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])
+  @@index([senderId]) // FK: deleting an account removes its messages
 }
 
 // Campaign brief posted by a brand
@@ -292,6 +297,7 @@ model CampaignView {
 
   @@index([campaignId])
   @@index([viewedAt])
+  @@index([campaignId, viewedAt]) // campaign analytics over a date range
 }
 
 // Creator's application to a campaign
@@ -688,4 +694,5 @@ model UserReport {
 
   @@index([status, createdAt])
   @@index([reportedId])
+  @@index([reporterId]) // FK: deleting an account removes reports it filed
 }

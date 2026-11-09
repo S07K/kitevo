@@ -185,7 +185,6 @@ Phase 3 — Business tier:
 - Team seats (`BrandMember` table, invite by email)
 
 ### Other Pending
-- DB indexes for scale
 - Wire `CampaignApplication.updatedAt` back into timeline once confirmed regenerated
 - Test hygiene: `lib/email.test.ts`, `lib/payments/dodo-provider.test.ts`, `lib/payments/stripe-provider.test.ts`, `app/api/me/admin/route.test.ts` use `beforeEach(() => x.mockReset())` (returns the mock → run as teardown); harmless today, wrap in braces when touched
 - Linktree prices on `/compare/linktree` are `reported` (independent review); confirm on linktr.ee and switch the source to official

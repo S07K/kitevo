@@ -354,6 +354,7 @@ on it without checking.
 | `20261105072400_brand_deals` | New `Deal`, `DealVersion`, `DealPayment`, `DealEvent` tables | Additive: playbook A. Rolling back code hides deals; rows stay |
 | `20261108085646_copilot` | New `AiConnection` (creator AI keys, encrypted) and `CopilotUsage` tables | Additive: playbook A. Rolling back code hides Copilot; rows stay |
 | `20261109060909_report_block` | New `UserBlock`, `InquiryBlock`, `UserReport` tables; nullable `User.suspendedAt` | Additive: playbook A. Rolling back code ignores blocks and suspensions (a suspended account could sign in again); rows stay |
+| `20261109110754_launch_indexes` | Six indexes: KitView(kitId, viewedAt), Inquiry(kitId, createdAt), CampaignView(campaignId, viewedAt), User(accountType, createdAt), Message(senderId), UserReport(reporterId) | Additive: playbook A. Indexes only; no data change. Small tables today, so the brief lock is negligible |
 
 Keep this table current: add a row with every new migration, and flag any contract-type
 migration in RELEASE.md together with its backup step.

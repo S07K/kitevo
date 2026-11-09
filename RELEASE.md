@@ -332,6 +332,15 @@ No migration. Until the two env vars are set, nothing changes (images stay in th
 
 ---
 
+## 22. Launch indexes (`perf/launch-indexes`)
+
+No env vars. One additive migration (`20261109110754_launch_indexes`, six `CREATE INDEX`) applies on deploy.
+
+- [ ] GitHub Actions > **DB migrations** run for the merge commit is green.
+- [ ] Dashboard analytics, Pipeline, campaign analytics and Discover load as before.
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.
