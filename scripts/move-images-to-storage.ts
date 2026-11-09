@@ -45,7 +45,8 @@ async function main() {
     console.error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set — nowhere to move images to.");
     process.exit(1);
   }
-  console.log(`${DRY_RUN ? "[dry run] " : ""}Storage: ${cfg.url} · bucket "${cfg.bucket}"`);
+  const dbHost = (process.env.DATABASE_URL ?? "").match(/@([^/:?]+)/)?.[1] ?? "unknown";
+  console.log(`${DRY_RUN ? "[dry run] " : ""}Database: ${dbHost} · Storage: ${cfg.url} · bucket "${cfg.bucket}"`);
   if (!DRY_RUN) console.log(`Bucket: ${await ensureBucket()}`);
 
   let moved = 0, skipped = 0, failed = 0, bytes = 0;

@@ -332,6 +332,7 @@ No migration. Until the two env vars are set, nothing changes (images stay in th
    SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... DATABASE_URL=<prod> DIRECT_URL=<prod> npx tsx scripts/move-images-to-storage.ts
    ```
    Safe to re-run; it only touches rows still holding a `data:` image.
+   ⚠️ **Never delete the `media` bucket** (or empty it): rows point at its files and the image data is no longer in the database, so deleting it loses those images for good. To check health at any time: `DATABASE_URL=<prod> DIRECT_URL=<prod> npx tsx scripts/check-stored-images.ts` (read-only; prints the database host first). If links are broken: `scripts/repair-missing-images.ts` (re-uploads anything the CDN still serves; `--clear` removes links it can't recover). `SUPABASE_URL`, the secret key and the bucket must all be in the **same** Supabase project; the upload error log names the host and bucket it used.
 4. [ ] Check: upload a new profile photo → it shows, and its address starts with `https://<project>.supabase.co/storage/v1/object/public/media/avatars/`. Kits, Discover, Messages and product pages still show every avatar, logo and cover.
 
 ---

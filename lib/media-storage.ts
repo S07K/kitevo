@@ -17,6 +17,11 @@ export type MediaKind = "avatars" | "logos" | "covers";
 
 const ALLOWED: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
 export const MAX_MEDIA_BYTES = 2 * 1024 * 1024;
+/** Base delay between upload retries (tests set it to 0 via the env-free default below). */
+export let RETRY_DELAY_MS = 400;
+export function __setRetryDelay(ms: number) {
+  RETRY_DELAY_MS = ms;
+}
 
 export type StorageConfig = { url: string; key: string; bucket: string };
 
@@ -67,28 +72,35 @@ export async function storeImage(dataUrl: string, kind: MediaKind, fetchImpl: ty
   if (!cfg) return dataUrl;
 
   const path = `${kind}/${createHash("sha256").update(parsed.bytes).digest("hex")}.${ALLOWED[parsed.mime]}`;
-  let res: Response;
-  try {
-    res = await fetchImpl(`${cfg.url}/storage/v1/object/${cfg.bucket}/${path}`, {
-      method: "POST",
-      headers: {
-        ...authHeaders(cfg.key),
-        "Content-Type": parsed.mime,
-        "cache-control": "max-age=31536000",
-        // Same bytes → same path: re-uploading is a no-op overwrite, never an error.
-        "x-upsert": "true",
-      },
-      body: new Uint8Array(parsed.bytes),
-      signal: AbortSignal.timeout(20_000),
-    });
-  } catch {
-    throw new MediaError("Couldn't save the image. Try again.");
+  const where = `${new URL(cfg.url).host} bucket=${cfg.bucket}`;
+  // Supabase's storage edge occasionally answers 5xx (e.g. Cloudflare 520) for a request that
+  // succeeds a moment later. Same path + x-upsert makes a retry safe; 4xx is never retried.
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    let res: Response | null = null;
+    try {
+      res = await fetchImpl(`${cfg.url}/storage/v1/object/${cfg.bucket}/${path}`, {
+        method: "POST",
+        headers: {
+          ...authHeaders(cfg.key),
+          "Content-Type": parsed.mime,
+          "cache-control": "max-age=31536000",
+          // Same bytes → same path: re-uploading is a no-op overwrite, never an error.
+          "x-upsert": "true",
+        },
+        body: new Uint8Array(parsed.bytes),
+        signal: AbortSignal.timeout(20_000),
+      });
+    } catch {
+      res = null; // network error / timeout: retry
+    }
+    if (res?.ok) return publicUrlPrefix(cfg) + path;
+    const retryable = !res || res.status >= 500;
+    const detail = res ? `${res.status} ${(await res.text().catch(() => "")).slice(0, 300)}` : "network error";
+    console.error(`[media-storage] upload failed (${where}, attempt ${attempt}/3): ${detail}`);
+    if (!retryable || attempt === 3) break;
+    await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
   }
-  if (!res.ok) {
-    console.error("[media-storage] upload failed", res.status, await res.text().catch(() => ""));
-    throw new MediaError("Couldn't save the image. Try again.");
-  }
-  return publicUrlPrefix(cfg) + path;
+  throw new MediaError("Couldn't save the image. Try again.");
 }
 
 /** Create the public bucket if it doesn't exist (backfill script / first deploy). Idempotent. */
