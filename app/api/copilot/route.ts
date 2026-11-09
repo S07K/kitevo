@@ -25,7 +25,7 @@ export async function GET() {
   return NextResponse.json(publicStatus(await copilotAccess(userId)));
 }
 
-/** POST { task: "bio" | "pitch" | "inquiry_reply", kitId?, campaignId?, inquiryId? } → { text, status } */
+/** POST { task: "bio" | "pitch" | "inquiry_reply" | "message", kitId?, campaignId?, inquiryId?, conversationId? } → { text, status } */
 export async function POST(req: Request) {
   const userId = await creatorId();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   if (!isCopilotTask(body.task)) return NextResponse.json({ error: "Unknown Copilot task.", code: "bad_input" }, { status: 400 });
   try {
-    const out = await generate(userId, { task: body.task, kitId: id(body.kitId), campaignId: id(body.campaignId), inquiryId: id(body.inquiryId) });
+    const out = await generate(userId, { task: body.task, kitId: id(body.kitId), campaignId: id(body.campaignId), inquiryId: id(body.inquiryId), conversationId: id(body.conversationId) });
     return NextResponse.json(out);
   } catch (e) {
     if (e instanceof CopilotError) return NextResponse.json({ error: e.message, code: e.code }, { status: e.status });

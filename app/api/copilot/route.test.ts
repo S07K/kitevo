@@ -10,6 +10,9 @@ vi.mock("@/lib/prisma", () => ({
     kit: { findFirst: vi.fn() },
     campaign: { findUnique: vi.fn() },
     inquiry: { findFirst: vi.fn() },
+    conversationParticipant: { findUnique: vi.fn(), findFirst: vi.fn() },
+    message: { findMany: vi.fn() },
+    userBlock: { findMany: vi.fn(async () => []) },
   },
 }));
 vi.mock("@/lib/token-crypto", () => ({ decryptToken: (v: string) => v, encryptToken: (v: string) => v }));
@@ -133,5 +136,25 @@ describe("/api/copilot", () => {
   it("GET reports the status without any key", async () => {
     vi.mocked(prisma.copilotUsage.count).mockResolvedValueOnce(12);
     expect(await (await GET()).json()).toEqual({ ok: true, source: "kitevo", remaining: 38, limit: 50 });
+  });
+
+  it("message drafts: my threads with a brand only, never across a block", async () => {
+    vi.mocked(prisma.conversationParticipant.findUnique).mockResolvedValueOnce(null);
+    expect((await post({ task: "message", conversationId: "cv1" })).status).toBe(404);
+
+    vi.mocked(prisma.conversationParticipant.findUnique).mockResolvedValue({ id: "p" } as never);
+    vi.mocked(prisma.conversationParticipant.findFirst).mockResolvedValue({ userId: "b1", user: { name: "x", accountType: "brand", brandProfile: { companyName: "Oats Co" } } } as never);
+    vi.mocked(prisma.userBlock.findMany).mockResolvedValueOnce([{ blockerId: "b1" }] as never);
+    expect((await post({ task: "message", conversationId: "cv1" })).status).toBe(403);
+
+    vi.mocked(prisma.message.findMany).mockResolvedValueOnce([
+      { senderId: "u1", body: "Here are my ideas", createdAt: new Date(Date.now() - 3 * 86_400_000) },
+      { senderId: "b1", body: "Thanks!", createdAt: new Date(Date.now() - 4 * 86_400_000) },
+    ] as never);
+    const res = await post({ task: "message", conversationId: "cv1" });
+    expect(res.status).toBe(200);
+    // Newest-first rows are put back in order: the creator spoke last → a follow-up.
+    expect(vi.mocked(complete).mock.calls.at(-1)![1].prompt).toMatch(/hasn't heard back for 3 days/);
+    expect(prisma.copilotUsage.create).toHaveBeenCalledWith({ data: { userId: "u1", task: "message", source: "kitevo" } });
   });
 });
