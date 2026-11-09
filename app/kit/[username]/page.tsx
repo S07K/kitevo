@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { KitLoading } from "./KitLoading";
 import { publicBooking } from "@/lib/kit-booking";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
@@ -125,6 +127,25 @@ export default async function MediaKitPage({
       }
     }
 
+    // Everything above is a quick database read, so a missing kit 404s before anything streams
+    // (a segment-level loading.tsx used to start the response first, so misses answered 200).
+    // The slow part (live Instagram/YouTube stats) streams behind the skeleton.
+    return (
+      <Suspense fallback={<KitLoading />}>
+        <LiveKitPage result={result} previewMode={previewMode} />
+      </Suspense>
+    );
+  }
+
+  if (DEMO_SLUGS.includes(slug)) return <DemoKit slug={slug} />;
+
+  notFound();
+}
+
+type KitResult = NonNullable<Awaited<ReturnType<typeof getKitBySlug>>>;
+
+async function LiveKitPage({ result, previewMode }: { result: KitResult; previewMode: boolean }) {
+  {
     const [referrer, session] = await Promise.all([
       headers().then((h) => h.get("referer") ?? undefined),
       getServerSession(authOptions),
@@ -175,7 +196,10 @@ export default async function MediaKitPage({
     );
   }
 
-  if (DEMO_SLUGS.includes(slug)) {
+}
+
+async function DemoKit({ slug }: { slug: string }) {
+  {
     // avatarUrl was omitted here, so the demo fell back to an initial even once the
     // avatar file existed. niches/location give the hero the same shape a real kit has.
     const creator = {
@@ -205,6 +229,4 @@ export default async function MediaKitPage({
       />
     );
   }
-
-  notFound();
 }
