@@ -11,6 +11,7 @@ import { WorkspaceShell, PageHeader, Panel, Eyebrow } from "@/app/components/wor
 import { Button, ButtonLink } from "@/app/components/workspace/Button";
 import { Skeleton, ListCardSkeleton } from "@/app/components/Skeleton";
 import { AvatarImg } from "@/app/components/AvatarImg";
+import { SafetyMenu } from "@/app/components/safety/SafetyMenu";
 import { CREATOR_NICHES } from "@/lib/niches";
 
 const NICHES = CREATOR_NICHES;
@@ -469,6 +470,9 @@ export default function BrandCampaigns() {
                                       {kit && <ButtonLink href={`/kit/${kit.slug}`} target="_blank" size="sm" variant="ghost">View kit</ButtonLink>}
                                       <Button size="sm" variant="ghost" onClick={() => startConversation(a.creator.id)}>Message</Button>
                                       {a.status === "accepted" && <ButtonLink href={`/deals/new?source=campaign&ref=${a.id}`} size="sm" variant="secondary">Send offer</ButtonLink>}
+                                      <div className="ml-auto">
+                                        <SafetyMenu userId={a.creator.id} name={displayName} context={`application:${a.id}`} />
+                                      </div>
                                     </div>
                                   </div>
                                 </div>

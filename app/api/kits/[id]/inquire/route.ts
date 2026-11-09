@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendInquiryNotification } from "@/lib/email";
+import { inquiryBlocked } from "@/lib/safety";
 
 export async function POST(
   req: NextRequest,
@@ -27,10 +28,14 @@ export async function POST(
 
   const kit = await prisma.kit.findUnique({
     where: { id: kitId },
-    select: { id: true, name: true, slug: true, user: { select: { email: true, name: true } } },
+    select: { id: true, name: true, slug: true, userId: true, user: { select: { email: true, name: true, suspendedAt: true } } },
   });
-  if (!kit) {
+  if (!kit || kit.user.suspendedAt) {
     return NextResponse.json({ error: "Kit not found" }, { status: 404 });
+  }
+  // A sender the creator blocked: look like it worked, store and send nothing.
+  if (await inquiryBlocked(kit.userId, email)) {
+    return NextResponse.json({ id: "received" }, { status: 201 });
   }
 
   const inquiry = await prisma.inquiry.create({

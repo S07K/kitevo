@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { activeGuard, blockedGuard } from "@/lib/safety";
 
 /** GET /api/social/conversations/[id] — messages + mark read */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -51,6 +52,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     where: { conversationId_userId: { conversationId: id, userId: session.user.id } },
   });
   if (!participation) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const other = await prisma.conversationParticipant.findFirst({ where: { conversationId: id, userId: { not: session.user.id } }, select: { userId: true } });
+  const stop = (await activeGuard(session.user.id)) ?? (await blockedGuard(session.user.id, other?.userId));
+  if (stop) return stop;
 
   const [message] = await Promise.all([
     prisma.message.create({

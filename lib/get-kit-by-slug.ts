@@ -63,7 +63,8 @@ export type KitBySlugResult = { kit: PublicKit; creator: PublicCreator } | null;
 
 export async function getKitBySlug(slug: string): Promise<KitBySlugResult> {
   const kit = await prisma.kit.findFirst({
-    where: { slug },
+    // Suspended owners' kits 404 (lib/safety).
+    where: { slug, user: { suspendedAt: null } },
     include: {
       user: {
         select: { name: true, username: true, bio: true, avatarUrl: true, verifiedTier: true, niches: true, location: true, links: true },

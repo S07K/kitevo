@@ -7,7 +7,8 @@ import { payments, type SubscriptionSnapshot } from "@/lib/payments";
 import { SUBSCRIPTION_TIERS, getTierByPriceId } from "@/config/subscriptions";
 import { AdminFrame, adminCard, adminEyebrow, fmtDateTime, StatusPill } from "../../AdminFrame";
 import { AuditTable } from "../../AuditTable";
-import { PlanControls, ReplayButton } from "../../AdminActions";
+import { PlanControls, ReplayButton, SuspendControls } from "../../AdminActions";
+import { reasonLabel } from "@/lib/safety-shared";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "User · Admin", robots: { index: false, follow: false } };
@@ -29,7 +30,7 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
     where: { id },
     select: {
       id: true, email: true, name: true, username: true, accountType: true, createdAt: true,
-      emailVerified: true, onboardingCompletedAt: true, passwordHash: true,
+      emailVerified: true, onboardingCompletedAt: true, passwordHash: true, suspendedAt: true,
       verifiedTier: true, compedTier: true, stripeCustomerId: true,
       instagramUserId: true, instagramTokenExpiresAt: true, youtubeChannelId: true,
       followerCount: true, engagementRate: true, statsUpdatedAt: true,
@@ -38,7 +39,8 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
       brandProfile: { select: { companyName: true } },
       accounts: { select: { provider: true } },
       kits: { select: { id: true, name: true, slug: true, passwordHash: true, createdAt: true, _count: { select: { views: true } } } },
-      _count: { select: { referrals: true, campaigns: true, campaignApplications: true } },
+      _count: { select: { referrals: true, campaigns: true, campaignApplications: true, blockedBy: true } },
+      reportsAgainst: { orderBy: { createdAt: "desc" }, take: 10, select: { id: true, reason: true, status: true, createdAt: true, note: true } },
     },
   });
   if (!user) notFound();
@@ -155,6 +157,32 @@ export default async function AdminUserPage({ params }: { params: Promise<{ id: 
           </dl>
         </section>
       </div>
+
+      <section className={`${adminCard} mt-6 p-5`}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className={adminEyebrow}>Safety</h2>
+          <SuspendControls userId={user.id} suspended={!!user.suspendedAt} />
+        </div>
+        <dl className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <Field label="Status">
+            {user.suspendedAt ? <span className="text-red-700 dark:text-red-400">Suspended {fmtDateTime(user.suspendedAt)}</span> : "Active"}
+          </Field>
+          <Field label="Reports against">{user.reportsAgainst.length ? `${user.reportsAgainst.length}${user.reportsAgainst.length === 10 ? "+" : ""}` : "0"}</Field>
+          <Field label="Blocked by">{`${user._count.blockedBy} account${user._count.blockedBy === 1 ? "" : "s"}`}</Field>
+        </dl>
+        {user.reportsAgainst.length > 0 && (
+          <ul className="divide-border mt-4 divide-y border-t border-border text-sm">
+            {user.reportsAgainst.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-baseline gap-x-3 py-2">
+                <span className="font-medium">{reasonLabel(r.reason)}</span>
+                <StatusPill status={r.status} />
+                {r.note && <span className="text-muted-foreground min-w-0 basis-full truncate text-xs">“{r.note}”</span>}
+                <span className="text-muted-foreground ml-auto text-xs">{fmtDateTime(r.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {user.accountType !== "brand" && (
         <section className={`${adminCard} mt-6 p-5`}>

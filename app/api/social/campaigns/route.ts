@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { activeGuard, blockedIdsFor } from "@/lib/safety";
 import { getCampaignViewCounts } from "@/lib/campaign-views";
 
 /** Free brands may keep at most this many campaigns "open" at once. Paid (brand_verified) brands are uncapped. */
@@ -48,10 +49,13 @@ export async function GET(req: Request) {
     return NextResponse.json(withStats);
   }
 
-  // Creators see open campaigns from all brands
+  // Creators see open campaigns from all brands, minus suspended brands and blocks either way.
+  const hidden = await blockedIdsFor(session.user.id);
   const campaigns = await prisma.campaign.findMany({
     where: {
       status: "open",
+      brand: { suspendedAt: null },
+      ...(hidden.length ? { brandId: { notIn: hidden } } : {}),
       ...(niche ? { niche } : {}),
     },
     orderBy: { createdAt: "desc" },
@@ -94,6 +98,8 @@ export async function POST(req: Request) {
     select: { accountType: true, verifiedTier: true },
   });
   if (user?.accountType !== "brand") return NextResponse.json({ error: "Brands only" }, { status: 403 });
+  const suspended = await activeGuard(session.user.id);
+  if (suspended) return suspended;
 
   const body = await req.json().catch(() => ({})) as {
     title?: string;

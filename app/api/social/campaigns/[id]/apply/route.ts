@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { activeGuard, blockedGuard } from "@/lib/safety";
 import { sendApplicationReceivedEmail } from "@/lib/email";
 import { inBackground } from "@/lib/background";
 
@@ -32,10 +33,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const campaign = await prisma.campaign.findUnique({
     where: { id },
-    select: { status: true, title: true, brand: { select: { email: true } } },
+    select: { status: true, title: true, brandId: true, brand: { select: { email: true, suspendedAt: true } } },
   });
-  if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!campaign || campaign.brand.suspendedAt) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (campaign.status !== "open") return NextResponse.json({ error: "Campaign is not open" }, { status: 400 });
+  const stop = (await activeGuard(session.user.id)) ?? (await blockedGuard(session.user.id, campaign.brandId));
+  if (stop) return stop;
 
   const body = await req.json().catch(() => ({})) as { message?: string };
 

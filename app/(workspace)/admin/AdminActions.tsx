@@ -129,3 +129,50 @@ export function PlanControls({
     </div>
   );
 }
+
+/** Dismiss a report, or suspend the reported account (closes all their open reports). */
+export function ReportActions({ id, name }: { id: string; name: string }) {
+  const { busy, message, post } = useAdminPost();
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <button type="button" className={btn} disabled={busy} onClick={() => post(`/api/admin/reports/${id}`, { action: "dismiss" }, () => "Dismissed")}>
+        Dismiss
+      </button>
+      <button
+        type="button"
+        className={`${btn} border-red-300 text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40`}
+        disabled={busy}
+        onClick={() => {
+          if (confirm(`Suspend ${name}? They can't sign in, and their kit, profile and campaigns are hidden. You can undo this on their user page.`)) {
+            post(`/api/admin/reports/${id}`, { action: "suspend" }, (j) => `Suspended · ${j.reportsClosed} report${j.reportsClosed === 1 ? "" : "s"} closed`);
+          }
+        }}
+      >
+        Suspend account
+      </button>
+      <Feedback message={message} />
+    </span>
+  );
+}
+
+/** On the user page: suspend or lift a suspension. */
+export function SuspendControls({ userId, suspended }: { userId: string; suspended: boolean }) {
+  const { busy, message, post } = useAdminPost();
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        className={btn}
+        disabled={busy}
+        onClick={() => {
+          if (confirm(suspended ? "Lift the suspension? They can sign in again and their public pages come back." : "Suspend this account? They can't sign in, and their kit, profile and campaigns are hidden.")) {
+            post(`/api/admin/users/${userId}/suspend`, { suspended: !suspended }, (j) => (j.suspended ? "Suspended" : "Suspension lifted"));
+          }
+        }}
+      >
+        {suspended ? "Lift suspension" : "Suspend account"}
+      </button>
+      <Feedback message={message} />
+    </span>
+  );
+}

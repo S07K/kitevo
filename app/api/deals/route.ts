@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { activeGuard, blockedGuard } from "@/lib/safety";
 import { cleanEmail } from "@/lib/commerce-shared";
 import { MAX_DEAL_TITLE, normalizeQuote } from "@/lib/deals-shared";
 import { createDeal, DealError } from "@/lib/deals";
@@ -96,6 +97,8 @@ export async function POST(req: Request) {
   } else {
     return NextResponse.json({ error: "Unknown deal source." }, { status: 400 });
   }
+  const stop = (await activeGuard(me.id)) ?? (await blockedGuard(creatorId, brandUserId));
+  if (stop) return stop;
   try {
     const deal = await createDeal({ creatorId, brandUserId, brandName, brandEmail, title, source: source as "campaign", ...refs, proposedBy: isBrand ? "brand" : "creator", quote: quote.value });
     return NextResponse.json({ id: deal.id }, { status: 201 });

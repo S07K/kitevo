@@ -30,6 +30,7 @@ export const authOptions: NextAuthOptions = {
         // Block only users who signed up after email-verify was added and haven't verified yet.
         // Old users (emailVerified=false, emailVerifyToken=null) are grandfathered through.
         if (!user.emailVerified && user.emailVerifyToken !== null) throw new Error("EMAIL_NOT_VERIFIED");
+        if (user.suspendedAt) throw new Error("ACCOUNT_SUSPENDED");
         return { id: user.id, email: user.email, name: user.name ?? undefined };
       },
     }),
@@ -39,6 +40,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === "google" && user.email) {
         const existing = await prisma.user.findUnique({ where: { email: user.email } });
+        if (existing?.suspendedAt) return "/login?error=ACCOUNT_SUSPENDED";
         if (existing) {
           await prisma.account.upsert({
             where: { provider_providerAccountId: { provider: "google", providerAccountId: account.providerAccountId } },

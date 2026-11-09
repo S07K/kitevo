@@ -14,6 +14,8 @@ export type WorkspaceViewer = {
   /** Brand logo for brands, avatar for creators. */
   avatarUrl: string | null;
   isAdmin: boolean;
+  /** Suspended by an admin: the workspace shows SuspendedScreen instead. */
+  suspended: boolean;
 };
 
 /**
@@ -31,6 +33,7 @@ export const getWorkspaceViewer = cache(async (): Promise<WorkspaceViewer | null
       name: true,
       email: true,
       avatarUrl: true,
+      suspendedAt: true,
       brandProfile: { select: { companyName: true, logoUrl: true } },
     },
   });
@@ -43,6 +46,7 @@ export const getWorkspaceViewer = cache(async (): Promise<WorkspaceViewer | null
     email: user.email,
     avatarUrl: (brand ? user.brandProfile?.logoUrl : null) ?? user.avatarUrl,
     isAdmin: isAdminEmail(user.email),
+    suspended: !!user.suspendedAt,
   };
 });
 

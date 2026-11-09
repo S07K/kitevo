@@ -13,7 +13,7 @@ import { invalidateSubscription } from "@/lib/subscription-cache";
  * from a paying user cleared their badge until the next sync.
  */
 
-export type AuditAction = "comp.set" | "plan.resync" | "webhook.replay";
+export type AuditAction = "comp.set" | "plan.resync" | "webhook.replay" | "report.dismiss" | "user.suspend" | "user.unsuspend";
 
 /** Never throws: an audit write failing must not undo the change it describes. */
 export async function logAdminAction(
@@ -99,4 +99,40 @@ export async function resyncPlan(userId: string, actor: string) {
   const after = { verifiedTier, subscriptionStatus: sub?.status ?? null, priceId: sub?.priceId ?? null };
   await logAdminAction(actor, "plan.resync", userId, { before: { verifiedTier: user.verifiedTier }, after });
   return after;
+}
+
+// ─── Reports & suspension (lib/safety) ─────────────────────────────────────────
+
+/** Close a report without acting on the account. */
+export async function dismissReport(reportId: string, actor: string) {
+  const r = await prisma.userReport.findUnique({ where: { id: reportId }, select: { status: true, reportedId: true } });
+  if (!r) throw new AdminActionError("Report not found.");
+  if (r.status !== "open") throw new AdminActionError("This report is already closed.");
+  await prisma.userReport.update({ where: { id: reportId }, data: { status: "dismissed", resolvedBy: actor, resolvedAt: new Date() } });
+  await logAdminAction(actor, "report.dismiss", r.reportedId, { reportId });
+  return { status: "dismissed" as const };
+}
+
+/**
+ * Suspend an account: sign-in refused, guarded actions refused, public kit/profile/campaigns
+ * hidden. Every open report against them is closed as "actioned". Reversible.
+ */
+export async function suspendUser(userId: string, actor: string, reportId?: string | null) {
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { suspendedAt: true } });
+  if (!u) throw new AdminActionError("User not found.");
+  const now = new Date();
+  const [, closed] = await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { suspendedAt: u.suspendedAt ?? now } }),
+    prisma.userReport.updateMany({ where: { reportedId: userId, status: "open" }, data: { status: "actioned", resolvedBy: actor, resolvedAt: now } }),
+  ]);
+  await logAdminAction(actor, "user.suspend", userId, { reportId: reportId ?? null, reportsClosed: closed.count, alreadySuspended: !!u.suspendedAt });
+  return { suspended: true, reportsClosed: closed.count };
+}
+
+export async function unsuspendUser(userId: string, actor: string) {
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { suspendedAt: true } });
+  if (!u) throw new AdminActionError("User not found.");
+  await prisma.user.update({ where: { id: userId }, data: { suspendedAt: null } });
+  await logAdminAction(actor, "user.unsuspend", userId, { wasSuspendedAt: u.suspendedAt?.toISOString() ?? null });
+  return { suspended: false };
 }

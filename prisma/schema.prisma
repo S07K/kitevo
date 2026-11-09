@@ -109,6 +109,13 @@ model User {
   paymentConnections PaymentConnection[]
   schedulerConnections SchedulerConnection[]
   aiConnection         AiConnection?
+  blocksMade           UserBlock[]  @relation("BlocksMade")
+  blockedBy            UserBlock[]  @relation("BlockedBy")
+  inquiryBlocks        InquiryBlock[]
+  reportsMade          UserReport[] @relation("ReportsMade")
+  reportsAgainst       UserReport[] @relation("ReportsAgainst")
+  /// Set by an admin (/admin/reports): no sign-in, public pages and campaigns hidden.
+  suspendedAt          DateTime?
   copilotUsage         CopilotUsage[]
   dealsAsCreator Deal[] @relation("CreatorDeals")
   dealsAsBrand   Deal[] @relation("BrandDeals")
@@ -635,4 +642,50 @@ model CopilotUsage {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+/// One account blocking another (lib/safety.ts). Either direction stops new messages, new
+/// conversations, campaign applications and new deals or deal terms between the two;
+/// existing threads and deals stay readable, and payments/delivery on a deal still work.
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("BlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("BlockedBy", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+/// A creator blocking a kit-inquiry sender (no account, so by email). Later inquiries from
+/// that email are accepted silently and dropped (the sender isn't told).
+model InquiryBlock {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String   // lowercased
+  createdAt DateTime @default(now())
+
+  @@unique([userId, email])
+}
+
+/// A report of another account, reviewed in /admin/reports.
+model UserReport {
+  id         String    @id @default(cuid())
+  reporterId String
+  reporter   User      @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedId String
+  reported   User      @relation("ReportsAgainst", fields: [reportedId], references: [id], onDelete: Cascade)
+  reason     String    // lib/safety REPORT_REASONS
+  note       String?   // ≤ 1000 chars, reporter's words
+  context    String?   // where it was reported from: "conversation:<id>" | "deal:<id>" | "campaign:<id>" | "application:<id>" | "profile"
+  status     String    @default("open") // open | dismissed | actioned
+  resolvedBy String?   // admin email
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([status, createdAt])
+  @@index([reportedId])
 }

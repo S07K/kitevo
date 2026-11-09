@@ -9,7 +9,7 @@ type Params = { username: string };
 
 async function getCreator(username: string) {
   return prisma.user.findFirst({
-    where: { username },
+    where: { username, suspendedAt: null },
     select: {
       id: true,
       name: true,

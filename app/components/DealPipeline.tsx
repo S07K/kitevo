@@ -212,7 +212,8 @@ function DetailDialog({
             })}
           </div>
 
-          <div className="mt-6 flex justify-end gap-2">
+          <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+            <BlockSender key={inq.id} inquiryId={inq.id} email={inq.email} />
             <Button onClick={onClose}>Close</Button>
             <a href={`mailto:${inq.email}?subject=Re: collaboration inquiry`} className={buttonClass({ variant: "secondary" })}>
               <Mail size={14} aria-hidden /> Reply by email
@@ -398,5 +399,32 @@ export function DealPipeline({ inquiries, onUpdate, onMarkRead }: Props) {
         board
       )}
     </>
+  );
+}
+
+/**
+ * Block an inquiry sender by email (they have no account). Their later inquiries are dropped
+ * silently; unblock in Settings.
+ */
+function BlockSender({ inquiryId, email }: { inquiryId: string; email: string }) {
+  const [state, setState] = useState<"idle" | "confirm" | "busy" | "done" | "error">("idle");
+  async function block() {
+    setState("busy");
+    const res = await fetch("/api/safety/inquiry-block", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ inquiryId }) }).catch(() => null);
+    setState(res?.ok ? "done" : "error");
+  }
+  if (state === "done") return <span className="mr-auto text-xs text-muted-foreground">Blocked. New inquiries from {email} won&apos;t reach you.</span>;
+  if (state === "confirm" || state === "busy" || state === "error")
+    return (
+      <span className="mr-auto inline-flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        {state === "error" ? "Couldn't block. Try again?" : `Block ${email}?`}
+        <Button size="sm" variant="danger" onClick={block} disabled={state === "busy"}>{state === "busy" ? "Blocking…" : "Block"}</Button>
+        <Button size="sm" variant="ghost" onClick={() => setState("idle")} disabled={state === "busy"}>Cancel</Button>
+      </span>
+    );
+  return (
+    <button type="button" onClick={() => setState("confirm")} className="mr-auto text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+      Block sender
+    </button>
   );
 }

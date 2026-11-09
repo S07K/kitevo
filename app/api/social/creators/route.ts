@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { blockedIdsFor } from "@/lib/safety";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -21,10 +22,12 @@ export async function GET(req: Request) {
   const minEngagement = isPro ? Number.parseFloat(searchParams.get("minEngagement") ?? "") : NaN;
   const hasFollowerFilter = Number.isFinite(minFollowers) || Number.isFinite(maxFollowers);
 
+  const hidden = await blockedIdsFor(session.user.id);
   const users = await prisma.user.findMany({
     where: {
       accountType: "creator",
-      id: { not: session.user.id },
+      id: { notIn: [session.user.id, ...hidden] },
+      suspendedAt: null,
       onboardingCompletedAt: { not: null },
       // only creators who've set a username (i.e. have a public profile)
       username: { not: null },

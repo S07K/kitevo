@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { activeGuard, blockedGuard } from "@/lib/safety";
 
 /** GET — list all conversations for the current user */
 export async function GET() {
@@ -40,15 +41,33 @@ export async function GET() {
     orderBy: { conversation: { updatedAt: "desc" } },
   });
 
+  // Block state per conversation, both directions, in one query.
+  const otherIds = participations.map((p) => p.conversation.participants[0]?.user?.id).filter((x): x is string => !!x);
+  const blocks = otherIds.length
+    ? await prisma.userBlock.findMany({
+        where: { OR: [{ blockerId: session.user.id, blockedId: { in: otherIds } }, { blockedId: session.user.id, blockerId: { in: otherIds } }] },
+        select: { blockerId: true, blockedId: true },
+      })
+    : [];
+
   const result = participations.map((p) => {
     const lastMsg = p.conversation.messages[0] ?? null;
     const other = p.conversation.participants[0]?.user ?? null;
+    const blocked = !other
+      ? null
+      : blocks.some((b) => b.blockerId === session.user.id && b.blockedId === other.id)
+        ? "me"
+        : blocks.some((b) => b.blockerId === other.id)
+          ? "them"
+          : null;
     const unread = lastMsg && lastMsg.senderId !== session.user.id && (!p.lastReadAt || lastMsg.createdAt > p.lastReadAt);
     return {
       id: p.conversation.id,
       other,
       lastMessage: lastMsg ? { body: lastMsg.body, at: lastMsg.createdAt, mine: lastMsg.senderId === session.user.id } : null,
       unread: !!unread,
+      /** "me" = I blocked them, "them" = they blocked me; replies are closed either way. */
+      blocked,
       lastReadAt: p.lastReadAt ?? null,
       updatedAt: p.conversation.updatedAt,
     };
@@ -80,7 +99,11 @@ export async function POST(req: Request) {
     select: { id: true },
   });
 
+  // An existing thread stays readable even when blocked; starting a new one doesn't.
   if (existing) return NextResponse.json({ conversationId: existing.id });
+
+  const stop = (await activeGuard(session.user.id)) ?? (await blockedGuard(session.user.id, otherUserId));
+  if (stop) return stop;
 
   // Cold-messaging gate: a free brand may only start a NEW conversation with a creator
   // who has applied to one of its campaigns. Messaging any creator directly is a Brand Pro
