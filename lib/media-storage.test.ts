@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { ensureBucket, isStoredMediaUrl, MediaError, parseDataUrl, resolveCover, storageConfig, storeImage } from "./media-storage";
+import { authHeaders, ensureBucket, isStoredMediaUrl, MediaError, parseDataUrl, resolveCover, storageConfig, storeImage } from "./media-storage";
 
 const ENV = { SUPABASE_URL: "https://abc.supabase.co/", SUPABASE_SERVICE_ROLE_KEY: "service-key" } as unknown as NodeJS.ProcessEnv;
 // 1x1 PNG
@@ -7,6 +7,16 @@ const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJA
 const ok = () => new Response("{}", { status: 200 });
 
 describe("media storage", () => {
+  it("sends new sb_secret_ keys on apikey only; legacy JWT keys on both headers", async () => {
+    expect(authHeaders("sb_secret_abc")).toEqual({ apikey: "sb_secret_abc" });
+    expect(authHeaders("eyJhbGciOi.legacy.jwt")).toEqual({ apikey: "eyJhbGciOi.legacy.jwt", Authorization: "Bearer eyJhbGciOi.legacy.jwt" });
+    const f = vi.fn(async () => ok());
+    await storeImage(PNG, "avatars", f as never, { ...ENV, SUPABASE_SERVICE_ROLE_KEY: "sb_secret_xyz" } as NodeJS.ProcessEnv);
+    const h = (f.mock.calls[0] as unknown as [string, RequestInit])[1].headers as Record<string, string>;
+    expect(h.apikey).toBe("sb_secret_xyz");
+    expect(h.Authorization).toBeUndefined();
+  });
+
   it("is off without both env vars", () => {
     expect(storageConfig({} as NodeJS.ProcessEnv)).toBeNull();
     expect(storageConfig({ SUPABASE_URL: "https://x.supabase.co" } as unknown as NodeJS.ProcessEnv)).toBeNull();

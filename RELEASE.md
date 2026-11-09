@@ -324,7 +324,7 @@ No env vars, no migration.
 
 No migration. Until the two env vars are set, nothing changes (images stay in the database).
 
-1. [ ] Supabase → Project Settings → API: copy the **Project URL** and the **service_role** key.
+1. [ ] Supabase → Project Settings → **API Keys → Secret keys**: copy the `sb_secret_…` key (click the eye, then copy). The **Project URL** is `https://<project-ref>.supabase.co` (Project Settings → Data API, or the address of your Supabase dashboard's project).
 2. [ ] Vercel → Settings → Environment Variables (Production, and Preview if you want it there): `SUPABASE_URL=<project url>`, `SUPABASE_SERVICE_ROLE_KEY=<service_role key>`. Optional `MEDIA_BUCKET` (default `media`). Redeploy.
 3. [ ] Move existing images (creates the public `media` bucket on first run). Dry run first, with production values:
    ```

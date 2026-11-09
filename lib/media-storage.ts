@@ -27,6 +27,15 @@ export function storageConfig(env: NodeJS.ProcessEnv = process.env): StorageConf
   return { url, key, bucket: env.MEDIA_BUCKET?.trim() || "media" };
 }
 
+/**
+ * Auth headers for the Storage API. Supabase's new secret keys (`sb_secret_…`) aren't JWTs and
+ * go on the `apikey` header only ("not on Authorization: Bearer", per Supabase's API-keys docs).
+ * Legacy JWT keys (service_role) are sent on both, as before.
+ */
+export function authHeaders(key: string): Record<string, string> {
+  return key.startsWith("sb_") ? { apikey: key } : { apikey: key, Authorization: `Bearer ${key}` };
+}
+
 export function publicUrlPrefix(cfg: StorageConfig): string {
   return `${cfg.url}/storage/v1/object/public/${cfg.bucket}/`;
 }
@@ -63,8 +72,7 @@ export async function storeImage(dataUrl: string, kind: MediaKind, fetchImpl: ty
     res = await fetchImpl(`${cfg.url}/storage/v1/object/${cfg.bucket}/${path}`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${cfg.key}`,
-        apikey: cfg.key,
+        ...authHeaders(cfg.key),
         "Content-Type": parsed.mime,
         "cache-control": "max-age=31536000",
         // Same bytes → same path: re-uploading is a no-op overwrite, never an error.
@@ -87,7 +95,7 @@ export async function storeImage(dataUrl: string, kind: MediaKind, fetchImpl: ty
 export async function ensureBucket(fetchImpl: typeof fetch = fetch, env: NodeJS.ProcessEnv = process.env): Promise<"created" | "exists"> {
   const cfg = storageConfig(env);
   if (!cfg) throw new MediaError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set.");
-  const headers = { Authorization: `Bearer ${cfg.key}`, apikey: cfg.key, "Content-Type": "application/json" };
+  const headers = { ...authHeaders(cfg.key), "Content-Type": "application/json" };
   const got = await fetchImpl(`${cfg.url}/storage/v1/bucket/${cfg.bucket}`, { headers });
   if (got.ok) return "exists";
   const res = await fetchImpl(`${cfg.url}/storage/v1/bucket`, {
