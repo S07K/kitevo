@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { authHeaders, ensureBucket, isStoredMediaUrl, MediaError, parseDataUrl, resolveCover, storageConfig, storeImage } from "./media-storage";
+import { __setRetryDelay, authHeaders, isStoredMediaUrl, MediaError, parseDataUrl, resolveCover, storageConfig, storeImage } from "./media-storage";
 
 const ENV = { SUPABASE_URL: "https://abc.supabase.co/", SUPABASE_SERVICE_ROLE_KEY: "service-key" } as unknown as NodeJS.ProcessEnv;
 // 1x1 PNG
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 const ok = () => new Response("{}", { status: 200 });
+__setRetryDelay(0);
 
 describe("media storage", () => {
   it("sends new sb_secret_ keys on apikey only; legacy JWT keys on both headers", async () => {
@@ -56,6 +57,20 @@ describe("media storage", () => {
     await expect(storeImage(PNG, "covers", vi.fn(async () => { throw new Error("ECONNRESET"); }) as never, ENV)).rejects.toBeInstanceOf(MediaError);
   });
 
+  it("retries Supabase's transient 5xx (e.g. Cloudflare 520), never a 4xx", async () => {
+    const flaky = vi.fn().mockResolvedValueOnce(new Response("<html>520</html>", { status: 520 })).mockResolvedValueOnce(ok());
+    expect(await storeImage(PNG, "covers", flaky as never, ENV)).toMatch(/\/covers\/[a-f0-9]{64}\.png$/);
+    expect(flaky).toHaveBeenCalledTimes(2);
+
+    const notFound = vi.fn(async () => new Response('{"error":"Bucket not found"}', { status: 400 }));
+    await expect(storeImage(PNG, "covers", notFound as never, ENV)).rejects.toBeInstanceOf(MediaError);
+    expect(notFound).toHaveBeenCalledTimes(1);
+
+    const down = vi.fn(async () => new Response("", { status: 503 }));
+    await expect(storeImage(PNG, "covers", down as never, ENV)).rejects.toBeInstanceOf(MediaError);
+    expect(down).toHaveBeenCalledTimes(3);
+  });
+
   it("only treats our own bucket's paths as stored", () => {
     const ours = "https://abc.supabase.co/storage/v1/object/public/media/covers/" + "a".repeat(64) + ".jpg";
     expect(isStoredMediaUrl(ours, ENV)).toBe(true);
@@ -63,19 +78,6 @@ describe("media storage", () => {
     expect(isStoredMediaUrl(ours.replace("/media/", "/other/"), ENV)).toBe(false);
     expect(isStoredMediaUrl(ours + "?x=1", ENV)).toBe(false);
     expect(isStoredMediaUrl(ours, {} as NodeJS.ProcessEnv)).toBe(false);
-  });
-
-  it("creates the public bucket once", async () => {
-    const exists = vi.fn(async () => ok());
-    expect(await ensureBucket(exists as never, ENV)).toBe("exists");
-    const calls: string[] = [];
-    const missing = vi.fn(async (u: string, init?: RequestInit) => {
-      calls.push(`${init?.method ?? "GET"} ${u}`);
-      return u.endsWith("/bucket/media") ? new Response("", { status: 404 }) : ok();
-    });
-    expect(await ensureBucket(missing as never, ENV)).toBe("created");
-    expect(calls).toEqual(["GET https://abc.supabase.co/storage/v1/bucket/media", "POST https://abc.supabase.co/storage/v1/bucket"]);
-    expect(JSON.parse(String((missing.mock.calls[1] as unknown as [string, RequestInit])[1].body))).toMatchObject({ id: "media", public: true });
   });
 });
 
