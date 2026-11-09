@@ -65,7 +65,8 @@ export function normalizeProductInput(raw: unknown): { ok: true; value: ProductI
   if (deliveryRaw && (!deliveryUrl || deliveryUrl.startsWith("mailto:"))) {
     return { ok: false, problem: { field: "deliveryUrl", error: "Use a web link to the file, like a Google Drive or Dropbox share link." } };
   }
-  const cover = typeof o.coverUrl === "string" && o.coverUrl.startsWith("data:image/") ? o.coverUrl : null;
+  const cover =
+    typeof o.coverUrl === "string" && (o.coverUrl.startsWith("data:image/") || STORED_COVER.test(o.coverUrl)) ? o.coverUrl : null;
   if (cover && cover.length > MAX_COVER_CHARS) {
     return { ok: false, problem: { field: "coverUrl", error: "That image is too large. Choose a smaller one." } };
   }
@@ -89,6 +90,9 @@ export function normalizeProductInput(raw: unknown): { ok: true; value: ProductI
     value: { type, bookingUrl: null, title, description: str(o.description, MAX_DESCRIPTION), coverUrl: cover, deliveryUrl, deliveryNote: str(o.deliveryNote, MAX_NOTE), status, priceCents, currency },
   };
 }
+
+/** A cover already in Storage (lib/media-storage path shape; the host is checked server-side). */
+const STORED_COVER = /^https:\/\/[a-z0-9.-]+\/storage\/v1\/object\/public\/[a-z0-9_-]+\/covers\/[a-f0-9]{64}\.(jpg|png|webp|gif)$/;
 
 export function cleanEmail(raw: unknown): string | null {
   if (typeof raw !== "string") return null;

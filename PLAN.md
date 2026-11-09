@@ -655,6 +655,10 @@ Workspace and product work that landed on the feature-branch stack (merge order 
 - Owner feedback: a booking isn't something people buy and download; it's a way to reach the creator. Booking products are retired; each kit gets a **Book a call** button under the profile that opens the creator's Calendly / Cal.com / Google page in a dialog. Set per kit in the editor's Contact card.
 - Existing booking products were copied onto their creators' kits by the migration; old links redirect to the kit with the dialog open.
 
+## 27. Images to Supabase Storage, 2026-11-09
+
+- Avatars, brand logos and product covers were base64 inside rows, so every kit, Discover, Messages and product response carried them. Now a short URL to a public, content-addressed, one-year-cached object; same upload flow for users. Off until the env vars are set; one idempotent script moves existing rows.
+
 ## 26. Copilot follow-ups, 2026-11-09
 
 - Message drafts in brand threads: a reply, or a follow-up when the brand went quiet (never agrees to terms; suggests a Kitevo quote instead).

@@ -198,6 +198,20 @@ function checkTokenKeys() {
   }
 }
 
+/**
+ * Image storage (lib/media-storage.ts). Without it, uploads still work but are saved as base64
+ * inside database rows (the old behaviour), which bloats every page that reads them. Warn only.
+ */
+function checkMediaStorage() {
+  if (process.env.VERCEL_ENV !== "production") return;
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) return;
+  console.log(
+    "\n[vercel-build] Note: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set on PRODUCTION.\n" +
+      "  New avatars, logos and product covers are stored as base64 in the database.\n" +
+      "  Set both, redeploy, then run scripts/move-images-to-storage.ts (RELEASE.md).\n"
+  );
+}
+
 /** Host of a URL, or null if it isn't parseable. */
 function safeHost(url) {
   try {
@@ -213,6 +227,7 @@ checkFromEmail();
 checkPaymentProvider();
 checkBetaComp();
 checkTokenKeys();
+checkMediaStorage();
 
 run("npx prisma generate");
 

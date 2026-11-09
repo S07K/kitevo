@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { storeImage } from "@/lib/media-storage";
 import { getInstagramProfilePictureForUser } from "@/lib/instagram-api";
 import { fetchImageAsDataUrl } from "@/lib/image-to-data-url";
 
@@ -32,7 +33,8 @@ export async function POST() {
 
   let dataUrl: string;
   try {
-    dataUrl = await fetchImageAsDataUrl(url);
+    // Download now (Instagram's CDN URLs expire), then keep it in our own Storage.
+    dataUrl = await storeImage(await fetchImageAsDataUrl(url), "avatars");
   } catch (e) {
     console.error("[use-instagram-photo] Failed to fetch/encode IG photo:", e);
     return NextResponse.json(

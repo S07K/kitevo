@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MAX_PRODUCTS, normalizeProductInput, paidPublishProblem } from "@/lib/commerce";
+import { MediaError, resolveCover } from "@/lib/media-storage";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,13 @@ export async function POST(req: Request) {
   if (!parsed.ok) return NextResponse.json({ error: parsed.problem.error, field: parsed.problem.field }, { status: 400 });
   const blocked = await paidPublishProblem(userId, parsed.value);
   if (blocked) return NextResponse.json({ ...blocked, field: "priceCents" }, { status: 403 });
-  const product = await prisma.product.create({ data: { ...parsed.value, userId, position: count } });
+  let coverUrl: string | null;
+  try {
+    coverUrl = await resolveCover(parsed.value.coverUrl);
+  } catch (e) {
+    if (e instanceof MediaError) return NextResponse.json({ error: e.message, field: "coverUrl" }, { status: 502 });
+    throw e;
+  }
+  const product = await prisma.product.create({ data: { ...parsed.value, coverUrl, userId, position: count } });
   return NextResponse.json({ ...product, orders: 0 }, { status: 201 });
 }

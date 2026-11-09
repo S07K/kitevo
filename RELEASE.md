@@ -320,6 +320,22 @@ No env vars, no migration.
 
 ---
 
+## 21. Images move to Supabase Storage (`feat/image-storage`)
+
+No migration. Until the two env vars are set, nothing changes (images stay in the database).
+
+1. [ ] Supabase → Project Settings → **API Keys → Secret keys**: copy the `sb_secret_…` key (click the eye, then copy). The **Project URL** is `https://<project-ref>.supabase.co` (Project Settings → Data API, or the address of your Supabase dashboard's project).
+2. [ ] Vercel → Settings → Environment Variables (Production, and Preview if you want it there): `SUPABASE_URL=<project url>`, `SUPABASE_SERVICE_ROLE_KEY=<service_role key>`. Optional `MEDIA_BUCKET` (default `media`). Redeploy.
+3. [ ] Move existing images (creates the public `media` bucket on first run). Dry run first, with production values:
+   ```
+   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... DATABASE_URL=<prod> DIRECT_URL=<prod> npx tsx scripts/move-images-to-storage.ts --dry-run
+   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... DATABASE_URL=<prod> DIRECT_URL=<prod> npx tsx scripts/move-images-to-storage.ts
+   ```
+   Safe to re-run; it only touches rows still holding a `data:` image.
+4. [ ] Check: upload a new profile photo → it shows, and its address starts with `https://<project>.supabase.co/storage/v1/object/public/media/avatars/`. Kits, Discover, Messages and product pages still show every avatar, logo and cover.
+
+---
+
 ## Notes for local development
 
 - `npm run dev` applies pending migrations first (`scripts/dev-migrate.cjs`, the `predev` script), but **only to a database on this machine**. If `.env` points at Supabase it skips with a warning, so it can never push an unmerged migration to production.
