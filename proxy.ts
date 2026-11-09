@@ -12,7 +12,7 @@ const auth = withAuth({
 /** Signed-in pages (was this file's matcher before custom domains needed every path). */
 const PROTECTED = [/^\/dashboard(\/|$)/, /^\/kit\/edit(\/|$)/, /^\/onboarding$/, /^\/referrals$/, /^\/admin(\/|$)/, /^\/discover$/, /^\/campaigns$/, /^\/messages$/, /^\/settings$/, /^\/pipeline$/, /^\/products$/, /^\/connectors$/, /^\/deals(\/|$)/];
 
-export default function middleware(req: NextRequest, event: NextFetchEvent) {
+export default function proxy(req: NextRequest, event: NextFetchEvent) {
   const host = req.headers.get("host");
   const { pathname, search } = req.nextUrl;
 
