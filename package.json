@@ -2,6 +2,7 @@
   "name": "kitevo",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-only",
   "scripts": {
     "postinstall": "prisma generate",
     "predev": "node --env-file-if-exists=.env scripts/dev-migrate.cjs",
@@ -19,10 +20,10 @@
     "android:build": "npm run build && npx cap sync android",
     "android": "npx cap open android",
     "lint": "eslint",
-    "db:migrate": "DATABASE_URL=\"postgresql://shubham@localhost:5432/media_kit_pro\" prisma migrate deploy",
+    "db:migrate": "prisma migrate deploy",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:studio": "DATABASE_URL=\"postgresql://shubham@localhost:5432/media_kit_pro\" prisma studio",
-    "db:push": "DATABASE_URL=\"postgresql://shubham@localhost:5432/media_kit_pro\" prisma db push"
+    "db:studio": "prisma studio",
+    "db:push": "prisma db push"
   },
   "dependencies": {
     "@capacitor/android": "^8.1.0",
