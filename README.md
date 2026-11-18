@@ -76,7 +76,6 @@
 - [Scripts](#scripts)
 - [Testing](#testing)
 - [Deployment](#deployment)
-- [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [Security](#security)
 - [License](#license)
@@ -343,22 +342,6 @@ Kitevo is built for **Vercel + Supabase Postgres**:
 
 The full, ordered checklist (env vars, OAuth redirect URIs, webhooks, token encryption,
 rollback playbooks, Meta and Google app review) is in **[DEPLOY.md](./DEPLOY.md)**.
-
-## Roadmap
-
-From the product plan in [docs/PLAN.md](./docs/PLAN.md):
-
-- [x] **Phase 0: trust and foundations**: free tier, manual stats, versioned migrations,
-      token encryption, admin and ops, trials and coupons, funnel analytics, custom domains
-- [ ] **Phase 1: commerce core (in progress)**: free downloads, paid products on creator-owned
-      Razorpay / Stripe / PayPal, book-a-call via the creator's own scheduler, brand deal payments
-- [ ] **Phase 2: audience and growth**: courses and memberships, community spaces, funnels and
-      upsells, email broadcasts (referrals and AI Copilot have shipped)
-- [ ] **Phase 3: brand-deal moat**: contracts and e-signature, brand CRM and team seats,
-      agency plan, public API and webhooks, mobile apps
-
-Have an idea? Open a [feature request](https://github.com/S07K/kitevo/issues/new/choose) or start a
-[discussion](https://github.com/S07K/kitevo/discussions).
 
 ## Contributing
 
