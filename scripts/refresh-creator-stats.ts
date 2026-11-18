@@ -4,7 +4,7 @@
  * discover page can filter by audience size and engagement.
  *
  * Run periodically (e.g. daily cron):
- *   DATABASE_URL="postgresql://shubham@localhost:5432/kitevo" npx tsx scripts/refresh-creator-stats.ts
+ *   DATABASE_URL="postgresql://localhost:5432/kitevo" npx tsx scripts/refresh-creator-stats.ts
  */
 
 import { prisma } from "@/lib/prisma";
