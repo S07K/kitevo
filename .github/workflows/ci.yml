@@ -31,6 +31,7 @@ env:
   NEXT_PUBLIC_APP_URL: http://localhost:3000
   PAYMENT_PROVIDER: stripe
   SUBSCRIPTION_COOKIE_SECRET: ci-dummy-cookie-secret
+  RESEND_API_KEY: re_ci_dummy # lib/email.ts constructs the client at import time
 
 jobs:
   ci:
