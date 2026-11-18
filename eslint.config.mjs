@@ -12,6 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Not app source: native Capacitor projects (incl. generated build output and
+    // Pods), local agent worktrees, and generated reports.
+    "android/**",
+    "ios/**",
+    ".claude/**",
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 
