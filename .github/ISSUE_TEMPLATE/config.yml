@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas (Discussions)
+    url: https://github.com/S07K/kitevo/discussions
+    about: Ask a question, share an idea or get help setting Kitevo up locally.
+  - name: Report a security vulnerability
+    url: https://github.com/S07K/kitevo/security/advisories/new
+    about: Please report vulnerabilities privately, never in a public issue. See SECURITY.md.

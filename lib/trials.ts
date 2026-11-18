@@ -13,7 +13,7 @@ import { prisma } from "@/lib/prisma";
  *    method for subscriptions), and the provider bills automatically when the trial ends.
  */
 
-/** Only Pro is trialable (PLAN.md: "14-day Pro trial"). */
+/** Only Pro is trialable (docs/PLAN.md: "14-day Pro trial"). */
 export const TRIAL_TIER = "pro";
 
 /** Trial length; PRO_TRIAL_DAYS=0 turns trials off. Clamped to a sane range. */

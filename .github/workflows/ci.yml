@@ -1,0 +1,71 @@
+# Continuous integration for pull requests and pushes to main.
+#
+# Needs no repository secrets: every env var below is a dummy value, just enough
+# for `prisma generate`, the unit tests and `next build` to run. Nothing here
+# connects to a real database, payment provider or email service.
+#
+# Database migrations against production are a separate workflow
+# (db-migrate.yml) that only runs on main.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+  DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+  NEXTAUTH_SECRET: ci-dummy-secret-not-used-anywhere
+  NEXTAUTH_URL: http://localhost:3000
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  PAYMENT_PROVIDER: stripe
+  SUBSCRIPTION_COOKIE_SECRET: ci-dummy-cookie-secret
+  RESEND_API_KEY: re_ci_dummy # lib/email.ts constructs the client at import time
+
+jobs:
+  ci:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci # postinstall runs `prisma generate`
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Unit tests (Vitest)
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Advisory until the existing lint backlog (react-hooks / unescaped-entities
+      # findings in app/) is cleared; then drop continue-on-error and make it required.
+      - name: ESLint (advisory)
+        run: npm run lint
+        continue-on-error: true

@@ -1,6 +1,6 @@
 # Kitevo — Production Deploy Checklist
 
-> **Shipping the current feature branches?** Follow [RELEASE.md](./RELEASE.md), the step-by-step post-merge checklist.
+> **Shipping the current feature branches?** Follow [docs/RELEASE.md](./docs/RELEASE.md), the step-by-step post-merge checklist.
 
 Work top to bottom. The order matters: the app URL is baked into the build and is
 registered with three external services, so picking it late means redoing steps.
@@ -357,7 +357,7 @@ on it without checking.
 | `20261109110754_launch_indexes` | Six indexes: KitView(kitId, viewedAt), Inquiry(kitId, createdAt), CampaignView(campaignId, viewedAt), User(accountType, createdAt), Message(senderId), UserReport(reporterId) | Additive: playbook A. Indexes only; no data change. Small tables today, so the brief lock is negligible |
 
 Keep this table current: add a row with every new migration, and flag any contract-type
-migration in RELEASE.md together with its backup step.
+migration in docs/RELEASE.md together with its backup step.
 
 ## 9. Meta App Review and Google OAuth verification
 
@@ -368,8 +368,8 @@ real OAuth flow. Neither can be filed before deploying.
 - Google `youtube.readonly` verification: **DONE** — consent screen In Production,
   branding + domain verified, sensitive scope verified. Record:
   `docs/google-oauth-verification.md`.
-- Meta Business Verification: **DONE (Aug 5 2026)** — via the founder's Udyam (MSME)
-  registration as "Kitevo"; Meta matched the public record automatically.
+- Meta Business Verification: **DONE (Aug 5 2026)** — via the business's public
+  government registration as "Kitevo"; Meta matched the public record automatically.
 - Meta App Review for `instagram_basic`, `instagram_manage_insights`,
   `pages_show_list`, `business_management`: **APPROVED (all four), app is LIVE.** Any
   creator can now connect Instagram. `pages_show_list` was rejected once for an unclear

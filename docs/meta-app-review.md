@@ -1,7 +1,7 @@
 # Meta App Review Submission — Kitevo (Instagram Graph API)
 
 > **Status: DONE — all four permissions APPROVED, app is LIVE.** Business Verification
-> cleared Aug 5 2026 (Udyam MSME registration as "Kitevo"). App Review approved
+> cleared Aug 5 2026 (public business registration as "Kitevo"). App Review approved
 > `instagram_basic`, `instagram_manage_insights`, `pages_show_list`, `business_management`.
 > `pages_show_list` needed one re-submit with a captioned demo (unclear-screencast
 > rejection, not policy). Kept below as the record and for any future re-submission.

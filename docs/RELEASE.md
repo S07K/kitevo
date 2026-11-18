@@ -56,7 +56,7 @@ Vercel → Project → Settings → Environment Variables → **Production**. Se
   if it's lost, creators just have to reconnect Instagram/YouTube, but payout details
   saved by referrers become unreadable.
   Use a different key from your local `.env`.
-- [ ] **`ADMIN_EMAILS`** — `shubham3431kumar@gmail.com` (comma-separate more). Unlocks
+- [ ] **`ADMIN_EMAILS`** — the admin email address(es), comma-separated. Unlocks
   `/admin/payouts` and the monthly "payouts due" email. Everyone else gets a 404.
 - [ ] **`CRON_SECRET`** — `openssl rand -base64 32`. Vercel sends it to the monthly
   payouts cron (`/api/cron/payouts-digest`, 1st of the month, 09:00 UTC).

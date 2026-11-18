@@ -52,3 +52,23 @@ next-env.d.ts
 
 # Claude Code worktrees (other sessions)
 .claude/worktrees/
+
+# Local scratch scripts and per-developer editor/agent config
+.emb.tmp.mjs
+*.tmp.mjs
+.claude/launch.json
+.claude/settings.local.json
+
+# Native signing material (never commit)
+*.jks
+*.keystore
+*.p12
+*.p8
+*.key
+*.mobileprovision
+*.provisionprofile
+*.cer
+keystore.properties
+android/key.properties
+google-services.json
+GoogleService-Info.plist

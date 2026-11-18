@@ -1,0 +1,97 @@
+name: Bug report
+description: Something in Kitevo is broken or behaves unexpectedly.
+title: "bug: "
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please search [existing issues](https://github.com/S07K/kitevo/issues) first.
+        **Security problems must not be reported here**: use [private vulnerability reporting](https://github.com/S07K/kitevo/security/advisories/new) instead.
+        Never paste API keys, tokens, passwords or `.env` contents.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Where did you see the bug?
+      multiple: true
+      options:
+        - Web (desktop browser)
+        - Web (mobile browser)
+        - iOS app (Capacitor)
+        - Android app (Capacitor)
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Self-hosted / local development
+        - Hosted Kitevo (getkitevo.com)
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Media kit (public page)
+        - Kit editor
+        - Dashboard / workspace
+        - Campaigns / discover / messages
+        - Brand deals
+        - Products / checkout (Razorpay, Stripe, PayPal)
+        - Subscriptions / billing (Stripe, Dodo)
+        - Instagram / YouTube connection
+        - Auth / onboarding
+        - Copilot (AI)
+        - Other
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / OS / device
+      placeholder: e.g. Chrome 131 on macOS 15, Safari on iPhone 15
+  - type: input
+    id: version
+    attributes:
+      label: Commit or version
+      description: For self-hosted setups, the commit SHA you are running (`git rev-parse --short HEAD`).
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Console output, server logs or screenshots. Redact anything sensitive.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I removed secrets and personal data from everything above.
+          required: true

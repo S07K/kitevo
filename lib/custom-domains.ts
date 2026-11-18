@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { hasPaidCreatorPlan, PAID_CREATOR_TIERS } from "@/lib/creator-plan";
 
 /**
- * Custom domains (PLAN.md P0-8): a creator points their own domain at one kit.
+ * Custom domains (docs/PLAN.md P0-8): a creator points their own domain at one kit.
  *
  * Hosting: the domain is added to Kitevo's Vercel project through Vercel's REST API, and
  * Vercel issues the TLS certificate once DNS points at it. Ownership is proven by DNS: only

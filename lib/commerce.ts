@@ -6,7 +6,7 @@ import { MAX_PRODUCTS, publicProduct, type PublicProduct } from "@/lib/commerce-
 export * from "@/lib/commerce-shared";
 
 /**
- * Creator commerce (PLAN.md Phase 1). Money model: creator-owned payments — buyers pay the
+ * Creator commerce (docs/PLAN.md Phase 1). Money model: creator-owned payments — buyers pay the
  * creator's own Razorpay/Stripe/PayPal account and Kitevo never holds funds (Release B).
  * Release A (this file today): products + FREE downloads in exchange for an email, delivered
  * by a creator-supplied link that's only revealed on the buyer's private delivery page.
