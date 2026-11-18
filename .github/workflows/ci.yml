@@ -57,9 +57,6 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Advisory until the existing lint backlog (react-hooks / unescaped-entities
-    # findings in app/) is cleared; then remove this line and make it required.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -67,4 +64,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run lint
+      # Advisory until the existing lint backlog (react-hooks / unescaped-entities
+      # findings in app/) is cleared; then drop continue-on-error and make it required.
+      - name: ESLint (advisory)
+        run: npm run lint
+        continue-on-error: true
