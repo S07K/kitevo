@@ -538,7 +538,7 @@ Every product is **one editor with 3–4 tabs**, a live phone preview on the rig
 - Payments only unlock after the first product is published (keeps the funnel moving).
 - Affiliate earnings have a 7-business-day hold before cash-out (refund protection).
 
-**Implication for Kitevo's payout-rail decision (§11.2):** Stan's model is Stripe Connect, not Merchant of Record. Kitevo's entity is Indian (Udyam). **Stripe Connect platform availability for an India-registered platform is restricted — verify before designing R2/R3.** Options to evaluate: (a) Dodo marketplace/split-payout support, (b) a non-India entity (e.g. US LLC) for Stripe Connect, (c) PayPal-direct-style "creator's own processor" first, which needs no payout rail at all and is the fastest MVP.
+**Implication for Kitevo's payout-rail decision (§11.2):** Stan's model is Stripe Connect, not Merchant of Record. Kitevo's entity is India-registered. **Stripe Connect platform availability for an India-registered platform is restricted — verify before designing R2/R3.** Options to evaluate: (a) Dodo marketplace/split-payout support, (b) a non-India entity (e.g. US LLC) for Stripe Connect, (c) PayPal-direct-style "creator's own processor" first, which needs no payout rail at all and is the fastest MVP.
 
 ### 12.4 Features worth noting for Kitevo
 

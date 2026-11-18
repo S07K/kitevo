@@ -12,7 +12,7 @@ import { trackEvent } from "@/lib/analytics";
 import type { LiveKitStats } from "@/lib/kit-stats-compose";
 
 /**
- * Copilot (PLAN.md R4): AI drafts grounded in the creator's real kit.
+ * Copilot (docs/PLAN.md R4): AI drafts grounded in the creator's real kit.
  *
  * Whose key runs it:
  *  - the creator's own AI connection (Connectors → AI), on every plan, no Kitevo cap;
