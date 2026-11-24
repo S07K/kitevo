@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { PluggybackCard } from "@/components/pluggyback-card";
 
 
 const NAV = [
@@ -167,6 +168,11 @@ export function MarketingFooter(): ReactNode {
                 height={54}
               />
             </a>
+          </div>
+
+          {/* Pluggyback network card (collapses to nothing when there is nothing to show) */}
+          <div className="mt-6">
+            <PluggybackCard />
           </div>
 
           <div className="border-border mt-6 flex flex-col items-start justify-between gap-3 border-t pt-6 text-xs sm:flex-row sm:items-center">
